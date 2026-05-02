@@ -1,296 +1,281 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Coffee, Leaf, IceCreamCone, CakeSlice, Star } from 'lucide-react';
-import SectionHeader from '../components/SectionHeader';
+import { Coffee, Leaf, IceCreamCone, Star } from 'lucide-react';
+import { useMenuStore } from '../store/menuStore';
+import { formatPhp } from '../lib/money';
+import ProductDetailDrawer from '../components/ProductDetailDrawer';
+import type { Product } from '../types/domain';
 
-type Category = 'hot' | 'cold' | 'specialty' | 'pastries';
-
-interface MenuItem {
-  name: string;
-  desc: string;
-  price: string;
-  tag?: string;
-  image: string;
-}
-
-const categories: { key: Category; label: string; icon: React.ReactNode }[] = [
-  { key: 'hot', label: 'Hot Coffee', icon: <Coffee className="w-4 h-4" /> },
-  { key: 'cold', label: 'Iced Drinks', icon: <IceCreamCone className="w-4 h-4" /> },
-  { key: 'specialty', label: 'Specialty', icon: <Leaf className="w-4 h-4" /> },
-  { key: 'pastries', label: 'Pastries', icon: <CakeSlice className="w-4 h-4" /> },
-];
-
-const menuItems: Record<Category, MenuItem[]> = {
-  hot: [
-    {
-      name: 'Kado Blend',
-      desc: 'Our signature house blend — a medium roast with notes of chocolate, caramel, and a hint of citrus.',
-      price: '₱140',
-      tag: 'Bestseller',
-      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Cappuccino',
-      desc: 'Classic espresso with velvety steamed milk and a thick layer of micro-foam.',
-      price: '₱150',
-      image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Pour Over',
-      desc: 'Single-origin beans hand-poured for a clean, bright, and nuanced cup.',
-      price: '₱180',
-      tag: 'Premium',
-      image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Flat White',
-      desc: 'Double ristretto with silky steamed milk — bold yet smooth.',
-      price: '₱160',
-      image: 'https://images.unsplash.com/photo-1577968897966-3d4325b36b61?q=80&w=400&auto=format&fit=crop',
-    },
-  ],
-  cold: [
-    {
-      name: 'Iced Americano',
-      desc: 'Bold espresso over ice with cold water — crisp and refreshing.',
-      price: '₱130',
-      image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Cold Brew',
-      desc: 'Slow-steeped for 18 hours for an ultra-smooth, low-acid finish.',
-      price: '₱160',
-      tag: 'Popular',
-      image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Iced Latte',
-      desc: 'Espresso and cold milk over ice — simple, creamy, and classic.',
-      price: '₱150',
-      image: 'https://images.unsplash.com/photo-1592663527359-cf6642f54cff?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Matcha Latte',
-      desc: 'Ceremonial-grade Japanese matcha whisked with your choice of milk.',
-      price: '₱170',
-      image: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=400&auto=format&fit=crop',
-    },
-  ],
-  specialty: [
-    {
-      name: 'Kado Sunset',
-      desc: 'A layered iced drink with espresso, passion fruit, and coconut cream.',
-      price: '₱190',
-      tag: 'Limited',
-      image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Brown Sugar Oat Latte',
-      desc: 'Caramelized brown sugar with espresso and creamy oat milk.',
-      price: '₱180',
-      tag: 'Popular',
-      image: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Spanish Latte',
-      desc: 'Concentrated espresso with sweetened condensed milk — rich and indulgent.',
-      price: '₱170',
-      image: 'https://images.unsplash.com/photo-1534687941688-651ccaafbff8?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Affogato',
-      desc: 'A scoop of vanilla gelato drowned in a shot of hot espresso.',
-      price: '₱200',
-      image: 'https://images.unsplash.com/photo-1579888944880-d98341245702?q=80&w=400&auto=format&fit=crop',
-    },
-  ],
-  pastries: [
-    {
-      name: 'Butter Croissant',
-      desc: 'Flaky, golden, and made fresh daily with French butter.',
-      price: '₱95',
-      image: 'https://images.unsplash.com/photo-1555507036-ab1f4038024a?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Matcha Cheesecake',
-      desc: 'Creamy Japanese cheesecake with a subtle matcha flavor.',
-      price: '₱180',
-      tag: 'New',
-      image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Cinnamon Roll',
-      desc: 'Soft, warm, and drizzled with cream cheese glaze.',
-      price: '₱120',
-      image: 'https://images.unsplash.com/photo-1509365390695-33aee754301f?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      name: 'Banana Bread',
-      desc: 'Moist, nutty, and lightly spiced — a perfect coffee companion.',
-      price: '₱100',
-      image: 'https://images.unsplash.com/photo-1605090930601-47d2f425a888?q=80&w=400&auto=format&fit=crop',
-    },
-  ],
+const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
+  cat_classics:
+    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400&auto=format&fit=crop',
+  cat_signatures:
+    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=400&auto=format&fit=crop',
+  cat_matcha:
+    'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=400&auto=format&fit=crop',
+  cat_yuzu:
+    'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400&auto=format&fit=crop',
 };
 
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=400&auto=format&fit=crop';
+
+function categoryIcon(categoryId: string): React.ReactNode {
+  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
+  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4" />;
+  return <Coffee className="w-4 h-4" />;
+}
+
 export default function Menu() {
-  const [activeCategory, setActiveCategory] = useState<Category>('hot');
+  const categories = useMenuStore((s) => s.categories);
+  const productsByCategory = useMenuStore((s) => s.productsByCategory);
+
+  const sortedCategories = useMemo(
+    () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
+    [categories],
+  );
+
+  const [activeCategoryId, setActiveCategoryId] = useState<string>(
+    () => sortedCategories[0]?.id ?? '',
+  );
+
+  useEffect(() => {
+    if (!sortedCategories.length) return;
+    if (!sortedCategories.some((c) => c.id === activeCategoryId)) {
+      setActiveCategoryId(sortedCategories[0].id);
+    }
+  }, [sortedCategories, activeCategoryId]);
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const activeCategory = useMemo(
+    () => sortedCategories.find((c) => c.id === activeCategoryId),
+    [sortedCategories, activeCategoryId],
+  );
+
+  const items = activeCategoryId ? productsByCategory(activeCategoryId) : [];
 
   return (
-    <div className="flex flex-col w-full bg-kado-cream font-sans min-h-screen">
-      {/* Page Hero */}
-      <section className="pt-28 pb-8 px-6">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader
-            label="Daily Rituals"
-            title="Our Menu"
-            subtitle="Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism. Discover your new favorite sip."
-          />
-        </div>
-      </section>
+    <div className="flex flex-col md:flex-row w-full bg-white font-sans min-h-screen relative">
+      {/* Left red sidebar mimicking the flyer */}
+      <div className="hidden md:flex w-28 lg:w-40 bg-kado-red shrink-0 items-center justify-center overflow-hidden sticky top-0 h-screen shadow-[10px_0_30px_rgba(158,24,29,0.15)] z-20">
+        <h1 className="font-display font-black text-white text-[10rem] lg:text-[13rem] leading-none -rotate-90 tracking-tighter whitespace-nowrap select-none opacity-95">
+          MENU
+        </h1>
+      </div>
 
-      {/* Category Tabs */}
-      <section className="px-6 pb-12">
-        <div className="max-w-7xl mx-auto flex flex-col items-center">
-          
-          <LoyaltyCard />
-
-          <div className="flex flex-wrap items-center justify-center gap-3 w-full">
-            {categories.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-                  activeCategory === cat.key
-                    ? 'bg-[#2A2626] text-[#EFE6D5] shadow-xl shadow-[#2A2626]/20 -translate-y-1'
-                    : 'bg-transparent border-2 border-[#D8CABE] text-[#4A423C] hover:border-[#2A2626]/50 hover:text-[#2A2626]'
-                }`}
-              >
-                {cat.icon}
-                {cat.label}
-              </button>
-            ))}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile Header (Red block) */}
+        <div className="md:hidden bg-kado-red pt-10 pb-8 px-6 shadow-md relative overflow-hidden">
+          <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
+            <h1 className="font-display font-black text-white text-[8rem] leading-none -mt-4">
+              MENU
+            </h1>
           </div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 mb-2 relative z-10">
+            Daily Rituals
+          </p>
+          <h1 className="font-display text-5xl font-black text-white mb-2 tracking-tighter uppercase relative z-10">
+            Our Menu
+          </h1>
+          <p className="text-white/80 text-sm max-w-sm leading-relaxed relative z-10">
+            Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
+          </p>
         </div>
-      </section>
 
-      {/* Menu Grid */}
-      <section className="px-6 pb-24">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            key={activeCategory}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {menuItems[activeCategory].map((item, i) => (
-              <motion.div
-                key={item.name}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, ease: "easeOut" }}
-                className="group bg-[#FAF7F2] border border-[#E3D8C3] rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-[#2A2626]/10 hover:-translate-y-1.5 transition-all duration-500"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#E3D8C3]/30">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                    referrerPolicy="no-referrer"
-                  />
-                  {/* Subtle inner shadow for premium feel */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent mix-blend-multiply opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {item.tag && (
-                    <span className="absolute top-4 left-4 text-[9px] font-bold uppercase tracking-widest bg-[#9B2B2C] text-[#EFE6D5] px-3 py-1.5 rounded-full shadow-lg shadow-black/20">
-                      {item.tag}
-                    </span>
-                  )}
-                </div>
-                <div className="p-6 md:p-8">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3 className="font-display font-bold text-xl md:text-2xl text-[#2A2626] group-hover:text-kado-red transition-colors leading-tight">
-                      {item.name}
-                    </h3>
-                    <span className="font-sans font-bold text-lg md:text-xl text-kado-red whitespace-nowrap">
-                      {item.price}
-                    </span>
-                  </div>
-                  <p className="text-sm md:text-base font-medium text-[#4A423C]/80 leading-relaxed">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+        {/* Desktop Header */}
+        <section className="hidden md:block pt-16 pb-8 px-8 lg:px-16">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red mb-3">
+              Daily Rituals
+            </p>
+            <h1 className="font-display text-5xl lg:text-6xl font-black text-kado-dark mb-4 tracking-tighter uppercase">
+              Our Menu
+            </h1>
+            <p className="text-kado-dark/60 text-base max-w-lg leading-relaxed">
+              Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
+            </p>
+          </div>
+        </section>
+
+        {/* Category tabs */}
+        <section className="px-6 md:px-8 lg:px-16 pb-8 pt-6 md:pt-0 sticky top-0 md:top-0 bg-white/95 backdrop-blur-md z-10 border-b border-kado-dark/5">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-nowrap md:flex-wrap items-center gap-3 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
+              {sortedCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveCategoryId(cat.id)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${
+                    activeCategoryId === cat.id
+                      ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
+                      : 'bg-white border border-kado-dark/15 text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
+                  }`}
+                >
+                  {categoryIcon(cat.id)}
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Product grid */}
+        <section className="px-6 md:px-8 lg:px-16 py-12">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              key={activeCategoryId}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8"
+            >
+              {items.map((product, i) => {
+                const image =
+                  product.image ?? FALLBACK_IMAGE_BY_CATEGORY[product.categoryId] ?? DEFAULT_IMAGE;
+                const tag = product.tags?.[0];
+                const desc =
+                  product.description ??
+                  (product.temperature === 'iced'
+                    ? 'Served iced — crisp and refreshing.'
+                    : product.temperature === 'both'
+                      ? 'Available hot or iced.'
+                      : 'Crafted in-house with care.');
+
+                return (
+                  <motion.button
+                    key={product.id}
+                    type="button"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06, ease: 'easeOut' }}
+                    onClick={() => setSelectedProduct(product)}
+                    className="group text-left bg-white border border-kado-dark/10 rounded-[1.5rem] overflow-hidden hover:shadow-[0_20px_40px_rgba(158,24,29,0.08)] hover:-translate-y-1.5 hover:border-kado-red/30 transition-all duration-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red flex flex-col h-full"
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-[5/4] overflow-hidden bg-kado-dark/5 shrink-0">
+                      <img
+                        src={image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      {tag && (
+                        <span className="absolute top-3 left-3 text-[9px] font-black uppercase tracking-widest bg-kado-dark text-white px-3 py-1 rounded-full shadow">
+                          {tag}
+                        </span>
+                      )}
+
+                      {/* Quick-add hint on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full shadow-lg">
+                          View details
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h3 className="font-display font-black text-[1.1rem] leading-tight text-kado-dark group-hover:text-kado-red transition-colors">
+                          {product.name}
+                        </h3>
+                        <span className="font-sans font-black text-lg text-kado-dark shrink-0">
+                          {formatPhp(product.basePrice)}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-kado-dark/60 leading-relaxed line-clamp-2 mt-auto pt-2">
+                        {desc}
+                      </p>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Loyalty card */}
+        <section className="px-6 md:px-8 lg:px-16 pb-24 mt-auto">
+          <div className="max-w-6xl mx-auto border-t border-kado-dark/10 pt-16">
+            <LoyaltyCard />
+          </div>
+        </section>
+      </div>
+
+      {/* Product detail drawer */}
+      <ProductDetailDrawer
+        product={selectedProduct}
+        categoryName={activeCategory?.name}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   );
 }
 
-// =========================================
-// Loyalty Card UI Sub-Component
-// =========================================
 function LoyaltyCard() {
   return (
-    <div className="w-full max-w-4xl mx-auto mb-16 relative">
-      {/* Decorative shadow layer */}
-      <div className="absolute inset-0 bg-[#612821]/10 translate-x-3 translate-y-3 rounded-[2.5rem]" />
-      
-      <div className="relative bg-[#2A2626] border border-[#4A423C] p-8 md:p-12 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden shadow-2xl">
-        
-        {/* Abstract watermark */}
-        <div className="absolute -right-16 -bottom-16 opacity-5 pointer-events-none">
+    <div className="w-full max-w-4xl mx-auto relative">
+      <div className="absolute inset-0 bg-kado-red/10 translate-x-3 translate-y-3 rounded-[2.5rem]" />
+
+      <div className="relative bg-kado-dark border border-[#4A423C] p-8 md:p-12 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden shadow-2xl">
+        <div className="absolute -right-16 -bottom-16 opacity-[0.04] pointer-events-none">
           <Coffee className="w-64 h-64 text-white" />
         </div>
-        
+
         <div className="flex flex-col text-center md:text-left z-10 max-w-sm">
           <p className="text-kado-red font-bold tracking-[0.2em] uppercase text-[10px] mb-3 flex items-center justify-center md:justify-start gap-2">
-            <Star className="w-3.5 h-3.5 fill-current"/> Member Rewards
+            <Star className="w-3.5 h-3.5 fill-current" /> Member Rewards
           </p>
-          <h3 className="font-display text-3xl md:text-4xl text-[#EFE6D5] font-bold mb-4 leading-tight">
-            Earn Your <br className="hidden md:block"/>Free Cup.
+          <h3 className="font-display text-3xl md:text-4xl text-kado-cream font-bold mb-4 leading-tight">
+            Earn Your <br className="hidden md:block" />
+            Free Cup.
           </h3>
           <p className="text-[#A09A90] text-sm md:text-base font-medium leading-relaxed">
-            Every coffee brings you closer to your next reward. Buy 9, get your 10th cup completely on us.
+            Every coffee brings you closer to your next reward. Buy 9, get your 10th completely on
+            us.
           </p>
         </div>
 
-        <div className="relative bg-[#FAF7F2]/5 p-6 md:p-8 rounded-3xl border border-white/5 z-10 w-full md:w-auto backdrop-blur-sm">
-           <div className="grid grid-cols-5 gap-3 md:gap-4">
-             {Array.from({ length: 10 }).map((_, i) => (
-               <div key={i} className="relative flex items-center justify-center">
-                 {/* The stamp circle */}
-                 <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center transition-all ${
-                   i < 3 
-                     ? 'border-kado-red bg-kado-red/10 text-kado-red shadow-[0_0_15px_rgba(155,43,44,0.3)]' 
-                     : 'border-white/10 bg-transparent text-white/20 border-dashed'
-                 }`}>
-                   {i === 9 ? (
-                     <Star className={`w-5 h-5 md:w-6 md:h-6 ${i < 3 ? 'fill-current' : ''}`} />
-                   ) : (
-                     <Coffee className="w-5 h-5 md:w-6 md:h-6" />
-                   )}
-                 </div>
-                 
-                 {/* Simulated "stamp" physical overlay */}
-                 {i < 3 && (
-                   <motion.div 
-                     initial={{ scale: 0, opacity: 0, rotate: -30 }}
-                     animate={{ scale: 1, opacity: 1, rotate: [-15, 5, -5] }}
-                     transition={{ duration: 0.5, delay: i * 0.15, type: 'spring', stiffness: 200 }}
-                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                   >
-                      <div className="w-8 h-8 md:w-10 md:h-10 border-[3px] border-kado-red rounded-full opacity-40 mix-blend-color-dodge flex items-center justify-center">
-                         <span className="text-[8px] font-bold text-kado-red uppercase tracking-widest rotate-12">Kado</span>
-                      </div>
-                   </motion.div>
-                 )}
-               </div>
-             ))}
-           </div>
+        <div className="relative bg-white/5 p-6 md:p-8 rounded-3xl border border-white/5 z-10 w-full md:w-auto backdrop-blur-sm">
+          <div className="grid grid-cols-5 gap-3 md:gap-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="relative flex items-center justify-center">
+                <div
+                  className={`w-12 h-12 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center transition-all ${
+                    i < 3
+                      ? 'border-kado-red bg-kado-red/10 text-kado-red shadow-[0_0_15px_rgba(155,43,44,0.25)]'
+                      : 'border-white/10 bg-transparent text-white/20 border-dashed'
+                  }`}
+                >
+                  {i === 9 ? (
+                    <Star className={`w-5 h-5 md:w-6 md:h-6 ${i < 3 ? 'fill-current' : ''}`} />
+                  ) : (
+                    <Coffee className="w-5 h-5 md:w-6 md:h-6" />
+                  )}
+                </div>
+                {i < 3 && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: i * 0.12, type: 'spring', stiffness: 220 }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <div className="w-8 h-8 md:w-10 md:h-10 border-[3px] border-kado-red rounded-full opacity-40 flex items-center justify-center">
+                      <span className="text-[7px] font-bold text-kado-red uppercase tracking-widest rotate-12">
+                        Kado
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

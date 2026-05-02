@@ -13,7 +13,11 @@ export default function Footer() {
               <div className="w-10 h-10 bg-kado-red text-kado-cream flex items-center justify-center font-display font-bold text-xl rounded-sm">
                 角
               </div>
-              <span className="font-display font-bold text-2xl tracking-tight">KADO KOHI</span>
+              <img
+                src="/logo/Logo1.png"
+                alt="Kado Kohi"
+                className="h-6 w-auto object-contain invert"
+              />
             </Link>
             <p className="text-sm text-kado-cream/70 leading-relaxed max-w-xs">
               Handcrafted specialty coffee made from carefully selected 100% Arabica beans in the heart of Marikina City.
