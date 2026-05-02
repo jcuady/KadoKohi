@@ -1,18 +1,7 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  MapPin,
-  ShoppingCart,
-  ClipboardList,
-  Coffee,
   Package,
-  Gift,
-  CalendarDays,
-  QrCode,
-  Layers,
-  Users,
-  Settings,
-  Monitor,
+  ClipboardList,
   LogOut,
   Sun,
   Moon,
@@ -21,26 +10,14 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 
-const SIDEBAR_W = 'w-56'; /* 14rem — keep in sync with main margin */
+const SIDEBAR_W = 'w-56';
 const MAIN_OFFSET = 'ml-56';
 
 const nav = [
-  { to: '/admin', label: 'Overview', end: true, icon: LayoutDashboard },
-  { to: '/admin/branches', label: 'Branches', icon: MapPin },
-  { to: '/admin/pos', label: 'POS', icon: ShoppingCart },
-  { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/admin/menu', label: 'Menu', icon: Coffee },
-  { to: '/admin/merch', label: 'Merch', icon: Package },
-  { to: '/admin/loyalty', label: 'Loyalty', icon: Gift },
-  { to: '/admin/events', label: 'Events', icon: CalendarDays },
-  { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
-  { to: '/admin/sections', label: 'Sections', icon: Layers },
-  { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
-  { to: '/barista', label: 'Barista Kiosk', icon: Monitor },
+  { to: '/staff/merch-orders', label: 'Merch Orders', icon: Package },
+  { to: '/staff/orders', label: 'All Orders', icon: ClipboardList },
 ];
 
-/** Shared footer control — same visual weight; sign-out uses hover danger */
 function sidebarFooterBtnClass() {
   return [
     'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium',
@@ -50,7 +27,7 @@ function sidebarFooterBtnClass() {
   ].join(' ');
 }
 
-export default function AdminLayout() {
+export default function StaffLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
@@ -63,13 +40,12 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-dash-bg)', color: 'var(--color-dash-text)' }}>
-      {/* Fixed sidebar — stays in view; nav scrolls independently */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-screen ${SIDEBAR_W} shrink-0 flex-col border-r shadow-[2px_0_24px_rgba(0,0,0,0.04)]`}
         style={{ background: 'var(--color-dash-sidebar)', borderColor: 'var(--color-dash-border)' }}
       >
         <div className="shrink-0 border-b px-4 pb-3 pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
-          <Link to="/admin" className="block">
+          <Link to="/staff/merch-orders" className="block">
             <img
               src="/logo/Logo2.png"
               alt="Kado Kohi"
@@ -79,7 +55,7 @@ export default function AdminLayout() {
           </Link>
           <div className="mt-3 flex items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kado-red text-[11px] font-black uppercase text-white">
-              {user?.name?.charAt(0) ?? 'A'}
+              {user?.name?.charAt(0) ?? 'S'}
             </div>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold" style={{ color: 'var(--color-dash-text)' }}>
@@ -93,11 +69,10 @@ export default function AdminLayout() {
         </div>
 
         <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain px-2 py-3">
-          {nav.map(({ to, label, end, icon: Icon }) => (
+          {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              end={end}
               className={({ isActive }) =>
                 [
                   'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
@@ -117,12 +92,6 @@ export default function AdminLayout() {
           className="shrink-0 space-y-1 border-t px-2 pb-3 pt-3"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
-          <p
-            className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em]"
-            style={{ color: 'var(--color-dash-text-muted)' }}
-          >
-            Workspace
-          </p>
           <button type="button" onClick={toggle} className={sidebarFooterBtnClass()}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
             {isDark ? 'Light mode' : 'Dark mode'}
@@ -142,13 +111,12 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main column — offset for fixed sidebar */}
       <div className={`flex min-h-screen min-w-0 flex-1 flex-col ${MAIN_OFFSET}`}>
         <header
           className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b bg-[var(--color-dash-surface)]/95 px-6 backdrop-blur-sm"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Admin · Operations</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Staff · Dashboard</span>
         </header>
         <div className="flex-1 overflow-auto p-6 md:p-8">
           <Outlet />

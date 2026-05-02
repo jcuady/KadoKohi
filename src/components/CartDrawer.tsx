@@ -62,6 +62,9 @@ export default function CartDrawer() {
     if (placed) setTimeout(() => setPlaced(false), 300);
   };
 
+  const hasMerch = items.some((i) => i.itemType === 'merch');
+  const hasCoffee = items.some((i) => i.itemType === 'coffee' || !i.itemType);
+
   const placeOrder = async () => {
     if (!canOrder) return;
     setLoading(true);
@@ -70,16 +73,26 @@ export default function CartDrawer() {
       id: newId(),
       productId: line.productId,
       productNameSnapshot: line.productNameSnapshot,
+      itemType: line.itemType ?? 'coffee',
       milkId: line.milkId,
       milkLabelSnapshot: line.milkLabelSnapshot,
+      sizeId: line.sizeId,
+      sizeLabelSnapshot: line.sizeLabelSnapshot,
       temperature: line.temperature,
+      merchVariants: line.selectedVariants?.map((v) => ({
+        groupName: v.groupName,
+        optionLabel: v.optionLabel,
+        priceDelta: v.priceDelta,
+      })),
       unitPrice: line.unitPrice,
       qty: line.qty,
       lineTotal: line.lineTotal,
     }));
 
+    const channel = hasCoffee ? 'online' : 'merch';
+
     createOrder({
-      channel: 'online',
+      channel,
       branchId,
       customerId: user?.id,
       guestName: user ? undefined : guestName.trim(),
@@ -207,14 +220,27 @@ export default function CartDrawer() {
                       exit={{ opacity: 0, x: 20 }}
                       className="flex gap-4 rounded-2xl bg-white border border-kado-dark/8 p-4 shadow-sm"
                     >
+                      {line.image && (
+                        <img src={line.image} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-display font-bold text-kado-dark text-sm leading-snug">
                           {line.productNameSnapshot}
                         </p>
                         <div className="flex flex-wrap gap-x-2 mt-0.5">
+                          {line.itemType === 'merch' && line.selectedVariants?.map((v) => (
+                            <span key={v.optionId} className="text-[10px] text-kado-dark/48">
+                              {v.groupName}: {v.optionLabel}
+                            </span>
+                          ))}
                           {line.milkLabelSnapshot && (
                             <span className="text-[10px] text-kado-dark/48">
                               {line.milkLabelSnapshot} milk
+                            </span>
+                          )}
+                          {line.sizeLabelSnapshot && (
+                            <span className="text-[10px] text-kado-dark/48">
+                              {line.sizeLabelSnapshot}
                             </span>
                           )}
                           {line.temperature && (

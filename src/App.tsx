@@ -25,6 +25,12 @@ import Events from './pages/Events';
 import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
+import Merch from './pages/Merch';
+import AdminMerch from './pages/admin/AdminMerch';
+import AdminLoyalty from './pages/admin/AdminLoyalty';
+import StaffLayout from './layouts/StaffLayout';
+import StaffMerchOrders from './pages/staff/StaffMerchOrders';
+import StaffAllOrders from './pages/staff/StaffAllOrders';
 import BaristaBoard from './pages/barista/BaristaBoard';
 import BaristaQueue from './pages/barista/BaristaQueue';
 import BaristaPOS from './pages/barista/BaristaPOS';
@@ -48,6 +54,7 @@ export default function App() {
           <Route path="/order" element={<Order />} />
           <Route path="/order/qr/:code" element={<OrderQR />} />
           <Route path="/order/takeout" element={<OrderTakeout />} />
+          <Route path="/merch" element={<Merch />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
@@ -61,6 +68,8 @@ export default function App() {
             <Route path="pos" element={<AdminPOS />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="menu" element={<AdminMenu />} />
+            <Route path="merch" element={<AdminMerch />} />
+            <Route path="loyalty" element={<AdminLoyalty />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="tables" element={<AdminTables />} />
             <Route path="sections" element={<AdminSections />} />
@@ -75,6 +84,14 @@ export default function App() {
             <Route path="queue" element={<BaristaQueue />} />
             <Route path="pos" element={<BaristaPOS />} />
             <Route path="menu" element={<BaristaMenu />} />
+          </Route>
+        </Route>
+
+        <Route element={<RoleGate allowed={['admin', 'staff']} />}>
+          <Route path="/staff" element={<StaffLayout />}>
+            <Route index element={<StaffMerchOrders />} />
+            <Route path="merch-orders" element={<StaffMerchOrders />} />
+            <Route path="orders" element={<StaffAllOrders />} />
           </Route>
         </Route>
 

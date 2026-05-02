@@ -1,35 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Coffee, Leaf, IceCreamCone, Star } from 'lucide-react';
-import { useMenuStore } from '../store/menuStore';
+import { ShoppingBag, Tag, Star } from 'lucide-react';
+import type { MerchProduct } from '../types/domain';
+import { useMerchStore } from '../store/merchStore';
+import { useCartStore } from '../store/cartStore';
 import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
-import type { Product } from '../types/domain';
-
-const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
-  cat_classics:
-    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400&auto=format&fit=crop',
-  cat_signatures:
-    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=400&auto=format&fit=crop',
-  cat_matcha:
-    'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=400&auto=format&fit=crop',
-  cat_yuzu:
-    'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400&auto=format&fit=crop',
-};
 
 const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=400&auto=format&fit=crop';
+  'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=400&auto=format&fit=crop';
 
-function categoryIcon(categoryId: string): React.ReactNode {
-  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
-  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4" />;
-  return <Coffee className="w-4 h-4" />;
+function categoryIcon(): React.ReactNode {
+  return <Tag className="w-4 h-4" />;
 }
 
-export default function Menu() {
-  const categories = useMenuStore((s) => s.categories);
-  const productsByCategory = useMenuStore((s) => s.productsByCategory);
+export default function Merch() {
+  const categories = useMerchStore((s) => s.categories);
+  const productsByCategory = useMerchStore((s) => s.productsByCategory);
+  const cartItems = useCartStore((s) => s.items);
+  const openCart = useCartStore((s) => s.openCart);
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -47,7 +37,7 @@ export default function Menu() {
     }
   }, [sortedCategories, activeCategoryId]);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<MerchProduct | null>(null);
   const [page, setPage] = useState(1);
 
   const activeCategory = useMemo(
@@ -55,29 +45,31 @@ export default function Menu() {
     [sortedCategories, activeCategoryId],
   );
 
-  const items = activeCategoryId ? productsByCategory(activeCategoryId) : [];
+  const list = activeCategoryId ? productsByCategory(activeCategoryId) : [];
+  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
 
   useEffect(() => {
     setPage(1);
   }, [activeCategoryId]);
 
-  const totalPages = items.length === 0 ? 1 : Math.ceil(items.length / PRODUCT_GRID_PAGE_SIZE);
-  const safePage = items.length === 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+  const totalPages = list.length === 0 ? 1 : Math.ceil(list.length / PRODUCT_GRID_PAGE_SIZE);
+  const safePage = list.length === 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+
   const paginatedItems = useMemo(() => {
     const start = (safePage - 1) * PRODUCT_GRID_PAGE_SIZE;
-    return items.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
-  }, [items, safePage]);
+    return list.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
+  }, [list, safePage]);
 
   return (
     <div className="relative w-full bg-white font-sans min-h-screen">
-      {/* Full-viewport ribbon: fixed below navbar, does not scroll with content */}
+      {/* Full-viewport ribbon: fixed below navbar */}
       <div
         className="hidden md:block pointer-events-none fixed left-0 top-16 bottom-0 z-[30] w-28 lg:w-40 bg-kado-red shadow-[10px_0_30px_rgba(158,24,29,0.15)] overflow-hidden"
         aria-hidden
       >
         <div className="absolute inset-0 flex items-center justify-center">
           <h1 className="font-display font-black text-white text-[10rem] lg:text-[13rem] leading-none -rotate-90 tracking-tighter whitespace-nowrap select-none opacity-95">
-            MENU
+            MERCH
           </h1>
         </div>
       </div>
@@ -87,17 +79,17 @@ export default function Menu() {
         <div className="md:hidden bg-kado-red pt-10 pb-8 px-6 shadow-md relative overflow-hidden">
           <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
             <h1 className="font-display font-black text-white text-[8rem] leading-none -mt-4">
-              MENU
+              MERCH
             </h1>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 mb-2 relative z-10">
-            Daily Rituals
+            Shop
           </p>
           <h1 className="font-display text-5xl font-black text-white mb-2 tracking-tighter uppercase relative z-10">
-            Our Menu
+            Kado Merch
           </h1>
           <p className="text-white/80 text-sm max-w-sm leading-relaxed relative z-10">
-            Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
+            Premium merchandise from your favorite café.
           </p>
         </div>
 
@@ -105,13 +97,13 @@ export default function Menu() {
         <section className="hidden md:block pt-10 pb-6 px-8 lg:px-16">
           <div className="max-w-6xl mx-auto">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red mb-3">
-              Daily Rituals
+              Shop
             </p>
             <h1 className="font-display text-4xl lg:text-5xl font-black text-kado-dark mb-3 tracking-tighter uppercase">
-              Our Menu
+              Kado Merch
             </h1>
             <p className="text-kado-dark/60 text-base max-w-lg leading-relaxed">
-              Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
+              Premium merchandise from your favorite café.
             </p>
           </div>
         </section>
@@ -131,7 +123,7 @@ export default function Menu() {
                       : 'bg-white border border-kado-dark/15 text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
                   }`}
                 >
-                  {categoryIcon(cat.id)}
+                  {categoryIcon()}
                   {cat.name}
                 </button>
               ))}
@@ -150,16 +142,9 @@ export default function Menu() {
               className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5"
             >
               {paginatedItems.map((product, i) => {
-                const image =
-                  product.image ?? FALLBACK_IMAGE_BY_CATEGORY[product.categoryId] ?? DEFAULT_IMAGE;
+                const image = product.image ?? DEFAULT_IMAGE;
                 const tag = product.tags?.[0];
-                const desc =
-                  product.description ??
-                  (product.temperature === 'iced'
-                    ? 'Served iced — crisp and refreshing.'
-                    : product.temperature === 'both'
-                      ? 'Available hot or iced.'
-                      : 'Crafted in-house with care.');
+                const desc = product.description ?? 'Premium Kado Kohi merchandise.';
 
                 return (
                   <motion.button
@@ -167,11 +152,10 @@ export default function Menu() {
                     type="button"
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06, ease: 'easeOut' }}
+                    transition={{ delay: i * 0.04, ease: 'easeOut' }}
                     onClick={() => setSelectedProduct(product)}
                     className="group text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red flex flex-col h-full"
                   >
-                    {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
                       <img
                         src={image}
@@ -187,7 +171,6 @@ export default function Menu() {
                         </span>
                       )}
 
-                      {/* Quick-add hint on hover */}
                       <div className="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
                           View details
@@ -195,7 +178,6 @@ export default function Menu() {
                       </div>
                     </div>
 
-                    {/* Details */}
                     <div className="p-3 sm:p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h3 className="font-display font-black text-sm sm:text-[0.95rem] leading-snug text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
@@ -214,15 +196,10 @@ export default function Menu() {
               })}
             </motion.div>
 
-            <ProductGridPagination
-              page={safePage}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
+            <ProductGridPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </section>
 
-        {/* Loyalty card */}
         <section className="px-6 md:px-8 lg:px-16 pb-24 mt-auto">
           <div className="max-w-6xl mx-auto border-t border-kado-dark/10 pt-16">
             <LoyaltyCard />
@@ -230,7 +207,20 @@ export default function Menu() {
         </section>
       </div>
 
-      {/* Product detail drawer */}
+      <button
+        type="button"
+        onClick={openCart}
+        className="fixed bottom-6 right-6 z-[100] w-14 h-14 bg-kado-red text-white rounded-full flex items-center justify-center shadow-lg shadow-kado-red/25 hover:bg-kado-dark transition-colors"
+        aria-label="Open cart"
+      >
+        <ShoppingBag className="w-5 h-5" />
+        {cartCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-kado-dark text-kado-cream text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+            {cartCount}
+          </span>
+        )}
+      </button>
+
       <ProductDetailDrawer
         product={selectedProduct}
         categoryName={activeCategory?.name}
@@ -247,7 +237,7 @@ function LoyaltyCard() {
 
       <div className="relative bg-kado-dark border border-[#4A423C] p-8 md:p-12 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden shadow-2xl">
         <div className="absolute -right-16 -bottom-16 opacity-[0.04] pointer-events-none">
-          <Coffee className="w-64 h-64 text-white" />
+          <ShoppingBag className="w-64 h-64 text-white" />
         </div>
 
         <div className="flex flex-col text-center md:text-left z-10 max-w-sm">
@@ -255,49 +245,12 @@ function LoyaltyCard() {
             <Star className="w-3.5 h-3.5 fill-current" /> Member Rewards
           </p>
           <h3 className="font-display text-3xl md:text-4xl text-kado-cream font-bold mb-4 leading-tight">
-            Earn Your <br className="hidden md:block" />
-            Free Cup.
+            Exclusive <br className="hidden md:block" />
+            Merch Perks.
           </h3>
           <p className="text-[#A09A90] text-sm md:text-base font-medium leading-relaxed">
-            Every coffee brings you closer to your next reward. Buy 9, get your 10th completely on
-            us.
+            Get rewarded when you shop. Sign up to start earning stamps toward free drinks and exclusive discounts.
           </p>
-        </div>
-
-        <div className="relative bg-white/5 p-6 md:p-8 rounded-3xl border border-white/5 z-10 w-full md:w-auto backdrop-blur-sm">
-          <div className="grid grid-cols-5 gap-3 md:gap-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="relative flex items-center justify-center">
-                <div
-                  className={`w-12 h-12 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center transition-all ${
-                    i < 3
-                      ? 'border-kado-red bg-kado-red/10 text-kado-red shadow-[0_0_15px_rgba(155,43,44,0.25)]'
-                      : 'border-white/10 bg-transparent text-white/20 border-dashed'
-                  }`}
-                >
-                  {i === 9 ? (
-                    <Star className={`w-5 h-5 md:w-6 md:h-6 ${i < 3 ? 'fill-current' : ''}`} />
-                  ) : (
-                    <Coffee className="w-5 h-5 md:w-6 md:h-6" />
-                  )}
-                </div>
-                {i < 3 && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: i * 0.12, type: 'spring', stiffness: 220 }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  >
-                    <div className="w-8 h-8 md:w-10 md:h-10 border-[3px] border-kado-red rounded-full opacity-40 flex items-center justify-center">
-                      <span className="text-[7px] font-bold text-kado-red uppercase tracking-widest rotate-12">
-                        Kado
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

@@ -2,16 +2,28 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { newId } from '../lib/id';
 
+export interface CartLineVariant {
+  groupName: string;
+  optionId: string;
+  optionLabel: string;
+  priceDelta: number;
+}
+
 export interface CartLine {
   key: string;
+  itemType: 'coffee' | 'merch';
   productId: string;
   productNameSnapshot: string;
   qty: number;
   milkId?: string;
   milkLabelSnapshot?: string;
+  sizeId?: string;
+  sizeLabelSnapshot?: string;
   temperature?: 'hot' | 'iced';
+  selectedVariants?: CartLineVariant[];
   unitPrice: number;
   lineTotal: number;
+  image?: string;
 }
 
 interface CartStore {
@@ -24,6 +36,8 @@ interface CartStore {
   removeItem: (key: string) => void;
   updateQty: (key: string, qty: number) => void;
   clear: () => void;
+  coffeeItems: () => CartLine[];
+  merchItems: () => CartLine[];
 }
 
 export const useCartStore = create<CartStore>()(
@@ -56,10 +70,11 @@ export const useCartStore = create<CartStore>()(
       },
 
       clear: () => set({ items: [] }),
+      coffeeItems: () => get().items.filter((i) => i.itemType === 'coffee'),
+      merchItems: () => get().items.filter((i) => i.itemType === 'merch'),
     }),
     {
-      name: 'kado-cart-v1',
-      // Only persist the item list; isOpen always starts false on load
+      name: 'kado-cart-v2',
       partialize: (state) => ({ items: state.items }),
     },
   ),

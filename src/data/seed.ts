@@ -1,4 +1,4 @@
-import type { Branch, MenuCategory, MilkOption, Product, ProductTemperature } from '../types/domain';
+import type { Branch, LoyaltyConfig, MenuCategory, MerchCategory, MerchProduct, MilkOption, Product, ProductTemperature } from '../types/domain';
 
 const now = () => new Date().toISOString();
 
@@ -102,3 +102,148 @@ export const SEED_PRODUCTS: Product[] = [
   p('prod_yuzu_lime', 'cat_yuzu', 'Yuzu Lime Soda', 140, 'iced', 0, { tags: ['iced-only'] }),
   p('prod_yuzu_straw', 'cat_yuzu', 'Yuzu Strawberry Soda', 140, 'iced', 1, { tags: ['iced-only'] }),
 ];
+
+// ─── Merch seed ─────────────────────────────────────────────────────────────
+
+export const SEED_MERCH_CATEGORIES: MerchCategory[] = [
+  { id: 'mcat_apparel', name: 'Apparel', order: 0, visible: true },
+  { id: 'mcat_accessories', name: 'Accessories', order: 1, visible: true },
+];
+
+const sizeVariant = (id: string) => ({
+  id,
+  name: 'Size',
+  required: true,
+  options: [
+    { id: `${id}_s`, label: 'S', priceDelta: 0 },
+    { id: `${id}_m`, label: 'M', priceDelta: 0 },
+    { id: `${id}_l`, label: 'L', priceDelta: 0 },
+    { id: `${id}_xl`, label: 'XL', priceDelta: 50 },
+  ],
+});
+
+export const SEED_MERCH_PRODUCTS: MerchProduct[] = [
+  {
+    id: 'merch_tee_classic',
+    categoryId: 'mcat_apparel',
+    name: 'Kado Classic Tee',
+    description: 'Heavyweight cotton tee with the 角 logo on the chest.',
+    basePrice: 650,
+    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400&auto=format&fit=crop',
+    variants: [sizeVariant('sv_tee_classic')],
+    tags: ['bestseller'],
+    visible: true,
+    order: 0,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'merch_tee_kanji',
+    categoryId: 'mcat_apparel',
+    name: 'Kanji Oversized Tee',
+    description: 'Relaxed-fit tee with the full 角コーヒー print on the back.',
+    basePrice: 750,
+    image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=400&auto=format&fit=crop',
+    variants: [sizeVariant('sv_tee_kanji')],
+    tags: ['new'],
+    visible: true,
+    order: 1,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'merch_cap',
+    categoryId: 'mcat_apparel',
+    name: 'Kado Dad Cap',
+    description: 'Washed cotton dad cap with embroidered 角 logo.',
+    basePrice: 450,
+    image: 'https://images.unsplash.com/photo-1588850561407-ed78c334e67a?q=80&w=400&auto=format&fit=crop',
+    variants: [{
+      id: 'sv_cap_color',
+      name: 'Color',
+      required: true,
+      options: [
+        { id: 'sv_cap_black', label: 'Black', priceDelta: 0 },
+        { id: 'sv_cap_cream', label: 'Cream', priceDelta: 0 },
+        { id: 'sv_cap_red', label: 'Kado Red', priceDelta: 0 },
+      ],
+    }],
+    visible: true,
+    order: 2,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'merch_mug',
+    categoryId: 'mcat_accessories',
+    name: 'Ceramic Mug 12oz',
+    description: 'Matte-finish ceramic mug with the Kado Kohi wordmark.',
+    basePrice: 350,
+    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop',
+    variants: [{
+      id: 'sv_mug_color',
+      name: 'Color',
+      required: true,
+      options: [
+        { id: 'sv_mug_cream', label: 'Cream', priceDelta: 0 },
+        { id: 'sv_mug_black', label: 'Matte Black', priceDelta: 30 },
+      ],
+    }],
+    visible: true,
+    order: 0,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'merch_tote',
+    categoryId: 'mcat_accessories',
+    name: 'Canvas Tote Bag',
+    description: '12oz natural canvas tote with screen-printed Kado artwork.',
+    basePrice: 280,
+    image: 'https://images.unsplash.com/photo-1597633425046-08f5110420b5?q=80&w=400&auto=format&fit=crop',
+    variants: [],
+    visible: true,
+    order: 1,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'merch_stickers',
+    categoryId: 'mcat_accessories',
+    name: 'Sticker Pack (6pc)',
+    description: 'Die-cut vinyl stickers featuring Kado Kohi characters and motifs.',
+    basePrice: 120,
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?q=80&w=400&auto=format&fit=crop',
+    variants: [],
+    visible: true,
+    order: 2,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+];
+
+// ─── Loyalty seed ───────────────────────────────────────────────────────────
+
+export const SEED_LOYALTY_CONFIG: LoyaltyConfig = {
+  stampsPerOrder: 1,
+  stampOnMerch: false,
+  rewards: [
+    {
+      id: 'reward_free_drink',
+      name: 'Free Drink',
+      description: 'Redeem any drink on the menu — on us.',
+      stampsRequired: 10,
+      type: 'free_drink',
+      active: true,
+    },
+    {
+      id: 'reward_merch_10',
+      name: '10% Off Merch',
+      description: 'Get 10% off any single merch item.',
+      stampsRequired: 5,
+      type: 'discount_percent',
+      value: 10,
+      active: true,
+    },
+  ],
+};

@@ -18,6 +18,8 @@ import { useSectionStore } from '../store/sectionStore';
 import { useUserStore } from '../store/userStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useCartStore } from '../store/cartStore';
+import { useMerchStore } from '../store/merchStore';
+import { useLoyaltyStore } from '../store/loyaltyStore';
 
 export const api = {
   /* ───── Auth ───── */
@@ -111,6 +113,29 @@ export const api = {
     clear: useCartStore.getState().clear,
   },
 
+  /* ───── Merch ───── */
+  merch: {
+    categories: () => useMerchStore.getState().categories,
+    products: () => useMerchStore.getState().products,
+    productsByCategory: (catId: string) => useMerchStore.getState().productsByCategory(catId),
+    addCategory: useMerchStore.getState().addCategory,
+    updateCategory: useMerchStore.getState().updateCategory,
+    removeCategory: useMerchStore.getState().removeCategory,
+    addProduct: useMerchStore.getState().addProduct,
+    updateProduct: useMerchStore.getState().updateProduct,
+    removeProduct: useMerchStore.getState().removeProduct,
+  },
+
+  /* ───── Loyalty ───── */
+  loyalty: {
+    config: () => useLoyaltyStore.getState().config,
+    updateConfig: useLoyaltyStore.getState().updateConfig,
+    addReward: useLoyaltyStore.getState().addReward,
+    updateReward: useLoyaltyStore.getState().updateReward,
+    removeReward: useLoyaltyStore.getState().removeReward,
+    toggleReward: useLoyaltyStore.getState().toggleReward,
+  },
+
   /* ───── Settings ───── */
   settings: {
     get: () => useSettingsStore.getState().settings,
@@ -128,6 +153,8 @@ export const api = {
     useSectionStore.getState().seed();
     useUserStore.getState().seed();
     useSettingsStore.getState().seed();
+    useMerchStore.getState().seed();
+    useLoyaltyStore.getState().seed();
     useCartStore.getState().clear();
     useAuthStore.getState().logout();
   },

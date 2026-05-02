@@ -23,11 +23,11 @@ function makeUser(
   const base = {
     id: opts?.id ?? newId(),
     email: opts?.email ?? `${role}@kadokohi.local`,
-    name: opts?.name ?? (role === 'admin' ? 'Owner' : role === 'barista' ? 'Barista' : 'Customer'),
+    name: opts?.name ?? (role === 'admin' ? 'Owner' : role === 'barista' ? 'Barista' : role === 'staff' ? 'Staff' : 'Customer'),
     role,
     createdAt: t,
   };
-  if (role === 'barista') {
+  if (role === 'barista' || role === 'staff') {
     return { ...base, branchId: opts?.branchId ?? 'branch_marikina' };
   }
   if (role === 'customer') {

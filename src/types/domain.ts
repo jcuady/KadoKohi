@@ -1,6 +1,6 @@
 /** DB-ready domain types — mirror 1:1 to future API / Postgres tables. */
 
-export type Role = 'guest' | 'customer' | 'barista' | 'admin';
+export type Role = 'guest' | 'customer' | 'barista' | 'staff' | 'admin';
 
 export type BranchStatus = 'active' | 'coming_soon';
 
@@ -75,7 +75,7 @@ export interface Product {
   updatedAt: string;
 }
 
-export type OrderChannel = 'online' | 'dine-in' | 'takeout' | 'pos';
+export type OrderChannel = 'online' | 'dine-in' | 'takeout' | 'pos' | 'merch';
 
 export type PaymentMethod = 'pay-at-store' | 'paymongo';
 
@@ -88,15 +88,23 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled';
 
+export interface OrderItemVariantSnapshot {
+  groupName: string;
+  optionLabel: string;
+  priceDelta: number;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
   productNameSnapshot: string;
+  itemType?: 'coffee' | 'merch';
   sizeId?: string;
   sizeLabelSnapshot?: string;
   milkId?: string;
   milkLabelSnapshot?: string;
   temperature?: 'hot' | 'iced';
+  merchVariants?: OrderItemVariantSnapshot[];
   notes?: string;
   unitPrice: number;
   qty: number;
@@ -176,4 +184,62 @@ export interface CustomSection {
   ctaHref?: string;
   order: number;
   visible: boolean;
+}
+
+// ─── Merch ──────────────────────────────────────────────────────────────────
+
+export interface MerchCategory {
+  id: string;
+  name: string;
+  order: number;
+  visible: boolean;
+}
+
+export interface MerchVariantOption {
+  id: string;
+  label: string;
+  priceDelta: number;
+  stock?: number;
+}
+
+export interface MerchVariantGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  options: MerchVariantOption[];
+}
+
+export interface MerchProduct {
+  id: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+  image?: string;
+  variants: MerchVariantGroup[];
+  tags?: string[];
+  visible: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Loyalty ────────────────────────────────────────────────────────────────
+
+export type LoyaltyRewardType = 'free_drink' | 'discount_percent' | 'discount_fixed' | 'free_merch' | 'custom';
+
+export interface LoyaltyReward {
+  id: string;
+  name: string;
+  description?: string;
+  stampsRequired: number;
+  type: LoyaltyRewardType;
+  value?: number;
+  active: boolean;
+}
+
+export interface LoyaltyConfig {
+  stampsPerOrder: number;
+  stampOnMerch: boolean;
+  rewards: LoyaltyReward[];
 }

@@ -1,13 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, UserPlus } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, Package, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 
 const navLinks = [
   { label: 'Home', path: '/' },
-  { label: 'All Coffee', path: '/menu' },
+  { label: 'Coffee', path: '/menu' },
+  { label: 'Merch', path: '/merch' },
   { label: 'Branches', path: '/branches' },
   { label: 'Events', path: '/events' },
   { label: 'About Us', path: '/about' },
@@ -19,6 +20,7 @@ function useAuthLink(): { label: string; path: string; icon: typeof User } {
   if (!user) return { label: 'Sign in', path: '/auth/login', icon: User };
   if (user.role === 'admin') return { label: 'Admin', path: '/admin', icon: LayoutDashboard };
   if (user.role === 'barista') return { label: 'Kiosk', path: '/barista', icon: Coffee };
+  if (user.role === 'staff') return { label: 'Staff', path: '/staff', icon: Package };
   return { label: 'My Account', path: '/account', icon: User };
 }
 

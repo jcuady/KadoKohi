@@ -4,7 +4,7 @@ import { useUserStore } from '../../store/userStore';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Pencil, Trash2, Shield, AlertCircle } from 'lucide-react';
 
-const ROLES: Role[] = ['admin', 'barista', 'customer'];
+const ROLES: Role[] = ['admin', 'staff', 'barista', 'customer'];
 
 type FormData = { name: string; email: string; role: Role; branchId: string };
 const emptyForm: FormData = { name: '', email: '', role: 'customer', branchId: '' };
@@ -37,12 +37,13 @@ export default function AdminUsers() {
     setFormError('');
     if (!form.name.trim() || !form.email.trim()) return;
 
-    if (form.role === 'barista' && !form.branchId) {
-      setFormError('A branch is required for barista accounts.');
+    const needsBranch = form.role === 'barista' || form.role === 'staff';
+    if (needsBranch && !form.branchId) {
+      setFormError('A branch is required for barista / staff accounts.');
       return;
     }
 
-    if (form.role === 'barista' && !activeBranches.some((b) => b.id === form.branchId)) {
+    if (needsBranch && !activeBranches.some((b) => b.id === form.branchId)) {
       setFormError('Selected branch is not active. Choose an active branch.');
       return;
     }
@@ -51,7 +52,7 @@ export default function AdminUsers() {
       name: form.name.trim(),
       email: form.email.trim(),
       role: form.role,
-      branchId: form.role === 'barista' ? form.branchId : undefined,
+      branchId: needsBranch ? form.branchId : undefined,
     };
     if (editingId) updateUser(editingId, payload);
     else addUser(payload);
@@ -106,7 +107,7 @@ export default function AdminUsers() {
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              {form.role === 'barista' && (
+              {(form.role === 'barista' || form.role === 'staff') && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
                     Branch <span className="text-kado-red">*</span>
@@ -120,7 +121,7 @@ export default function AdminUsers() {
                     <option value="">— select branch —</option>
                     {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
-                  <p className="text-[10px] dash-muted mt-1">Barista will only see orders for this branch.</p>
+                  <p className="text-[10px] dash-muted mt-1">{form.role === 'staff' ? 'Staff' : 'Barista'} will only see orders for this branch.</p>
                 </div>
               )}
               {formError && (
