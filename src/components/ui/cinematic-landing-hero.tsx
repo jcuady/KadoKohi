@@ -16,6 +16,9 @@ const STYLES = `
     pointer-events: none; z-index: 50; opacity: 0.03; mix-blend-mode: overlay;
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
   }
+  @media (max-width: 768px) {
+    .app-grain { display: none; }
+  }
 
   .app-grid {
     background-size: 60px 60px;
@@ -24,6 +27,9 @@ const STYLES = `
       linear-gradient(to bottom, rgba(241,223,186,0.04) 1px, transparent 1px);
     mask-image: radial-gradient(ellipse at center, black 0%, transparent 68%);
     -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 68%);
+  }
+  @media (max-width: 768px) {
+    .app-grid { mask-image: none; -webkit-mask-image: none; }
   }
 
   .app-text-warm {
@@ -63,6 +69,9 @@ const STYLES = `
     background: radial-gradient(800px circle at var(--mouse-x,50%) var(--mouse-y,50%), rgba(241,223,186,0.04) 0%, transparent 40%);
     mix-blend-mode: screen; transition: opacity 0.3s ease;
   }
+  @media (max-width: 768px) {
+    .app-sheen { display: none; }
+  }
 
   .app-bezel {
     background-color: #111;
@@ -89,6 +98,13 @@ const STYLES = `
       0 25px 50px -12px rgba(0,0,0,0.88),
       inset 0 1px 1px rgba(241,223,186,0.1),
       inset 0 -1px 1px rgba(0,0,0,0.55);
+  }
+  @media (max-width: 768px) {
+    .app-badge {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(30, 30, 30, 0.9);
+    }
   }
 
   .btn-store-cream {
@@ -153,7 +169,7 @@ export function CinematicAppHero({
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (window.scrollY > window.innerHeight * 2) return;
+      if (window.innerWidth < 768 || window.scrollY > window.innerHeight * 2) return;
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         if (!mainCardRef.current || !mockupRef.current) return;
@@ -173,21 +189,22 @@ export function CinematicAppHero({
     const isMobile = window.innerWidth < 768;
 
     const ctx = gsap.context(() => {
-      gsap.set(".app-txt-track", { autoAlpha: 0, y: 50, scale: 0.9, filter: "blur(16px)" });
+      gsap.set(".app-txt-track", { autoAlpha: 0, y: 50, scale: 0.9, filter: "none", willChange: "transform, opacity" });
       /* Extra vertical inset so clip animation never shears descenders (g, y, etc.) */
-      gsap.set(".app-txt-days", { autoAlpha: 1, clipPath: "inset(-0.14em 100% -0.14em 0)" });
-      gsap.set(".app-main", { y: window.innerHeight + 200, autoAlpha: 1 });
-      gsap.set([".app-cleft", ".app-cright", ".app-badge-el", ".app-pw"], { autoAlpha: 0 });
+      gsap.set(".app-txt-days", { autoAlpha: 1, clipPath: "inset(-0.14em 100% -0.14em 0)", willChange: "clip-path" });
+      gsap.set(".app-main", { y: window.innerHeight + 200, autoAlpha: 1, willChange: "transform" });
+      gsap.set([".app-cleft", ".app-cright", ".app-badge-el", ".app-pw"], { autoAlpha: 0, willChange: "transform, opacity" });
       /* Phone: faint teaser + slight tilt — card never reads as empty mid-scroll */
       gsap.set(".app-mockup", {
-        autoAlpha: 0.28, y: 100, scale: 0.9, filter: "blur(5px)",
-        rotationX: 22, rotationY: -14, z: -180,
+        autoAlpha: 0.28, y: 100, scale: 0.9, filter: "none",
+        rotationX: isMobile ? 0 : 22, rotationY: isMobile ? 0 : -14, z: isMobile ? 0 : -180,
+        willChange: "transform, opacity"
       });
-      gsap.set(".app-cta",       { autoAlpha: 0, scale: 0.8, filter: "blur(30px)" });
+      gsap.set(".app-cta",       { autoAlpha: 0, scale: 0.8, filter: "none", willChange: "transform, opacity" });
 
       // Entry animation — then remove clip-path so nothing stays clipped at rest
       gsap.timeline({ delay: 0.4 })
-        .to(".app-txt-track", { duration: 1.6, autoAlpha: 1, y: 0, scale: 1, filter: "blur(0px)", ease: "expo.out" })
+        .to(".app-txt-track", { duration: 1.6, autoAlpha: 1, y: 0, scale: 1, filter: "none", ease: "expo.out" })
         .to(".app-txt-days", { duration: 1.2, clipPath: "inset(-0.14em 0% -0.14em 0)", ease: "power4.inOut" }, "-=0.9")
         .set(".app-txt-days", { clipPath: "none" });
 
@@ -196,7 +213,7 @@ export function CinematicAppHero({
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top top",
-          end: "+=6000",
+          end: "+=3500", // Shortened from 6000 to match shorter content timeline (no phase 8)
           pin: true,
           pinSpacing: true,
           // Reparent to <body> while pinned so no ancestor stacking context traps it
@@ -208,13 +225,13 @@ export function CinematicAppHero({
 
       tl
         // Phase 1: text fades, card arrives
-        .to([".app-hero-wrap", ".app-grid"], { scale: 1.1, filter: "blur(18px)", opacity: 0.12, ease: "power2.inOut", duration: 2 }, 0)
+        .to([".app-hero-wrap", ".app-grid"], { scale: 1.1, filter: "none", opacity: 0.12, ease: "power2.inOut", duration: 2 }, 0)
         .to(".app-main", { y: 0, ease: "power3.inOut", duration: 2 }, 0)
-        // Phase 2: card goes fullscreen — overlap with phone so no "dead" fullscreen
-        .to(".app-main", { width: "100%", height: "100%", borderRadius: "0px", ease: "power3.inOut", duration: 1.5 })
+        // Phase 2: card scales up slightly (fake fullscreen, GPU only) instead of real width/height layout thrashing
+        .to(".app-main", { scale: 1.05, ease: "power3.inOut", duration: 1.5 })
         // Phase 3: phone resolves from teaser → crisp (starts mid phase-2)
         .to(".app-mockup", {
-          y: 0, z: 0, rotationX: 0, rotationY: 0, autoAlpha: 1, scale: 1, filter: "blur(0px)",
+          y: 0, z: 0, rotationX: 0, rotationY: 0, autoAlpha: 1, scale: 1, filter: "none",
           ease: "expo.out", duration: 2,
         }, "-=1.05")
         // Phase 4: phone widgets stagger in
@@ -225,24 +242,17 @@ export function CinematicAppHero({
         .fromTo(".app-cright", { x: 40, autoAlpha: 0, scale: 0.85 }, { x: 0, autoAlpha: 1, scale: 1, ease: "expo.out", duration: 1.4 }, "<")
         // Hold — let user see the full mockup
         .to({}, { duration: 3 })
-        // Phase 6: swap to CTA
+        // Phase 6: clear background tagline
         .set(".app-hero-wrap", { autoAlpha: 0 })
-        .set(".app-cta", { autoAlpha: 1 })
         .to({}, { duration: 1.5 })
-        // Phase 7: mockup & text exit, card shrinks, CTA appears
+        // Phase 7: mockup & text exit, card stays, CTA appears on top
         .to([".app-mockup", ".app-badge-el", ".app-cleft", ".app-cright"],
           { scale: 0.9, y: -30, z: -150, autoAlpha: 0, ease: "power3.in", duration: 1, stagger: 0.05 })
-        .to(".app-main", {
-          width:  isMobile ? "92vw" : "85vw",
-          height: isMobile ? "92vh" : "85vh",
-          borderRadius: isMobile ? "32px" : "40px",
-          ease: "expo.inOut", duration: 1.8,
-        }, "pullback")
-        .to(".app-cta", { scale: 1, filter: "blur(0px)", ease: "expo.inOut", duration: 1.8 }, "pullback")
-        // Hold CTA visible
-        .to({}, { duration: 2 })
-        // Phase 8: card exits upward
-        .to(".app-main", { y: -(window.innerHeight + 300), ease: "power3.in", duration: 1.5 });
+        .to(".app-main", { scale: 1, ease: "expo.inOut", duration: 1.8 }, "pullback")
+        .to(".app-cta", { autoAlpha: 1, scale: 1, filter: "none", ease: "expo.inOut", duration: 1.8 }, "pullback");
+        // We removed Phase 8 (moving everything up by window.innerHeight + 300)
+        // because pinSpacing: true automatically pushes the next section up when the pin ends.
+        // By ending the animation here, the next section immediately scrolls in from the bottom.
 
     }, containerRef);
 
@@ -278,7 +288,7 @@ export function CinematicAppHero({
       </div>
 
       {/* ── CTA layer ── */}
-      <div className="app-cta absolute z-10 flex flex-col items-center justify-center text-center w-full max-w-[100vw] px-4 sm:px-6 app-reveal pointer-events-auto will-change-transform">
+      <div className="app-cta absolute inset-0 z-30 flex flex-col items-center justify-center text-center w-full max-w-[100vw] px-4 sm:px-6 app-reveal pointer-events-auto will-change-transform">
         <p className="text-kado-red text-[10px] font-bold tracking-[0.3em] uppercase mb-4">角 Kado Kohi App</p>
         <h2 className="app-text-cream-grad font-display text-[clamp(2.5rem,8vw,5rem)] font-bold mb-5 tracking-tight leading-[1.12] pb-1">
           {ctaHeading}
@@ -324,9 +334,9 @@ export function CinematicAppHero({
             <span className="font-display text-[min(42vw,18rem)] font-black text-white/[0.04] select-none leading-none">
               角
             </span>
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-semibold tracking-[0.35em] uppercase text-[#F1DFBA]/25">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-semibold tracking-[0.35em] uppercase text-[#F1DFBA]/25 whitespace-nowrap">
               <span className="h-px w-8 bg-kado-red/30" />
-              App preview
+              App coming soon
               <span className="h-px w-8 bg-kado-red/30" />
             </div>
           </div>

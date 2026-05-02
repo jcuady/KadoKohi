@@ -132,10 +132,14 @@ html {
 
 .animate-marquee {
   animation: marquee var(--duration, 40s) linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .animate-marquee-vertical {
   animation: marquee-vertical var(--duration, 30s) linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .animate-fade-in-up {
