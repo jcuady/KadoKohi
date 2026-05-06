@@ -20,6 +20,10 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useCartStore } from '../store/cartStore';
 import { useMerchStore } from '../store/merchStore';
 import { useLoyaltyStore } from '../store/loyaltyStore';
+import { useBoothCatalogStore } from '../store/boothCatalogStore';
+import { useBookingEstimateStore } from '../store/bookingEstimateStore';
+import { useBoothBookingStore } from '../store/boothBookingStore';
+import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 
 export const api = {
   /* ───── Auth ───── */
@@ -136,6 +140,58 @@ export const api = {
     toggleReward: useLoyaltyStore.getState().toggleReward,
   },
 
+  /* ───── Booth Catalog ───── */
+  boothCatalog: {
+    packages: () => useBoothCatalogStore.getState().packages,
+    addons: () => useBoothCatalogStore.getState().addons,
+    visiblePackagesForBranch: (branchId: string) =>
+      useBoothCatalogStore.getState().visiblePackagesForBranch(branchId),
+    visibleAddonsForBranch: (branchId: string) =>
+      useBoothCatalogStore.getState().visibleAddonsForBranch(branchId),
+    addPackage: useBoothCatalogStore.getState().addPackage,
+    updatePackage: useBoothCatalogStore.getState().updatePackage,
+    removePackage: useBoothCatalogStore.getState().removePackage,
+    reorderPackages: useBoothCatalogStore.getState().reorderPackages,
+    addAddon: useBoothCatalogStore.getState().addAddon,
+    updateAddon: useBoothCatalogStore.getState().updateAddon,
+    removeAddon: useBoothCatalogStore.getState().removeAddon,
+    reorderAddons: useBoothCatalogStore.getState().reorderAddons,
+  },
+
+  /* ───── Booth Showcase ───── */
+  boothShowcase: {
+    list: () => useBoothShowcaseStore.getState().media,
+    visible: () => useBoothShowcaseStore.getState().visibleMedia(),
+    add: useBoothShowcaseStore.getState().addMedia,
+    update: useBoothShowcaseStore.getState().updateMedia,
+    remove: useBoothShowcaseStore.getState().removeMedia,
+    reorder: useBoothShowcaseStore.getState().reorderMedia,
+  },
+
+  /* ───── Booking Estimates ───── */
+  bookingEstimates: {
+    list: () => useBookingEstimateStore.getState().estimates,
+    draft: () => useBookingEstimateStore.getState().draft,
+    calculate: useBookingEstimateStore.getState().calculateEstimate,
+    save: useBookingEstimateStore.getState().saveEstimate,
+    remove: useBookingEstimateStore.getState().removeEstimate,
+    updateStatus: useBookingEstimateStore.getState().updateEstimateStatus,
+    setDraft: useBookingEstimateStore.getState().setDraft,
+    clearDraft: useBookingEstimateStore.getState().clearDraft,
+  },
+
+  /* ───── Booth Bookings ───── */
+  boothBookings: {
+    list: () => useBoothBookingStore.getState().bookings,
+    create: useBoothBookingStore.getState().createBooking,
+    update: useBoothBookingStore.getState().updateBooking,
+    updateStatus: useBoothBookingStore.getState().updateStatus,
+    assignStaff: useBoothBookingStore.getState().assignStaff,
+    forBranch: (branchId: string) => useBoothBookingStore.getState().bookingsForBranch(branchId),
+    forStaff: (staffId: string, branchId?: string) =>
+      useBoothBookingStore.getState().bookingsForStaff(staffId, branchId),
+  },
+
   /* ───── Settings ───── */
   settings: {
     get: () => useSettingsStore.getState().settings,
@@ -155,6 +211,10 @@ export const api = {
     useSettingsStore.getState().seed();
     useMerchStore.getState().seed();
     useLoyaltyStore.getState().seed();
+    useBoothCatalogStore.getState().seed();
+    useBoothShowcaseStore.getState().seed();
+    useBookingEstimateStore.getState().seed();
+    useBoothBookingStore.getState().seed();
     useCartStore.getState().clear();
     useAuthStore.getState().logout();
   },

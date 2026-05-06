@@ -243,3 +243,130 @@ export interface LoyaltyConfig {
   stampOnMerch: boolean;
   rewards: LoyaltyReward[];
 }
+
+// ─── Booth Booking ───────────────────────────────────────────────────────────
+
+export type BoothAddonPricingType = 'fixed' | 'per_head' | 'per_hour';
+
+export interface BoothPackage {
+  id: string;
+  branchId?: string | null;
+  name: string;
+  description?: string;
+  capacity: number;
+  durationHours: number;
+  basePrice: number;
+  inclusions: string[];
+  image?: string;
+  visible: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoothAddon {
+  id: string;
+  branchId?: string | null;
+  name: string;
+  description?: string;
+  pricingType: BoothAddonPricingType;
+  price: number;
+  unitLabel?: string;
+  visible: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookingShowcaseMedia {
+  id: string;
+  title: string;
+  caption?: string;
+  image: string;
+  tags?: string[];
+  visible: boolean;
+  order: number;
+}
+
+export type BookingEstimateLineSourceType = 'package' | 'addon' | 'service' | 'custom';
+
+export interface BookingEstimateLineItem {
+  id: string;
+  sourceType: BookingEstimateLineSourceType;
+  sourceId?: string;
+  labelSnapshot: string;
+  descriptionSnapshot?: string;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface BookingEstimate {
+  id: string;
+  shortCode: string;
+  branchId: string;
+  lineItems: BookingEstimateLineItem[];
+  subtotal: number;
+  tax?: number;
+  total: number;
+  assumptions?: string[];
+  notes?: string;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+  validUntil?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type BoothBookingOccasion =
+  | 'birthday'
+  | 'wedding'
+  | 'corporate'
+  | 'private_party'
+  | 'engagement'
+  | 'other';
+
+export type BoothBookingStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'quoted'
+  | 'awaiting_confirmation'
+  | 'confirmed'
+  | 'declined'
+  | 'cancelled'
+  | 'completed';
+
+export interface BoothBookingSelectedAddonSnapshot {
+  addonId: string;
+  addonNameSnapshot: string;
+  pricingType: BoothAddonPricingType;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface BoothBooking {
+  id: string;
+  shortCode: string;
+  branchId: string;
+  customerId?: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  eventName: string;
+  occasion: BoothBookingOccasion;
+  guestCount: number;
+  eventDate: string;
+  startsAt: string;
+  endsAt: string;
+  packageId: string;
+  packageNameSnapshot: string;
+  packageBasePriceSnapshot: number;
+  selectedAddons: BoothBookingSelectedAddonSnapshot[];
+  specialRequests?: string;
+  estimateSnapshot: BookingEstimate;
+  status: BoothBookingStatus;
+  assignedStaffId?: string;
+  internalNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

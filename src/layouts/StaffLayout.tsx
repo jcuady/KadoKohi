@@ -1,5 +1,6 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
+  CalendarClock,
   Package,
   ClipboardList,
   LogOut,
@@ -14,6 +15,7 @@ const SIDEBAR_W = 'w-56';
 const MAIN_OFFSET = 'ml-56';
 
 const nav = [
+  { to: '/staff/booth-bookings', label: 'Booth Bookings', icon: CalendarClock },
   { to: '/staff/merch-orders', label: 'Merch Orders', icon: Package },
   { to: '/staff/orders', label: 'All Orders', icon: ClipboardList },
 ];

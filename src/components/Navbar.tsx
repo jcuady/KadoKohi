@@ -9,6 +9,7 @@ const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'Coffee', path: '/menu' },
   { label: 'Merch', path: '/merch' },
+  { label: 'Book Booth', path: '/book/booth' },
   { label: 'Branches', path: '/branches' },
   { label: 'Events', path: '/events' },
   { label: 'About Us', path: '/about' },
@@ -39,7 +40,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-[100] w-full overflow-visible border-b border-kado-dark/10 bg-kado-cream/88 backdrop-blur-xl supports-[backdrop-filter]:bg-kado-cream/75 shadow-[0_1px_0_rgba(25,25,25,0.04)]">
-      <div className="max-w-7xl mx-auto overflow-visible px-4 sm:px-6 lg:px-8 py-4 md:py-[1.125rem] flex items-center justify-between gap-4 md:gap-6 relative text-kado-dark min-h-[3.75rem] md:min-h-[4rem]">
+      <div className="max-w-7xl mx-auto overflow-visible px-4 sm:px-6 lg:px-8 py-3.5 md:py-4 flex items-center justify-between gap-3 md:gap-4 relative text-kado-dark min-h-[3.5rem] md:min-h-[3.75rem]">
 
         {/* Logo — max-height only (no fixed h-*) so macrons / ascenders in Logo1.png are never cropped */}
         <Link
@@ -60,12 +61,12 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav pill */}
-        <div className="hidden md:flex items-center gap-1 lg:gap-2 bg-kado-offwhite/80 backdrop-blur-md px-2 py-2 lg:px-3 lg:py-2 rounded-full border border-kado-dark/10 shadow-sm">
+        <div className="hidden lg:flex items-center gap-1 bg-kado-offwhite/80 backdrop-blur-md px-2 py-1.5 xl:px-3 xl:py-2 rounded-full border border-kado-dark/10 shadow-sm">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`text-[13px] lg:text-sm font-medium transition-colors whitespace-nowrap px-3 py-2 rounded-full ${
+              className={`text-[12px] xl:text-sm font-medium transition-colors whitespace-nowrap px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-full ${
                 location.pathname === link.path
                   ? 'bg-kado-dark text-kado-cream'
                   : 'text-kado-dark/80 hover:text-kado-red'
@@ -106,15 +107,15 @@ export default function Navbar() {
           {!user && (
             <Link
               to="/auth/signup"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border-2 border-kado-dark/12 bg-kado-offwhite/90 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-kado-dark hover:border-kado-red hover:text-kado-red transition-colors shadow-sm"
+              className="hidden xl:inline-flex items-center gap-1.5 rounded-full border-2 border-kado-dark/12 bg-kado-offwhite/90 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-kado-dark hover:border-kado-red hover:text-kado-red transition-colors shadow-sm"
             >
               <UserPlus className="w-4 h-4 shrink-0" />
-              <span className="hidden md:inline">Join</span>
+              <span>Join</span>
             </Link>
           )}
           <Link
             to={authLink.path}
-            className="hover:text-kado-red transition-colors hidden sm:flex items-center gap-1.5 text-sm font-medium"
+            className="hover:text-kado-red transition-colors hidden lg:flex items-center gap-1.5 text-sm font-medium"
           >
             <AuthIcon className="w-5 h-5" />
             <span className="hidden lg:inline">{authLink.label}</span>
@@ -122,7 +123,7 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden hover:text-kado-red transition-colors"
+            className="lg:hidden hover:text-kado-red transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -139,7 +140,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
-              className="absolute top-full left-0 right-0 bg-kado-cream/97 backdrop-blur-lg border-b border-kado-dark/10 p-5 flex flex-col gap-1 md:hidden shadow-lg z-10"
+              className="absolute top-full left-0 right-0 bg-kado-cream/97 backdrop-blur-lg border-b border-kado-dark/10 p-5 flex flex-col gap-1 lg:hidden shadow-lg z-10"
             >
               {navLinks.map((link) => (
                 <Link

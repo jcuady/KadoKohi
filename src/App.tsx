@@ -26,11 +26,16 @@ import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
 import Merch from './pages/Merch';
+import BookBooth from './pages/BookBooth';
 import AdminMerch from './pages/admin/AdminMerch';
 import AdminLoyalty from './pages/admin/AdminLoyalty';
+import AdminBoothBookings from './pages/admin/AdminBoothBookings';
+import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
+import AdminBoothContent from './pages/admin/AdminBoothContent';
 import StaffLayout from './layouts/StaffLayout';
 import StaffMerchOrders from './pages/staff/StaffMerchOrders';
 import StaffAllOrders from './pages/staff/StaffAllOrders';
+import StaffBoothBookings from './pages/staff/StaffBoothBookings';
 import BaristaBoard from './pages/barista/BaristaBoard';
 import BaristaQueue from './pages/barista/BaristaQueue';
 import BaristaPOS from './pages/barista/BaristaPOS';
@@ -55,6 +60,7 @@ export default function App() {
           <Route path="/order/qr/:code" element={<OrderQR />} />
           <Route path="/order/takeout" element={<OrderTakeout />} />
           <Route path="/merch" element={<Merch />} />
+          <Route path="/book/booth" element={<BookBooth />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
@@ -70,6 +76,9 @@ export default function App() {
             <Route path="menu" element={<AdminMenu />} />
             <Route path="merch" element={<AdminMerch />} />
             <Route path="loyalty" element={<AdminLoyalty />} />
+            <Route path="booth-bookings" element={<AdminBoothBookings />} />
+            <Route path="booth-catalog" element={<AdminBoothCatalog />} />
+            <Route path="booth-content" element={<AdminBoothContent />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="tables" element={<AdminTables />} />
             <Route path="sections" element={<AdminSections />} />
@@ -90,6 +99,7 @@ export default function App() {
         <Route element={<RoleGate allowed={['admin', 'staff']} />}>
           <Route path="/staff" element={<StaffLayout />}>
             <Route index element={<StaffMerchOrders />} />
+            <Route path="booth-bookings" element={<StaffBoothBookings />} />
             <Route path="merch-orders" element={<StaffMerchOrders />} />
             <Route path="orders" element={<StaffAllOrders />} />
           </Route>
