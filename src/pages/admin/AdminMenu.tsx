@@ -1,28 +1,41 @@
-import { useState, type FormEvent, type DragEvent } from 'react';
-import type { MenuCategory, Product, MilkOption, ProductTemperature } from '../../types/domain';
+import { useMemo, useState, type FormEvent, type DragEvent } from 'react';
+import type {
+  MenuCategory,
+  Product,
+  MilkOption,
+  ProductTemperature,
+  ProductSize,
+  ProductCustomField,
+} from '../../types/domain';
 import { useMenuStore } from '../../store/menuStore';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
-import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check, X } from 'lucide-react';
 
 type ProductFormData = {
   name: string;
   description: string;
   basePrice: string;
+  image: string;
   temperature: ProductTemperature;
   visible: boolean;
   tags: string;
   milks: MilkOption[];
+  sizes: ProductSize[];
+  customFields: ProductCustomField[];
 };
 
 const emptyProductForm: ProductFormData = {
   name: '',
   description: '',
   basePrice: '',
+  image: '',
   temperature: 'both',
   visible: true,
   tags: '',
   milks: [],
+  sizes: [],
+  customFields: [],
 };
 
 export default function AdminMenu() {
@@ -49,10 +62,14 @@ export default function AdminMenu() {
 
   const [expandedCat, setExpandedCat] = useState<string | null>(sortedCategories[0]?.id ?? null);
   const [newCatName, setNewCatName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
 
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [addingToCat, setAddingToCat] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyProductForm);
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
 
   const handleAddCategory = (e: FormEvent) => {
     e.preventDefault();
@@ -68,23 +85,32 @@ export default function AdminMenu() {
       name: p.name,
       description: p.description ?? '',
       basePrice: String(p.basePrice),
+      image: p.image ?? '',
       temperature: p.temperature,
       visible: p.visible,
       tags: (p.tags ?? []).join(', '),
       milks: p.milks ?? [],
+      sizes: p.sizes ?? [],
+      customFields: p.customFields ?? [],
     });
+    setUploadPreviewUrl(null);
+    setUploadPreviewLabel('');
   };
 
   const startAddProduct = (catId: string) => {
     setAddingToCat(catId);
     setEditingProduct(null);
     setForm(emptyProductForm);
+    setUploadPreviewUrl(null);
+    setUploadPreviewLabel('');
   };
 
   const cancelForm = () => {
     setEditingProduct(null);
     setAddingToCat(null);
     setForm(emptyProductForm);
+    setUploadPreviewUrl(null);
+    setUploadPreviewLabel('');
   };
 
   const addMilkRow = () => {
@@ -108,6 +134,85 @@ export default function AdminMenu() {
     }));
   };
 
+  const addSizeRow = () => {
+    setForm((f) => ({
+      ...f,
+      sizes: [...f.sizes, { id: newId(), label: '', priceDelta: 0 }],
+    }));
+  };
+
+  const updateSize = (idx: number, patch: Partial<ProductSize>) => {
+    setForm((f) => ({
+      ...f,
+      sizes: f.sizes.map((item, index) => (index === idx ? { ...item, ...patch } : item)),
+    }));
+  };
+
+  const removeSize = (idx: number) => {
+    setForm((f) => ({
+      ...f,
+      sizes: f.sizes.filter((_, index) => index !== idx),
+    }));
+  };
+
+  const addCustomFieldRow = () => {
+    setForm((f) => ({
+      ...f,
+      customFields: [
+        ...f.customFields,
+        {
+          id: newId(),
+          key: '',
+          label: '',
+          value: '',
+        },
+      ],
+    }));
+  };
+
+  const updateCustomField = (idx: number, patch: Partial<ProductCustomField>) => {
+    setForm((f) => ({
+      ...f,
+      customFields: f.customFields.map((item, index) => (index === idx ? { ...item, ...patch } : item)),
+    }));
+  };
+
+  const removeCustomField = (idx: number) => {
+    setForm((f) => ({
+      ...f,
+      customFields: f.customFields.filter((_, index) => index !== idx),
+    }));
+  };
+
+  const handleImageUploadPreview = (file: File | null) => {
+    if (!file) {
+      setUploadPreviewUrl(null);
+      setUploadPreviewLabel('');
+      return;
+    }
+    setUploadPreviewLabel(file.name);
+    if (file.type.startsWith('image/')) {
+      setUploadPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setUploadPreviewUrl(null);
+    }
+  };
+
+  const beginCategoryRename = (category: MenuCategory) => {
+    setEditingCategoryId(category.id);
+    setEditingCategoryName(category.name);
+  };
+
+  const commitCategoryRename = () => {
+    if (!editingCategoryId) return;
+    const next = editingCategoryName.trim();
+    if (next) updateCategory(editingCategoryId, { name: next });
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  const activeCategoryCount = useMemo(() => categories.filter((cat) => cat.visible).length, [categories]);
+
   const submitProduct = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.basePrice) return;
@@ -116,6 +221,7 @@ export default function AdminMenu() {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
       basePrice: Number(form.basePrice),
+      image: form.image.trim() || undefined,
       temperature: form.temperature,
       visible: form.visible,
       tags: form.tags
@@ -123,6 +229,8 @@ export default function AdminMenu() {
         .map((t) => t.trim())
         .filter(Boolean),
       milks: form.milks.filter((m) => m.label.trim()),
+      sizes: form.sizes.filter((s) => s.label.trim()),
+      customFields: form.customFields.filter((field) => field.label.trim() && field.key.trim() && field.value.trim()),
     };
 
     if (editingProduct) {
@@ -137,7 +245,7 @@ export default function AdminMenu() {
     <div className="max-w-4xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
       <p className="dash-muted mb-6">
-        {categories.length} categories · {products.length} products
+        {categories.length} categories ({activeCategoryCount} visible) · {products.length} products
       </p>
 
       {/* Add category */}
@@ -205,9 +313,47 @@ export default function AdminMenu() {
                   className="flex items-center gap-2 flex-1 min-w-0 text-left"
                 >
                   {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  <span className="font-display font-bold text-kado-dark dash-heading truncate">{cat.name}</span>
+                  {editingCategoryId === cat.id ? (
+                    <input
+                      value={editingCategoryName}
+                      onChange={(e) => setEditingCategoryName(e.target.value)}
+                      className="rounded-lg dash-input border px-2 py-1 text-sm font-bold min-w-[160px]"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="font-display font-bold text-kado-dark dash-heading truncate">{cat.name}</span>
+                  )}
                   <span className="text-xs dash-muted shrink-0">{catProducts.length} items</span>
                 </button>
+                {editingCategoryId === cat.id ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={commitCategoryRename}
+                      className="text-kado-red hover:text-kado-dark p-1"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCategoryId(null);
+                        setEditingCategoryName('');
+                      }}
+                      className="dash-muted hover:text-kado-dark p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => beginCategoryRename(cat)}
+                    className="dash-muted hover:text-kado-red p-1"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <label className="flex items-center gap-1.5 text-xs dash-muted shrink-0">
                   <input
                     type="checkbox"
@@ -274,7 +420,9 @@ export default function AdminMenu() {
                         <div className="text-xs dash-muted mt-0.5 flex gap-2">
                           <span>{formatPhp(p.basePrice)}</span>
                           <span>{p.temperature}</span>
+                  {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
                           {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
+                  {p.customFields?.length > 0 && <span>{p.customFields.length} custom group(s)</span>}
                           {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
                         </div>
                       </div>
@@ -367,6 +515,37 @@ export default function AdminMenu() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Image URL</label>
+                <input
+                  value={form.image}
+                  onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Upload preview (optional)</label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/*"
+                  onChange={(e) => handleImageUploadPreview(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-xs"
+                />
+                {(uploadPreviewUrl || form.image || uploadPreviewLabel) && (
+                  <div className="mt-2 rounded-xl border dash-border p-2.5">
+                    {uploadPreviewUrl ? (
+                      <img src={uploadPreviewUrl} alt="Upload preview" className="w-full h-28 object-cover rounded-lg border dash-border" />
+                    ) : form.image ? (
+                      <img src={form.image} alt="URL preview" className="w-full h-28 object-cover rounded-lg border dash-border" />
+                    ) : (
+                      <p className="text-xs dash-muted">Selected file: {uploadPreviewLabel}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Tags (comma-separated)</label>
                 <input
                   value={form.tags}
@@ -420,6 +599,91 @@ export default function AdminMenu() {
                       <button type="button" onClick={() => removeMilk(i)} className="text-red-400 hover:text-red-600">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider dash-muted">Size options</label>
+                  <button
+                    type="button"
+                    onClick={addSizeRow}
+                    className="text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline flex items-center gap-0.5"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                {form.sizes.length === 0 && (
+                  <p className="text-xs dash-muted">No size modifiers. Add sizes (e.g., Small, Large) if needed.</p>
+                )}
+                <div className="space-y-2">
+                  {form.sizes.map((size, index) => (
+                    <div key={size.id} className="flex items-center gap-2">
+                      <input
+                        value={size.label}
+                        onChange={(e) => updateSize(index, { label: e.target.value })}
+                        placeholder="e.g. Large"
+                        className="flex-1 rounded-lg dash-input border px-3 py-2 text-xs"
+                      />
+                      <input
+                        type="number"
+                        value={size.priceDelta}
+                        onChange={(e) => updateSize(index, { priceDelta: Number(e.target.value) })}
+                        className="w-20 rounded-lg dash-input border px-3 py-2 text-xs"
+                        placeholder="+₱"
+                      />
+                      <button type="button" onClick={() => removeSize(index)} className="text-red-400 hover:text-red-600">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider dash-muted">Custom option groups</label>
+                  <button
+                    type="button"
+                    onClick={addCustomFieldRow}
+                    className="text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline flex items-center gap-0.5"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                {form.customFields.length === 0 && (
+                  <p className="text-xs dash-muted">Add option groups beyond milk (example: sweetness, roast profile).</p>
+                )}
+                <div className="space-y-2">
+                  {form.customFields.map((field, index) => (
+                    <div key={field.id} className="rounded-xl border dash-border p-2.5 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={field.label}
+                          onChange={(e) => updateCustomField(index, { label: e.target.value })}
+                          placeholder="Group label (e.g. Sweetness)"
+                          className="rounded-lg dash-input border px-3 py-2 text-xs"
+                        />
+                        <input
+                          value={field.key}
+                          onChange={(e) => updateCustomField(index, { key: e.target.value })}
+                          placeholder="key (e.g. sweetness)"
+                          className="rounded-lg dash-input border px-3 py-2 text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={field.value}
+                          onChange={(e) => updateCustomField(index, { value: e.target.value })}
+                          placeholder="Options: None|0, Less|0, Extra|30"
+                          className="flex-1 rounded-lg dash-input border px-3 py-2 text-xs"
+                        />
+                        <button type="button" onClick={() => removeCustomField(index)} className="text-red-400 hover:text-red-600">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

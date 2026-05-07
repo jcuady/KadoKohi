@@ -41,7 +41,7 @@ const nav = [
   { to: '/admin/sections', label: 'Sections', icon: Layers },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
-  { to: '/barista', label: 'Barista Kiosk', icon: Monitor },
+  { to: '/barista/kiosk', label: 'KIOSK', icon: Monitor },
 ];
 
 /** Shared footer control — same visual weight; sign-out uses hover danger */

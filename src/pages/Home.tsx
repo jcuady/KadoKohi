@@ -203,12 +203,12 @@ export default function Home() {
               <span className="hero-pill-day text-white">Day</span>
               <span className="text-white/20">/</span>
               <span className="hero-pill-night text-white/35">Night</span>
-            </div>
+             </div>
             <div className="w-16 h-[2px] bg-white/15 rounded-full overflow-hidden">
               <div className="hero-progress h-full w-full bg-kado-red rounded-full origin-left scale-x-0" />
-            </div>
+             </div>
           </div>
-        </div>
+          </div>
 
         {/* ── Japanese kanji watermark ── */}
         <div
@@ -332,7 +332,7 @@ function SignatureSipsSection() {
       : products.filter((p) => p.visible);
     return src.slice(0, 3);
   }, [products, sigCat]);
-
+  
   return (
     <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
       <div className="max-w-[1400px] mx-auto">
@@ -353,7 +353,7 @@ function SignatureSipsSection() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 w-full pb-6 sm:pb-8">
           {showcaseDrinks.map((drink, i) => (
-            <motion.div
+              <motion.div 
               key={drink.id}
               className="w-full bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-6 shadow-xl shadow-black/5 border border-kado-dark/10 group"
               whileHover={{ y: -6 }}
@@ -365,10 +365,10 @@ function SignatureSipsSection() {
                   alt={drink.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                 />
-                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="flex justify-between items-start">
-                <div>
+                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="flex justify-between items-start">
+                  <div>
                   <h3 className="font-display font-bold text-xl text-kado-dark">{drink.name}</h3>
                   {drink.description && <p className="text-sm font-medium text-kado-dark/70 mt-1">{drink.description}</p>}
                   {drink.tags?.length ? (
@@ -376,18 +376,18 @@ function SignatureSipsSection() {
                   ) : null}
                 </div>
                 <span className="font-display font-bold text-kado-red shrink-0 ml-3">{formatPhp(drink.basePrice)}</span>
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            ))}
         </div>
-
+        
         <div className="mt-12 sm:mt-16 flex justify-center px-1">
           <Link
             to="/menu"
             className="inline-flex items-center justify-center gap-2 min-h-[44px] border-b-2 border-kado-red pb-1 text-kado-dark font-bold uppercase tracking-widest text-sm sm:text-base hover:text-kado-red transition-colors"
           >
             View Full Menu <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
-          </Link>
+            </Link>
         </div>
       </div>
     </section>
@@ -466,7 +466,7 @@ function EventsSection() {
         </div>
 
         {ev ? (
-          <div className="w-full">
+        <div className="w-full">
             <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group cursor-pointer border border-[#2A2626]/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:h-[750px] w-full">
               <img src={ev.cover ?? FALLBACK_EVENT_IMG} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s] ease-out brightness-[0.7] contrast-[1.1]" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/95 opacity-90" />
@@ -485,10 +485,10 @@ function EventsSection() {
                           <span className={`block font-display font-bold text-lg sm:text-2xl lg:text-4xl leading-none ${red ? 'text-kado-red' : 'text-white'}`}>{String(v).padStart(2, '0')}</span>
                           <span className="text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest text-[#A09A90] font-bold mt-0.5 sm:mt-1 block">{l}</span>
                         </div>
-                      </div>
+                        </div>
                     ))}
-                  </div>
-                </div>
+                        </div>
+                    </div>
                 <div className="w-full max-w-3xl mt-auto">
                   <h3 className="font-display font-bold text-2xl sm:text-4xl lg:text-7xl text-white mb-3 sm:mb-4 lg:mb-6 leading-[1.1]">{ev.title}</h3>
                   <p className="text-[#EFE6D5]/90 font-medium text-sm sm:text-lg lg:text-2xl leading-relaxed mb-6 sm:mb-8 line-clamp-6 sm:line-clamp-none">{ev.description}</p>
@@ -501,16 +501,16 @@ function EventsSection() {
                       See all events <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
                     </Link>
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
+                    </div>
+                 </div>
+               </div>
+             </div>
         ) : (
           <div className="text-center py-16">
             <CalendarDays className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
             <p className="text-kado-dark/50 text-sm">No upcoming events right now. Check back soon.</p>
             <Link to="/events" className="mt-4 inline-block text-kado-red font-bold text-sm hover:underline">Browse past events →</Link>
-          </div>
+        </div>
         )}
       </div>
     </section>
@@ -576,11 +576,11 @@ function BranchesStrip() {
                       <Clock className="w-3 h-3 shrink-0" /> {hours} daily
                     </p>
                   )}
-                </div>
+           </div>
 
                 <div className="mt-auto flex items-center gap-2 text-kado-red text-xs font-bold uppercase tracking-wider">
                   <ExternalLink className="w-3.5 h-3.5" /> View details
-                </div>
+           </div>
               </Link>
             );
           })}

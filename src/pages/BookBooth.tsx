@@ -22,7 +22,15 @@ export default function BookBooth() {
   const saveEstimate = useBookingEstimateStore((s) => s.saveEstimate);
   const estimates = useBookingEstimateStore((s) => s.estimates);
   const createBooking = useBoothBookingStore((s) => s.createBooking);
-  const showcaseMedia = useBoothShowcaseStore((s) => s.visibleMedia());
+  /** Select raw `media` only — `visibleMedia()` returns a new array each call and breaks useSyncExternalStore snapshot equality (infinite re-renders). */
+  const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
+  const showcaseMedia = useMemo(
+    () =>
+      [...showcaseMediaRaw]
+        .filter((item) => item.visible)
+        .sort((a, b) => a.order - b.order),
+    [showcaseMediaRaw],
+  );
 
   const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? 'branch_marikina');
   const [selectedPackageId, setSelectedPackageId] = useState('');

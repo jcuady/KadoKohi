@@ -40,6 +40,7 @@ import BaristaBoard from './pages/barista/BaristaBoard';
 import BaristaQueue from './pages/barista/BaristaQueue';
 import BaristaPOS from './pages/barista/BaristaPOS';
 import BaristaMenu from './pages/barista/BaristaMenu';
+import BaristaKioskDisplay from './pages/barista/BaristaKioskDisplay';
 import AccountDashboard from './pages/account/AccountDashboard';
 import AccountOrders from './pages/account/AccountOrders';
 import AccountProfile from './pages/account/AccountProfile';
@@ -88,6 +89,7 @@ export default function App() {
         </Route>
 
         <Route element={<RoleGate allowed={['admin', 'barista']} />}>
+          <Route path="/barista/kiosk" element={<BaristaKioskDisplay />} />
           <Route path="/barista" element={<BaristaLayout />}>
             <Route index element={<BaristaBoard />} />
             <Route path="queue" element={<BaristaQueue />} />

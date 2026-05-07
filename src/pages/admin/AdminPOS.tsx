@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { OrderItem, Product } from '../../types/domain';
+import type { OrderItem, OrderItemVariantSnapshot, Product } from '../../types/domain';
 import { useBranchStore } from '../../store/branchStore';
 import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
@@ -8,29 +8,19 @@ import { useOrderStore } from '../../store/orderStore';
 import { formatPhp, computeOrderTotals } from '../../lib/money';
 import { useSettingsStore } from '../../store/settingsStore';
 import { newId } from '../../lib/id';
-import { ShoppingBag } from 'lucide-react';
+import { Pencil, ShoppingBag } from 'lucide-react';
+import PosVariantModal from '../../components/pos/PosVariantModal';
+import { resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 
 type CartLine = {
   key: string;
   productId: string;
   qty: number;
   milkId?: string;
+  sizeId?: string;
   temperature?: 'hot' | 'iced';
+  customizations: OrderItemVariantSnapshot[];
 };
-
-function resolveLineUnitPrice(product: Product, milkId?: string, temp?: 'hot' | 'iced'): { unit: number; milkLabel?: string } {
-  let unit = product.basePrice;
-  let milkLabel: string | undefined;
-  if (milkId && product.milks?.length) {
-    const m = product.milks.find((x) => x.id === milkId);
-    if (m) {
-      unit += m.priceDelta;
-      milkLabel = m.label;
-    }
-  }
-  void temp;
-  return { unit, milkLabel };
-}
 
 export default function AdminPOS() {
   const branches = useBranchStore((s) => s.branches);
@@ -47,6 +37,8 @@ export default function AdminPOS() {
 
   const [activeCat, setActiveCat] = useState(() => categories[0]?.id ?? '');
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [configuring, setConfiguring] = useState<Product | null>(null);
+  const [editingLineKey, setEditingLineKey] = useState<string | null>(null);
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -57,20 +49,57 @@ export default function AdminPOS() {
 
   const branch = branches.find((b) => b.id === adminPosBranchId) ?? branches[0];
 
-  const addToCart = (product: Product) => {
-    const defaultMilk = product.milks?.[0]?.id;
-    const defaultTemp: 'hot' | 'iced' | undefined =
-      product.temperature === 'iced' ? 'iced' : product.temperature === 'hot' ? 'hot' : 'hot';
+  const addToCart = (product: Product, config: PosLineConfig) => {
     setCart((c) => [
       ...c,
       {
         key: newId(),
         productId: product.id,
-        qty: 1,
-        milkId: product.milks?.length ? defaultMilk : undefined,
-        temperature: product.temperature === 'both' ? defaultTemp : product.temperature === 'iced' ? 'iced' : 'hot',
+        qty: config.qty,
+        milkId: config.milkId,
+        sizeId: config.sizeId,
+        temperature: config.temperature,
+        customizations: config.customizations,
       },
     ]);
+  };
+
+  const initialConfigForEditing = useMemo(() => {
+    if (!configuring) return undefined;
+    if (!editingLineKey) return undefined;
+    const line = cart.find((item) => item.key === editingLineKey);
+    if (!line || line.productId !== configuring.id) return undefined;
+    return {
+      qty: line.qty,
+      milkId: line.milkId,
+      sizeId: line.sizeId,
+      temperature: line.temperature,
+      customizations: line.customizations,
+    } satisfies PosLineConfig;
+  }, [cart, configuring, editingLineKey]);
+
+  const handleConfirmVariant = (config: PosLineConfig) => {
+    if (!configuring) return;
+    if (editingLineKey) {
+      setCart((current) =>
+        current.map((item) =>
+          item.key === editingLineKey
+            ? {
+                ...item,
+                qty: config.qty,
+                milkId: config.milkId,
+                sizeId: config.sizeId,
+                temperature: config.temperature,
+                customizations: config.customizations,
+              }
+            : item,
+        ),
+      );
+    } else {
+      addToCart(configuring, config);
+    }
+    setConfiguring(null);
+    setEditingLineKey(null);
   };
 
   const cartTotals = useMemo(() => {
@@ -80,7 +109,7 @@ export default function AdminPOS() {
     for (const line of cart) {
       const p = products.find((x) => x.id === line.productId);
       if (!p) continue;
-      const { unit, milkLabel } = resolveLineUnitPrice(p, line.milkId, line.temperature);
+      const { unit, milkLabel, sizeLabel } = resolvePosUnitPrice(p, line);
       const base = p.basePrice;
       const mod = unit - base;
       subtotal += base * line.qty;
@@ -91,7 +120,10 @@ export default function AdminPOS() {
         productNameSnapshot: p.name,
         milkId: line.milkId,
         milkLabelSnapshot: milkLabel,
+        sizeId: line.sizeId,
+        sizeLabelSnapshot: sizeLabel,
         temperature: line.temperature,
+        merchVariants: line.customizations.length ? line.customizations : undefined,
         unitPrice: unit,
         qty: line.qty,
         lineTotal: unit * line.qty,
@@ -130,6 +162,7 @@ export default function AdminPOS() {
   }
 
   return (
+    <>
     <div className="max-w-6xl dash-page">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
@@ -180,7 +213,10 @@ export default function AdminPOS() {
               <button
                 key={p.id}
                 type="button"
-                onClick={() => addToCart(p)}
+                onClick={() => {
+                  setConfiguring(p);
+                  setEditingLineKey(null);
+                }}
                 className="text-left rounded-2xl dash-card border p-4 hover:border-kado-red/40 hover:shadow-lg transition-all"
               >
                 <div className="flex justify-between gap-2">
@@ -209,61 +245,30 @@ export default function AdminPOS() {
               {cart.map((line) => {
                 const p = products.find((x) => x.id === line.productId);
                 if (!p) return null;
-                const { unit } = resolveLineUnitPrice(p, line.milkId, line.temperature);
+                const { unit, milkLabel, sizeLabel } = resolvePosUnitPrice(p, line);
                 return (
                   <li key={line.key} className="rounded-xl border dash-border p-3 text-sm">
                     <div className="font-semibold text-kado-dark dash-heading">{p.name}</div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {p.milks && p.milks.length > 0 && (
-                        <select
-                          value={line.milkId ?? ''}
-                          onChange={(e) =>
-                            setCart((c) =>
-                              c.map((x) =>
-                                x.key === line.key ? { ...x, milkId: e.target.value || undefined } : x,
-                              ),
-                            )
-                          }
-                          className="text-xs rounded-lg dash-input border px-2 py-1"
-                        >
-                          {p.milks.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.label} {m.priceDelta ? `(+${m.priceDelta})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {p.temperature === 'both' && (
-                        <select
-                          value={line.temperature ?? 'hot'}
-                          onChange={(e) =>
-                            setCart((c) =>
-                              c.map((x) =>
-                                x.key === line.key
-                                  ? { ...x, temperature: e.target.value as 'hot' | 'iced' }
-                                  : x,
-                              ),
-                            )
-                          }
-                          className="text-xs rounded-lg dash-input border px-2 py-1"
-                        >
-                          <option value="hot">Hot</option>
-                          <option value="iced">Iced</option>
-                        </select>
-                      )}
-                      <input
-                        type="number"
-                        min={1}
-                        value={line.qty}
-                        onChange={(e) =>
-                          setCart((c) =>
-                            c.map((x) =>
-                              x.key === line.key ? { ...x, qty: Math.max(1, Number(e.target.value) || 1) } : x,
-                            ),
-                          )
-                        }
-                        className="w-14 text-xs rounded-lg dash-input border px-2 py-1"
-                      />
+                    <div className="text-xs dash-muted mt-1 space-y-0.5">
+                      {line.temperature && <p>Temp: {line.temperature}</p>}
+                      {sizeLabel && <p>Size: {sizeLabel}</p>}
+                      {milkLabel && <p>Milk: {milkLabel}</p>}
+                      {line.customizations.map((choice, index) => (
+                        <p key={`${line.key}_custom_${index}`}>{choice.groupName}: {choice.optionLabel}</p>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2 items-center">
+                      <span className="text-xs dash-muted">Qty {line.qty}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfiguring(p);
+                          setEditingLineKey(line.key);
+                        }}
+                        className="text-xs text-kado-dark font-bold inline-flex items-center gap-1"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
                       <button
                         type="button"
                         onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))}
@@ -309,5 +314,16 @@ export default function AdminPOS() {
         </div>
       </div>
     </div>
+    <PosVariantModal
+      product={configuring}
+      open={!!configuring}
+      initial={initialConfigForEditing}
+      onClose={() => {
+        setConfiguring(null);
+        setEditingLineKey(null);
+      }}
+      onConfirm={handleConfirmVariant}
+    />
+    </>
   );
 }

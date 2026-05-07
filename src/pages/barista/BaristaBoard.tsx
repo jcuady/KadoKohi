@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Order, OrderStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { Clock, ChefHat, CheckCircle2 } from 'lucide-react';
+import OrderStatusModal from '../../components/barista/OrderStatusModal';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
 
@@ -18,6 +19,7 @@ type Column = {
 
 const COLUMNS: Column[] = [
   { status: 'pending', label: 'Pending', icon: Clock, color: 'text-yellow-400', bgCard: 'border-yellow-500/30' },
+  { status: 'accepted', label: 'Accepted', icon: Clock, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
   { status: 'preparing', label: 'Preparing', icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
   { status: 'ready', label: 'Ready', icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
 ];
@@ -50,13 +52,12 @@ export default function BaristaBoard() {
   }, [orders, user]);
 
   const branchLabel = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
-  const advanceStatus = (order: Order) => {
-    const flow: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed'];
-    const idx = flow.indexOf(order.status);
-    if (idx >= 0 && idx < flow.length - 1) {
-      updateOrderStatus(order.id, flow[idx + 1]);
-    }
+  const applyStatus = (status: OrderStatus) => {
+    if (!editingOrder) return;
+    updateOrderStatus(editingOrder.id, status);
+    setEditingOrder(null);
   };
 
   return (
@@ -68,12 +69,12 @@ export default function BaristaBoard() {
             {user?.role === 'admin'
               ? `All channels (Admin POS branch: ${branchLabel(adminBranch ?? '')})`
               : `Branch: ${user?.branchId ? branchLabel(user.branchId) : '—'}`}
-            {' · '}Tap a card to advance status.
+            {' · '}Open a card to set status.
           </p>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
         {COLUMNS.map((col) => {
           const colOrders = visible.filter((o) => o.status === col.status);
           const Icon = col.icon;
@@ -96,7 +97,7 @@ export default function BaristaBoard() {
                     <button
                       key={o.id}
                       type="button"
-                      onClick={() => advanceStatus(o)}
+                      onClick={() => setEditingOrder(o)}
                       className={`w-full text-left rounded-xl border dash-card ${col.bgCard} p-4 transition-colors`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -137,6 +138,12 @@ export default function BaristaBoard() {
           );
         })}
       </div>
+      <OrderStatusModal
+        open={!!editingOrder}
+        order={editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onApply={applyStatus}
+      />
     </div>
   );
 }

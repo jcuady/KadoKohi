@@ -220,7 +220,7 @@ export default function ProductDetailDrawer({ product, categoryName, onClose }: 
                               : 'bg-white border-kado-dark/10 text-kado-dark/65 hover:border-kado-red/50 hover:text-kado-red'
                           }`}
                         >
-                          {t === 'hot' ? '☕ Hot' : '🧊 Iced'}
+                          {t === 'hot' ? 'Hot' : 'Iced'}
                         </button>
                       ))}
                     </div>

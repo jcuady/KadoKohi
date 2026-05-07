@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Order, OrderStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
@@ -6,6 +6,7 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { Clock, ChevronRight } from 'lucide-react';
+import OrderStatusModal from '../../components/barista/OrderStatusModal';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
 
@@ -36,13 +37,14 @@ export default function BaristaQueue() {
     () => [...visible].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [visible],
   );
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const branchLabel = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
 
-  const advance = (order: Order) => {
-    const flow: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed'];
-    const idx = flow.indexOf(order.status);
-    if (idx >= 0 && idx < flow.length - 1) updateOrderStatus(order.id, flow[idx + 1]);
+  const applyStatus = (status: OrderStatus) => {
+    if (!editingOrder) return;
+    updateOrderStatus(editingOrder.id, status);
+    setEditingOrder(null);
   };
 
   return (
@@ -50,9 +52,7 @@ export default function BaristaQueue() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl font-bold dash-heading mb-1">Queue</h1>
-          <p className="dash-muted text-xs">
-            All orders (newest first). Tap a row to advance status — same flow as the board.
-          </p>
+          <p className="dash-muted text-xs">All orders (newest first). Open a row to set status or cancel.</p>
         </div>
         <Link
           to="/barista"
@@ -72,7 +72,7 @@ export default function BaristaQueue() {
             <li key={o.id}>
               <button
                 type="button"
-                onClick={() => advance(o)}
+                onClick={() => setEditingOrder(o)}
                 className="w-full text-left rounded-xl border dash-card px-4 py-3.5 flex flex-wrap items-center gap-3 transition-colors"
               >
                 <span className="font-display font-bold dash-heading text-lg shrink-0">{o.shortCode}</span>
@@ -102,6 +102,12 @@ export default function BaristaQueue() {
           ))}
         </ul>
       )}
+      <OrderStatusModal
+        open={!!editingOrder}
+        order={editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onApply={applyStatus}
+      />
     </div>
   );
 }
