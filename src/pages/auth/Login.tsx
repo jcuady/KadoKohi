@@ -2,38 +2,18 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
-import { useBranchStore } from '../../store/branchStore';
-import type { Role } from '../../types/domain';
-import { Coffee, Shield, User as UserIcon, AlertCircle } from 'lucide-react';
-
-type Tab = 'admin' | 'barista' | 'customer';
-
-const DEMO_CREDENTIALS: Record<Tab, { email: string; password: string }> = {
-  admin: { email: 'admin@kadokohi.com', password: 'admin1234' },
-  barista: { email: 'barista@kadokohi.com', password: 'barista1234' },
-  customer: { email: 'customer@kadokohi.com', password: 'customer1234' },
-};
+import { AlertCircle, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const loginAs = useAuthStore((s) => s.loginAs);
   const users = useUserStore((s) => s.users);
-  const branches = useBranchStore((s) => s.branches);
   const from = (location.state as { from?: string } | null)?.from;
 
-  const [tab, setTab] = useState<Tab>('admin');
-  const [email, setEmail] = useState(DEMO_CREDENTIALS.admin.email);
-  const [password, setPassword] = useState(DEMO_CREDENTIALS.admin.password);
-  const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
+  const [email, setEmail] = useState('customer@kadokohi.com');
+  const [password, setPassword] = useState('customer1234');
   const [error, setError] = useState('');
-
-  const switchTab = (t: Tab) => {
-    setTab(t);
-    setEmail(DEMO_CREDENTIALS[t].email);
-    setPassword(DEMO_CREDENTIALS[t].password);
-    setError('');
-  };
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
@@ -51,24 +31,20 @@ export default function Login() {
       return;
     }
 
-    const role: Exclude<Role, 'guest'> = matchedUser.role === 'guest' ? 'customer' : matchedUser.role;
+    if (matchedUser.role !== 'customer') {
+      setError('This sign in page is for customers only.');
+      return;
+    }
 
-    loginAs(role, {
+    loginAs('customer', {
       name: matchedUser.name,
       email: matchedUser.email,
-      branchId: role === 'barista' ? (matchedUser.branchId ?? branchId) : undefined,
+      id: matchedUser.id,
+      loyaltyStamps: matchedUser.loyaltyStamps,
+      createdAt: matchedUser.createdAt,
     });
-
-    if (role === 'admin') navigate(from && from.startsWith('/admin') ? from : '/admin', { replace: true });
-    else if (role === 'barista') navigate('/barista', { replace: true });
-    else navigate(from && from.startsWith('/account') ? from : '/', { replace: true });
+    navigate(from && from.startsWith('/account') ? from : '/', { replace: true });
   };
-
-  const tabs: { key: Tab; label: string; icon: typeof Coffee; desc: string }[] = [
-    { key: 'admin', label: 'Admin', icon: Shield, desc: 'Full access — menu, branches, orders, POS' },
-    { key: 'barista', label: 'Barista', icon: Coffee, desc: 'Kiosk — queue, POS, order board' },
-    { key: 'customer', label: 'Customer', icon: UserIcon, desc: 'Online ordering, loyalty, profile' },
-  ];
 
   return (
     <div className="min-h-screen bg-kado-cream flex items-center justify-center px-6 py-16">
@@ -80,34 +56,11 @@ export default function Login() {
             </div>
             <span className="font-display font-bold text-xl text-kado-dark">Kado Kohi</span>
           </div>
-          <h1 className="font-display text-2xl font-bold text-kado-dark">Sign in to your portal</h1>
+          <h1 className="font-display text-2xl font-bold text-kado-dark">Customer Sign In</h1>
           <p className="text-sm text-kado-dark/60 mt-2">
-            Local auth — validates against the user directory.
+            Access your account, loyalty stamps, and orders.
           </p>
         </div>
-
-        {/* Role tabs */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => switchTab(key)}
-              className={`flex flex-col items-center gap-1 rounded-xl py-3 px-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                tab === key
-                  ? 'bg-kado-dark text-kado-cream shadow-lg'
-                  : 'bg-white border border-kado-dark/10 text-kado-dark/70 hover:border-kado-red/40 hover:text-kado-red'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <p className="text-xs text-kado-dark/55 bg-kado-cream/70 rounded-xl px-4 py-2.5 mb-6 text-center">
-          {tabs.find((t) => t.key === tab)?.desc}
-        </p>
 
         {/* Error */}
         {error && (
@@ -144,44 +97,23 @@ export default function Login() {
             />
           </div>
 
-          {tab === 'barista' && (
-            <div>
-              <label htmlFor="branch" className="block text-xs font-bold uppercase tracking-wider text-kado-dark/70 mb-1.5">
-                Branch
-              </label>
-              <select
-                id="branch"
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                className="w-full rounded-xl border border-kado-dark/15 bg-white px-4 py-3 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red"
-              >
-                {branches.filter((b) => b.status === 'active').map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <button
             type="submit"
             className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-kado-dark transition-colors mt-2"
           >
-            Sign in as {tabs.find((t) => t.key === tab)?.label}
+            <span className="inline-flex items-center justify-center gap-2">
+              <UserIcon className="w-4 h-4" />
+              Sign In
+            </span>
           </button>
         </form>
 
         {/* Auto-fill hint */}
         <div className="mt-6 rounded-xl bg-kado-dark/5 border border-kado-dark/10 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-kado-dark/50 mb-2">Demo credentials (auto-filled)</p>
-          <div className="grid grid-cols-3 gap-3 text-[11px] text-kado-dark/70">
-            <div>
-              <span className="font-bold block text-kado-dark">Admin</span>
-              admin@kadokohi.com<br />admin1234
-            </div>
-            <div>
-              <span className="font-bold block text-kado-dark">Barista</span>
-              barista@kadokohi.com<br />barista1234
-            </div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-kado-dark/50 mb-2">
+            Demo credentials (auto-filled)
+          </p>
+          <div className="text-[11px] text-kado-dark/70">
             <div>
               <span className="font-bold block text-kado-dark">Customer</span>
               customer@kadokohi.com<br />customer1234

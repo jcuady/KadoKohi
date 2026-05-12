@@ -11,6 +11,7 @@ import Contact from './pages/Contact';
 import Branches from './pages/Branches';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import InternalLogin from './pages/auth/InternalLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminPOS from './pages/admin/AdminPOS';
@@ -67,6 +68,7 @@ export default function App() {
 
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<Signup />} />
+        <Route path="/management-portal" element={<InternalLogin />} />
 
         <Route element={<RoleGate allowed={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>

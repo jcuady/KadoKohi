@@ -1,228 +1,30 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
+import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CustomSectionRenderer from '../components/CustomSectionRenderer';
 import { AnimatedTestimonials } from '../components/ui/animated-testimonials';
-import { CinematicAppHero } from '../components/ui/cinematic-landing-hero';
 import { KadoOrderingCarousel } from '../components/ui/animated-feature-carousel';
 import KadoCircleCTA from '../components/ui/cta-with-text-marquee';
+import HomeHeroSlider from '../components/ui/home-hero-slider';
+import CafeScheduleSection from '../components/home/CafeScheduleSection';
+import { HOME_HERO_SLIDES } from '../data/homeHeroMedia';
 import { useBranchStore } from '../store/branchStore';
 import { useEventStore } from '../store/eventStore';
 import { useMenuStore } from '../store/menuStore';
+import { useAuthStore } from '../store/authStore';
+import { useCartStore } from '../store/cartStore';
 import { formatPhp } from '../lib/money';
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
-
 export default function Home() {
-  const heroRef = useRef<HTMLElement>(null);
-  const heroDayVideoRef = useRef<HTMLVideoElement>(null);
-  const heroNightVideoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const videos = [heroDayVideoRef.current, heroNightVideoRef.current].filter(Boolean) as HTMLVideoElement[];
-    videos.forEach((video) => {
-      video.muted = true;
-      video.playsInline = true;
-      video.playbackRate = 0.95;
-      void video.play().catch(() => {
-        // Autoplay can be blocked on some environments until user interaction.
-      });
-    });
-  }, []);
-
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      const setup = (isMobile: boolean) => {
-        gsap.set('.hero-video-day', { scale: 1.48, yPercent: -8.5, filter: 'brightness(0.95)' });
-        gsap.set('.hero-video-night', { opacity: 0, scale: 1.54, yPercent: -8.5, filter: 'brightness(0.72)' });
-        gsap.set('.hero-overlay-night', { opacity: 0 });
-        gsap.set('.hero-night-content', { autoAlpha: 0, x: isMobile ? -16 : -30 });
-        gsap.set('.hero-day-content', { autoAlpha: 1, x: 0 });
-        gsap.set('.hero-pill-day', { opacity: 1 });
-        gsap.set('.hero-pill-night', { opacity: 0.35 });
-        gsap.set('.hero-progress', { scaleX: 0 });
-
-        gsap.from('.hero-enter', {
-          y: isMobile ? 20 : 30,
-          opacity: 0,
-          duration: 0.85,
-          ease: 'power3.out',
-          stagger: 0.1,
-        });
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: heroRef.current,
-            start: 'top top',
-            end: isMobile ? '+=125%' : '+=200%',
-            pin: true,
-            pinSpacing: true,
-            pinReparent: true,
-            scrub: isMobile ? 0.55 : 1,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-
-        tl.to('.hero-video-day', { scale: 1.52, yPercent: -9.5, filter: 'brightness(0.78)', duration: 1 }, 0);
-        tl.to('.hero-video-night', { opacity: 1, scale: 1.48, yPercent: -8.5, filter: 'brightness(0.92)', duration: 1 }, 0);
-        tl.to('.hero-overlay-night', { opacity: 1, duration: 1 }, 0);
-        tl.to('.hero-day-content', { autoAlpha: 0, x: isMobile ? 16 : 30, duration: 1 }, 0);
-        tl.to('.hero-night-content', { autoAlpha: 1, x: 0, duration: 1 }, 0);
-        tl.to('.hero-pill-day', { opacity: 0.35, duration: 1 }, 0);
-        tl.to('.hero-pill-night', { opacity: 1, duration: 1 }, 0);
-        tl.to('.hero-progress', { scaleX: 1, duration: 1 }, 0);
-      };
-
-      mm.add('(max-width: 767px)', () => {
-        setup(true);
-      });
-
-      mm.add('(min-width: 768px)', () => {
-        setup(false);
-      });
-
-      return () => mm.revert();
-    },
-    { scope: heroRef },
-  );
-
   return (
     <div className="flex flex-col w-full max-w-[100vw] min-w-0 overflow-x-hidden bg-kado-cream font-sans">
-
-      {/* ═══════════════════════════════════════════
-          HERO — Fullscreen immersive, day/night pin
-          ═══════════════════════════════════════════ */}
-      <section
-        ref={heroRef}
-        className="relative w-full h-svh min-h-svh flex items-end overflow-hidden"
-        style={{ zIndex: 90 }}
-      >
-        {/*
-          The source exports include a brand-manual header in the top band.
-          Scale up and move the frame upward so that text is cropped outside
-          the viewport on first paint, independent of scroll state.
-        */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Day video */}
-          <video
-            ref={heroDayVideoRef}
-            className="hero-video-day absolute inset-0 w-full h-full object-cover"
-            style={{ transform: "scale(1.48) translateY(-8.5%)", transformOrigin: "center center", willChange: "transform, opacity" }}
-            autoPlay muted loop playsInline preload="auto"
-            aria-label="Kado Kohi daytime atmosphere"
-          >
-            <source src="/videos/Day.mp4" type="video/mp4" />
-          </video>
-          {/* Night video */}
-          <video
-            ref={heroNightVideoRef}
-            className="hero-video-night absolute inset-0 w-full h-full object-cover opacity-0"
-            style={{ transform: "scale(1.48) translateY(-8.5%)", transformOrigin: "center center", willChange: "transform, opacity" }}
-            autoPlay muted loop playsInline preload="auto"
-            aria-label="Kado Kohi nighttime atmosphere"
-          >
-            <source src="/videos/Night.mp4" type="video/mp4" />
-          </video>
-
-          {/* Scrims: no heavy top block, so the hero starts immediately under the navbar. */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#191919] via-[#191919]/66 to-[#191919]/18" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#191919]/35 to-transparent" />
-          {/* Night overlay — fades in on scroll */}
-          <div className="hero-overlay-night absolute inset-0 opacity-0" style={{ background: "linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.82) 45%, rgba(10,10,10,0.5) 100%)" }} />
-        </div>
-
-        {/* ── Content Grid — flush left (Day) & flush right (Night), bottom-anchored ── */}
-        <div className="relative z-10 w-full px-4 sm:px-6 md:px-14 lg:px-20 pb-[max(3.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] sm:pb-18 md:pb-22 pt-[max(5.25rem,env(safe-area-inset-top,0px)+4.5rem)] grid grid-cols-1 grid-rows-1">
-          
-          {/* DAY CONTENT (Left) */}
-          <div className="hero-day-content hero-enter col-start-1 row-start-1 max-w-3xl w-full justify-self-start will-change-transform">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mb-5">
-              <MapPin className="w-3 h-3 text-kado-red" aria-hidden />
-              Marikina City
-            </p>
-            <h1 className="font-display font-bold text-white leading-[0.9] tracking-[-0.03em] mb-5 sm:mb-7 text-[clamp(2.125rem,min(12vw,4.5rem),8rem)]">
-              Not Your<br />Quiet Cafe.
-            </h1>
-            <p className="text-[0.9375rem] sm:text-base md:text-lg text-white/68 font-medium leading-relaxed max-w-sm mb-8 sm:mb-10">
-              Slow mornings, vinyl-adjacent energy, room to breathe.
-            </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto max-w-md">
-              <Link
-                to="/menu"
-                className="bg-kado-red text-white min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 font-bold uppercase tracking-[0.12em] text-xs flex items-center justify-center gap-2 hover:bg-[#7d1115] transition-colors active:opacity-95 rounded-sm"
-              >
-                Explore Menu <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
-              </Link>
-              <a
-                href="#kado-circle"
-                className="border border-white/25 text-white/90 hover:text-white hover:border-white/60 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 font-bold uppercase tracking-[0.12em] text-xs flex items-center justify-center gap-2 transition-colors active:opacity-95 rounded-sm"
-              >
-                Join Kado Circle
-              </a>
-            </div>
-          </div>
-
-          {/* NIGHT CONTENT (Right) */}
-          <div className="hero-night-content hero-enter col-start-1 row-start-1 max-w-3xl w-full justify-self-end text-right flex flex-col items-end will-change-transform opacity-0 pointer-events-none">
-            <p className="flex items-center justify-end gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mb-5">
-              <MapPin className="w-3 h-3 text-kado-red" aria-hidden />
-              Marikina City
-            </p>
-            <h1 className="font-display font-bold text-white leading-[0.9] tracking-[-0.03em] mb-5 sm:mb-7 text-[clamp(2.125rem,min(12vw,4.5rem),8rem)]">
-              Not Your<br />Quiet Cafe.
-            </h1>
-            <p className="text-[0.9375rem] sm:text-base md:text-lg text-white/88 font-medium leading-relaxed max-w-sm mb-8 sm:mb-10">
-              Bass-forward nights where strangers become regulars.
-            </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 w-full sm:w-auto max-w-md ml-auto pointer-events-auto">
-              <Link
-                to="/menu"
-                className="bg-kado-red text-white min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 font-bold uppercase tracking-[0.12em] text-xs flex items-center justify-center gap-2 hover:bg-[#7d1115] transition-colors active:opacity-95 rounded-sm"
-              >
-                Explore Menu <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
-              </Link>
-              <a
-                href="#kado-circle"
-                className="border border-white/25 text-white/90 hover:text-white hover:border-white/60 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 font-bold uppercase tracking-[0.12em] text-xs flex items-center justify-center gap-2 transition-colors active:opacity-95 rounded-sm"
-              >
-                Join Kado Circle
-              </a>
-            </div>
-          </div>
-
-          {/* Mode indicator — bottom-right */}
-          <div className="hero-enter absolute bottom-[max(1rem,env(safe-area-inset-bottom,0px))] sm:bottom-14 md:bottom-20 right-4 sm:right-6 md:right-14 lg:right-20 flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.28em]">
-              <span className="hero-pill-day text-white">Day</span>
-              <span className="text-white/20">/</span>
-              <span className="hero-pill-night text-white/35">Night</span>
-             </div>
-            <div className="w-16 h-[2px] bg-white/15 rounded-full overflow-hidden">
-              <div className="hero-progress h-full w-full bg-kado-red rounded-full origin-left scale-x-0" />
-             </div>
-          </div>
-          </div>
-
-        {/* ── Japanese kanji watermark ── */}
-        <div
-          className="absolute top-1/2 right-8 md:right-16 -translate-y-1/2 text-[20vw] md:text-[14vw] font-display font-bold text-white/[0.03] select-none pointer-events-none leading-none"
-          aria-hidden
-        >
-          角
-        </div>
-      </section>
+      <HomeHeroSlider slides={HOME_HERO_SLIDES} />
 
       {/* =========================================
-          2. KADO KOHI APP PREVIEW (Cinematic Scroll)
+          2. FEATURED PRODUCTS (Conversion-first)
           ========================================= */}
-      <CinematicAppHero />
+      <SignatureSipsSection />
 
       {/* =========================================
           3. HOW TO ORDER (Carousel)
@@ -230,17 +32,17 @@ export default function Home() {
       <KadoOrderingCarousel />
 
       {/* =========================================
-          4. SIGNATURE SIPS PREVIEW
+          4. CAFE HOURS
           ========================================= */}
-      <SignatureSipsSection />
+      <CafeScheduleSection />
 
       {/* =========================================
-          4. SOCIAL HUB & EVENTS (Instagram Style)
+          5. SOCIAL HUB & EVENTS (Instagram Style)
           ========================================= */}
       <EventsSection />
 
       {/* =========================================
-          5. CUSTOMER TESTIMONIALS
+          6. CUSTOMER TESTIMONIALS
           ========================================= */}
       <AnimatedTestimonials
         badgeText="Customers"
@@ -293,17 +95,17 @@ export default function Home() {
       />
 
       {/* =========================================
-          6. BRANCHES STRIP
+          7. BRANCHES STRIP
           ========================================= */}
       <BranchesStrip />
 
       {/* =========================================
-          6. KADO CIRCLE (Newsletter/Loyalty)
+          8. KADO CIRCLE (Newsletter/Loyalty)
           ========================================= */}
       <KadoCircleCTA />
 
       {/* =========================================
-          7. ADMIN-DEFINED CUSTOM SECTIONS
+          9. ADMIN-DEFINED CUSTOM SECTIONS
           ========================================= */}
       <CustomSectionRenderer />
 
@@ -324,6 +126,8 @@ const FALLBACK_IMAGES = [
 function SignatureSipsSection() {
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
+  const user = useAuthStore((s) => s.user);
+  const addItem = useCartStore((s) => s.addItem);
 
   const sigCat = categories.find((c) => c.name.toLowerCase().includes('signature'));
   const showcaseDrinks = useMemo(() => {
@@ -332,6 +136,30 @@ function SignatureSipsSection() {
       : products.filter((p) => p.visible);
     return src.slice(0, 3);
   }, [products, sigCat]);
+
+  const handleAddToCart = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const defaultMilk = product.milks[0];
+    const defaultSize = product.sizes[0];
+    const unitPrice = product.basePrice + (defaultMilk?.priceDelta ?? 0) + (defaultSize?.priceDelta ?? 0);
+
+    addItem({
+      itemType: 'coffee',
+      productId: product.id,
+      productNameSnapshot: product.name,
+      qty: 1,
+      milkId: defaultMilk?.id,
+      milkLabelSnapshot: defaultMilk?.label,
+      sizeId: defaultSize?.id,
+      sizeLabelSnapshot: defaultSize?.label,
+      temperature: product.temperature === 'both' ? 'hot' : product.temperature === 'iced' ? 'iced' : 'hot',
+      unitPrice,
+      lineTotal: unitPrice,
+      image: product.image,
+    });
+  };
   
   return (
     <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
@@ -376,6 +204,30 @@ function SignatureSipsSection() {
                   ) : null}
                 </div>
                 <span className="font-display font-bold text-kado-red shrink-0 ml-3">{formatPhp(drink.basePrice)}</span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(drink.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-kado-dark px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-cream transition-colors hover:bg-kado-red"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add to Cart
+                  </button>
+                  <Link
+                    to="/menu"
+                    className="inline-flex items-center rounded-lg border border-kado-dark/15 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/80 transition-colors hover:border-kado-red/35 hover:text-kado-red"
+                  >
+                    Explore Menu
+                  </Link>
+                  {!user && (
+                    <Link
+                      to="/auth/login"
+                      className="inline-flex items-center rounded-lg border border-kado-dark/15 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/80 transition-colors hover:border-kado-red/35 hover:text-kado-red"
+                    >
+                      Sign In
+                    </Link>
+                  )}
                 </div>
               </motion.div>
             ))}
