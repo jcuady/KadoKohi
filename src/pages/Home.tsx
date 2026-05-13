@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -8,107 +8,94 @@ import { KadoOrderingCarousel } from '../components/ui/animated-feature-carousel
 import KadoCircleCTA from '../components/ui/cta-with-text-marquee';
 import HomeHeroSlider from '../components/ui/home-hero-slider';
 import CafeScheduleSection from '../components/home/CafeScheduleSection';
-import { HOME_HERO_SLIDES } from '../data/homeHeroMedia';
 import { useBranchStore } from '../store/branchStore';
 import { useEventStore } from '../store/eventStore';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
+import {
+  useLandingContentStore,
+  type FeaturedCopy,
+  type EventsCopy,
+  type HomeBlockType,
+} from '../store/landingContentStore';
 import { formatPhp } from '../lib/money';
 
 export default function Home() {
+  const landing = useLandingContentStore((s) => s.content);
+  const blockMap = useMemo(
+    () =>
+      ({
+        hero: <HomeHeroSlider slides={landing.heroSlides} />,
+        featured: <SignatureSipsSection copy={landing.featured} />,
+        ordering: <KadoOrderingCarousel />,
+        schedule: <CafeScheduleSection copy={landing.schedule} />,
+        events: <EventsSection copy={landing.events} />,
+        testimonials: (
+          <AnimatedTestimonials
+            badgeText={landing.testimonials.badge}
+            title={landing.testimonials.title}
+            subtitle={landing.testimonials.subtitle}
+            trustedCompaniesTitle={landing.testimonials.trustedTitle}
+            trustedCompanies={['Oatside', 'Emborg', 'Aiya Matcha', 'Marigold', 'Arla']}
+            testimonials={[
+              {
+                id: 1,
+                name: 'Rina Santos',
+                role: 'Regular',
+                company: 'Marikina',
+                content:
+                  "The oat latte here is unreal. Oatside milk makes such a difference — perfectly steamed, not too sweet, and the ambiance just pulls you in. I'm here every weekend without fail.",
+                rating: 5,
+                avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+              },
+              {
+                id: 2,
+                name: 'Marco Dela Cruz',
+                role: 'Freelancer',
+                company: 'Pasig',
+                content:
+                  "Best work-from-cafe spot in the area. The music is always right, the matcha (Aiya grade A!) is excellent, and the staff actually know your order by your third visit.",
+                rating: 5,
+                avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
+              },
+              {
+                id: 3,
+                name: 'Jess Buenaventura',
+                role: 'Creative',
+                company: 'QC',
+                content:
+                  "I love that they're intentional about what goes into their drinks — Emborg dairy, quality matcha. You taste the difference. The night vibe on weekends is also *chef's kiss*.",
+                rating: 5,
+                avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
+              },
+              {
+                id: 4,
+                name: 'Luis Tomas',
+                role: 'Student',
+                company: 'Marikina',
+                content:
+                  "Kado is my corner. No pretension, just good coffee, good music, and people who feel like community. It's rare to find a place this intentional about craft and vibe.",
+                rating: 5,
+                avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
+              },
+            ]}
+          />
+        ),
+        branches: <BranchesStrip />,
+        kadoCircle: <KadoCircleCTA />,
+        customSections: <CustomSectionRenderer />,
+      }) satisfies Record<HomeBlockType, ReactNode>,
+    [landing],
+  );
+
   return (
     <div className="flex flex-col w-full max-w-[100vw] min-w-0 overflow-x-hidden bg-kado-cream font-sans">
-      <HomeHeroSlider slides={HOME_HERO_SLIDES} />
-
-      {/* =========================================
-          2. FEATURED PRODUCTS (Conversion-first)
-          ========================================= */}
-      <SignatureSipsSection />
-
-      {/* =========================================
-          3. HOW TO ORDER (Carousel)
-          ========================================= */}
-      <KadoOrderingCarousel />
-
-      {/* =========================================
-          4. CAFE HOURS
-          ========================================= */}
-      <CafeScheduleSection />
-
-      {/* =========================================
-          5. SOCIAL HUB & EVENTS (Instagram Style)
-          ========================================= */}
-      <EventsSection />
-
-      {/* =========================================
-          6. CUSTOMER TESTIMONIALS
-          ========================================= */}
-      <AnimatedTestimonials
-        badgeText="Customers"
-        title="Loved by our community"
-        subtitle="Don't just take our word for it. Here's what regulars have to say about their Kado Kohi experience."
-        trustedCompaniesTitle="Uses trusted brands like"
-        trustedCompanies={["Oatside", "Emborg", "Aiya Matcha", "Marigold", "Arla"]}
-        testimonials={[
-          {
-            id: 1,
-            name: "Rina Santos",
-            role: "Regular",
-            company: "Marikina",
-            content:
-              "The oat latte here is unreal. Oatside milk makes such a difference — perfectly steamed, not too sweet, and the ambiance just pulls you in. I'm here every weekend without fail.",
-            rating: 5,
-            avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-          },
-          {
-            id: 2,
-            name: "Marco Dela Cruz",
-            role: "Freelancer",
-            company: "Pasig",
-            content:
-              "Best work-from-cafe spot in the area. The music is always right, the matcha (Aiya grade A!) is excellent, and the staff actually know your order by your third visit.",
-            rating: 5,
-            avatar: "https://randomuser.me/api/portraits/men/54.jpg",
-          },
-          {
-            id: 3,
-            name: "Jess Buenaventura",
-            role: "Creative",
-            company: "QC",
-            content:
-              "I love that they're intentional about what goes into their drinks — Emborg dairy, quality matcha. You taste the difference. The night vibe on weekends is also *chef's kiss*.",
-            rating: 5,
-            avatar: "https://randomuser.me/api/portraits/women/33.jpg",
-          },
-          {
-            id: 4,
-            name: "Luis Tomas",
-            role: "Student",
-            company: "Marikina",
-            content:
-              "Kado is my corner. No pretension, just good coffee, good music, and people who feel like community. It's rare to find a place this intentional about craft and vibe.",
-            rating: 5,
-            avatar: "https://randomuser.me/api/portraits/men/22.jpg",
-          },
-        ]}
-      />
-
-      {/* =========================================
-          7. BRANCHES STRIP
-          ========================================= */}
-      <BranchesStrip />
-
-      {/* =========================================
-          8. KADO CIRCLE (Newsletter/Loyalty)
-          ========================================= */}
-      <KadoCircleCTA />
-
-      {/* =========================================
-          9. ADMIN-DEFINED CUSTOM SECTIONS
-          ========================================= */}
-      <CustomSectionRenderer />
-
+      {landing.homeBlocks
+        .filter((block) => block.enabled)
+        .map((block) => (
+          <div key={block.id}>{blockMap[block.id]}</div>
+        ))}
     </div>
   );
 }
@@ -123,7 +110,7 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=400&auto=format&fit=crop',
 ];
 
-function SignatureSipsSection() {
+function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
   const user = useAuthStore((s) => s.user);
@@ -166,17 +153,17 @@ function SignatureSipsSection() {
       <div className="max-w-[1400px] mx-auto">
         <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10 sm:mb-16">
           <div>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Signatures</span>
+            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">{copy.badge}</span>
             <h2 className="font-display text-[clamp(1.875rem,6vw,3.75rem)] md:text-5xl lg:text-6xl font-bold text-kado-dark leading-tight">
-              Signature <span className="text-kado-red italic">Sips.</span>
+              {copy.title}
             </h2>
           </div>
           <p className="text-kado-dark/70 font-medium max-w-sm text-sm leading-relaxed md:text-base hidden md:block">
-            Explore our community's highest-rated daily rituals. Hand-crafted, every single time.
+            {copy.subtitleDesktop}
           </p>
         </div>
         <p className="text-kado-dark/65 text-sm leading-relaxed mb-8 md:hidden -mt-2 max-w-md">
-          Community favourites — hand-crafted, every single time.
+          {copy.subtitleMobile}
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 w-full pb-6 sm:pb-8">
@@ -238,7 +225,7 @@ function SignatureSipsSection() {
             to="/menu"
             className="inline-flex items-center justify-center gap-2 min-h-[44px] border-b-2 border-kado-red pb-1 text-kado-dark font-bold uppercase tracking-widest text-sm sm:text-base hover:text-kado-red transition-colors"
           >
-            View Full Menu <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
+            {copy.menuCtaLabel} <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
             </Link>
         </div>
       </div>
@@ -285,7 +272,7 @@ function useCountdown(isoDate: string | undefined) {
 
 const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1200&auto=format&fit=crop';
 
-function EventsSection() {
+function EventsSection({ copy }: { copy: EventsCopy }) {
   /** Select raw `events` only — `visibleEvents()` returns a new array each call and breaks useSyncExternalStore snapshot equality (infinite re-renders). */
   const events = useEventStore((s) => s.events);
   const ev = useMemo(() => {
@@ -307,13 +294,13 @@ function EventsSection() {
       <div className="max-w-[1400px] mx-auto">
         <div className="text-center mb-12 sm:mb-16 md:mb-20">
           <span className="inline-flex items-center gap-2 text-kado-red font-bold tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-4 bg-kado-red/10 px-3 sm:px-4 py-2 rounded-full border border-kado-red/20 shadow-sm">
-            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Next Massive Event
+            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> {copy.badge}
           </span>
           <h2 className="font-display text-[clamp(1.75rem,7vw,4.5rem)] md:text-6xl lg:text-8xl font-bold text-[#2A2626] leading-[1.08] px-1">
-            More than a <span className="text-[#612821] italic opacity-90">Corner.</span>
+            {copy.title}
           </h2>
           <p className="text-base sm:text-lg md:text-2xl text-[#4A423C] font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0 leading-relaxed">
-            Coffee shop by day. Club and hangout by night. The definitive Marikina social experience.
+            {copy.subtitle}
           </p>
         </div>
 

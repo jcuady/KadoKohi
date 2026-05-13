@@ -24,6 +24,7 @@ import { useBoothCatalogStore } from '../store/boothCatalogStore';
 import { useBookingEstimateStore } from '../store/bookingEstimateStore';
 import { useBoothBookingStore } from '../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
+import { useLandingContentStore } from '../store/landingContentStore';
 
 export const api = {
   /* ───── Auth ───── */
@@ -199,6 +200,18 @@ export const api = {
     toggleTheme: useSettingsStore.getState().toggleDashTheme,
   },
 
+  /* ───── Landing Content ───── */
+  landing: {
+    get: () => useLandingContentStore.getState().content,
+    setHeroSlides: useLandingContentStore.getState().setHeroSlides,
+    reorderHomeBlocks: useLandingContentStore.getState().reorderHomeBlocks,
+    toggleHomeBlock: useLandingContentStore.getState().toggleHomeBlock,
+    updateFeatured: useLandingContentStore.getState().updateFeatured,
+    updateEvents: useLandingContentStore.getState().updateEvents,
+    updateTestimonials: useLandingContentStore.getState().updateTestimonials,
+    updateSchedule: useLandingContentStore.getState().updateSchedule,
+  },
+
   /** Resets all stores to seed data — useful for dev/testing. */
   resetAll: () => {
     useBranchStore.getState().seed();
@@ -215,6 +228,7 @@ export const api = {
     useBoothShowcaseStore.getState().seed();
     useBookingEstimateStore.getState().seed();
     useBoothBookingStore.getState().seed();
+    useLandingContentStore.getState().seed();
     useCartStore.getState().clear();
     useAuthStore.getState().logout();
   },

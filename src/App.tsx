@@ -33,6 +33,7 @@ import AdminLoyalty from './pages/admin/AdminLoyalty';
 import AdminBoothBookings from './pages/admin/AdminBoothBookings';
 import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
 import AdminBoothContent from './pages/admin/AdminBoothContent';
+import AdminLandingContent from './pages/admin/AdminLandingContent';
 import StaffLayout from './layouts/StaffLayout';
 import StaffMerchOrders from './pages/staff/StaffMerchOrders';
 import StaffAllOrders from './pages/staff/StaffAllOrders';
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="events" element={<AdminEvents />} />
             <Route path="tables" element={<AdminTables />} />
             <Route path="sections" element={<AdminSections />} />
+            <Route path="landing" element={<AdminLandingContent />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useBranchStore } from '../../store/branchStore';
+import type { ScheduleCopy } from '../../store/landingContentStore';
 
 const DAY_LABELS: Record<string, string> = {
   mon: 'Monday',
@@ -21,7 +22,11 @@ function toDisplayTime(raw: string) {
   return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
-export default function CafeScheduleSection() {
+interface Props {
+  copy?: ScheduleCopy;
+}
+
+export default function CafeScheduleSection({ copy }: Props) {
   const branches = useBranchStore((s) => s.branches);
 
   const activeBranch = useMemo(
@@ -50,12 +55,15 @@ export default function CafeScheduleSection() {
       <div className="max-w-[1200px] mx-auto">
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
-            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-kado-red">Kado Kohi</p>
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-kado-red">
+              {copy?.badge ?? 'Kado Kohi'}
+            </p>
             <h2 className="font-display text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[0.95] text-kado-dark">
-              Cafe Hours
+              {copy?.title ?? 'Cafe Hours'}
             </h2>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-kado-dark/70 sm:text-base">
-              Your daily coffee routine, now clearly scheduled. Check our opening hours before dropping by for coffee, matcha, and community nights.
+              {copy?.description ??
+                'Your daily coffee routine, now clearly scheduled. Check our opening hours before dropping by for coffee, matcha, and community nights.'}
             </p>
           </div>
 
@@ -71,12 +79,14 @@ export default function CafeScheduleSection() {
             <p className="mt-4 text-center text-xs font-medium text-kado-dark/65 sm:text-sm">
               {activeBranch.address}, {activeBranch.city}
             </p>
-            <p className="mt-1 text-center text-xs font-medium text-kado-dark/65 sm:text-sm">+63 920 948 2934</p>
+            <p className="mt-1 text-center text-xs font-medium text-kado-dark/65 sm:text-sm">
+              {copy?.phone ?? '+63 920 948 2934'}
+            </p>
           </div>
         </div>
 
         <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.14em] text-kado-dark/55">
-          Featured local photos credited to InsideMarikina.
+          {copy?.creditLine ?? 'Featured local photos credited to InsideMarikina.'}
         </p>
       </div>
     </section>
