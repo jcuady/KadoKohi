@@ -3,8 +3,9 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mail } from 'lucide-react';
 import { HorizontalMarquee } from './marquee';
+import type { KadoCircleCopy } from '../../store/landingContentStore';
 
-/** Partners & collaborators — shown in the sponsor strip (swap for CMS later). */
+/** Partners & collaborators — default strip when CMS copy is absent. */
 export const KADO_CIRCLE_SPONSORS = [
   'Anytime Fitness',
   'foodpanda',
@@ -18,16 +19,20 @@ export const KADO_CIRCLE_SPONSORS = [
 
 type KadoCircleCTAProps = {
   className?: string;
+  /** When provided (e.g. from landing content store), overrides default copy and sponsor list. */
+  copy?: KadoCircleCopy;
 };
 
 /**
  * “Join the Kado Circle” — dark panel, email capture, horizontal sponsor marquee, stats.
  * Brand: `kado-dark`, `kado-red`, `kado-cream` / white text (see `index.css` @theme).
  */
-export default function KadoCircleCTA({ className }: KadoCircleCTAProps) {
+export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const marqueeRef = useRef<HTMLDivElement>(null);
+
+  const sponsors = copy?.sponsors?.length ? copy.sponsors : [...KADO_CIRCLE_SPONSORS];
 
   useEffect(() => {
     const root = marqueeRef.current;
@@ -88,15 +93,15 @@ export default function KadoCircleCTA({ className }: KadoCircleCTAProps) {
           <div className="max-w-xl">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-kado-red mb-5">
               <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              The Inner Circle
+              {copy?.badge ?? 'The Inner Circle'}
             </p>
             <h2 className="font-display font-bold leading-[0.95] tracking-tight text-white mb-4 sm:mb-5 text-[clamp(2rem,6vw,4rem)]">
-              Join the{' '}
-              <span className="text-kado-red not-italic">Kado Circle.</span>
+              {copy?.titleBefore ?? 'Join the'}{' '}
+              <span className="text-kado-red not-italic">{copy?.titleAccent ?? 'Kado Circle.'}</span>
             </h2>
             <p className="text-white/55 font-medium text-base md:text-lg leading-relaxed">
-              Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a
-              local.
+              {copy?.body ??
+                'Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a local.'}
             </p>
           </div>
 
@@ -113,29 +118,29 @@ export default function KadoCircleCTA({ className }: KadoCircleCTAProps) {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
+                placeholder={copy?.emailPlaceholder ?? 'Enter your email address'}
                 className="w-full min-h-[48px] bg-white/[0.07] border border-white/12 text-white placeholder:text-white/35 px-4 sm:px-5 py-3 rounded-xl sm:rounded-2xl focus:outline-none focus:border-kado-red/70 focus:bg-white/[0.09] transition-all text-base sm:text-sm"
               />
               <button
                 type="submit"
                 className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-[#7d1115] transition-colors flex items-center justify-center gap-2 active:opacity-95"
               >
-                Request access <ArrowRight className="w-4 h-4" aria-hidden />
+                {copy?.submitLabel ?? 'Request access'} <ArrowRight className="w-4 h-4" aria-hidden />
               </button>
             </form>
-            <p className="text-white/35 text-xs mt-3 text-center lg:text-left">No spam. Unsubscribe any time.</p>
+            <p className="text-white/35 text-xs mt-3 text-center lg:text-left">{copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}</p>
           </div>
         </div>
 
         {/* Sponsor marquee */}
         <div className="mt-14 md:mt-16">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35 mb-4 text-center">
-            Friends of the corner
+            {copy?.marqueeLabel ?? 'Friends of the corner'}
           </p>
           <div ref={marqueeRef} className="relative w-full py-2">
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] py-4 md:py-5">
               <HorizontalMarquee speed={32} pauseOnHover className="w-full">
-                {KADO_CIRCLE_SPONSORS.map((name) => (
+                {sponsors.map((name) => (
                   <div
                     key={name}
                     className="marquee-item-horizontal font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-white/90 px-6 sm:px-10 md:px-14 whitespace-nowrap"
@@ -152,12 +157,12 @@ export default function KadoCircleCTA({ className }: KadoCircleCTAProps) {
 
         {/* Stats */}
         <div className="mt-10 sm:mt-12 md:mt-14 pt-8 sm:pt-10 border-t border-white/[0.08] grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-8 sm:gap-8">
-          {[
+          {(copy?.stats?.length ? copy.stats : [
             { num: '2+', label: 'Branches' },
             { num: '50+', label: 'Menu items' },
             { num: '9', label: 'Stamp loyalty' },
             { num: '∞', label: 'Good vibes' },
-          ].map(({ num, label }) => (
+          ]).map(({ num, label }) => (
             <div key={label}>
               <p className="font-display font-bold text-3xl md:text-4xl text-white mb-1">{num}</p>
               <p className="text-white/40 text-xs uppercase tracking-widest font-bold">{label}</p>
@@ -170,7 +175,7 @@ export default function KadoCircleCTA({ className }: KadoCircleCTAProps) {
             to="/auth/signup"
             className="inline-flex min-h-[44px] items-center justify-center px-2 text-xs font-bold uppercase tracking-wider text-kado-red/90 hover:text-kado-cream transition-colors"
           >
-            Or go straight to create account →
+            {copy?.footerLinkLabel ?? 'Or go straight to create account →'}
           </Link>
         </p>
       </div>

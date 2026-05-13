@@ -18,6 +18,7 @@ import {
   type FeaturedCopy,
   type EventsCopy,
   type HomeBlockType,
+  type BranchesStripCopy,
 } from '../store/landingContentStore';
 import { formatPhp } from '../lib/money';
 
@@ -26,9 +27,9 @@ export default function Home() {
   const blockMap = useMemo(
     () =>
       ({
-        hero: <HomeHeroSlider slides={landing.heroSlides} />,
+        hero: <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />,
         featured: <SignatureSipsSection copy={landing.featured} />,
-        ordering: <KadoOrderingCarousel />,
+        ordering: <KadoOrderingCarousel copy={landing.ordering} />,
         schedule: <CafeScheduleSection copy={landing.schedule} />,
         events: <EventsSection copy={landing.events} />,
         testimonials: (
@@ -37,53 +38,12 @@ export default function Home() {
             title={landing.testimonials.title}
             subtitle={landing.testimonials.subtitle}
             trustedCompaniesTitle={landing.testimonials.trustedTitle}
-            trustedCompanies={['Oatside', 'Emborg', 'Aiya Matcha', 'Marigold', 'Arla']}
-            testimonials={[
-              {
-                id: 1,
-                name: 'Rina Santos',
-                role: 'Regular',
-                company: 'Marikina',
-                content:
-                  "The oat latte here is unreal. Oatside milk makes such a difference — perfectly steamed, not too sweet, and the ambiance just pulls you in. I'm here every weekend without fail.",
-                rating: 5,
-                avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-              },
-              {
-                id: 2,
-                name: 'Marco Dela Cruz',
-                role: 'Freelancer',
-                company: 'Pasig',
-                content:
-                  "Best work-from-cafe spot in the area. The music is always right, the matcha (Aiya grade A!) is excellent, and the staff actually know your order by your third visit.",
-                rating: 5,
-                avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
-              },
-              {
-                id: 3,
-                name: 'Jess Buenaventura',
-                role: 'Creative',
-                company: 'QC',
-                content:
-                  "I love that they're intentional about what goes into their drinks — Emborg dairy, quality matcha. You taste the difference. The night vibe on weekends is also *chef's kiss*.",
-                rating: 5,
-                avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
-              },
-              {
-                id: 4,
-                name: 'Luis Tomas',
-                role: 'Student',
-                company: 'Marikina',
-                content:
-                  "Kado is my corner. No pretension, just good coffee, good music, and people who feel like community. It's rare to find a place this intentional about craft and vibe.",
-                rating: 5,
-                avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-              },
-            ]}
+            trustedCompanies={landing.trustedBrands}
+            testimonials={landing.testimonialItems}
           />
         ),
-        branches: <BranchesStrip />,
-        kadoCircle: <KadoCircleCTA />,
+        branches: <BranchesStrip copy={landing.branchesStrip} />,
+        kadoCircle: <KadoCircleCTA copy={landing.kadoCircle} />,
         customSections: <CustomSectionRenderer />,
       }) satisfies Record<HomeBlockType, ReactNode>,
     [landing],
@@ -176,7 +136,11 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
             >
               <div className="w-full aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden mb-5 sm:mb-6 relative bg-kado-cream">
                 <img
-                  src={drink.image ?? FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]}
+                  src={
+                    copy.cardImageOverrides[i]?.trim() ||
+                    drink.image ||
+                    FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]
+                  }
                   alt={drink.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                 />
@@ -307,7 +271,13 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
         {ev ? (
         <div className="w-full">
             <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group cursor-pointer border border-[#2A2626]/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:h-[750px] w-full">
-              <img src={ev.cover ?? FALLBACK_EVENT_IMG} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s] ease-out brightness-[0.7] contrast-[1.1]" />
+              <img
+                src={
+                  (copy.coverImageOverride?.trim() || ev.cover || FALLBACK_EVENT_IMG) as string
+                }
+                alt={ev.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s] ease-out brightness-[0.7] contrast-[1.1]"
+              />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/95 opacity-90" />
               <div className="absolute inset-0 p-5 sm:p-8 lg:p-16 flex flex-col justify-between gap-8">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 w-full">
@@ -347,8 +317,10 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
         ) : (
           <div className="text-center py-16">
             <CalendarDays className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
-            <p className="text-kado-dark/50 text-sm">No upcoming events right now. Check back soon.</p>
-            <Link to="/events" className="mt-4 inline-block text-kado-red font-bold text-sm hover:underline">Browse past events →</Link>
+            <p className="text-kado-dark/50 text-sm">{copy.noEventBody}</p>
+            <Link to="/events" className="mt-4 inline-block text-kado-red font-bold text-sm hover:underline">
+              {copy.noEventBrowseLabel}
+            </Link>
         </div>
         )}
       </div>
@@ -359,7 +331,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
 // =========================================
 // Branches Strip — data-driven from useBranchStore
 // =========================================
-function BranchesStrip() {
+function BranchesStrip({ copy }: { copy: BranchesStripCopy }) {
   const branches = useBranchStore((s) => s.branches);
 
   const fmt = (hours: { day: string; open: string; close: string }[]) => {
@@ -373,11 +345,11 @@ function BranchesStrip() {
       <div className="max-w-[1400px] mx-auto">
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12">
           <div>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Locations</span>
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-kado-cream">Find us.</h2>
+            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">{copy.badge}</span>
+            <h2 className="font-display text-3xl md:text-5xl font-bold text-kado-cream">{copy.title}</h2>
           </div>
           <Link to="/branches" className="text-kado-cream/60 hover:text-kado-red text-sm font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
-            All branches <ArrowRight className="w-4 h-4" />
+            {copy.ctaLabel} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 

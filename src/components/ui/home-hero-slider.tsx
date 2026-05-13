@@ -3,12 +3,14 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { HomeHeroSlide } from '../../data/homeHeroMedia';
+import type { HeroChrome } from '../../store/landingContentStore';
 
 interface Props {
   slides: HomeHeroSlide[];
+  chrome?: HeroChrome;
 }
 
-export default function HomeHeroSlider({ slides }: Props) {
+export default function HomeHeroSlider({ slides, chrome }: Props) {
   const safeSlides = useMemo(() => slides, [slides]);
   const [index, setIndex] = useState(0);
 
@@ -27,6 +29,7 @@ export default function HomeHeroSlider({ slides }: Props) {
   if (safeSlides.length === 0) return null;
 
   const current = safeSlides[index] ?? safeSlides[0];
+  const c = chrome;
 
   return (
     <section className="relative h-[calc(100svh-3.5rem)] md:h-[calc(100svh-3.75rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10">
@@ -47,7 +50,9 @@ export default function HomeHeroSlider({ slides }: Props) {
 
       <div className="relative z-10 grid h-full grid-cols-1 items-end gap-8 px-4 pb-8 pt-10 sm:px-6 md:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.8fr)] md:px-12 md:pb-12 lg:px-20">
         <div className="max-w-3xl">
-          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.24em] text-kado-cream/75">Kado Kohi · Marikina</p>
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.24em] text-kado-cream/75">
+            {c?.locationBadge ?? 'Kado Kohi · Marikina'}
+          </p>
           <h1 className="font-display text-[clamp(2.2rem,7vw,5.2rem)] font-bold leading-[0.94] tracking-[-0.015em] text-white">
             {current.title}
           </h1>
@@ -57,21 +62,21 @@ export default function HomeHeroSlider({ slides }: Props) {
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <Link
-              to="/menu"
+              to={c?.primaryCtaPath ?? '/menu'}
               className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-sm bg-kado-red px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#7d1115]"
             >
-              Explore Menu <ArrowRight className="h-4 w-4" />
+              {c?.primaryCtaLabel ?? 'Explore Menu'} <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/merch"
+              to={c?.secondaryCtaPath ?? '/merch'}
               className="inline-flex min-h-[46px] items-center justify-center rounded-sm border border-white/35 bg-black/20 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white/95 transition-colors hover:border-white/70 hover:text-white"
             >
-              Shop Merch
+              {c?.secondaryCtaLabel ?? 'Shop Merch'}
             </Link>
           </div>
 
           <p className="mt-5 inline-flex rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-kado-cream/85">
-            Images: Kado Kohi Social + InsideMarikina
+            {c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
           </p>
         </div>
 

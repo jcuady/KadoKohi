@@ -477,9 +477,22 @@ function ProgressBar({ step, total, interval }: { step: number; total: number; i
   );
 }
 
+export interface KadoOrderingCarouselCopy {
+  badge: string;
+  title: string;
+  subtitleDesktop: string;
+  subtitleMobile: string;
+}
+
 // ─── Public export ────────────────────────────────────────────────────────────
 
-export function KadoOrderingCarousel({ className }: { className?: string }) {
+export function KadoOrderingCarousel({
+  className,
+  copy,
+}: {
+  className?: string;
+  copy?: KadoOrderingCarouselCopy;
+}) {
   const INTERVAL = 6000;
   const { current, setStep } = useNumberCycler(STEPS.length, INTERVAL);
 
@@ -496,18 +509,19 @@ export function KadoOrderingCarousel({ className }: { className?: string }) {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
           <div>
             <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">
-              How it works
+              {copy?.badge ?? 'How it works'}
             </span>
             <h2 className="font-display text-[clamp(1.75rem,5.5vw,3.75rem)] md:text-5xl lg:text-6xl font-bold text-kado-dark leading-tight">
-              Order your way.
+              {copy?.title ?? 'Order your way.'}
             </h2>
           </div>
           <p className="text-kado-dark/55 font-medium max-w-sm text-sm md:text-base hidden md:block leading-relaxed">
-            Walk in, order online, or scan a table QR — then collect stamps every time.
+            {copy?.subtitleDesktop ??
+              'Walk in, order online, or scan a table QR — then collect stamps every time.'}
           </p>
         </div>
         <p className="text-kado-dark/55 text-sm leading-relaxed md:hidden -mt-2">
-          In-store, online, QR at your table — earn stamps every visit.
+          {copy?.subtitleMobile ?? 'In-store, online, QR at your table — earn stamps every visit.'}
         </p>
 
         {/* Progress */}
