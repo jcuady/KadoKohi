@@ -1,77 +1,37 @@
-import { useState } from 'react';
-import { GripVertical, Plus, Trash2, Upload } from 'lucide-react';
-import { useLandingContentStore, type HomeBlockType } from '../../store/landingContentStore';
-import type { HomeHeroSlide } from '../../data/homeHeroMedia';
+import { useEffect, useState } from 'react';
+import { Upload } from 'lucide-react';
+import { useLandingContentStore, useLandingDraftContent } from '../../store/landingContentStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
+import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
+
+const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
+const TRUSTED_BRAND_SLOTS = 5;
+const SPONSOR_SLOTS = 8;
 
 export default function AdminLandingContent() {
-  const content = useLandingContentStore((s) => s.content);
-  const setHeroSlides = useLandingContentStore((s) => s.setHeroSlides);
+  const content = useLandingDraftContent();
+  const initDraft = useLandingContentStore((s) => s.initDraft);
+  const isPreviewMode = useLandingContentStore((s) => s.isPreviewMode);
+  const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
   const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
-  const reorderHomeBlocks = useLandingContentStore((s) => s.reorderHomeBlocks);
-  const toggleHomeBlock = useLandingContentStore((s) => s.toggleHomeBlock);
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
   const updateFeatured = useLandingContentStore((s) => s.updateFeatured);
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const updateTestimonials = useLandingContentStore((s) => s.updateTestimonials);
   const updateTestimonialItem = useLandingContentStore((s) => s.updateTestimonialItem);
-  const addTestimonialItem = useLandingContentStore((s) => s.addTestimonialItem);
-  const removeTestimonialItem = useLandingContentStore((s) => s.removeTestimonialItem);
   const setTrustedBrands = useLandingContentStore((s) => s.setTrustedBrands);
   const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
 
-  const [dragBlockId, setDragBlockId] = useState<HomeBlockType | null>(null);
-  const [dragSlideIndex, setDragSlideIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const moveBlock = (targetId: HomeBlockType) => {
-    if (!dragBlockId || dragBlockId === targetId) return;
-    const from = content.homeBlocks.findIndex((b) => b.id === dragBlockId);
-    const to = content.homeBlocks.findIndex((b) => b.id === targetId);
-    if (from === -1 || to === -1) return;
-    reorderHomeBlocks(from, to);
-  };
-
-  const moveSlide = (toIndex: number) => {
-    if (dragSlideIndex === null || dragSlideIndex === toIndex) return;
-    const next = [...content.heroSlides];
-    const [moved] = next.splice(dragSlideIndex, 1);
-    next.splice(toIndex, 0, moved);
-    setHeroSlides(next);
-  };
-
-  const updateSlide = (index: number, patch: Partial<HomeHeroSlide>) => {
-    const next = [...content.heroSlides];
-    next[index] = { ...next[index], ...patch };
-    setHeroSlides(next);
-  };
-
-  const removeSlide = (index: number) => {
-    if (content.heroSlides.length <= 1) return;
-    const next = content.heroSlides.filter((_, i) => i !== index);
-    setHeroSlides(next);
-  };
-
-  const addSlide = () => {
-    const base = content.heroSlides[content.heroSlides.length - 1];
-    const id = `slide-${Date.now()}`;
-    setHeroSlides([
-      ...content.heroSlides,
-      {
-        ...base,
-        id,
-        title: 'New Slide Title',
-        subtitle: 'New slide subtitle',
-        cards: base.cards.map((c, i) => ({
-          ...c,
-          id: `${id}-card-${i}`,
-        })),
-      },
-    ]);
-  };
+  useEffect(() => {
+    initDraft();
+    return () => useLandingContentStore.getState().setPreviewMode(false);
+  }, [initDraft]);
 
   const onPickImage = async (onDone: (dataUrl: string) => void, fileList: FileList | null) => {
     const file = fileList?.[0];
@@ -88,46 +48,47 @@ export default function AdminLandingContent() {
     }
   };
 
-  const trustedBrandsText = content.trustedBrands.join('\n');
-  const sponsorsText = content.kadoCircle.sponsors.join('\n');
+  const patchTrustedBrand = (index: number, value: string) => {
+    const next = [...content.trustedBrands];
+    while (next.length < TRUSTED_BRAND_SLOTS) next.push('');
+    next[index] = value;
+    setTrustedBrands(next);
+  };
+
+  const patchSponsor = (index: number, value: string) => {
+    const next = [...content.kadoCircle.sponsors];
+    while (next.length < SPONSOR_SLOTS) next.push('');
+    next[index] = value;
+    updateKadoCircle({ sponsors: next });
+  };
 
   return (
     <div className="dash-page max-w-6xl">
       <div className="mb-6">
-        <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Landing Builder</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Homepage content</h1>
         <p className="dash-muted text-sm mt-1">
-          Edit homepage text and images. Use image URL, or upload a small image (stored in this browser — max about
-          1.2MB each). Ordering carousel mockups stay as designed; section titles here still apply.
+          Section order and layout are fixed. Replace text and images only, then preview (Zustand draft) or publish to
+          go live. Product names/prices still come from Menu; event details from Events; branch rows from Branches.
         </p>
         {uploadError ? <p className="mt-2 text-sm text-red-600 font-medium">{uploadError}</p> : null}
       </div>
 
+      <LandingEditorToolbar />
+      <LandingPreviewFrame active={isPreviewMode} />
+
       <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Home Section Order (Drag & Drop)</h2>
-          <div className="space-y-2">
-            {content.homeBlocks.map((block) => (
-              <div
-                key={block.id}
-                draggable
-                onDragStart={() => setDragBlockId(block.id)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => moveBlock(block.id)}
-                className="rounded-xl border dash-border dash-card-alt px-4 py-3 flex items-center gap-3"
-              >
-                <GripVertical className="w-4 h-4 dash-muted" />
-                <p className="text-sm font-bold dash-heading flex-1">{block.label}</p>
-                <label className="text-xs dash-muted flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={block.enabled}
-                    onChange={(e) => toggleHomeBlock(block.id, e.target.checked)}
-                  />
-                  Visible
-                </label>
-              </div>
-            ))}
-          </div>
+          <h2 className="font-display font-bold text-xl dash-heading mb-2">Fixed sections (read-only)</h2>
+          <ol className="text-sm dash-muted list-decimal list-inside space-y-1">
+            <li>Hero</li>
+            <li>Featured products</li>
+            <li>How to order</li>
+            <li>Cafe hours</li>
+            <li>Events</li>
+            <li>Testimonials</li>
+            <li>Branches</li>
+            <li>Kado Circle</li>
+          </ol>
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
@@ -167,59 +128,48 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-xl dash-heading">Hero Slides & Card Images</h2>
-            <button
-              type="button"
-              onClick={addSlide}
-              className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Slide
-            </button>
-          </div>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero slides & card images</h2>
+          <p className="text-xs dash-muted mb-4">Three slides and three cards per slide — count cannot change.</p>
           <div className="space-y-6">
             {content.heroSlides.map((slide, index) => (
-              <article
-                key={slide.id}
-                draggable
-                onDragStart={() => setDragSlideIndex(index)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => moveSlide(index)}
-                className="rounded-xl border dash-border p-4 space-y-4"
-              >
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 dash-muted" />
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] dash-muted">Slide {index + 1}</p>
-                  <button
-                    type="button"
-                    onClick={() => removeSlide(index)}
-                    className="ml-auto text-red-500 hover:text-red-700"
-                    aria-label="Remove slide"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              <article key={slide.id} className="rounded-xl border dash-border p-4 space-y-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] dash-muted">
+                  {HERO_SLIDE_LABELS[index] ?? `Slide ${index + 1}`}
+                </p>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Field label="Title" value={slide.title} onChange={(v) => updateSlide(index, { title: v })} />
-                  <Field label="Subtitle" value={slide.subtitle} onChange={(v) => updateSlide(index, { subtitle: v })} />
+                  <Field
+                    label="Title"
+                    value={slide.title}
+                    onChange={(v) => updateHeroSlide(index, { title: v })}
+                  />
+                  <Field
+                    label="Subtitle"
+                    value={slide.subtitle}
+                    onChange={(v) => updateHeroSlide(index, { subtitle: v })}
+                  />
                   <ImageUrlField
                     label="Background image"
                     value={slide.image}
-                    onChange={(v) => updateSlide(index, { image: v })}
-                    onPickFile={(files) => onPickImage((dataUrl) => updateSlide(index, { image: dataUrl }), files)}
+                    onChange={(v) => updateHeroSlide(index, { image: v })}
+                    onPickFile={(files) =>
+                      onPickImage((dataUrl) => updateHeroSlide(index, { image: dataUrl }), files)
+                    }
                   />
                   <Field
                     label="Background alt text"
                     value={slide.imageAlt}
-                    onChange={(v) => updateSlide(index, { imageAlt: v })}
+                    onChange={(v) => updateHeroSlide(index, { imageAlt: v })}
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider dash-muted mb-2">Hero cards (desktop grid)</p>
+                  <p className="text-xs font-bold uppercase tracking-wider dash-muted mb-2">Hero cards</p>
                   <div className="grid gap-4 md:grid-cols-3">
                     {slide.cards.slice(0, 3).map((card, ci) => (
-                      <div key={card.id} className="rounded-lg border dash-border p-3 space-y-2">
+                      <div
+                        key={card.id}
+                       
+                        className="rounded-lg border dash-border p-3 space-y-2"
+                      >
                         <p className="text-[10px] font-bold uppercase dash-muted">Card {ci + 1}</p>
                         <Field
                           label="Title"
@@ -246,7 +196,7 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured Section</h2>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Badge" value={content.featured.badge} onChange={(v) => updateFeatured({ badge: v })} />
             <Field label="Title" value={content.featured.title} onChange={(v) => updateFeatured({ title: v })} />
@@ -267,14 +217,13 @@ export default function AdminLandingContent() {
             />
           </div>
           <p className="text-xs dash-muted mt-4 mb-2">
-            Optional image overrides for the three showcase cards (still uses menu items for names/prices). Leave blank
-            to use each product&apos;s image.
+            Image overrides for the three product cards (names/prices from Menu). Leave blank to use each product image.
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {([0, 1, 2] as const).map((slot) => (
               <div key={slot}>
                 <ImageUrlField
-                  label={`Card ${slot + 1} image override`}
+                  label={`Card ${slot + 1} image`}
                   value={content.featured.cardImageOverrides[slot]}
                   onChange={(v) => {
                     const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
@@ -303,7 +252,7 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order — Section copy</h2>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Badge" value={content.ordering.badge} onChange={(v) => updateOrdering({ badge: v })} />
             <Field label="Title" value={content.ordering.title} onChange={(v) => updateOrdering({ title: v })} />
@@ -326,7 +275,11 @@ export default function AdminLandingContent() {
             <Field label="Badge" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
             <Field label="Title" value={content.schedule.title} onChange={(v) => updateSchedule({ title: v })} />
             <Field label="Phone" value={content.schedule.phone} onChange={(v) => updateSchedule({ phone: v })} />
-            <Field label="Credit line" value={content.schedule.creditLine} onChange={(v) => updateSchedule({ creditLine: v })} />
+            <Field
+              label="Credit line"
+              value={content.schedule.creditLine}
+              onChange={(v) => updateSchedule({ creditLine: v })}
+            />
           </div>
           <div className="mt-4">
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Description</label>
@@ -367,8 +320,16 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.branchesStrip.badge} onChange={(v) => updateBranchesStrip({ badge: v })} />
-            <Field label="Title" value={content.branchesStrip.title} onChange={(v) => updateBranchesStrip({ title: v })} />
+            <Field
+              label="Badge"
+              value={content.branchesStrip.badge}
+              onChange={(v) => updateBranchesStrip({ badge: v })}
+            />
+            <Field
+              label="Title"
+              value={content.branchesStrip.title}
+              onChange={(v) => updateBranchesStrip({ title: v })}
+            />
             <Field
               label="CTA label"
               value={content.branchesStrip.ctaLabel}
@@ -397,49 +358,24 @@ export default function AdminLandingContent() {
               className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
             />
           </div>
-          <div className="mb-6">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-              Trusted brands (one per line)
-            </label>
-            <textarea
-              value={trustedBrandsText}
-              onChange={(e) =>
-                setTrustedBrands(
-                  e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                )
-              }
-              rows={4}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none font-mono text-xs"
-            />
+          <p className="text-xs font-bold uppercase dash-muted mb-2">Trusted brands ({TRUSTED_BRAND_SLOTS} slots)</p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            {Array.from({ length: TRUSTED_BRAND_SLOTS }, (_, i) => (
+              <div key={i}>
+                <Field
+                  label={`Brand ${i + 1}`}
+                  value={content.trustedBrands[i] ?? ''}
+                  onChange={(v) => patchTrustedBrand(i, v)}
+                />
+              </div>
+            ))}
           </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold dash-heading">Quotes</h3>
-            <button
-              type="button"
-              onClick={() => addTestimonialItem()}
-              className="inline-flex items-center gap-2 rounded-lg border dash-border px-3 py-1.5 text-xs font-bold uppercase"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add quote
-            </button>
-          </div>
+          <p className="text-sm font-bold dash-heading mb-3">Customer quotes (4 fixed)</p>
           <div className="space-y-4">
             {content.testimonialItems.map((t, ti) => (
               <div key={t.id} className="rounded-xl border dash-border p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold dash-muted">Quote #{ti + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeTestimonialItem(ti)}
-                    className="ml-auto text-red-500"
-                    aria-label="Remove quote"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <span className="text-xs font-bold dash-muted">Quote #{ti + 1}</span>
                 <div className="grid md:grid-cols-2 gap-2">
                   <Field label="Name" value={t.name} onChange={(v) => updateTestimonialItem(ti, { name: v })} />
                   <Field label="Role" value={t.role} onChange={(v) => updateTestimonialItem(ti, { role: v })} />
@@ -523,25 +459,19 @@ export default function AdminLandingContent() {
               className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
             />
           </div>
-          <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-              Sponsors (one per line)
-            </label>
-            <textarea
-              value={sponsorsText}
-              onChange={(e) =>
-                updateKadoCircle({
-                  sponsors: e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-              rows={5}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none font-mono text-xs"
-            />
+          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Sponsors ({SPONSOR_SLOTS} slots)</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {Array.from({ length: SPONSOR_SLOTS }, (_, i) => (
+              <div key={i}>
+                <Field
+                label={`Sponsor ${i + 1}`}
+                value={content.kadoCircle.sponsors[i] ?? ''}
+                onChange={(v) => patchSponsor(i, v)}
+              />
+              </div>
+            ))}
           </div>
-          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Stats row</p>
+          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Stats row (4 fixed)</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {content.kadoCircle.stats.map((stat, si) => (
               <div key={si} className="rounded-lg border dash-border p-3 space-y-2">
@@ -603,7 +533,7 @@ function ImageUrlField({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="https://… or leave empty"
+          placeholder="/path, https://…, or upload"
           className="flex-1 min-w-0 rounded-xl dash-input border px-4 py-2.5 text-sm"
         />
         <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border dash-border px-3 py-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark/5 shrink-0">
@@ -615,11 +545,7 @@ function ImageUrlField({
       {value ? (
         <div className="mt-2 flex items-start gap-2">
           <img src={value} alt="" className="h-16 w-24 rounded-md object-cover border dash-border" />
-          <button
-            type="button"
-            className="text-xs font-bold text-red-600 uppercase"
-            onClick={() => onChange('')}
-          >
+          <button type="button" className="text-xs font-bold text-red-600 uppercase" onClick={() => onChange('')}>
             Clear image
           </button>
         </div>

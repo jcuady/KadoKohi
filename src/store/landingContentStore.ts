@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
+import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 
 export interface HeroChrome {
   locationBadge: string;
@@ -17,7 +18,6 @@ export interface FeaturedCopy {
   subtitleDesktop: string;
   subtitleMobile: string;
   menuCtaLabel: string;
-  /** Per showcase slot (0–2): optional image URL or data URL; empty uses menu product image. */
   cardImageOverrides: [string, string, string];
 }
 
@@ -25,7 +25,6 @@ export interface EventsCopy {
   badge: string;
   title: string;
   subtitle: string;
-  /** When set, replaces the highlighted event cover image on the home hero card. */
   coverImageOverride: string;
   noEventBody: string;
   noEventBrowseLabel: string;
@@ -88,23 +87,7 @@ export interface KadoCircleCopy {
   footerLinkLabel: string;
 }
 
-export type HomeBlockType =
-  | 'hero'
-  | 'featured'
-  | 'ordering'
-  | 'schedule'
-  | 'events'
-  | 'testimonials'
-  | 'branches'
-  | 'kadoCircle'
-  | 'customSections';
-
-export interface HomeBlockConfig {
-  id: HomeBlockType;
-  label: string;
-  enabled: boolean;
-}
-
+/** Fixed homepage layout — only text/images inside each slot are editable. */
 export interface LandingContentState {
   heroSlides: HomeHeroSlide[];
   heroChrome: HeroChrome;
@@ -117,23 +100,28 @@ export interface LandingContentState {
   ordering: OrderingCopy;
   branchesStrip: BranchesStripCopy;
   kadoCircle: KadoCircleCopy;
-  homeBlocks: HomeBlockConfig[];
 }
 
 interface LandingContentStore {
-  content: LandingContentState;
-  setHeroSlides: (slides: HomeHeroSlide[]) => void;
+  /** Live content on the public site (persisted). */
+  published: LandingContentState;
+  /** Working copy while editing in admin (not persisted). */
+  draft: LandingContentState | null;
+  /** When true, home + ?preview=1 read from draft. */
+  isPreviewMode: boolean;
+
+  initDraft: () => void;
+  discardDraft: () => void;
+  publishDraft: () => void;
+  setPreviewMode: (active: boolean) => void;
+
+  updateHeroSlide: (index: number, patch: Partial<HomeHeroSlide>) => void;
   updateHeroCard: (slideIndex: number, cardIndex: number, patch: Partial<HomeHeroCardMedia>) => void;
-  reorderHomeBlocks: (fromIndex: number, toIndex: number) => void;
-  toggleHomeBlock: (id: HomeBlockType, enabled: boolean) => void;
   updateHeroChrome: (patch: Partial<HeroChrome>) => void;
   updateFeatured: (patch: Partial<FeaturedCopy>) => void;
   updateEvents: (patch: Partial<EventsCopy>) => void;
   updateTestimonials: (patch: Partial<TestimonialsCopy>) => void;
-  setTestimonialItems: (items: StoredTestimonial[]) => void;
   updateTestimonialItem: (index: number, patch: Partial<StoredTestimonial>) => void;
-  addTestimonialItem: () => void;
-  removeTestimonialItem: (index: number) => void;
   setTrustedBrands: (brands: string[]) => void;
   updateSchedule: (patch: Partial<ScheduleCopy>) => void;
   updateOrdering: (patch: Partial<OrderingCopy>) => void;
@@ -198,7 +186,7 @@ const SEED_KADO_CIRCLE_SPONSORS = [
   'Aiya Matcha',
 ];
 
-const SEED_CONTENT: LandingContentState = {
+export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
     locationBadge: 'Kado Kohi · Marikina',
@@ -269,17 +257,6 @@ const SEED_CONTENT: LandingContentState = {
     ],
     footerLinkLabel: 'Or go straight to create account →',
   },
-  homeBlocks: [
-    { id: 'hero', label: 'Hero', enabled: true },
-    { id: 'featured', label: 'Featured Products', enabled: true },
-    { id: 'ordering', label: 'How To Order', enabled: true },
-    { id: 'schedule', label: 'Cafe Hours', enabled: true },
-    { id: 'events', label: 'Events', enabled: true },
-    { id: 'testimonials', label: 'Testimonials', enabled: true },
-    { id: 'branches', label: 'Branches', enabled: true },
-    { id: 'kadoCircle', label: 'Kado Circle', enabled: true },
-    { id: 'customSections', label: 'Custom Sections', enabled: true },
-  ],
 };
 
 function clampCardOverrides(tuple: [string, string, string] | undefined): [string, string, string] {
@@ -287,211 +264,215 @@ function clampCardOverrides(tuple: [string, string, string] | undefined): [strin
   return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
 }
 
-/** Merge persisted slices with current schema defaults (new keys, migrations). */
-function normalizeLandingContent(c: Partial<LandingContentState> | undefined): LandingContentState {
-  if (!c || typeof c !== 'object') return SEED_CONTENT;
+function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
+  const seed = SEED_CONTENT.heroSlides;
+  if (!Array.isArray(slides) || slides.length === 0) return seed;
+  return seed.map((seedSlide, i) => {
+    const saved = slides[i];
+    if (!saved) return seedSlide;
+    const cards = seedSlide.cards.map((seedCard, ci) => ({
+      ...seedCard,
+      ...(saved.cards?.[ci] ?? {}),
+      id: seedCard.id,
+    }));
+    return { ...seedSlide, ...saved, id: seedSlide.id, cards };
+  });
+}
+
+function clampTestimonials(items: StoredTestimonial[] | undefined): StoredTestimonial[] {
+  const seed = SEED_CONTENT.testimonialItems;
+  if (!Array.isArray(items) || items.length === 0) return seed;
+  return seed.map((seedItem, i) => ({
+    ...seedItem,
+    ...(items[i] ?? {}),
+    id: seedItem.id,
+  }));
+}
+
+function clampStringList(saved: string[] | undefined, seed: string[]): string[] {
+  if (!Array.isArray(saved) || saved.length === 0) return [...seed];
+  return seed.map((fallback, i) => (typeof saved[i] === 'string' ? saved[i] : fallback));
+}
+
+export function normalizeLandingContent(raw: Partial<LandingContentState> | undefined): LandingContentState {
+  if (!raw || typeof raw !== 'object') return SEED_CONTENT;
 
   return {
-    ...SEED_CONTENT,
-    ...c,
-    heroChrome: { ...SEED_CONTENT.heroChrome, ...(c.heroChrome ?? {}) },
+    heroSlides: clampHeroSlides(raw.heroSlides),
+    heroChrome: { ...SEED_CONTENT.heroChrome, ...(raw.heroChrome ?? {}) },
     featured: {
       ...SEED_CONTENT.featured,
-      ...c.featured,
+      ...raw.featured,
       cardImageOverrides: clampCardOverrides(
-        (c.featured?.cardImageOverrides as [string, string, string] | undefined) ?? SEED_CONTENT.featured.cardImageOverrides,
+        raw.featured?.cardImageOverrides as [string, string, string] | undefined,
       ),
     },
-    events: { ...SEED_CONTENT.events, ...c.events },
-    testimonials: { ...SEED_CONTENT.testimonials, ...c.testimonials },
-    testimonialItems:
-      Array.isArray(c.testimonialItems) && c.testimonialItems.length > 0 ? c.testimonialItems : SEED_CONTENT.testimonialItems,
-    trustedBrands:
-      Array.isArray(c.trustedBrands) && c.trustedBrands.length > 0 ? c.trustedBrands : SEED_CONTENT.trustedBrands,
-    schedule: { ...SEED_CONTENT.schedule, ...c.schedule },
-    ordering: { ...SEED_CONTENT.ordering, ...c.ordering },
-    branchesStrip: { ...SEED_CONTENT.branchesStrip, ...c.branchesStrip },
+    events: { ...SEED_CONTENT.events, ...(raw.events ?? {}) },
+    testimonials: { ...SEED_CONTENT.testimonials, ...(raw.testimonials ?? {}) },
+    testimonialItems: clampTestimonials(raw.testimonialItems),
+    trustedBrands: clampStringList(raw.trustedBrands, SEED_TRUSTED_BRANDS),
+    schedule: { ...SEED_CONTENT.schedule, ...(raw.schedule ?? {}) },
+    ordering: { ...SEED_CONTENT.ordering, ...(raw.ordering ?? {}) },
+    branchesStrip: { ...SEED_CONTENT.branchesStrip, ...(raw.branchesStrip ?? {}) },
     kadoCircle: {
       ...SEED_CONTENT.kadoCircle,
-      ...c.kadoCircle,
-      sponsors:
-        Array.isArray(c.kadoCircle?.sponsors) && c.kadoCircle!.sponsors.length > 0
-          ? c.kadoCircle!.sponsors
-          : SEED_CONTENT.kadoCircle.sponsors,
+      ...(raw.kadoCircle ?? {}),
+      sponsors: clampStringList(raw.kadoCircle?.sponsors, SEED_KADO_CIRCLE_SPONSORS),
       stats:
-        Array.isArray(c.kadoCircle?.stats) && c.kadoCircle!.stats.length > 0
-          ? c.kadoCircle!.stats
+        Array.isArray(raw.kadoCircle?.stats) && raw.kadoCircle.stats.length >= 4
+          ? raw.kadoCircle.stats.slice(0, 4)
           : SEED_CONTENT.kadoCircle.stats,
     },
-    homeBlocks: Array.isArray(c.homeBlocks) && c.homeBlocks.length > 0 ? c.homeBlocks : SEED_CONTENT.homeBlocks,
-    heroSlides: Array.isArray(c.heroSlides) && c.heroSlides.length > 0 ? c.heroSlides : SEED_CONTENT.heroSlides,
   };
+}
+
+function cloneContent(state: LandingContentState): LandingContentState {
+  return JSON.parse(JSON.stringify(state)) as LandingContentState;
+}
+
+function patchDraft(
+  set: (fn: (s: LandingContentStore) => Partial<LandingContentStore> | LandingContentStore) => void,
+  get: () => LandingContentStore,
+  patcher: (draft: LandingContentState) => LandingContentState,
+) {
+  const { draft, published, isPreviewMode } = get();
+  const base = draft ?? published;
+  const next = patcher(cloneContent(base));
+  set((s) => ({ ...s, draft: next }));
+  if (isPreviewMode || draft) {
+    writeLandingPreviewDraft(next);
+  }
 }
 
 export const useLandingContentStore = create<LandingContentStore>()(
   persist(
-    (set) => ({
-      content: SEED_CONTENT,
-      setHeroSlides: (slides) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            heroSlides: slides,
-          },
-        })),
+    (set, get) => ({
+      published: SEED_CONTENT,
+      draft: null,
+      isPreviewMode: false,
+
+      initDraft: () => {
+        const draft = cloneContent(get().published);
+        set({ draft });
+      },
+      discardDraft: () => {
+        clearLandingPreviewDraft();
+        set({ draft: null, isPreviewMode: false });
+      },
+      publishDraft: () => {
+        const { draft } = get();
+        if (!draft) return;
+        clearLandingPreviewDraft();
+        set({ published: cloneContent(draft), draft: null, isPreviewMode: false });
+      },
+      setPreviewMode: (active) => {
+        const { draft, published } = get();
+        if (active) {
+          const snapshot = cloneContent(draft ?? published);
+          writeLandingPreviewDraft(snapshot);
+          set({ draft: draft ?? snapshot, isPreviewMode: true });
+        } else {
+          clearLandingPreviewDraft();
+          set({ isPreviewMode: false });
+        }
+      },
+
+      updateHeroSlide: (index, patch) =>
+        patchDraft(set, get, (d) => {
+          const slides = [...d.heroSlides];
+          if (!slides[index]) return d;
+          slides[index] = { ...slides[index], ...patch };
+          return { ...d, heroSlides: slides };
+        }),
+
       updateHeroCard: (slideIndex, cardIndex, patch) =>
-        set((s) => {
-          const slides = [...s.content.heroSlides];
+        patchDraft(set, get, (d) => {
+          const slides = [...d.heroSlides];
           const slide = slides[slideIndex];
-          if (!slide?.cards?.[cardIndex]) return s;
+          if (!slide?.cards?.[cardIndex]) return d;
           const cards = [...slide.cards];
           cards[cardIndex] = { ...cards[cardIndex], ...patch };
           slides[slideIndex] = { ...slide, cards };
-          return { content: { ...s.content, heroSlides: slides } };
+          return { ...d, heroSlides: slides };
         }),
-      reorderHomeBlocks: (fromIndex, toIndex) =>
-        set((s) => {
-          const blocks = [...s.content.homeBlocks];
-          if (fromIndex < 0 || fromIndex >= blocks.length || toIndex < 0 || toIndex >= blocks.length) {
-            return s;
-          }
-          const [moved] = blocks.splice(fromIndex, 1);
-          blocks.splice(toIndex, 0, moved);
-          return {
-            content: {
-              ...s.content,
-              homeBlocks: blocks,
-            },
-          };
-        }),
-      toggleHomeBlock: (id, enabled) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            homeBlocks: s.content.homeBlocks.map((block) =>
-              block.id === id ? { ...block, enabled } : block,
-            ),
-          },
-        })),
+
       updateHeroChrome: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            heroChrome: { ...s.content.heroChrome, ...patch },
-          },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, heroChrome: { ...d.heroChrome, ...patch } })),
+
       updateFeatured: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            featured: {
-              ...s.content.featured,
-              ...patch,
-              cardImageOverrides:
-                patch.cardImageOverrides !== undefined
-                  ? clampCardOverrides(patch.cardImageOverrides as [string, string, string])
-                  : s.content.featured.cardImageOverrides,
-            },
+        patchDraft(set, get, (d) => ({
+          ...d,
+          featured: {
+            ...d.featured,
+            ...patch,
+            cardImageOverrides:
+              patch.cardImageOverrides !== undefined
+                ? clampCardOverrides(patch.cardImageOverrides as [string, string, string])
+                : d.featured.cardImageOverrides,
           },
         })),
+
       updateEvents: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            events: { ...s.content.events, ...patch },
-          },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, events: { ...d.events, ...patch } })),
+
       updateTestimonials: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            testimonials: { ...s.content.testimonials, ...patch },
-          },
-        })),
-      setTestimonialItems: (items) =>
-        set((s) => ({
-          content: { ...s.content, testimonialItems: items },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, testimonials: { ...d.testimonials, ...patch } })),
+
       updateTestimonialItem: (index, patch) =>
-        set((s) => {
-          const items = [...s.content.testimonialItems];
-          if (!items[index]) return s;
+        patchDraft(set, get, (d) => {
+          const items = [...d.testimonialItems];
+          if (!items[index]) return d;
           items[index] = { ...items[index], ...patch };
-          return { content: { ...s.content, testimonialItems: items } };
+          return { ...d, testimonialItems: items };
         }),
-      addTestimonialItem: () =>
-        set((s) => {
-          const maxId = s.content.testimonialItems.reduce((m, t) => Math.max(m, t.id), 0);
-          const next: StoredTestimonial = {
-            id: maxId + 1,
-            name: 'New customer',
-            role: 'Guest',
-            company: 'Marikina',
-            content: 'Add your testimonial text here.',
-            rating: 5,
-            avatar: 'https://randomuser.me/api/portraits/lego/1.jpg',
-          };
-          return { content: { ...s.content, testimonialItems: [...s.content.testimonialItems, next] } };
-        }),
-      removeTestimonialItem: (index) =>
-        set((s) => {
-          if (s.content.testimonialItems.length <= 1) return s;
-          const items = s.content.testimonialItems.filter((_, i) => i !== index);
-          return { content: { ...s.content, testimonialItems: items } };
-        }),
+
       setTrustedBrands: (brands) =>
-        set((s) => ({
-          content: { ...s.content, trustedBrands: brands.filter(Boolean) },
+        patchDraft(set, get, (d) => ({
+          ...d,
+          trustedBrands: clampStringList(brands, SEED_TRUSTED_BRANDS),
         })),
+
       updateSchedule: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            schedule: { ...s.content.schedule, ...patch },
-          },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, schedule: { ...d.schedule, ...patch } })),
+
       updateOrdering: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            ordering: { ...s.content.ordering, ...patch },
-          },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, ordering: { ...d.ordering, ...patch } })),
+
       updateBranchesStrip: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            branchesStrip: { ...s.content.branchesStrip, ...patch },
-          },
-        })),
+        patchDraft(set, get, (d) => ({ ...d, branchesStrip: { ...d.branchesStrip, ...patch } })),
+
       updateKadoCircle: (patch) =>
-        set((s) => ({
-          content: {
-            ...s.content,
-            kadoCircle: {
-              ...s.content.kadoCircle,
-              ...patch,
-              sponsors: patch.sponsors !== undefined ? patch.sponsors : s.content.kadoCircle.sponsors,
-              stats: patch.stats !== undefined ? patch.stats : s.content.kadoCircle.stats,
-            },
+        patchDraft(set, get, (d) => ({
+          ...d,
+          kadoCircle: {
+            ...d.kadoCircle,
+            ...patch,
+            sponsors: patch.sponsors !== undefined ? clampStringList(patch.sponsors, SEED_KADO_CIRCLE_SPONSORS) : d.kadoCircle.sponsors,
+            stats: patch.stats !== undefined ? patch.stats.slice(0, 4) : d.kadoCircle.stats,
           },
         })),
-      seed: () => set({ content: SEED_CONTENT }),
+
+      seed: () => set({ published: SEED_CONTENT, draft: null, isPreviewMode: false }),
     }),
     {
-      name: 'kado-landing-content-v2',
+      name: 'kado-landing-content-v3',
+      partialize: (state) => ({ published: state.published }),
       merge: (persisted, current) => {
         const c = current as LandingContentStore;
-        const p =
-          persisted && typeof persisted === 'object'
-            ? (persisted as { content?: Partial<LandingContentState> })
-            : null;
-        const mergedContent = p?.content ? { ...c.content, ...p.content } : c.content;
+        const p = persisted as { published?: Partial<LandingContentState>; content?: Partial<LandingContentState> } | undefined;
+        const legacy = p?.content ?? p?.published;
         return {
           ...c,
-          content: normalizeLandingContent(mergedContent),
+          published: normalizeLandingContent(legacy ? { ...c.published, ...legacy } : c.published),
         };
       },
     },
   ),
 );
+
+/** Admin editor reads/writes the draft (auto-inits from published). */
+export function useLandingDraftContent(): LandingContentState {
+  const published = useLandingContentStore((s) => s.published);
+  const draft = useLandingContentStore((s) => s.draft);
+  return draft ?? published;
+}

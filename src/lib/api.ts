@@ -200,26 +200,27 @@ export const api = {
     toggleTheme: useSettingsStore.getState().toggleDashTheme,
   },
 
-  /* ───── Landing Content ───── */
+  /* ───── Landing Content (fixed layout; text/images only) ───── */
   landing: {
-    get: () => useLandingContentStore.getState().content,
-    setHeroSlides: useLandingContentStore.getState().setHeroSlides,
+    getPublished: () => useLandingContentStore.getState().published,
+    getDraft: () => useLandingContentStore.getState().draft,
+    initDraft: useLandingContentStore.getState().initDraft,
+    discardDraft: useLandingContentStore.getState().discardDraft,
+    publishDraft: useLandingContentStore.getState().publishDraft,
+    setPreviewMode: useLandingContentStore.getState().setPreviewMode,
+    updateHeroSlide: useLandingContentStore.getState().updateHeroSlide,
     updateHeroCard: useLandingContentStore.getState().updateHeroCard,
-    reorderHomeBlocks: useLandingContentStore.getState().reorderHomeBlocks,
-    toggleHomeBlock: useLandingContentStore.getState().toggleHomeBlock,
     updateHeroChrome: useLandingContentStore.getState().updateHeroChrome,
     updateFeatured: useLandingContentStore.getState().updateFeatured,
     updateEvents: useLandingContentStore.getState().updateEvents,
     updateTestimonials: useLandingContentStore.getState().updateTestimonials,
-    setTestimonialItems: useLandingContentStore.getState().setTestimonialItems,
     updateTestimonialItem: useLandingContentStore.getState().updateTestimonialItem,
-    addTestimonialItem: useLandingContentStore.getState().addTestimonialItem,
-    removeTestimonialItem: useLandingContentStore.getState().removeTestimonialItem,
     setTrustedBrands: useLandingContentStore.getState().setTrustedBrands,
     updateSchedule: useLandingContentStore.getState().updateSchedule,
     updateOrdering: useLandingContentStore.getState().updateOrdering,
     updateBranchesStrip: useLandingContentStore.getState().updateBranchesStrip,
     updateKadoCircle: useLandingContentStore.getState().updateKadoCircle,
+    seed: useLandingContentStore.getState().seed,
   },
 
   /** Resets all stores to seed data — useful for dev/testing. */
