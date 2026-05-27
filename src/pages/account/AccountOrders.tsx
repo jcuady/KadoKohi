@@ -1,9 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { formatPhp } from '../../lib/money';
+import { ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import GcashQrModal from '../../components/GcashQrModal';
+import OrderPaymentPanel from '../../components/OrderPaymentPanel';
 import {
   Search,
   Filter,
@@ -15,17 +20,18 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
+  Wallet,
 } from 'lucide-react';
-import type { OrderStatus } from '../../types/domain';
-
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
-  pending:    { label: 'Pending',    color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',     icon: Clock },
-  accepted:   { label: 'Accepted',   color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200',       icon: CheckCircle2 },
-  preparing:  { label: 'Preparing',  color: 'text-orange-700',  bg: 'bg-orange-50 border-orange-200',   icon: Coffee },
-  ready:      { label: 'Ready',      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
-  served:     { label: 'Served',     color: 'text-teal-700',    bg: 'bg-teal-50 border-teal-200',       icon: CheckCircle2 },
-  completed:  { label: 'Completed',  color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
-  cancelled:  { label: 'Cancelled',  color: 'text-red-700',     bg: 'bg-red-50 border-red-200',         icon: XCircle },
+  pending_payment: { label: ORDER_STATUS_LABELS.pending_payment, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: Wallet },
+  paid: { label: ORDER_STATUS_LABELS.paid, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: CheckCircle2 },
+  pending: { label: ORDER_STATUS_LABELS.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: Clock },
+  accepted: { label: ORDER_STATUS_LABELS.accepted, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: CheckCircle2 },
+  preparing: { label: ORDER_STATUS_LABELS.preparing, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200', icon: Coffee },
+  ready: { label: ORDER_STATUS_LABELS.ready, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
+  served: { label: ORDER_STATUS_LABELS.served, color: 'text-teal-700', bg: 'bg-teal-50 border-teal-200', icon: CheckCircle2 },
+  completed: { label: ORDER_STATUS_LABELS.completed, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
+  cancelled: { label: ORDER_STATUS_LABELS.cancelled, color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: XCircle },
 };
 
 const FILTER_TABS: { label: string; value: string }[] = [
@@ -38,10 +44,26 @@ const FILTER_TABS: { label: string; value: string }[] = [
 export default function AccountOrders() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
+  const updateOrderPaymentProof = useOrderStore((s) => s.updateOrderPaymentProof);
   const branches = useBranchStore((s) => s.branches);
+  const gcashQrImage = useSettingsStore((s) => s.settings.gcashQrImage);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [qrModalOrderId, setQrModalOrderId] = useState<string | null>(null);
+
+  const placedId = searchParams.get('placed');
+
+  useEffect(() => {
+    if (placedId) {
+      setQrModalOrderId(placedId);
+      setExpandedId(placedId);
+      const next = new URLSearchParams(searchParams);
+      next.delete('placed');
+      setSearchParams(next, { replace: true });
+    }
+  }, [placedId, searchParams, setSearchParams]);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));
@@ -50,6 +72,11 @@ export default function AccountOrders() {
 
   const myOrders = useMemo(() => orders.filter((o) => o.customerId === user?.id), [orders, user?.id]);
 
+  const qrModalOrder = useMemo(() => {
+    if (!qrModalOrderId) return null;
+    return myOrders.find((o) => o.id === qrModalOrderId) ?? orders.find((o) => o.id === qrModalOrderId) ?? null;
+  }, [myOrders, orders, qrModalOrderId]);
+
   const filteredOrders = useMemo(() => {
     let list = myOrders;
     if (filter === 'active') list = list.filter((o) => !['completed', 'cancelled'].includes(o.status));
@@ -57,9 +84,10 @@ export default function AccountOrders() {
     else if (filter === 'cancelled') list = list.filter((o) => o.status === 'cancelled');
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((o) =>
-        o.shortCode.toLowerCase().includes(q) ||
-        o.items.some((i) => i.productNameSnapshot.toLowerCase().includes(q)),
+      list = list.filter(
+        (o) =>
+          o.shortCode.toLowerCase().includes(q) ||
+          o.items.some((i) => i.productNameSnapshot.toLowerCase().includes(q)),
       );
     }
     return list;
@@ -67,24 +95,22 @@ export default function AccountOrders() {
 
   return (
     <div className="space-y-6">
-      {/* ─── HEADER ─── */}
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Order History</p>
-        <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-          My Orders
-        </h1>
-        <p className="text-sm text-kado-dark/50 mt-1 font-medium">Full history of all your orders.</p>
+        <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">My Orders</h1>
+        <p className="text-sm text-kado-dark/50 mt-1 font-medium">
+          Pay via GCash, upload proof, and track preparation status.
+        </p>
       </div>
 
-      {/* ─── FILTERS + SEARCH ─── */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5 sm:mx-0 sm:px-0 sm:pb-0">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.value}
               type="button"
               onClick={() => setFilter(tab.value)}
-              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
+              className={`min-h-[40px] px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 touch-manipulation ${
                 filter === tab.value
                   ? 'bg-kado-dark text-white shadow-lg shadow-kado-dark/10'
                   : 'bg-white border border-kado-dark/10 text-kado-dark/50 hover:border-kado-red/30 hover:text-kado-red'
@@ -108,7 +134,6 @@ export default function AccountOrders() {
         </div>
       </div>
 
-      {/* ─── ORDER LIST ─── */}
       {filteredOrders.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 md:p-16 text-center">
           <ShoppingBag className="w-10 h-10 text-kado-dark/15 mx-auto mb-4" />
@@ -137,35 +162,49 @@ export default function AccountOrders() {
                 <button
                   type="button"
                   onClick={() => setExpandedId(isExpanded ? null : o.id)}
-                  className="w-full p-5 flex items-center gap-4 text-left"
+                  className="w-full p-4 sm:p-5 text-left touch-manipulation"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
-                    <StatusIcon className={`w-5 h-5 ${cfg.color}`} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <span className="font-display font-black text-kado-dark">{o.shortCode}</span>
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
-                        {cfg.label}
-                      </span>
-                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FAF7F2] text-kado-dark/40 border border-kado-dark/5">
-                        {o.channel}
-                      </span>
+                  <div className="flex gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                      <StatusIcon className={`w-5 h-5 ${cfg.color}`} />
                     </div>
-                    <p className="text-xs text-kado-dark/40 font-medium flex items-center gap-1.5 flex-wrap">
-                      <span>{new Date(o.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      {branchName(o.branchId) && (
-                        <span className="inline-flex items-center gap-0.5">
-                          <MapPin className="w-3 h-3" />
-                          {branchName(o.branchId)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
+                        <span className="font-display font-black text-kado-dark text-base sm:text-lg">{o.shortCode}</span>
+                        <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
+                          {cfg.label}
                         </span>
-                      )}
-                    </p>
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FAF7F2] text-kado-dark/40 border border-kado-dark/5">
+                          {o.channel}
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-kado-dark/40 font-medium flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 sm:flex-wrap">
+                        <span>
+                          {new Date(o.createdAt).toLocaleDateString('en-PH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        {branchName(o.branchId) && (
+                          <span className="inline-flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{branchName(o.branchId)}</span>
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-
-                  <span className="font-display font-black text-kado-red text-lg shrink-0">{formatPhp(o.total)}</span>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-kado-dark/30 shrink-0" /> : <ChevronDown className="w-4 h-4 text-kado-dark/30 shrink-0" />}
+                  <div className="mt-3 flex items-center justify-between gap-3 pl-[52px] sm:pl-[60px]">
+                    <span className="font-display font-black text-kado-red text-xl sm:text-lg">{formatPhp(o.total)}</span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-kado-dark/30 shrink-0" aria-hidden />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-kado-dark/30 shrink-0" aria-hidden />
+                    )}
+                  </div>
                 </button>
 
                 <AnimatePresence>
@@ -177,8 +216,15 @@ export default function AccountOrders() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-5 pt-0 border-t border-kado-dark/5">
-                        <table className="w-full mt-4 text-xs">
+                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 border-t border-kado-dark/5">
+                        <OrderPaymentPanel
+                          order={o}
+                          onViewQr={() => setQrModalOrderId(o.id)}
+                          onUploadProof={(dataUrl) => updateOrderPaymentProof(o.id, dataUrl)}
+                        />
+
+                        <div className="mt-4 -mx-1 overflow-x-auto">
+                        <table className="w-full min-w-[280px] text-xs">
                           <thead>
                             <tr className="text-[9px] font-black uppercase tracking-widest text-kado-dark/35">
                               <th className="text-left pb-2">Item</th>
@@ -191,9 +237,15 @@ export default function AccountOrders() {
                               <tr key={item.id}>
                                 <td className="py-2.5 font-bold text-kado-dark">
                                   {item.productNameSnapshot}
-                                  {item.sizeLabelSnapshot && <span className="ml-1 text-kado-dark/40 font-medium">({item.sizeLabelSnapshot})</span>}
-                                  {item.milkLabelSnapshot && <span className="ml-1 text-kado-dark/40 font-medium">• {item.milkLabelSnapshot}</span>}
-                                  {item.temperature && <span className="ml-1 text-kado-dark/40 font-medium">• {item.temperature}</span>}
+                                  {item.sizeLabelSnapshot && (
+                                    <span className="ml-1 text-kado-dark/40 font-medium">({item.sizeLabelSnapshot})</span>
+                                  )}
+                                  {item.milkLabelSnapshot && (
+                                    <span className="ml-1 text-kado-dark/40 font-medium">• {item.milkLabelSnapshot}</span>
+                                  )}
+                                  {item.temperature && (
+                                    <span className="ml-1 text-kado-dark/40 font-medium">• {item.temperature}</span>
+                                  )}
                                 </td>
                                 <td className="py-2.5 text-center text-kado-dark/60">{item.qty}</td>
                                 <td className="py-2.5 text-right font-bold text-kado-dark">{formatPhp(item.lineTotal)}</td>
@@ -202,11 +254,14 @@ export default function AccountOrders() {
                           </tbody>
                           <tfoot>
                             <tr className="border-t border-kado-dark/10">
-                              <td colSpan={2} className="pt-3 text-right font-black text-kado-dark text-[10px] uppercase tracking-widest">Total</td>
+                              <td colSpan={2} className="pt-3 text-right font-black text-kado-dark text-[10px] uppercase tracking-widest">
+                                Total
+                              </td>
                               <td className="pt-3 text-right font-black text-kado-red text-sm">{formatPhp(o.total)}</td>
                             </tr>
                           </tfoot>
                         </table>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -216,6 +271,15 @@ export default function AccountOrders() {
           })}
         </ul>
       )}
+
+      <GcashQrModal
+        open={qrModalOrderId !== null}
+        onClose={() => setQrModalOrderId(null)}
+        shortCode={qrModalOrder?.shortCode ?? '—'}
+        total={qrModalOrder?.total ?? 0}
+        qrImageUrl={gcashQrImage}
+        actionLabel="Close"
+      />
     </div>
   );
 }

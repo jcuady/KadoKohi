@@ -4,19 +4,9 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
 import { formatPhp } from '../../lib/money';
+import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
-const ALL_STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  accepted: 'bg-blue-100 text-blue-800 border-blue-200',
-  preparing: 'bg-orange-100 text-orange-800 border-orange-200',
-  ready: 'bg-green-100 text-green-800 border-green-200',
-  served: 'bg-teal-100 text-teal-800 border-teal-200',
-  completed: 'bg-gray-100 text-gray-600 border-gray-200',
-  cancelled: 'bg-red-100 text-red-700 border-red-200',
-};
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -72,7 +62,7 @@ export default function StaffAllOrders() {
           className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
         >
           <option value="all">All statuses</option>
-          {ALL_STATUSES.map((s) => (
+          {ALL_ORDER_STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
@@ -97,8 +87,8 @@ export default function StaffAllOrders() {
                     <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full dash-card-alt dash-heading border dash-border">
                       {o.channel}
                     </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${STATUS_COLORS[o.status]}`}>
-                      {o.status}
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
+                      {ORDER_STATUS_LABELS[o.status]}
                     </span>
                     <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
                     <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>

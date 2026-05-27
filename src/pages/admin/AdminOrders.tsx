@@ -5,19 +5,15 @@ import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { List, LayoutGrid, Clock, ChefHat, CheckCircle2, Coffee, CheckSquare, XCircle, ThumbsUp } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
+import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
+import {
+  ALL_ORDER_STATUSES,
+  ORDER_STATUS_BADGE,
+  ORDER_STATUS_LABELS,
+  nextStatusInFlow,
+} from '../../lib/orderStatus';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
-const ALL_STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  accepted: 'bg-blue-100 text-blue-800 border-blue-200',
-  preparing: 'bg-orange-100 text-orange-800 border-orange-200',
-  ready: 'bg-green-100 text-green-800 border-green-200',
-  served: 'bg-teal-100 text-teal-800 border-teal-200',
-  completed: 'bg-gray-100 text-gray-600 border-gray-200',
-  cancelled: 'bg-red-100 text-red-700 border-red-200',
-};
 
 type Column = {
   status: OrderStatus;
@@ -28,13 +24,12 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { status: 'pending', label: 'Pending', icon: Clock, color: 'text-yellow-400', bgCard: 'border-yellow-500/30' },
-  { status: 'accepted', label: 'Accepted', icon: ThumbsUp, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
-  { status: 'preparing', label: 'Preparing', icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
-  { status: 'ready', label: 'Ready', icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
-  { status: 'served', label: 'Served', icon: Coffee, color: 'text-teal-400', bgCard: 'border-teal-500/30' },
-  { status: 'completed', label: 'Completed', icon: CheckSquare, color: 'text-gray-400', bgCard: 'border-gray-500/30' },
-  { status: 'cancelled', label: 'Cancelled', icon: XCircle, color: 'text-red-400', bgCard: 'border-red-500/30' },
+  { status: 'pending_payment', label: ORDER_STATUS_LABELS.pending_payment, icon: Clock, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
+  { status: 'paid', label: ORDER_STATUS_LABELS.paid, icon: ThumbsUp, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
+  { status: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
+  { status: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
+  { status: 'completed', label: ORDER_STATUS_LABELS.completed, icon: CheckSquare, color: 'text-gray-400', bgCard: 'border-gray-500/30' },
+  { status: 'cancelled', label: ORDER_STATUS_LABELS.cancelled, icon: XCircle, color: 'text-red-400', bgCard: 'border-red-500/30' },
 ];
 
 function timeAgo(iso: string): string {
@@ -71,12 +66,7 @@ export default function AdminOrders() {
     return list;
   }, [orders, channelFilter, statusFilter, branchFilter]);
 
-  const nextStatus = (current: OrderStatus): OrderStatus | null => {
-    const flow: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed'];
-    const idx = flow.indexOf(current);
-    if (idx === -1 || idx >= flow.length - 1) return null;
-    return flow[idx + 1];
-  };
+  const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
 
   const applyStatus = (status: OrderStatus) => {
     if (!editingOrder) return;
@@ -138,8 +128,8 @@ export default function AdminOrders() {
           className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
         >
           <option value="all">All statuses</option>
-          {ALL_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {ALL_ORDER_STATUSES.map((s) => (
+            <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>
           ))}
         </select>
 
@@ -167,7 +157,7 @@ export default function AdminOrders() {
       ) : viewMode === 'list' ? (
         <ul className="space-y-3">
           {filtered.map((o) => {
-            const next = nextStatus(o.status);
+            const next = nextStatus(o);
             return (
               <li
                 key={o.id}
@@ -180,8 +170,8 @@ export default function AdminOrders() {
                       <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full dash-card-alt text-kado-dark dash-heading border dash-border">
                         {o.channel}
                       </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${STATUS_COLORS[o.status]}`}>
-                        {o.status}
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
+                        {ORDER_STATUS_LABELS[o.status]}
                       </span>
                       <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
                       <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>
@@ -190,6 +180,7 @@ export default function AdminOrders() {
                       {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
                     </p>
                     {o.guestName && <p className="text-xs dash-muted mt-1">Pickup: {o.guestName}</p>}
+                    <OrderPaymentProofPreview order={o} />
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
@@ -208,7 +199,7 @@ export default function AdminOrders() {
                           onClick={() => updateOrderStatus(o.id, next)}
                           className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
                         >
-                          → {next}
+                          → {ORDER_STATUS_LABELS[next]}
                         </button>
                       )}
                       {o.status !== 'cancelled' && o.status !== 'completed' && (
@@ -231,7 +222,10 @@ export default function AdminOrders() {
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pb-4 snap-x">
           <div className="flex gap-4 h-full min-h-[500px] w-max snap-start">
             {COLUMNS.map((col) => {
-              const colOrders = filtered.filter((o) => o.status === col.status);
+              const colOrders = filtered.filter((o) => {
+                if (col.status === 'cancelled' || col.status === 'completed') return o.status === col.status;
+                return o.status === col.status || (col.status === 'pending_payment' && o.status === 'pending') || (col.status === 'paid' && o.status === 'accepted');
+              });
               const Icon = col.icon;
               // Skip empty columns in Kanban view if a specific status filter is set
               if (statusFilter !== 'all' && statusFilter !== col.status) return null;

@@ -37,7 +37,8 @@ export default function Footer() {
             <h3 className="font-display font-bold text-lg">Quick Links</h3>
             <div className="flex flex-col gap-2">
               <Link to="/menu" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">Coffee</Link>
-              <Link to="/book/booth" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">Book Booth</Link>
+              <Link to="/book/booth" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">Events Bookings</Link>
+              <Link to="/events" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">Kado Booth</Link>
               <Link to="/about" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">About Us</Link>
               <Link to="/contact" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">Contact Us</Link>
             </div>

@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink, Plus } from 'lucide-react';
+import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ProductDetailDrawer from '../ProductDetailDrawer';
 import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
@@ -11,7 +12,7 @@ import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
-import { useCartStore } from '../../store/cartStore';
+import type { Product } from '../../types/domain';
 import type { FeaturedCopy, EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import { formatPhp } from '../../lib/money';
 
@@ -67,7 +68,7 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
   const user = useAuthStore((s) => s.user);
-  const addItem = useCartStore((s) => s.addItem);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const sigCat = categories.find((c) => c.name.toLowerCase().includes('signature'));
   const showcaseDrinks = useMemo(() => {
@@ -76,30 +77,6 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
       : products.filter((p) => p.visible);
     return src.slice(0, 3);
   }, [products, sigCat]);
-
-  const handleAddToCart = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-
-    const defaultMilk = product.milks[0];
-    const defaultSize = product.sizes[0];
-    const unitPrice = product.basePrice + (defaultMilk?.priceDelta ?? 0) + (defaultSize?.priceDelta ?? 0);
-
-    addItem({
-      itemType: 'coffee',
-      productId: product.id,
-      productNameSnapshot: product.name,
-      qty: 1,
-      milkId: defaultMilk?.id,
-      milkLabelSnapshot: defaultMilk?.label,
-      sizeId: defaultSize?.id,
-      sizeLabelSnapshot: defaultSize?.label,
-      temperature: product.temperature === 'both' ? 'hot' : product.temperature === 'iced' ? 'iced' : 'hot',
-      unitPrice,
-      lineTotal: unitPrice,
-      image: product.image,
-    });
-  };
 
   return (
     <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
@@ -130,85 +107,62 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
         <p className="text-kado-dark/65 text-sm leading-relaxed mb-8 md:hidden -mt-2 max-w-md">{copy.subtitleMobile}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 w-full pb-6 sm:pb-8">
-          {showcaseDrinks.map((drink, i) => (
-            <motion.div
-              key={drink.id}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
-              className="w-full bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-6 shadow-xl shadow-black/5 border border-kado-dark/10 group"
-              whileHover={{ y: -6 }}
-            >
-              <motion.div
-                className="w-full aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden mb-5 sm:mb-6 relative bg-kado-cream"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <img
-                  src={
-                    copy.cardImageOverrides[i]?.trim() ||
-                    drink.image ||
-                    FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]
-                  }
-                  alt={drink.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                />
-                <motion.div
-                  className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  initial={false}
-                />
-              </motion.div>
-              <motion.div
-                className="flex justify-between items-start"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.15 + i * 0.05 }}
-              >
-                <motion.div whileHover={{ x: 2 }} transition={{ type: 'spring', stiffness: 400 }}>
-                  <h3 className="font-display font-bold text-xl text-kado-dark">{drink.name}</h3>
-                  {drink.description && <p className="text-sm font-medium text-kado-dark/70 mt-1">{drink.description}</p>}
-                  {drink.tags?.length ? (
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-kado-red/70 mt-1">{drink.tags.join(' · ')}</p>
-                  ) : null}
-                </motion.div>
-                <span className="font-display font-bold text-kado-red shrink-0 ml-3">{formatPhp(drink.basePrice)}</span>
-              </motion.div>
-              <motion.div
-                className="mt-4 flex flex-wrap gap-2"
-                initial={{ opacity: 0, y: 8 }}
+          {showcaseDrinks.map((drink, i) => {
+            const image =
+              copy.cardImageOverrides[i]?.trim() ||
+              drink.image ||
+              FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
+            const desc =
+              drink.description ??
+              (drink.temperature === 'iced'
+                ? 'Served iced — crisp and refreshing.'
+                : drink.temperature === 'both'
+                  ? 'Available hot or iced.'
+                  : 'Hand-crafted in-house.');
+
+            return (
+              <motion.button
+                key={drink.id}
+                type="button"
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 + i * 0.05 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.45, delay: i * 0.08 }}
+                whileHover={{ y: -6 }}
+                onClick={() => setSelectedProduct(drink)}
+                className="group w-full text-left bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-6 shadow-xl shadow-black/5 border border-kado-dark/10 hover:border-kado-red/30 hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red"
               >
-                <motion.button
-                  type="button"
-                  onClick={() => handleAddToCart(drink.id)}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-kado-dark px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-cream transition-colors hover:bg-kado-red"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add to Cart
-                </motion.button>
-                <Link
-                  to="/menu"
-                  className="inline-flex items-center rounded-lg border border-kado-dark/15 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/80 transition-colors hover:border-kado-red/35 hover:text-kado-red"
-                >
-                  Explore Menu
-                </Link>
-                {!user && (
-                  <Link
-                    to="/auth/login"
-                    className="inline-flex items-center rounded-lg border border-kado-dark/15 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/80 transition-colors hover:border-kado-red/35 hover:text-kado-red"
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </motion.div>
-            </motion.div>
-          ))}
+                <div className="w-full aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden mb-5 sm:mb-6 relative bg-kado-cream">
+                  <img
+                    src={image}
+                    alt={drink.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="absolute bottom-3 left-3 right-3 text-center text-[10px] font-black uppercase tracking-widest text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-md">
+                    View details
+                  </span>
+                </div>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-display font-bold text-xl text-kado-dark group-hover:text-kado-red transition-colors">
+                      {drink.name}
+                    </h3>
+                    {drink.tags?.length ? (
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-kado-red/70 mt-1">
+                        {drink.tags.join(' · ')}
+                      </p>
+                    ) : null}
+                    <p className="text-sm font-medium text-kado-dark/70 mt-1 line-clamp-2">{desc}</p>
+                  </div>
+                  <span className="font-display font-bold text-kado-red shrink-0">{formatPhp(drink.basePrice)}</span>
+                </div>
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 group-hover:text-kado-red transition-colors">
+                  {user?.role === 'customer' ? 'Tap to customize & order' : 'Tap to view — sign in to order'}
+                </p>
+              </motion.button>
+            );
+          })}
         </div>
 
         <motion.div
@@ -226,6 +180,13 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
           </Link>
         </motion.div>
       </motion.div>
+
+      <ProductDetailDrawer
+        product={selectedProduct}
+        categoryName={sigCat?.name ?? 'Signatures'}
+        onClose={() => setSelectedProduct(null)}
+        requireAuthToOrder
+      />
     </section>
   );
 }
@@ -403,7 +364,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                       to="/events"
                       className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
                     >
-                      See all events <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
+                      View Kado Booth <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
                     </Link>
                   )}
                 </motion.div>

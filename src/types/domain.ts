@@ -77,9 +77,11 @@ export interface Product {
 
 export type OrderChannel = 'online' | 'dine-in' | 'takeout' | 'pos' | 'merch';
 
-export type PaymentMethod = 'pay-at-store' | 'paymongo';
+export type PaymentMethod = 'gcash-qr' | 'pay-at-store' | 'paymongo';
 
 export type OrderStatus =
+  | 'pending_payment'
+  | 'paid'
   | 'pending'
   | 'accepted'
   | 'preparing'
@@ -121,6 +123,9 @@ export interface Order {
   guestName?: string;
   staffId?: string;
   paymentMethod?: PaymentMethod;
+  /** Customer-uploaded GCash payment screenshot (data URL). */
+  paymentProofImage?: string;
+  paymentProofUploadedAt?: string;
   status: OrderStatus;
   items: OrderItem[];
   subtotal: number;

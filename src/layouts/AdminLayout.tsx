@@ -36,7 +36,7 @@ const nav = [
   { to: '/admin/booth-content', label: 'Booth Content', icon: CalendarClock },
   { to: '/admin/merch', label: 'Merch', icon: Package },
   { to: '/admin/loyalty', label: 'Loyalty', icon: Gift },
-  { to: '/admin/events', label: 'Events', icon: CalendarDays },
+  { to: '/admin/events', label: 'Kado Booth', icon: CalendarDays },
   { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
   { to: '/admin/landing', label: 'Homepage', icon: Image },
   { to: '/admin/users', label: 'Users', icon: Users },

@@ -145,9 +145,9 @@ export default function BookBooth() {
     <div className="w-full bg-[#FAF7F2] min-h-screen">
       <section className="pt-28 pb-12 px-6 border-b border-kado-dark/5 bg-gradient-to-b from-kado-cream/80 to-[#FAF7F2]">
         <div className="max-w-6xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-3">Private Events</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-3">Events Bookings</p>
           <h1 className="font-display text-4xl md:text-6xl font-black text-kado-dark tracking-tight uppercase mb-4">
-            Book A Kado Booth
+            Events Bookings
           </h1>
           <p className="text-kado-dark/65 text-base max-w-2xl leading-relaxed">
             Host birthdays, weddings, and intimate celebrations in a Japanese-inspired space with curated coffee, food, and event-ready setup.

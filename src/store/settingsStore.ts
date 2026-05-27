@@ -10,6 +10,8 @@ export interface AppSettings {
   brandMode: DashTheme;
   shopName: string;
   currency: string;
+  /** GCash QR image for customer payments (URL or data URL). */
+  gcashQrImage: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -19,6 +21,7 @@ const DEFAULTS: AppSettings = {
   brandMode: 'light',
   shopName: 'Kado Kohi',
   currency: 'PHP',
+  gcashQrImage: '',
 };
 
 export interface SettingsStore {
@@ -42,6 +45,20 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
       seed: () => set({ settings: DEFAULTS }),
     }),
-    { name: 'kado-settings-v1' },
+    {
+      name: 'kado-settings-v2',
+      merge: (persisted, current) => {
+        const p = persisted as SettingsStore | undefined;
+        return {
+          ...current,
+          settings: {
+            ...DEFAULTS,
+            ...current.settings,
+            ...(p?.settings ?? {}),
+            gcashQrImage: p?.settings?.gcashQrImage ?? current.settings.gcashQrImage ?? '',
+          },
+        };
+      },
+    },
   ),
 );

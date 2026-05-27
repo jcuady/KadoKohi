@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Order, OrderStatus } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
-
-const FLOW: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed'];
+import { ORDER_STATUS_LABELS, statusFlowForOrder } from '../../lib/orderStatus';
+import OrderPaymentProofPreview from '../admin/OrderPaymentProofPreview';
 
 type Props = {
   order: Order | null;
@@ -16,7 +16,8 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null);
 
   const currentStatus = useMemo(() => order?.status ?? null, [order?.status]);
-  const statusValue = selectedStatus ?? currentStatus ?? 'pending';
+  const flow = useMemo(() => (order ? statusFlowForOrder(order) : []), [order]);
+  const statusValue = selectedStatus ?? currentStatus ?? flow[0] ?? 'pending';
   if (!open || !order) return null;
 
   return (
@@ -31,6 +32,7 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
           <div className="rounded-xl border border-kado-dark/10 px-4 py-3 text-sm">
             <p className="font-semibold text-kado-dark">{order.items.map((item) => `${item.qty}× ${item.productNameSnapshot}`).join(' · ')}</p>
             <p className="text-kado-dark/60 mt-1">Total: {formatPhp(order.total)}</p>
+            <OrderPaymentProofPreview order={order} />
           </div>
 
           <div>
@@ -40,12 +42,12 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
               onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
               className="w-full rounded-xl border border-kado-dark/15 px-4 py-2.5 text-sm text-kado-dark bg-white focus:outline-none focus:ring-2 focus:ring-kado-red/20"
             >
-              {FLOW.map((status) => (
+              {flow.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {ORDER_STATUS_LABELS[status]}
                 </option>
               ))}
-              <option value="cancelled">cancelled</option>
+              <option value="cancelled">{ORDER_STATUS_LABELS.cancelled}</option>
             </select>
           </div>
         </div>

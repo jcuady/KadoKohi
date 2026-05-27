@@ -26,7 +26,7 @@ const siteLinks = [
   { label: 'Home', path: '/' },
   { label: 'All Coffee', path: '/menu' },
   { label: 'Branches', path: '/branches' },
-  { label: 'Events', path: '/events' },
+  { label: 'Kado Booth', path: '/events' },
   { label: 'About Us', path: '/about' },
   { label: 'Contact Us', path: '/contact' },
 ];

@@ -35,7 +35,7 @@ export default function Events() {
             What's happening
           </p>
           <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            Events
+            Kado Booth
           </h1>
           <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
             Join us for tastings, throwdowns, workshops, and special celebrations at Kado Kohi.

@@ -4,8 +4,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
-import { Clock, ChefHat, CheckCircle2 } from 'lucide-react';
+import { kioskColumnStatus, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import { Clock, ChefHat, CheckCircle2, Wallet } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
+import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
 
@@ -18,10 +20,10 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { status: 'pending', label: 'Pending', icon: Clock, color: 'text-yellow-400', bgCard: 'border-yellow-500/30' },
-  { status: 'accepted', label: 'Accepted', icon: Clock, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
-  { status: 'preparing', label: 'Preparing', icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
-  { status: 'ready', label: 'Ready', icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
+  { status: 'pending_payment', label: ORDER_STATUS_LABELS.pending_payment, icon: Wallet, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
+  { status: 'paid', label: ORDER_STATUS_LABELS.paid, icon: Clock, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
+  { status: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
+  { status: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
 ];
 
 function timeAgo(iso: string): string {
@@ -76,7 +78,7 @@ export default function BaristaBoard() {
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
         {COLUMNS.map((col) => {
-          const colOrders = visible.filter((o) => o.status === col.status);
+          const colOrders = visible.filter((o) => kioskColumnStatus(o.status) === col.status);
           const Icon = col.icon;
           return (
             <div key={col.status} className="flex flex-col min-h-0">
@@ -127,6 +129,7 @@ export default function BaristaBoard() {
                           <li className="dash-muted">+{o.items.length - 4} more</li>
                         )}
                       </ul>
+                      <OrderPaymentProofPreview order={o} />
                       <div className="mt-2 text-right">
                         <span className="font-display font-bold text-kado-red text-sm">{formatPhp(o.total)}</span>
                       </div>

@@ -6,15 +6,15 @@ import {
   Minus,
   Plus,
   Trash2,
-  CheckCircle2,
   ChevronRight,
   ArrowRight,
   MapPin,
   Truck,
-  Wallet,
   CreditCard,
+  QrCode,
+  LogIn,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
@@ -25,6 +25,7 @@ import { newId } from '../lib/id';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 
 export default function CartDrawer() {
+  const navigate = useNavigate();
   const { items, isOpen, closeCart, removeItem, updateQty, clear } = useCartStore();
   const user = useAuthStore((s) => s.user);
   const addLoyaltyStamps = useAuthStore((s) => s.addLoyaltyStamps);
@@ -38,10 +39,8 @@ export default function CartDrawer() {
   );
 
   const [branchId, setBranchId] = useState<string>(() => activeBranches[0]?.id ?? '');
-  const [guestName, setGuestName] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pay-at-store');
-  const [placed, setPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
+  const paymentMethod: PaymentMethod = 'gcash-qr';
 
   const selectedBranch = useMemo(
     () => activeBranches.find((b) => b.id === branchId),
@@ -54,12 +53,11 @@ export default function CartDrawer() {
     return computeOrderTotals(sub, 0, taxRate);
   }, [items, taxRate]);
 
-  const canOrder =
-    items.length > 0 && !!branchId && (!!user || guestName.trim().length > 0);
+  const isCustomer = user?.role === 'customer';
+  const canOrder = items.length > 0 && !!branchId && isCustomer;
 
   const handleClose = () => {
     closeCart();
-    if (placed) setTimeout(() => setPlaced(false), 300);
   };
 
   const hasMerch = items.some((i) => i.itemType === 'merch');
@@ -91,13 +89,12 @@ export default function CartDrawer() {
 
     const channel = hasCoffee ? 'online' : 'merch';
 
-    createOrder({
+    const order = createOrder({
       channel,
       branchId,
-      customerId: user?.id,
-      guestName: user ? undefined : guestName.trim(),
+      customerId: user!.id,
       paymentMethod,
-      status: 'pending',
+      status: 'pending_payment',
       items: orderItems,
       subtotal: totals.subtotal,
       modifiersTotal: 0,
@@ -105,10 +102,11 @@ export default function CartDrawer() {
       total: totals.total,
     });
 
-    if (user?.role === 'customer') addLoyaltyStamps(1);
+    addLoyaltyStamps(1);
     clear();
-    setPlaced(true);
+    closeCart();
     setLoading(false);
+    navigate(`/account/orders?placed=${order.id}`);
   };
 
   return (
@@ -155,41 +153,7 @@ export default function CartDrawer() {
               </button>
             </div>
 
-            {/* Success state */}
-            {placed ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-0">
-                <motion.div
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                >
-                  <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                </motion.div>
-                <h3 className="font-display text-2xl font-bold text-kado-dark mb-2">
-                  Order placed!
-                </h3>
-                <p className="text-kado-dark/58 text-sm mb-8 max-w-xs leading-relaxed">
-                  We've received your order and will start preparing it shortly.
-                </p>
-                <div className="flex flex-col gap-3 w-full max-w-xs">
-                  <button
-                    onClick={handleClose}
-                    className="rounded-full bg-kado-dark text-kado-cream px-8 py-3.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
-                  >
-                    Continue browsing
-                  </button>
-                  {user && (
-                    <Link
-                      to="/account/orders"
-                      onClick={handleClose}
-                      className="text-sm text-kado-dark/60 hover:text-kado-red transition-colors flex items-center justify-center gap-1"
-                    >
-                      View my orders <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ) : items.length === 0 ? (
+            {items.length === 0 ? (
               /* Empty state */
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
                 <ShoppingBag className="w-16 h-16 text-kado-dark/12 mb-4" />
@@ -351,15 +315,10 @@ export default function CartDrawer() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setPaymentMethod('pay-at-store')}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-                          paymentMethod === 'pay-at-store'
-                            ? 'bg-kado-red text-white'
-                            : 'border border-kado-dark/10 text-kado-dark/55 hover:border-kado-dark/25'
-                        }`}
+                        className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider bg-kado-red text-white"
                       >
-                        <Wallet className="w-3.5 h-3.5" />
-                        Pay at store
+                        <QrCode className="w-3.5 h-3.5" />
+                        GCash QR
                       </button>
                       <button
                         type="button"
@@ -375,29 +334,22 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Guest name (shown when not logged in) */}
-                  {!user && (
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
-                        Your name
-                      </label>
-                      <input
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="e.g. Juan"
-                        className="w-full rounded-xl border border-kado-dark/15 bg-white px-4 py-2.5 text-sm text-kado-dark placeholder:text-kado-dark/30 focus:outline-none focus:ring-2 focus:ring-kado-red/25 transition"
-                      />
-                      <p className="text-[9px] text-kado-dark/45 mt-1 ml-1">
-                        Or{' '}
-                        <Link
-                          to="/auth/login"
-                          onClick={handleClose}
-                          className="underline underline-offset-2 hover:text-kado-red"
-                        >
-                          sign in
-                        </Link>{' '}
-                        to track orders &amp; earn stamps.
+                  {!isCustomer && (
+                    <div className="rounded-xl border border-kado-red/20 bg-kado-red/5 px-4 py-3 text-xs text-kado-dark/65">
+                      <p className="font-bold text-kado-dark mb-1 flex items-center gap-1.5">
+                        <LogIn className="w-3.5 h-3.5 text-kado-red" />
+                        Sign in to place order
                       </p>
+                      <p className="leading-relaxed">
+                        GCash checkout requires an account so you can pay and upload proof of payment.
+                      </p>
+                      <Link
+                        to="/auth/login"
+                        onClick={handleClose}
+                        className="inline-flex items-center gap-1 mt-2 font-bold uppercase tracking-wider text-[10px] text-kado-red hover:underline"
+                      >
+                        Sign in <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   )}
 

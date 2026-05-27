@@ -122,14 +122,14 @@ export default function AdminDashboard() {
 
         <div className="rounded-2xl dash-card border p-6">
           <h2 className="font-display font-bold text-lg dash-heading mb-4 flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-kado-red" /> Events
+            <CalendarDays className="w-5 h-5 text-kado-red" /> Kado Booth
           </h2>
           <p className="text-sm dash-muted mb-3">{events.filter((e) => e.visible).length} published events</p>
           <Link
             to="/admin/events"
             className="text-xs font-bold text-kado-red hover:underline uppercase tracking-wider"
           >
-            Manage events →
+            Manage Kado Booth →
           </Link>
         </div>
       </div>

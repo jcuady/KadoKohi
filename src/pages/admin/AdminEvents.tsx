@@ -94,7 +94,7 @@ export default function AdminEvents() {
     <div className="dash-page max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Events</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Kado Booth</h1>
           <p className="dash-muted text-sm mt-1">{events.length} event(s) — manage what shows on the public site.</p>
         </div>
         <button

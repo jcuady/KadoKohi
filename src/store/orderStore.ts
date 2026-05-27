@@ -12,6 +12,7 @@ export interface OrderStore {
   orders: Order[];
   createOrder: (order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt'> & { shortCode?: string }) => Order;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
+  updateOrderPaymentProof: (id: string, proofImage: string) => void;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
   ordersForBarista: (branchId: string) => Order[];
   seed: () => void;
@@ -34,6 +35,8 @@ export const useOrderStore = create<OrderStore>()(
           guestName: input.guestName,
           staffId: input.staffId,
           paymentMethod: input.paymentMethod,
+          paymentProofImage: input.paymentProofImage,
+          paymentProofUploadedAt: input.paymentProofUploadedAt,
           status: input.status,
           items: input.items,
           subtotal: input.subtotal,
@@ -54,6 +57,20 @@ export const useOrderStore = create<OrderStore>()(
           ),
         }),
 
+      updateOrderPaymentProof: (id, proofImage) =>
+        set({
+          orders: get().orders.map((o) =>
+            o.id === id
+              ? {
+                  ...o,
+                  paymentProofImage: proofImage,
+                  paymentProofUploadedAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }
+              : o,
+          ),
+        }),
+
       ordersForBranch: (branchId, channels) => {
         const list = get().orders.filter((o) => o.branchId === branchId);
         if (!channels?.length) return list;
@@ -65,6 +82,6 @@ export const useOrderStore = create<OrderStore>()(
 
       seed: () => set({ orders: [] }),
     }),
-    { name: 'kado-orders-v1' },
+    { name: 'kado-orders-v2' },
   ),
 );

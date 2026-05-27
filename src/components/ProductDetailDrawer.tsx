@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Minus, ShoppingBag, CheckCircle2 } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn } from 'lucide-react';
 import type { Product, MerchProduct } from '../types/domain';
 import { useCartStore, type CartLineVariant } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
 import { formatPhp } from '../lib/money';
 
 const FALLBACK_BY_CATEGORY: Record<string, string> = {
@@ -27,10 +29,19 @@ interface Props {
   product: Product | MerchProduct | null;
   categoryName?: string;
   onClose: () => void;
+  /** When true, only signed-in customers can add to cart (guests see sign-in CTA). */
+  requireAuthToOrder?: boolean;
 }
 
-export default function ProductDetailDrawer({ product, categoryName, onClose }: Props) {
+export default function ProductDetailDrawer({
+  product,
+  categoryName,
+  onClose,
+  requireAuthToOrder = false,
+}: Props) {
+  const user = useAuthStore((s) => s.user);
   const addItem = useCartStore((s) => s.addItem);
+  const canOrder = !requireAuthToOrder || user?.role === 'customer';
 
   const [selectedMilkId, setSelectedMilkId] = useState<string>('');
   const [selectedTemp, setSelectedTemp] = useState<'hot' | 'iced'>('hot');
@@ -95,7 +106,7 @@ export default function ProductDetailDrawer({ product, categoryName, onClose }: 
     : '';
 
   const handleAdd = () => {
-    if (!product) return;
+    if (!product || !canOrder) return;
 
     if (isMerchProduct(product)) {
       const variants: CartLineVariant[] = [];
@@ -275,40 +286,76 @@ export default function ProductDetailDrawer({ product, categoryName, onClose }: 
                 ))}
               </div>
 
-              <div className="shrink-0 border-t border-kado-dark/5 px-6 md:px-8 py-5 flex items-center gap-4 bg-gray-50/50 backdrop-blur-md">
-                <div className="flex items-center gap-3 bg-white border border-kado-dark/10 shadow-sm rounded-full px-3 py-2.5 shrink-0">
-                  <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-8 h-8 flex items-center justify-center hover:text-kado-red hover:bg-kado-red/5 transition-colors rounded-full"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="font-black text-sm text-kado-dark min-w-[1.25rem] text-center select-none">{qty}</span>
-                  <button type="button" onClick={() => setQty((q) => q + 1)}
-                    className="w-8 h-8 flex items-center justify-center hover:text-kado-red hover:bg-kado-red/5 transition-colors rounded-full"
-                    aria-label="Increase quantity"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+              <div className="shrink-0 border-t border-kado-dark/5 px-6 md:px-8 py-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-gray-50/50 backdrop-blur-md">
+                {canOrder ? (
+                  <>
+                    <div className="flex items-center gap-3 bg-white border border-kado-dark/10 shadow-sm rounded-full px-3 py-2.5 shrink-0 self-center sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="w-8 h-8 flex items-center justify-center hover:text-kado-red hover:bg-kado-red/5 transition-colors rounded-full"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="font-black text-sm text-kado-dark min-w-[1.25rem] text-center select-none">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQty((q) => q + 1)}
+                        className="w-8 h-8 flex items-center justify-center hover:text-kado-red hover:bg-kado-red/5 transition-colors rounded-full"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                <motion.button
-                  type="button"
-                  onClick={handleAdd}
-                  disabled={added}
-                  whileTap={{ scale: 0.97 }}
-                  className={`flex-1 rounded-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300 shadow-lg ${
-                    added
-                      ? 'bg-kado-dark text-white shadow-kado-dark/20'
-                      : 'bg-kado-red text-white shadow-kado-red/30 hover:bg-[#8A1519] hover:shadow-kado-red/40'
-                  }`}
-                >
-                  {added ? (
-                    <><CheckCircle2 className="w-4 h-4" /> Added!</>
-                  ) : (
-                    <><ShoppingBag className="w-4 h-4" /> Add — {formatPhp(lineTotal)}</>
-                  )}
-                </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={handleAdd}
+                      disabled={added}
+                      whileTap={{ scale: 0.97 }}
+                      className={`flex-1 rounded-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300 shadow-lg ${
+                        added
+                          ? 'bg-kado-dark text-white shadow-kado-dark/20'
+                          : 'bg-kado-red text-white shadow-kado-red/30 hover:bg-[#8A1519] hover:shadow-kado-red/40'
+                      }`}
+                    >
+                      {added ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" /> Added!
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-4 h-4" /> Add — {formatPhp(lineTotal)}
+                        </>
+                      )}
+                    </motion.button>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col gap-3 text-center sm:text-left">
+                    <p className="text-sm font-medium text-kado-dark/70 leading-relaxed">
+                      Sign in to customize your drink and add it to your cart.
+                    </p>
+                    <Link
+                      to="/auth/login"
+                      state={{ from: '/' }}
+                      onClick={onClose}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-kado-red py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-kado-red/30 hover:bg-[#8A1519] transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign in to order
+                    </Link>
+                    <Link
+                      to="/auth/signup"
+                      onClick={onClose}
+                      className="text-xs font-bold text-kado-dark/55 hover:text-kado-red transition-colors"
+                    >
+                      New here? Create an account
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

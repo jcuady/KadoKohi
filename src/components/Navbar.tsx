@@ -9,9 +9,9 @@ const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'Coffee', path: '/menu' },
   { label: 'Merch', path: '/merch' },
-  { label: 'Book Booth', path: '/book/booth' },
+  { label: 'Events Bookings', path: '/book/booth' },
   { label: 'Branches', path: '/branches' },
-  { label: 'Events', path: '/events' },
+  { label: 'Kado Booth', path: '/events' },
   { label: 'About Us', path: '/about' },
   { label: 'Contact Us', path: '/contact' },
 ];

@@ -4,18 +4,8 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
 import { formatPhp } from '../../lib/money';
-
-const ALL_STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  accepted: 'bg-blue-100 text-blue-800 border-blue-200',
-  preparing: 'bg-orange-100 text-orange-800 border-orange-200',
-  ready: 'bg-green-100 text-green-800 border-green-200',
-  served: 'bg-teal-100 text-teal-800 border-teal-200',
-  completed: 'bg-gray-100 text-gray-600 border-gray-200',
-  cancelled: 'bg-red-100 text-red-700 border-red-200',
-};
+import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS, nextStatusInFlow } from '../../lib/orderStatus';
+import type { Order } from '../../types/domain';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -47,12 +37,7 @@ export default function StaffMerchOrders() {
     return list;
   }, [orders, user?.branchId, statusFilter]);
 
-  const nextStatus = (current: OrderStatus): OrderStatus | null => {
-    const flow: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
-    const idx = flow.indexOf(current);
-    if (idx === -1 || idx >= flow.length - 1) return null;
-    return flow[idx + 1];
-  };
+  const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
 
   return (
     <div className="max-w-5xl dash-page">
@@ -66,8 +51,8 @@ export default function StaffMerchOrders() {
           className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
         >
           <option value="all">All statuses</option>
-          {ALL_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {ALL_ORDER_STATUSES.map((s) => (
+            <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>
           ))}
         </select>
         <span className="self-center text-xs dash-muted font-semibold">
@@ -82,15 +67,15 @@ export default function StaffMerchOrders() {
       ) : (
         <ul className="space-y-3">
           {filtered.map((o) => {
-            const next = nextStatus(o.status);
+            const next = nextStatus(o);
             return (
               <li key={o.id} className="rounded-2xl dash-card border p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${STATUS_COLORS[o.status]}`}>
-                        {o.status}
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
+                        {ORDER_STATUS_LABELS[o.status]}
                       </span>
                       <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
                       <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>
@@ -116,7 +101,7 @@ export default function StaffMerchOrders() {
                         onClick={() => updateOrderStatus(o.id, next)}
                         className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
                       >
-                        → {next}
+                        → {ORDER_STATUS_LABELS[next]}
                       </button>
                     )}
                   </div>

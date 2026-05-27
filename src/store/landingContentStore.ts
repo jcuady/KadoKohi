@@ -210,7 +210,7 @@ export const SEED_CONTENT: LandingContentState = {
     subtitle: 'Coffee shop by day. Club and hangout by night. The definitive Marikina social experience.',
     coverImageOverride: '',
     noEventBody: 'No upcoming events right now. Check back soon.',
-    noEventBrowseLabel: 'Browse past events →',
+    noEventBrowseLabel: 'View Kado Booth →',
   },
   testimonials: {
     badge: 'Customers',

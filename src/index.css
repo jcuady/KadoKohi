@@ -63,6 +63,41 @@
 }
 .dash-border { border-color: var(--color-dash-border); }
 
+/* Kiosk display (customer-facing order board) — light default */
+.kiosk-root {
+  --kiosk-bg: #FAF7F2;
+  --kiosk-bg-accent: #F1DFBA;
+  --kiosk-surface: #FFFFFF;
+  --kiosk-surface-muted: #FAF9F6;
+  --kiosk-text: #191919;
+  --kiosk-text-muted: rgba(25, 25, 25, 0.58);
+  --kiosk-text-subtle: rgba(25, 25, 25, 0.42);
+  --kiosk-border: rgba(25, 25, 25, 0.12);
+  --kiosk-border-strong: rgba(25, 25, 25, 0.18);
+  --kiosk-order-bg: #FFFFFF;
+  --kiosk-order-shadow: 0 4px 24px rgba(25, 25, 25, 0.06);
+  --kiosk-empty-bg: rgba(25, 25, 25, 0.04);
+  --kiosk-header-btn-hover: rgba(25, 25, 25, 0.06);
+  --kiosk-logo-filter: none;
+}
+
+.kiosk-root.kiosk-dark {
+  --kiosk-bg: #121110;
+  --kiosk-bg-accent: #1a1514;
+  --kiosk-surface: #1c1919;
+  --kiosk-surface-muted: rgba(255, 255, 255, 0.04);
+  --kiosk-text: #FAF9F6;
+  --kiosk-text-muted: rgba(250, 249, 246, 0.62);
+  --kiosk-text-subtle: rgba(250, 249, 246, 0.45);
+  --kiosk-border: rgba(255, 255, 255, 0.1);
+  --kiosk-border-strong: rgba(255, 255, 255, 0.16);
+  --kiosk-order-bg: rgba(0, 0, 0, 0.35);
+  --kiosk-order-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --kiosk-empty-bg: rgba(255, 255, 255, 0.04);
+  --kiosk-header-btn-hover: rgba(255, 255, 255, 0.08);
+  --kiosk-logo-filter: brightness(0) invert(1);
+}
+
 body {
   background-color: var(--color-kado-cream);
   color: var(--color-kado-dark);

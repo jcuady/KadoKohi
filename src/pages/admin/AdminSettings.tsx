@@ -1,12 +1,26 @@
-import { type FormEvent } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
+import { readImageDataUrl } from '../../lib/readImageDataUrl';
 
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+  };
+
+  const handleGcashQr = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadError(null);
+    const res = await readImageDataUrl(file);
+    if (!res.ok) {
+      setUploadError(res.error);
+      return;
+    }
+    updateSettings({ gcashQrImage: res.dataUrl });
   };
 
   return (
@@ -15,40 +29,6 @@ export default function AdminSettings() {
       <p className="dash-muted text-sm mb-8">Global configuration — persisted locally. Will sync to API when DB lands.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-2xl dash-card border p-6 space-y-5">
-          <h2 className="font-display font-bold text-lg dash-heading">General</h2>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Shop name</label>
-            <input
-              value={settings.shopName}
-              onChange={(e) => updateSettings({ shopName: e.target.value })}
-              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Currency</label>
-            <input
-              value={settings.currency}
-              onChange={(e) => updateSettings({ currency: e.target.value })}
-              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Tax rate (%)</label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step={0.5}
-              value={settings.taxRate}
-              onChange={(e) => updateSettings({ taxRate: Number(e.target.value) })}
-              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-            />
-          </div>
-        </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Default hours</h2>
@@ -72,6 +52,57 @@ export default function AdminSettings() {
               />
             </div>
           </div>
+        </div>
+
+        <div className="rounded-2xl dash-card border p-6 space-y-5">
+          <h2 className="font-display font-bold text-lg dash-heading">GCash QR</h2>
+          <p className="text-xs dash-muted">
+            Shown to customers after checkout and on My Orders. Upload your shop GCash QR image.
+          </p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              void handleGcashQr(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          {settings.gcashQrImage ? (
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <img
+                src={settings.gcashQrImage}
+                alt="GCash QR preview"
+                className="w-full max-w-[200px] sm:w-40 sm:h-40 aspect-square rounded-xl border dash-border object-contain bg-white p-2 mx-auto sm:mx-0"
+              />
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full sm:w-auto min-h-[44px] rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 touch-manipulation"
+                >
+                  Replace image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ gcashQrImage: '' })}
+                  className="w-full sm:w-auto min-h-[44px] rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="w-full rounded-xl border-2 border-dashed dash-border py-10 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 hover:text-kado-red transition-colors"
+            >
+              Upload GCash QR image
+            </button>
+          )}
+          {uploadError && <p className="text-xs text-red-600 font-medium">{uploadError}</p>}
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
