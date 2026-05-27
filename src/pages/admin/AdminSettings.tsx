@@ -111,6 +111,37 @@ export default function AdminSettings() {
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
+          <h2 className="font-display font-bold text-lg dash-heading">Events / booth contact</h2>
+          <p className="text-xs dash-muted">
+            Shown on customer Events Bookings so they can call about estimates and official quotes.
+          </p>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
+              Contact name
+            </label>
+            <input
+              type="text"
+              value={settings.boothContactName ?? ''}
+              onChange={(e) => updateSettings({ boothContactName: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              placeholder="Kado Kohi Events"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
+              Phone (click-to-call)
+            </label>
+            <input
+              type="tel"
+              value={settings.boothContactPhone}
+              onChange={(e) => updateSettings({ boothContactPhone: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              placeholder="+63 9XX XXX XXXX"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Brand</h2>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Brand mode</label>

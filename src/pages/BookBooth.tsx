@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CalendarHeart, Users, Clock3, BadgeCheck } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 import BookingSteps from '../components/booking/BookingSteps';
 import BookingEstimatePreview from '../components/booking/BookingEstimatePreview';
 import BookingForm, { type BookingFormValues } from '../components/booking/BookingForm';
@@ -11,6 +13,8 @@ import { useBoothBookingStore } from '../store/boothBookingStore';
 import { formatPhp } from '../lib/money';
 
 export default function BookBooth() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const branches = useBranchStore((s) => s.branches);
   const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
 
@@ -120,6 +124,7 @@ export default function BookBooth() {
 
     const booking = createBooking({
       branchId,
+      customerId: user?.role === 'customer' ? user.id : undefined,
       contactName: values.contactName.trim(),
       contactEmail: values.contactEmail.trim(),
       contactPhone: values.contactPhone.trim(),
@@ -139,6 +144,9 @@ export default function BookBooth() {
     });
 
     setSubmittedCode(booking.shortCode);
+    if (user?.role === 'customer') {
+      navigate('/account/booth');
+    }
   };
 
   return (
@@ -321,8 +329,23 @@ export default function BookBooth() {
                 </div>
 
                 {submittedCode && (
-                  <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                    Booking submitted successfully. Reference code: <strong>{submittedCode}</strong>.
+                  <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 space-y-2">
+                    <p>
+                      Booking submitted. Reference: <strong>{submittedCode}</strong>. This is an{' '}
+                      <strong>estimate only</strong> — we will send an official quote after review.
+                    </p>
+                    {user?.role === 'customer' ? (
+                      <Link to="/account/booth" className="font-bold text-kado-red hover:underline">
+                        View in Events Bookings →
+                      </Link>
+                    ) : (
+                      <p>
+                        <Link to="/auth/login" className="font-bold text-kado-red hover:underline">
+                          Sign in
+                        </Link>{' '}
+                        to track your booking and quotes.
+                      </p>
+                    )}
                   </div>
                 )}
 

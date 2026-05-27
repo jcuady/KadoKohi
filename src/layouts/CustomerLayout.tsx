@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard,
   ClipboardList,
+  CalendarHeart,
   User,
   LogOut,
   ShoppingBag,
@@ -20,6 +21,7 @@ import CartDrawer from '../components/CartDrawer';
 const accountNav = [
   { to: '/account', label: 'Dashboard', end: true, icon: LayoutDashboard },
   { to: '/account/orders', label: 'My Orders', icon: ClipboardList },
+  { to: '/account/booth', label: 'Events Bookings', icon: CalendarHeart },
   { to: '/account/profile', label: 'Profile', icon: User },
 ];
 

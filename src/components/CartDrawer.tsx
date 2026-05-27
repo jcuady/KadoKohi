@@ -31,7 +31,6 @@ export default function CartDrawer() {
   const navigate = useNavigate();
   const { items, isOpen, closeCart, removeItem, updateQty, clear } = useCartStore();
   const user = useAuthStore((s) => s.user);
-  const addLoyaltyStamps = useAuthStore((s) => s.addLoyaltyStamps);
   const createOrder = useOrderStore((s) => s.createOrder);
   const branches = useBranchStore((s) => s.branches);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
@@ -106,7 +105,6 @@ export default function CartDrawer() {
       total: totals.total,
     });
 
-    addLoyaltyStamps(1);
     clear();
     closeCart();
     setLoading(false);

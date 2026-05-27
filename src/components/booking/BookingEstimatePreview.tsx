@@ -23,6 +23,10 @@ export default function BookingEstimatePreview({ estimate }: BookingEstimatePrev
         <ReceiptText className="w-4 h-4 text-kado-red" />
         <h3 className="font-display text-xl font-bold text-kado-dark">Estimate Preview</h3>
       </div>
+      <p className="text-xs text-kado-dark/55 mb-4 leading-relaxed">
+        Ballpark pricing only. Our team will review and send an official quote — you can track status under Events
+        Bookings when signed in.
+      </p>
 
       <div className="space-y-2.5">
         {estimate.lineItems.map((line) => (

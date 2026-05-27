@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 const perks = [
-  { icon: Gift, title: 'Kado Circle stamps', body: 'Earn a stamp on every order — your 10th drink is on us.' },
+  { icon: Gift, title: 'Kado Circle stamps', body: 'Earn one stamp per drink when your order is completed — your 10th drink is on us.' },
   { icon: Coffee, title: 'Order from the menu', body: 'Pick your branch at checkout; we route orders to the right bar.' },
   { icon: MapPin, title: 'Every branch', body: 'One account for all locations — track pickup and history in one place.' },
 ];

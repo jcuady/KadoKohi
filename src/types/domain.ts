@@ -133,6 +133,8 @@ export interface Order {
   /** Sales tax amount (PHP), from admin settings tax rate */
   tax?: number;
   total: number;
+  /** Drink stamps granted when status became completed (undefined = not processed yet). */
+  loyaltyStampsAwarded?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -244,8 +246,6 @@ export interface LoyaltyReward {
 }
 
 export interface LoyaltyConfig {
-  stampsPerOrder: number;
-  stampOnMerch: boolean;
   rewards: LoyaltyReward[];
 }
 
@@ -368,7 +368,12 @@ export interface BoothBooking {
   packageBasePriceSnapshot: number;
   selectedAddons: BoothBookingSelectedAddonSnapshot[];
   specialRequests?: string;
+  /** Customer-submitted estimate at booking time (not final). */
   estimateSnapshot: BookingEstimate;
+  /** Admin official quote — shown to customer when set. */
+  finalQuote?: BookingEstimate;
+  quoteNotes?: string;
+  quotedAt?: string;
   status: BoothBookingStatus;
   assignedStaffId?: string;
   internalNotes?: string;

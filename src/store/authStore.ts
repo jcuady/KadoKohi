@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Role, User } from '../types/domain';
 import { newId } from '../lib/id';
+import { useUserStore } from './userStore';
 
 export interface AuthStore {
   user: User | null;
@@ -47,6 +48,7 @@ export const useAuthStore = create<AuthStore>()(
         if (!u || u.role !== 'customer' || delta <= 0) return;
         const next = (u.loyaltyStamps ?? 0) + delta;
         set({ user: { ...u, loyaltyStamps: next } });
+        useUserStore.getState().updateUser(u.id, { loyaltyStamps: next });
       },
     }),
     { name: 'kado-auth-v1' },

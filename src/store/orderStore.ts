@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Order, OrderItem, OrderStatus } from '../types/domain';
+import type { Order, OrderStatus } from '../types/domain';
 import { newId } from '../lib/id';
+import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -50,12 +51,24 @@ export const useOrderStore = create<OrderStore>()(
         return o;
       },
 
-      updateOrderStatus: (id, status) =>
+      updateOrderStatus: (id, status) => {
+        const prev = get().orders.find((o) => o.id === id);
+        if (!prev) return;
+
+        let next: Order = {
+          ...prev,
+          status,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (status === 'completed' && prev.status !== 'completed') {
+          next = applyLoyaltyStampsForCompletedOrder(next);
+        }
+
         set({
-          orders: get().orders.map((o) =>
-            o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o,
-          ),
-        }),
+          orders: get().orders.map((o) => (o.id === id ? next : o)),
+        });
+      },
 
       updateOrderPaymentProof: (id, proofImage) =>
         set({

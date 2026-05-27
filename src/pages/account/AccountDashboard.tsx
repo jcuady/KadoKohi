@@ -15,7 +15,9 @@ import {
   Gift,
   TrendingUp,
   MapPin,
+  CalendarHeart,
 } from 'lucide-react';
+import { useBoothBookingStore } from '../../store/boothBookingStore';
 
 export default function AccountDashboard() {
   const user = useAuthStore((s) => s.user);
@@ -32,6 +34,11 @@ export default function AccountDashboard() {
   const completedCount = useMemo(() => myOrders.filter((o) => o.status === 'completed').length, [myOrders]);
   const totalSpent = useMemo(() => myOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + o.total, 0), [myOrders]);
   const stamps = user?.loyaltyStamps ?? 0;
+  const boothBookings = useBoothBookingStore((s) => s.bookingsForCustomer);
+  const myBoothCount = useMemo(
+    () => (user?.id ? boothBookings(user.id).length : 0),
+    [boothBookings, user?.id],
+  );
 
   const statCards = [
     { icon: ShoppingBag, label: 'Total Orders', value: myOrders.length.toString(), color: 'text-kado-dark' },
@@ -104,7 +111,9 @@ export default function AccountDashboard() {
           <p className="font-display text-3xl md:text-4xl font-black mb-1 tracking-tight">
             {stamps} <span className="text-white/40">/</span> 10
           </p>
-          <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-5">Stamps collected</p>
+          <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-5">
+            Drink stamps · 1 per completed drink
+          </p>
 
           {/* Stamp grid */}
           <div className="flex gap-2 flex-wrap">
@@ -125,10 +134,31 @@ export default function AccountDashboard() {
           <p className="text-xs text-white/35 mt-4 font-medium">
             {stamps >= 10
               ? 'Congratulations! Redeem your free cup at any branch.'
-              : `${10 - stamps} more stamp${10 - stamps !== 1 ? 's' : ''} to earn a free cup.`}
+              : `${10 - stamps} more drink stamp${10 - stamps !== 1 ? 's' : ''} to earn a free cup.`}
           </p>
         </div>
       </motion.div>
+
+      {/* ─── EVENTS BOOKINGS ─── */}
+      <div className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-kado-red/10 flex items-center justify-center shrink-0">
+          <CalendarHeart className="w-6 h-6 text-kado-red" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display text-lg font-black text-kado-dark">Events Bookings</h2>
+          <p className="text-xs text-kado-dark/50 mt-0.5">
+            {myBoothCount > 0
+              ? `${myBoothCount} booth request${myBoothCount !== 1 ? 's' : ''} — view estimates and official quotes`
+              : 'Plan a celebration — submit a request and we will send a quote'}
+          </p>
+        </div>
+        <Link
+          to="/account/booth"
+          className="inline-flex items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors shrink-0"
+        >
+          {myBoothCount > 0 ? 'View bookings' : 'Book booth'} <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
 
       {/* ─── ACTIVE ORDERS ─── */}
       <div>

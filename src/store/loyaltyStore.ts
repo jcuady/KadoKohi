@@ -6,7 +6,6 @@ import { newId } from '../lib/id';
 
 export interface LoyaltyStore {
   config: LoyaltyConfig;
-  updateConfig: (patch: Partial<Omit<LoyaltyConfig, 'rewards'>>) => void;
   addReward: (reward: Omit<LoyaltyReward, 'id'>) => void;
   updateReward: (id: string, patch: Partial<LoyaltyReward>) => void;
   removeReward: (id: string) => void;
@@ -14,13 +13,16 @@ export interface LoyaltyStore {
   seed: () => void;
 }
 
+function normalizeConfig(raw: unknown): LoyaltyConfig {
+  const cfg = raw as LoyaltyConfig | undefined;
+  if (cfg?.rewards?.length) return { rewards: cfg.rewards };
+  return SEED_LOYALTY_CONFIG;
+}
+
 export const useLoyaltyStore = create<LoyaltyStore>()(
   persist(
     (set, get) => ({
       config: SEED_LOYALTY_CONFIG,
-
-      updateConfig: (patch) =>
-        set((s) => ({ config: { ...s.config, ...patch } })),
 
       addReward: (input) => {
         const reward: LoyaltyReward = { ...input, id: newId() };
@@ -50,6 +52,16 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
 
       seed: () => set({ config: SEED_LOYALTY_CONFIG }),
     }),
-    { name: 'kado-loyalty-v1' },
+    {
+      name: 'kado-loyalty-v1',
+      merge: (persisted, current) => {
+        const p = persisted as Partial<LoyaltyStore> | undefined;
+        return {
+          ...current,
+          ...p,
+          config: normalizeConfig(p?.config),
+        };
+      },
+    },
   ),
 );

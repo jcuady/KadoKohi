@@ -134,7 +134,6 @@ export const api = {
   /* ───── Loyalty ───── */
   loyalty: {
     config: () => useLoyaltyStore.getState().config,
-    updateConfig: useLoyaltyStore.getState().updateConfig,
     addReward: useLoyaltyStore.getState().addReward,
     updateReward: useLoyaltyStore.getState().updateReward,
     removeReward: useLoyaltyStore.getState().removeReward,
@@ -186,11 +185,13 @@ export const api = {
     list: () => useBoothBookingStore.getState().bookings,
     create: useBoothBookingStore.getState().createBooking,
     update: useBoothBookingStore.getState().updateBooking,
-    updateStatus: useBoothBookingStore.getState().updateStatus,
+    setStatus: useBoothBookingStore.getState().setStatus,
+    setFinalQuote: useBoothBookingStore.getState().setFinalQuote,
     assignStaff: useBoothBookingStore.getState().assignStaff,
     forBranch: (branchId: string) => useBoothBookingStore.getState().bookingsForBranch(branchId),
     forStaff: (staffId: string, branchId?: string) =>
       useBoothBookingStore.getState().bookingsForStaff(staffId, branchId),
+    forCustomer: (customerId: string) => useBoothBookingStore.getState().bookingsForCustomer(customerId),
   },
 
   /* ───── Settings ───── */

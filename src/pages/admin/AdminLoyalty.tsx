@@ -31,7 +31,6 @@ const EMPTY_FORM: Omit<LoyaltyReward, 'id'> = {
 
 export default function AdminLoyalty() {
   const config = useLoyaltyStore((s) => s.config);
-  const updateConfig = useLoyaltyStore((s) => s.updateConfig);
   const addReward = useLoyaltyStore((s) => s.addReward);
   const updateReward = useLoyaltyStore((s) => s.updateReward);
   const removeReward = useLoyaltyStore((s) => s.removeReward);
@@ -73,10 +72,6 @@ export default function AdminLoyalty() {
     setShowModal(false);
   };
 
-  const handleConfigSubmit = (e: FormEvent) => {
-    e.preventDefault();
-  };
-
   return (
     <div className="dash-page max-w-4xl">
       {/* Header */}
@@ -87,49 +82,23 @@ export default function AdminLoyalty() {
         {activeCount} active reward{activeCount !== 1 && 's'} configured
       </p>
 
-      {/* Global Config */}
-      <form onSubmit={handleConfigSubmit} className="mb-8">
-        <div className="dash-card rounded-2xl border p-6 space-y-5">
-          <h2 className="font-display font-bold text-lg dash-heading">Global Config</h2>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
-              Stamps per order
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={config.stampsPerOrder}
-              onChange={(e) => updateConfig({ stampsPerOrder: Number(e.target.value) })}
-              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider dash-muted">
-              Earn stamps on merch orders
-            </label>
-            <button
-              type="button"
-              onClick={() => updateConfig({ stampOnMerch: !config.stampOnMerch })}
-              className="transition-colors"
-            >
-              {config.stampOnMerch ? (
-                <ToggleRight className="w-8 h-8 text-green-500" />
-              ) : (
-                <ToggleLeft className="w-8 h-8 dash-muted" />
-              )}
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            className="rounded-xl bg-kado-red px-5 py-2.5 text-sm font-bold text-white hover:bg-kado-red/90 transition-colors"
-          >
-            Save Config
-          </button>
-        </div>
-      </form>
+      <div className="dash-card rounded-2xl border p-6 mb-8 space-y-3">
+        <h2 className="font-display font-bold text-lg dash-heading">Stamp policy</h2>
+        <ul className="text-sm dash-muted space-y-2 list-disc pl-5">
+          <li>
+            <strong className="dash-heading font-semibold">One stamp per drink</strong> — quantity on each
+            coffee line counts (e.g. 2 lattes = 2 stamps).
+          </li>
+          <li>
+            Stamps are added only when staff marks the order <strong className="dash-heading font-semibold">Completed</strong>,
+            not at checkout.
+          </li>
+          <li>
+            <strong className="dash-heading font-semibold">Merch orders do not earn stamps.</strong> Mixed carts earn
+            stamps for drink lines only.
+          </li>
+        </ul>
+      </div>
 
       {/* Rewards Section */}
       <div className="mb-8">

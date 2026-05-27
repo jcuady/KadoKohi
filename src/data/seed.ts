@@ -239,8 +239,6 @@ export const SEED_MERCH_PRODUCTS: MerchProduct[] = [
 // ─── Loyalty seed ───────────────────────────────────────────────────────────
 
 export const SEED_LOYALTY_CONFIG: LoyaltyConfig = {
-  stampsPerOrder: 1,
-  stampOnMerch: false,
   rewards: [
     {
       id: 'reward_free_drink',
@@ -548,7 +546,49 @@ export const SEED_BOOTH_BOOKINGS: BoothBooking[] = [
       createdAt: now(),
       updatedAt: now(),
     },
-    status: 'under_review',
+    finalQuote: {
+      id: 'estimate_1002_quote',
+      shortCode: 'QT-4028',
+      branchId: 'branch_marikina',
+      lineItems: [
+        {
+          id: 'estimate_1002_q1',
+          sourceType: 'package',
+          sourceId: 'booth_pkg_signature',
+          labelSnapshot: 'Signature Reception',
+          qty: 1,
+          unitPrice: 32000,
+          lineTotal: 32000,
+        },
+        {
+          id: 'estimate_1002_q2',
+          sourceType: 'addon',
+          sourceId: 'booth_addon_sound',
+          labelSnapshot: 'Enhanced Sound Setup',
+          qty: 1,
+          unitPrice: 3000,
+          lineTotal: 3000,
+        },
+        {
+          id: 'estimate_1002_q3',
+          sourceType: 'custom',
+          labelSnapshot: 'Extended service (1 extra hour)',
+          qty: 1,
+          unitPrice: 4500,
+          lineTotal: 4500,
+        },
+      ],
+      subtotal: 39500,
+      tax: 0,
+      total: 39500,
+      notes: 'Official quote includes setup, sound, and one additional hour.',
+      status: 'sent',
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    quoteNotes: 'Official quote includes setup, sound, and one additional hour. Call us to confirm.',
+    quotedAt: now(),
+    status: 'quoted',
     assignedStaffId: 'user_barista',
     createdAt: now(),
     updatedAt: now(),

@@ -12,6 +12,9 @@ export interface AppSettings {
   currency: string;
   /** GCash QR image for customer payments (URL or data URL). */
   gcashQrImage: string;
+  /** Phone number for booth booking inquiries (click-to-call). */
+  boothContactPhone: string;
+  boothContactName?: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -22,6 +25,8 @@ const DEFAULTS: AppSettings = {
   shopName: 'Kado Kohi',
   currency: 'PHP',
   gcashQrImage: '',
+  boothContactPhone: '+63 917 123 4567',
+  boothContactName: 'Kado Kohi Events',
 };
 
 export interface SettingsStore {
@@ -56,6 +61,10 @@ export const useSettingsStore = create<SettingsStore>()(
             ...current.settings,
             ...(p?.settings ?? {}),
             gcashQrImage: p?.settings?.gcashQrImage ?? current.settings.gcashQrImage ?? '',
+            boothContactPhone:
+              p?.settings?.boothContactPhone ?? current.settings.boothContactPhone ?? DEFAULTS.boothContactPhone,
+            boothContactName:
+              p?.settings?.boothContactName ?? current.settings.boothContactName ?? DEFAULTS.boothContactName,
           },
         };
       },

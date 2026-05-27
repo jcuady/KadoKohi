@@ -25,7 +25,6 @@ function resolveUnit(product: Product, milkId?: string): { unit: number; milkLab
 
 export default function Order() {
   const user = useAuthStore((s) => s.user);
-  const addLoyaltyStamps = useAuthStore((s) => s.addLoyaltyStamps);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
@@ -95,7 +94,6 @@ export default function Order() {
       tax: cartTotals.tax,
       total: cartTotals.total,
     });
-    if (user?.role === 'customer') addLoyaltyStamps(1);
     setCart([]);
     setPlaced(true);
   };
