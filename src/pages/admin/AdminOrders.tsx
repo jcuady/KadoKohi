@@ -181,6 +181,14 @@ export default function AdminOrders() {
                     <p className="text-sm dash-muted">
                       {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
                     </p>
+                    {o.loyaltyVoucherCode && (
+                      <p className="text-xs font-semibold text-kado-red mt-1">
+                        Voucher {o.loyaltyVoucherCode}
+                        {o.loyaltyDiscountTotal != null && o.loyaltyDiscountTotal > 0
+                          ? ` · −${formatPhp(o.loyaltyDiscountTotal)}`
+                          : ''}
+                      </p>
+                    )}
                     {o.guestName && <p className="text-xs dash-muted mt-1">Pickup: {o.guestName}</p>}
                     <OrderPaymentProofPreview order={o} />
                   </div>

@@ -18,6 +18,7 @@ import {
   CalendarHeart,
 } from 'lucide-react';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
+import { useVoucherStore } from '../../store/voucherStore';
 
 export default function AccountDashboard() {
   const user = useAuthStore((s) => s.user);
@@ -38,6 +39,11 @@ export default function AccountDashboard() {
   const myBoothCount = useMemo(
     () => (user?.id ? boothBookings(user.id).length : 0),
     [boothBookings, user?.id],
+  );
+  const activeVouchersForCustomer = useVoucherStore((s) => s.activeVouchersForCustomer);
+  const activeVoucherCount = useMemo(
+    () => (user?.id ? activeVouchersForCustomer(user.id).length : 0),
+    [activeVouchersForCustomer, user?.id],
   );
 
   const statCards = [
@@ -132,12 +138,41 @@ export default function AccountDashboard() {
           </div>
 
           <p className="text-xs text-white/35 mt-4 font-medium">
-            {stamps >= 10
-              ? 'Congratulations! Redeem your free cup at any branch.'
-              : `${10 - stamps} more drink stamp${10 - stamps !== 1 ? 's' : ''} to earn a free cup.`}
+            {stamps >= 5
+              ? 'You can claim stamp rewards as vouchers — apply them at checkout.'
+              : `${5 - stamps} more stamp${5 - stamps !== 1 ? 's' : ''} until your first reward unlocks.`}
           </p>
+          <Link
+            to="/account/vouchers"
+            className="inline-flex items-center gap-2 mt-4 rounded-xl bg-kado-red text-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-kado-dark transition-colors"
+          >
+            <Gift className="w-3.5 h-3.5" />
+            {activeVoucherCount > 0 ? `${activeVoucherCount} voucher${activeVoucherCount !== 1 ? 's' : ''} ready` : 'View vouchers'}
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
       </motion.div>
+
+      {/* ─── VOUCHERS ─── */}
+      <div className="rounded-2xl border border-kado-red/15 bg-gradient-to-r from-kado-cream/50 to-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-kado-red/10 flex items-center justify-center shrink-0">
+          <Gift className="w-6 h-6 text-kado-red" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display text-lg font-black text-kado-dark">Stamp vouchers</h2>
+          <p className="text-xs text-kado-dark/50 mt-0.5">
+            {activeVoucherCount > 0
+              ? `${activeVoucherCount} active voucher${activeVoucherCount !== 1 ? 's' : ''} — select one in your cart at checkout`
+              : 'Claim rewards when you have enough stamps, then use them on your next order'}
+          </p>
+        </div>
+        <Link
+          to="/account/vouchers"
+          className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-kado-dark transition-colors shrink-0"
+        >
+          {activeVoucherCount > 0 ? 'Use vouchers' : 'Claim rewards'} <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
 
       {/* ─── EVENTS BOOKINGS ─── */}
       <div className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">

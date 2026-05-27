@@ -44,6 +44,9 @@ export const useOrderStore = create<OrderStore>()(
           modifiersTotal: input.modifiersTotal,
           tax: input.tax,
           total: input.total,
+          loyaltyVoucherId: input.loyaltyVoucherId,
+          loyaltyVoucherCode: input.loyaltyVoucherCode,
+          loyaltyDiscountTotal: input.loyaltyDiscountTotal,
           createdAt: t,
           updatedAt: t,
         };

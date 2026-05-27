@@ -47,6 +47,7 @@ import AccountDashboard from './pages/account/AccountDashboard';
 import AccountOrders from './pages/account/AccountOrders';
 import AccountProfile from './pages/account/AccountProfile';
 import AccountBoothBookings from './pages/account/AccountBoothBookings';
+import AccountVouchers from './pages/account/AccountVouchers';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -117,6 +118,7 @@ export default function App() {
             <Route index element={<AccountDashboard />} />
             <Route path="orders" element={<AccountOrders />} />
             <Route path="booth" element={<AccountBoothBookings />} />
+            <Route path="vouchers" element={<AccountVouchers />} />
             <Route path="profile" element={<AccountProfile />} />
           </Route>
         </Route>

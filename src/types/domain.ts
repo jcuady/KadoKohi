@@ -135,6 +135,10 @@ export interface Order {
   total: number;
   /** Drink stamps granted when status became completed (undefined = not processed yet). */
   loyaltyStampsAwarded?: number;
+  /** Redeemed Kado Circle voucher at checkout. */
+  loyaltyVoucherId?: string;
+  loyaltyVoucherCode?: string;
+  loyaltyDiscountTotal?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -247,6 +251,26 @@ export interface LoyaltyReward {
 
 export interface LoyaltyConfig {
   rewards: LoyaltyReward[];
+}
+
+export type LoyaltyVoucherStatus = 'active' | 'redeemed' | 'expired';
+
+/** Claimed reward — spend stamps to unlock, apply at checkout on eligible orders. */
+export interface LoyaltyVoucher {
+  id: string;
+  /** Short code shown to customer and staff (e.g. KK-VCH-4821). */
+  code: string;
+  customerId: string;
+  rewardId: string;
+  rewardNameSnapshot: string;
+  rewardType: LoyaltyRewardType;
+  rewardValue?: number;
+  stampsSpent: number;
+  status: LoyaltyVoucherStatus;
+  createdAt: string;
+  redeemedAt?: string;
+  redeemedOrderId?: string;
+  expiresAt?: string;
 }
 
 // ─── Booth Booking ───────────────────────────────────────────────────────────

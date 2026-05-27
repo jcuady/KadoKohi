@@ -24,7 +24,7 @@ const SEED_USERS: User[] = [
     email: 'customer@kadokohi.com',
     name: 'Customer',
     role: 'customer',
-    loyaltyStamps: 3,
+    loyaltyStamps: 8,
     createdAt: new Date().toISOString(),
   },
 ];

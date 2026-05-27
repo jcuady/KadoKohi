@@ -14,6 +14,8 @@ export interface AuthStore {
   logout: () => void;
   /** Earn loyalty stamps (customers only). */
   addLoyaltyStamps: (delta: number) => void;
+  /** Spend stamps when claiming a voucher (customers only). */
+  spendLoyaltyStamps: (delta: number) => void;
 }
 
 function makeUser(
@@ -47,6 +49,15 @@ export const useAuthStore = create<AuthStore>()(
         const u = get().user;
         if (!u || u.role !== 'customer' || delta <= 0) return;
         const next = (u.loyaltyStamps ?? 0) + delta;
+        set({ user: { ...u, loyaltyStamps: next } });
+        useUserStore.getState().updateUser(u.id, { loyaltyStamps: next });
+      },
+      spendLoyaltyStamps: (delta) => {
+        const u = get().user;
+        if (!u || u.role !== 'customer' || delta <= 0) return;
+        const current = u.loyaltyStamps ?? 0;
+        if (current < delta) return;
+        const next = current - delta;
         set({ user: { ...u, loyaltyStamps: next } });
         useUserStore.getState().updateUser(u.id, { loyaltyStamps: next });
       },

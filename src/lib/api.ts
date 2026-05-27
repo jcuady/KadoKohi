@@ -25,6 +25,7 @@ import { useBookingEstimateStore } from '../store/bookingEstimateStore';
 import { useBoothBookingStore } from '../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useLandingContentStore } from '../store/landingContentStore';
+import { useVoucherStore } from '../store/voucherStore';
 
 export const api = {
   /* ───── Auth ───── */
@@ -33,6 +34,7 @@ export const api = {
     loginAs: useAuthStore.getState().loginAs,
     logout: useAuthStore.getState().logout,
     addLoyaltyStamps: useAuthStore.getState().addLoyaltyStamps,
+    spendLoyaltyStamps: useAuthStore.getState().spendLoyaltyStamps,
   },
 
   /* ───── Branches ───── */
@@ -201,6 +203,16 @@ export const api = {
     toggleTheme: useSettingsStore.getState().toggleDashTheme,
   },
 
+  /* ───── Loyalty vouchers ───── */
+  vouchers: {
+    list: () => useVoucherStore.getState().vouchers,
+    claim: useVoucherStore.getState().claimReward,
+    redeem: useVoucherStore.getState().redeemVoucher,
+    activeForCustomer: (customerId: string) =>
+      useVoucherStore.getState().activeVouchersForCustomer(customerId),
+    seed: useVoucherStore.getState().seed,
+  },
+
   /* ───── Landing Content (fixed layout; text/images only) ───── */
   landing: {
     getPublished: () => useLandingContentStore.getState().published,
@@ -236,6 +248,7 @@ export const api = {
     useSettingsStore.getState().seed();
     useMerchStore.getState().seed();
     useLoyaltyStore.getState().seed();
+    useVoucherStore.getState().seed();
     useBoothCatalogStore.getState().seed();
     useBoothShowcaseStore.getState().seed();
     useBookingEstimateStore.getState().seed();

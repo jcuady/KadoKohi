@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -14,6 +14,7 @@ import {
   QrCode,
   LogIn,
   Clock,
+  Gift,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
@@ -23,9 +24,12 @@ import { useBranchStore } from '../store/branchStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
 import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
-import { formatPhp, computeOrderTotals } from '../lib/money';
+import { formatPhp } from '../lib/money';
+import { computeVoucherDiscount, computeCartTotalsWithDiscount } from '../lib/voucherDiscount';
 import { newId } from '../lib/id';
 import type { OrderItem, PaymentMethod } from '../types/domain';
+import { useVoucherStore } from '../store/voucherStore';
+import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
 
 export default function CartDrawer() {
   const navigate = useNavigate();
@@ -35,6 +39,11 @@ export default function CartDrawer() {
   const branches = useBranchStore((s) => s.branches);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const orderHours = useOnlineOrderHours();
+  const activeVouchersForCustomer = useVoucherStore((s) => s.activeVouchersForCustomer);
+  const redeemVoucher = useVoucherStore((s) => s.redeemVoucher);
+  const selectedVoucherId = useCheckoutStore((s) => s.selectedVoucherId);
+  const setSelectedVoucherId = useCheckoutStore((s) => s.setSelectedVoucherId);
+  const clearVoucher = useCheckoutStore((s) => s.clearVoucher);
 
   const activeBranches = useMemo(
     () => branches.filter((b) => b.status === 'active'),
@@ -51,13 +60,39 @@ export default function CartDrawer() {
   );
 
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);
-  const totals = useMemo(() => {
-    const sub = items.reduce((s, i) => s + i.lineTotal, 0);
-    return computeOrderTotals(sub, 0, taxRate);
-  }, [items, taxRate]);
+
+  const activeVouchers = useMemo(
+    () => (user?.id ? activeVouchersForCustomer(user.id) : []),
+    [activeVouchersForCustomer, user?.id],
+  );
+
+  const selectedVoucher = useMemo(
+    () => findSelectedVoucher(activeVouchers, selectedVoucherId),
+    [activeVouchers, selectedVoucherId],
+  );
+
+  const voucherCalc = useMemo(() => {
+    if (!selectedVoucher) return { discount: 0, eligible: true as const };
+    return computeVoucherDiscount(items, selectedVoucher.rewardType, selectedVoucher.rewardValue);
+  }, [items, selectedVoucher]);
+
+  const totals = useMemo(
+    () => computeCartTotalsWithDiscount(items, taxRate, voucherCalc.discount),
+    [items, taxRate, voucherCalc.discount],
+  );
+
+  const voucherBlocksCheckout =
+    !!selectedVoucher && !voucherCalc.eligible && voucherCalc.discount <= 0;
+
+  useEffect(() => {
+    if (selectedVoucherId && !activeVouchers.some((v) => v.id === selectedVoucherId)) {
+      clearVoucher();
+    }
+  }, [activeVouchers, selectedVoucherId, clearVoucher]);
 
   const isCustomer = user?.role === 'customer';
-  const canOrder = items.length > 0 && !!branchId && isCustomer && orderHours.isOpen;
+  const canOrder =
+    items.length > 0 && !!branchId && isCustomer && orderHours.isOpen && !voucherBlocksCheckout;
 
   const handleClose = () => {
     closeCart();
@@ -103,9 +138,17 @@ export default function CartDrawer() {
       modifiersTotal: 0,
       tax: totals.tax,
       total: totals.total,
+      loyaltyVoucherId: selectedVoucher?.id,
+      loyaltyVoucherCode: selectedVoucher?.code,
+      loyaltyDiscountTotal: totals.discount > 0 ? totals.discount : undefined,
     });
 
+    if (selectedVoucher) {
+      redeemVoucher(selectedVoucher.id, order.id);
+    }
+
     clear();
+    clearVoucher();
     closeCart();
     setLoading(false);
     navigate(`/account/orders?placed=${order.id}`);
@@ -391,12 +434,54 @@ export default function CartDrawer() {
                     </div>
                   )}
 
+                  {isCustomer && activeVouchers.length > 0 && (
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5 flex items-center gap-1.5">
+                        <Gift className="w-3.5 h-3.5 text-kado-red" />
+                        Kado Circle voucher
+                      </label>
+                      <select
+                        value={selectedVoucherId ?? ''}
+                        onChange={(e) => setSelectedVoucherId(e.target.value || null)}
+                        className="w-full rounded-xl border border-kado-dark/15 bg-white px-4 py-2.5 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/25"
+                      >
+                        <option value="">No voucher</option>
+                        {activeVouchers.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.code} — {v.rewardNameSnapshot}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedVoucher && !voucherCalc.eligible && voucherCalc.reason && (
+                        <p className="text-[10px] text-red-600 mt-1.5 leading-snug">{voucherCalc.reason}</p>
+                      )}
+                      {selectedVoucher && voucherCalc.eligible && totals.discount > 0 && (
+                        <p className="text-[10px] text-emerald-700 mt-1.5 font-semibold">
+                          Saves {formatPhp(totals.discount)} on this order
+                        </p>
+                      )}
+                      <Link
+                        to="/account/vouchers"
+                        onClick={handleClose}
+                        className="text-[10px] font-bold text-kado-red hover:underline mt-1 inline-block"
+                      >
+                        Manage vouchers
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Totals */}
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between text-kado-dark/58">
                       <span>Subtotal</span>
                       <span>{formatPhp(totals.subtotal)}</span>
                     </div>
+                    {totals.discount > 0 && (
+                      <div className="flex justify-between text-emerald-700 font-semibold">
+                        <span>Voucher ({selectedVoucher?.code})</span>
+                        <span>−{formatPhp(totals.discount)}</span>
+                      </div>
+                    )}
                     {totals.tax > 0 && (
                       <div className="flex justify-between text-kado-dark/58">
                         <span>Tax ({taxRate}%)</span>
