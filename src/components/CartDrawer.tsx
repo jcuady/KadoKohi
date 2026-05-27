@@ -13,6 +13,7 @@ import {
   CreditCard,
   QrCode,
   LogIn,
+  Clock,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
@@ -20,6 +21,8 @@ import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
+import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp, computeOrderTotals } from '../lib/money';
 import { newId } from '../lib/id';
 import type { OrderItem, PaymentMethod } from '../types/domain';
@@ -32,6 +35,7 @@ export default function CartDrawer() {
   const createOrder = useOrderStore((s) => s.createOrder);
   const branches = useBranchStore((s) => s.branches);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
+  const orderHours = useOnlineOrderHours();
 
   const activeBranches = useMemo(
     () => branches.filter((b) => b.status === 'active'),
@@ -54,7 +58,7 @@ export default function CartDrawer() {
   }, [items, taxRate]);
 
   const isCustomer = user?.role === 'customer';
-  const canOrder = items.length > 0 && !!branchId && isCustomer;
+  const canOrder = items.length > 0 && !!branchId && isCustomer && orderHours.isOpen;
 
   const handleClose = () => {
     closeCart();
@@ -153,16 +157,50 @@ export default function CartDrawer() {
               </button>
             </div>
 
-            {items.length === 0 ? (
-              /* Empty state */
+            {!orderHours.isOpen ? (
+              <div className="flex-1 flex flex-col px-5 py-6 overflow-y-auto">
+                <OnlineOrderHoursNotice status={orderHours} variant="cart" className="mb-4" />
+                {items.length > 0 ? (
+                  <div className="space-y-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-kado-dark/45 px-1">
+                      In your cart ({count})
+                    </p>
+                    {items.map((line) => (
+                      <div
+                        key={line.key}
+                        className="flex gap-3 rounded-2xl bg-white border border-kado-dark/8 p-3 opacity-80"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-kado-dark truncate">{line.productNameSnapshot}</p>
+                          <p className="text-xs text-kado-red font-bold mt-0.5">{formatPhp(line.lineTotal)}</p>
+                        </div>
+                        <span className="text-xs font-bold text-kado-dark/50">×{line.qty}</span>
+                      </div>
+                    ))}
+                    <p className="text-xs text-kado-dark/50 px-1 pt-2">
+                      Checkout reopens during store hours. You can edit items when ordering is open again.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+                    <Clock className="w-12 h-12 text-kado-dark/15 mb-4" />
+                    <h3 className="font-display text-lg font-bold text-kado-dark mb-2">Ordering is closed</h3>
+                    <p className="text-kado-dark/50 text-sm max-w-xs leading-relaxed">
+                      The cart opens during our online order hours. Check back during the window above.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
                 <ShoppingBag className="w-16 h-16 text-kado-dark/12 mb-4" />
                 <h3 className="font-display text-xl font-bold text-kado-dark mb-2">
                   Your cart is empty
                 </h3>
-                <p className="text-kado-dark/50 text-sm mb-8 max-w-xs leading-relaxed">
+                <p className="text-kado-dark/50 text-sm mb-6 max-w-xs leading-relaxed">
                   Browse the menu and add your favourites — your perfect cup is waiting.
                 </p>
+                <OnlineOrderHoursNotice status={orderHours} variant="inline" className="mb-6 max-w-xs w-full text-left" />
                 <Link
                   to="/menu"
                   onClick={handleClose}
@@ -253,6 +291,8 @@ export default function CartDrawer() {
 
                 {/* Checkout footer */}
                 <div className="shrink-0 border-t border-kado-dark/10 px-5 py-5 space-y-4 bg-[#FAF7F2]">
+                  <OnlineOrderHoursNotice status={orderHours} variant="compact" />
+
                   {/* Branch selector */}
                   <div>
                     <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">

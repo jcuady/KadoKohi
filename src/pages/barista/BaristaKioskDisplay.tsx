@@ -7,6 +7,7 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useKioskTheme } from '../../hooks/useKioskTheme';
 import { kioskColumnStatus, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import OrderTableBadge from '../../components/OrderTableBadge';
 
 type KioskColumn = {
   status: OrderStatus;
@@ -223,10 +224,13 @@ export default function BaristaKioskDisplay() {
                           boxShadow: 'var(--kiosk-order-shadow)',
                         }}
                       >
-                        <div className="mb-2 flex items-baseline justify-between gap-2">
-                          <p className="font-display text-3xl font-black tracking-wide text-kado-red md:text-4xl">
-                            {order.shortCode}
-                          </p>
+                        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <p className="font-display text-3xl font-black tracking-wide text-kado-red md:text-4xl">
+                              {order.shortCode}
+                            </p>
+                            <OrderTableBadge order={order} variant="kiosk" />
+                          </div>
                           <span
                             className="shrink-0 text-xs font-bold uppercase tracking-wider"
                             style={{ color: 'var(--kiosk-text-muted)' }}

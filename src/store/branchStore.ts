@@ -49,7 +49,7 @@ export const useBranchStore = create<BranchStore>()(
         // Auto-seed 4 default tables for the new branch
         const tableStore = useTableStore.getState();
         for (let i = 1; i <= 4; i++) {
-          tableStore.addTable(b.id, `Table ${i}`);
+          tableStore.addTable(b.id, `Table ${i}`, b.slug);
         }
       },
 

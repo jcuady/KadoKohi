@@ -39,7 +39,7 @@ export function isGcashOrder(order: Pick<Order, 'paymentMethod' | 'status'>): bo
   );
 }
 
-export function statusFlowForOrder(order: Pick<Order, 'paymentMethod'>): OrderStatus[] {
+export function statusFlowForOrder(order: Pick<Order, 'paymentMethod' | 'status'>): OrderStatus[] {
   return isGcashOrder(order) ? GCASH_ORDER_FLOW : LEGACY_ORDER_FLOW;
 }
 

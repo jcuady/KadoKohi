@@ -4,6 +4,7 @@ import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, Package, UserPlus 
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
+import { useCartToggle } from '../hooks/useCartToggle';
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -35,7 +36,7 @@ export default function Navbar() {
 
   // Cart count — stable selector (no method call, raw array)
   const cartItems = useCartStore((s) => s.items);
-  const toggleCart = useCartStore((s) => s.toggleCart);
+  const { toggleCart } = useCartToggle();
   const cartCount = useMemo(() => cartItems.reduce((sum, i) => sum + i.qty, 0), [cartItems]);
 
   return (

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Table } from '../types/domain';
 import { newId } from '../lib/id';
+import { buildTableCode, tableQrPath } from '../lib/qr';
 
 const SEED_TABLES: Table[] = [
   { id: 'tbl_mrk_01', branchId: 'branch_marikina', code: 'mrk-t01', label: 'Table 1', qrPayload: '/order/qr/mrk-t01', active: true },
@@ -12,7 +13,7 @@ const SEED_TABLES: Table[] = [
 
 export interface TableStore {
   tables: Table[];
-  addTable: (branchId: string, label: string) => Table;
+  addTable: (branchId: string, label: string, branchSlug?: string) => Table;
   updateTable: (id: string, patch: Partial<Pick<Table, 'label' | 'active'>>) => void;
   removeTable: (id: string) => void;
   toggleActive: (id: string) => void;
@@ -26,14 +27,16 @@ export const useTableStore = create<TableStore>()(
     (set, get) => ({
       tables: SEED_TABLES,
 
-      addTable: (branchId, label) => {
-        const code = `${branchId.replace('branch_', '').slice(0, 3)}-t${String(get().tables.filter((t) => t.branchId === branchId).length + 1).padStart(2, '0')}`;
+      addTable: (branchId, label, branchSlug) => {
+        const slug = branchSlug ?? branchId.replace('branch_', '');
+        const tableNum = get().tables.filter((x) => x.branchId === branchId).length + 1;
+        const code = buildTableCode(slug, tableNum);
         const t: Table = {
           id: newId(),
           branchId,
           code,
-          label: label.trim() || `Table ${get().tables.filter((x) => x.branchId === branchId).length + 1}`,
-          qrPayload: `/order/qr/${code}`,
+          label: label.trim() || `Table ${tableNum}`,
+          qrPayload: tableQrPath(code),
           active: true,
         };
         set({ tables: [...get().tables, t] });

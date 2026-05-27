@@ -3,6 +3,7 @@ import type { Order, OrderStatus } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { ORDER_STATUS_LABELS, statusFlowForOrder } from '../../lib/orderStatus';
 import OrderPaymentProofPreview from '../admin/OrderPaymentProofPreview';
+import OrderTableBadge from '../OrderTableBadge';
 
 type Props = {
   order: Order | null;
@@ -25,7 +26,10 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
       <div className="w-full max-w-lg rounded-[1.75rem] border border-kado-dark/10 bg-white shadow-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-kado-dark/10">
           <h3 className="font-display text-xl font-bold text-kado-dark">Update Order Status</h3>
-          <p className="text-xs text-kado-dark/60 mt-1">{order.shortCode} · {order.items.length} item(s)</p>
+          <p className="text-xs text-kado-dark/60 mt-1 flex flex-wrap items-center gap-2">
+            <span>{order.shortCode} · {order.items.length} item(s)</span>
+            <OrderTableBadge order={order} />
+          </p>
         </div>
 
         <div className="px-6 py-4 space-y-4">

@@ -5,6 +5,8 @@ import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn } from 'lucide-react';
 import type { Product, MerchProduct } from '../types/domain';
 import { useCartStore, type CartLineVariant } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
+import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
+import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp } from '../lib/money';
 
 const FALLBACK_BY_CATEGORY: Record<string, string> = {
@@ -41,7 +43,10 @@ export default function ProductDetailDrawer({
 }: Props) {
   const user = useAuthStore((s) => s.user);
   const addItem = useCartStore((s) => s.addItem);
-  const canOrder = !requireAuthToOrder || user?.role === 'customer';
+  const orderHours = useOnlineOrderHours();
+  const isCustomer = user?.role === 'customer';
+  const canOrderAuth = !requireAuthToOrder || isCustomer;
+  const canPlaceOrder = canOrderAuth && orderHours.isOpen;
 
   const [selectedMilkId, setSelectedMilkId] = useState<string>('');
   const [selectedTemp, setSelectedTemp] = useState<'hot' | 'iced'>('hot');
@@ -106,7 +111,7 @@ export default function ProductDetailDrawer({
     : '';
 
   const handleAdd = () => {
-    if (!product || !canOrder) return;
+    if (!product || !canPlaceOrder) return;
 
     if (isMerchProduct(product)) {
       const variants: CartLineVariant[] = [];
@@ -117,28 +122,34 @@ export default function ProductDetailDrawer({
           variants.push({ groupName: g.name, optionId: opt.id, optionLabel: opt.label, priceDelta: opt.priceDelta });
         }
       }
-      addItem({
-        itemType: 'merch',
-        productId: product.id,
-        productNameSnapshot: product.name,
-        qty,
-        selectedVariants: variants,
-        unitPrice,
-        lineTotal,
-        image: product.image,
-      });
+      addItem(
+        {
+          itemType: 'merch',
+          productId: product.id,
+          productNameSnapshot: product.name,
+          qty,
+          selectedVariants: variants,
+          unitPrice,
+          lineTotal,
+          image: product.image,
+        },
+        { openCart: orderHours.isOpen },
+      );
     } else {
-      addItem({
-        itemType: 'coffee',
-        productId: product.id,
-        productNameSnapshot: product.name,
-        qty,
-        milkId: selectedMilk?.id,
-        milkLabelSnapshot: selectedMilk?.label,
-        temperature: product.temperature === 'both' ? selectedTemp : product.temperature === 'iced' ? 'iced' : 'hot',
-        unitPrice,
-        lineTotal,
-      });
+      addItem(
+        {
+          itemType: 'coffee',
+          productId: product.id,
+          productNameSnapshot: product.name,
+          qty,
+          milkId: selectedMilk?.id,
+          milkLabelSnapshot: selectedMilk?.label,
+          temperature: product.temperature === 'both' ? selectedTemp : product.temperature === 'iced' ? 'iced' : 'hot',
+          unitPrice,
+          lineTotal,
+        },
+        { openCart: orderHours.isOpen },
+      );
     }
     setAdded(true);
     setTimeout(onClose, 700);
@@ -287,7 +298,7 @@ export default function ProductDetailDrawer({
               </div>
 
               <div className="shrink-0 border-t border-kado-dark/5 px-6 md:px-8 py-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-gray-50/50 backdrop-blur-md">
-                {canOrder ? (
+                {canPlaceOrder ? (
                   <>
                     <div className="flex items-center gap-3 bg-white border border-kado-dark/10 shadow-sm rounded-full px-3 py-2.5 shrink-0 self-center sm:self-auto">
                       <button
@@ -333,7 +344,7 @@ export default function ProductDetailDrawer({
                       )}
                     </motion.button>
                   </>
-                ) : (
+                ) : !canOrderAuth ? (
                   <div className="flex-1 flex flex-col gap-3 text-center sm:text-left">
                     <p className="text-sm font-medium text-kado-dark/70 leading-relaxed">
                       Sign in to customize your drink and add it to your cart.
@@ -354,6 +365,10 @@ export default function ProductDetailDrawer({
                     >
                       New here? Create an account
                     </Link>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col gap-3">
+                    <OnlineOrderHoursNotice status={orderHours} variant="inline" />
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
 import { formatPhp } from '../../lib/money';
 import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import OrderTableBadge from '../../components/OrderTableBadge';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
 
@@ -87,6 +88,7 @@ export default function StaffAllOrders() {
                     <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full dash-card-alt dash-heading border dash-border">
                       {o.channel}
                     </span>
+                    <OrderTableBadge order={o} variant="dash" />
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
                       {ORDER_STATUS_LABELS[o.status]}
                     </span>

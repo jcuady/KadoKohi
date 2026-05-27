@@ -16,7 +16,7 @@ export default function AdminSettings() {
     if (!file) return;
     setUploadError(null);
     const res = await readImageDataUrl(file);
-    if (!res.ok) {
+    if (res.ok === false) {
       setUploadError(res.error);
       return;
     }
@@ -32,7 +32,12 @@ export default function AdminSettings() {
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Default hours</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <p className="text-xs dash-muted leading-relaxed">
+            Online pickup orders follow these hours. Checkout closes{' '}
+            <span className="font-semibold text-kado-dark">10 minutes before close</span>
+            {' '}(e.g. close 11:00 PM → last order 10:50 PM; 10:51 PM onwards cannot order).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Open</label>
               <input

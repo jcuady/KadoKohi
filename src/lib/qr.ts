@@ -1,32 +1,50 @@
 /**
  * QR payload builder and URL helpers.
- *
- * Currently generates canonical URL strings for table and takeout QR codes.
- * When deployed, replace BASE_URL with the production domain.
- * To render actual QR images, swap `qrImageUrl()` internals for a real QR library
- * (e.g. `qrcode`, `qr-code-styling`) or a service like quickchart.io.
+ * QR images encode full HTTPS URLs so scans work on Vercel and locally.
  */
-
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://kadokohi.com';
+import { getSiteOrigin } from './siteUrl';
 
 /** Canonical URL for a specific dine-in table QR. */
 export function tableQrUrl(tableCode: string): string {
-  return `${BASE_URL}/order/qr/${tableCode}`;
+  return `${getSiteOrigin()}/order/qr/${encodeURIComponent(tableCode)}`;
 }
 
 /** Canonical URL for a branch-wide takeout QR. */
 export function takeoutQrUrl(branchSlug: string): string {
-  return `${BASE_URL}/order/takeout?b=${branchSlug}`;
+  return `${getSiteOrigin()}/order/takeout?b=${encodeURIComponent(branchSlug)}`;
+}
+
+/** Relative path (for display in admin UI). */
+export function tableQrPath(tableCode: string): string {
+  return `/order/qr/${tableCode}`;
+}
+
+export function takeoutQrPath(branchSlug: string): string {
+  return `/order/takeout?b=${branchSlug}`;
 }
 
 /**
- * Returns a quickchart.io URL that renders a QR code image for the given payload.
- * Drop-in: use as <img src={qrImageUrl(payload)} />.
- * Swap this implementation for a local library in production.
+ * QuickChart QR image — encodes the full URL customers scan.
  */
 export function qrImageUrl(payload: string, size = 200): string {
   const encoded = encodeURIComponent(payload);
   return `https://quickchart.io/qr?text=${encoded}&size=${size}&margin=2&dark=191919&light=FAF9F6`;
+}
+
+/** Download QR PNG for printing (fetches from QuickChart). */
+export async function downloadQrPng(scanUrl: string, filename: string, size = 512): Promise<void> {
+  const src = qrImageUrl(scanUrl, size);
+  const res = await fetch(src);
+  if (!res.ok) throw new Error('Could not generate QR image');
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename.endsWith('.png') ? filename : `${filename}.png`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 /** Short human-readable code derived from the branch slug + table label, e.g. 'mrk-t03'. */

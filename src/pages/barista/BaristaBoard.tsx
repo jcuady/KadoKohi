@@ -8,6 +8,7 @@ import { kioskColumnStatus, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
 import { Clock, ChefHat, CheckCircle2, Wallet } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
+import OrderTableBadge from '../../components/OrderTableBadge';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
 
@@ -110,6 +111,7 @@ export default function BaristaBoard() {
                         <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
                           {o.channel}
                         </span>
+                        <OrderTableBadge order={o} variant="dash" />
                         {o.guestName && (
                           <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
                             {o.guestName}

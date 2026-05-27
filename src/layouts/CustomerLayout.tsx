@@ -14,6 +14,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
+import { useCartToggle } from '../hooks/useCartToggle';
 import CartDrawer from '../components/CartDrawer';
 
 const accountNav = [
@@ -39,7 +40,7 @@ export default function CustomerLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const cartItems = useCartStore((s) => s.items);
-  const toggleCart = useCartStore((s) => s.toggleCart);
+  const { toggleCart } = useCartToggle();
   const cartCount = useMemo(() => cartItems.reduce((sum, i) => sum + i.qty, 0), [cartItems]);
 
   const handleLogout = () => {

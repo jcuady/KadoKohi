@@ -6,6 +6,7 @@ import { formatPhp } from '../../lib/money';
 import { List, LayoutGrid, Clock, ChefHat, CheckCircle2, Coffee, CheckSquare, XCircle, ThumbsUp } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
+import OrderTableBadge from '../../components/OrderTableBadge';
 import {
   ALL_ORDER_STATUSES,
   ORDER_STATUS_BADGE,
@@ -170,6 +171,7 @@ export default function AdminOrders() {
                       <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full dash-card-alt text-kado-dark dash-heading border dash-border">
                         {o.channel}
                       </span>
+                      <OrderTableBadge order={o} variant="dash" />
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
@@ -260,6 +262,7 @@ export default function AdminOrders() {
                             <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
                               {o.channel}
                             </span>
+                            <OrderTableBadge order={o} variant="dash" />
                             {o.guestName && (
                               <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
                                 {o.guestName}

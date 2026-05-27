@@ -32,7 +32,7 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (input: Omit<CartLine, 'key'>) => void;
+  addItem: (input: Omit<CartLine, 'key'>, options?: { openCart?: boolean }) => void;
   removeItem: (key: string) => void;
   updateQty: (key: string, qty: number) => void;
   clear: () => void;
@@ -50,9 +50,13 @@ export const useCartStore = create<CartStore>()(
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
 
-      addItem: (input) => {
+      addItem: (input, options) => {
         const line: CartLine = { ...input, key: newId() };
-        set({ items: [...get().items, line], isOpen: true });
+        const openCart = options?.openCart ?? true;
+        set({
+          items: [...get().items, line],
+          ...(openCart ? { isOpen: true } : {}),
+        });
       },
 
       removeItem: (key) => set({ items: get().items.filter((i) => i.key !== key) }),

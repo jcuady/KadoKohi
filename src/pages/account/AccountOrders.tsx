@@ -9,6 +9,7 @@ import { formatPhp } from '../../lib/money';
 import { ORDER_STATUS_LABELS } from '../../lib/orderStatus';
 import GcashQrModal from '../../components/GcashQrModal';
 import OrderPaymentPanel from '../../components/OrderPaymentPanel';
+import OrderTableBadge from '../../components/OrderTableBadge';
 import {
   Search,
   Filter,
@@ -177,6 +178,7 @@ export default function AccountOrders() {
                         <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FAF7F2] text-kado-dark/40 border border-kado-dark/5">
                           {o.channel}
                         </span>
+                        <OrderTableBadge order={o} />
                       </div>
                       <p className="text-[11px] sm:text-xs text-kado-dark/40 font-medium flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 sm:flex-wrap">
                         <span>

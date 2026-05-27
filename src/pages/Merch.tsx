@@ -4,6 +4,7 @@ import { ShoppingBag, Tag, Star } from 'lucide-react';
 import type { MerchProduct } from '../types/domain';
 import { useMerchStore } from '../store/merchStore';
 import { useCartStore } from '../store/cartStore';
+import { useCartToggle } from '../hooks/useCartToggle';
 import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
@@ -19,7 +20,7 @@ export default function Merch() {
   const categories = useMerchStore((s) => s.categories);
   const productsByCategory = useMerchStore((s) => s.productsByCategory);
   const cartItems = useCartStore((s) => s.items);
-  const openCart = useCartStore((s) => s.openCart);
+  const { tryOpenCart, orderHours } = useCartToggle();
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -209,9 +210,13 @@ export default function Merch() {
 
       <button
         type="button"
-        onClick={openCart}
-        className="fixed bottom-6 right-6 z-[100] w-14 h-14 bg-kado-red text-white rounded-full flex items-center justify-center shadow-lg shadow-kado-red/25 hover:bg-kado-dark transition-colors"
-        aria-label="Open cart"
+        onClick={tryOpenCart}
+        className={`fixed bottom-6 right-6 z-[100] w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+          orderHours.isOpen
+            ? 'bg-kado-red text-white shadow-kado-red/25 hover:bg-kado-dark'
+            : 'bg-kado-dark/80 text-white/90 hover:bg-kado-dark'
+        }`}
+        aria-label={orderHours.isOpen ? 'Open cart' : 'View cart hours — ordering closed'}
       >
         <ShoppingBag className="w-5 h-5" />
         {cartCount > 0 && (

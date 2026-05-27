@@ -31,7 +31,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
     setUploading(true);
     const res = await readImageDataUrl(file, 800_000);
     setUploading(false);
-    if (!res.ok) {
+    if (res.ok === false) {
       setError(res.error);
       return;
     }
