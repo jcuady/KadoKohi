@@ -21,9 +21,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
 
   if (!isGcashOrder(order)) return null;
 
-  const needsProof =
-    order.status === 'pending_payment' ||
-    (order.status === 'paid' && !order.paymentProofImage);
+  const needsProof = order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted';
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -60,7 +58,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
         )}
       </div>
 
-      {order.status === 'pending_payment' && (
+      {order.paymentStatus === 'unpaid' && (
         <p className="text-xs sm:text-sm text-kado-dark/50 leading-relaxed">
           Pay {formatPhp(order.total)} via GCash, then upload your screenshot so we can verify.
         </p>
@@ -111,8 +109,8 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
                 })}
               </p>
             )}
-            {order.status === 'pending_payment' && (
-              <p className="mt-1 text-amber-700/80">Waiting for staff to mark as paid.</p>
+            {order.paymentStatus === 'proof_submitted' && (
+              <p className="mt-1 text-amber-700/80">Waiting for staff to verify payment.</p>
             )}
           </div>
         </div>

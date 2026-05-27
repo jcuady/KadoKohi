@@ -1,18 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Order, OrderStatus } from '../types/domain';
+import type { Order, OrderStatus, PaymentStatus } from '../types/domain';
 import { newId } from '../lib/id';
 import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
+import { defaultFieldsForNewOrder, normalizeOrderFields } from '../lib/orderStatus';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
   return `KK-${n}`;
 }
 
+function normalizeOrder(o: Order): Order {
+  const { status, paymentStatus } = normalizeOrderFields(o);
+  return { ...o, status, paymentStatus };
+}
+
 export interface OrderStore {
   orders: Order[];
-  createOrder: (order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt'> & { shortCode?: string }) => Order;
+  createOrder: (
+    order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
+      Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string },
+  ) => Order;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
+  updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => void;
   updateOrderPaymentProof: (id: string, proofImage: string) => void;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
   ordersForBarista: (branchId: string) => Order[];
@@ -26,7 +36,8 @@ export const useOrderStore = create<OrderStore>()(
 
       createOrder: (input) => {
         const t = new Date().toISOString();
-        const o: Order = {
+        const defaults = defaultFieldsForNewOrder(input.paymentMethod);
+        const o: Order = normalizeOrder({
           id: newId(),
           shortCode: input.shortCode ?? shortCode(),
           channel: input.channel,
@@ -38,7 +49,8 @@ export const useOrderStore = create<OrderStore>()(
           paymentMethod: input.paymentMethod,
           paymentProofImage: input.paymentProofImage,
           paymentProofUploadedAt: input.paymentProofUploadedAt,
-          status: input.status,
+          status: input.status ?? defaults.status,
+          paymentStatus: input.paymentStatus ?? defaults.paymentStatus,
           items: input.items,
           subtotal: input.subtotal,
           modifiersTotal: input.modifiersTotal,
@@ -49,7 +61,7 @@ export const useOrderStore = create<OrderStore>()(
           loyaltyDiscountTotal: input.loyaltyDiscountTotal,
           createdAt: t,
           updatedAt: t,
-        };
+        });
         set({ orders: [o, ...get().orders] });
         return o;
       },
@@ -73,18 +85,43 @@ export const useOrderStore = create<OrderStore>()(
         });
       },
 
-      updateOrderPaymentProof: (id, proofImage) =>
+      updatePaymentStatus: (id, paymentStatus) => {
+        const prev = get().orders.find((o) => o.id === id);
+        if (!prev) return;
+
+        let status = prev.status;
+        if (paymentStatus === 'paid' && status === 'pending') {
+          status = 'accepted';
+        }
+
         set({
           orders: get().orders.map((o) =>
             o.id === id
               ? {
                   ...o,
-                  paymentProofImage: proofImage,
-                  paymentProofUploadedAt: new Date().toISOString(),
+                  paymentStatus,
+                  status,
                   updatedAt: new Date().toISOString(),
                 }
               : o,
           ),
+        });
+      },
+
+      updateOrderPaymentProof: (id, proofImage) =>
+        set({
+          orders: get().orders.map((o) => {
+            if (o.id !== id) return o;
+            const paymentStatus: PaymentStatus =
+              o.paymentMethod === 'gcash-qr' ? 'proof_submitted' : o.paymentStatus;
+            return normalizeOrder({
+              ...o,
+              paymentProofImage: proofImage,
+              paymentProofUploadedAt: new Date().toISOString(),
+              paymentStatus,
+              updatedAt: new Date().toISOString(),
+            });
+          }),
         }),
 
       ordersForBranch: (branchId, channels) => {
@@ -98,6 +135,13 @@ export const useOrderStore = create<OrderStore>()(
 
       seed: () => set({ orders: [] }),
     }),
-    { name: 'kado-orders-v2' },
+    {
+      name: 'kado-orders-v3',
+      merge: (persisted, current) => {
+        const p = persisted as { orders?: Order[] } | undefined;
+        const orders = (p?.orders ?? current.orders).map((o) => normalizeOrder(o));
+        return { ...current, orders };
+      },
+    },
   ),
 );

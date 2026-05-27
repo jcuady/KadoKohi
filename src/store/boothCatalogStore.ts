@@ -15,6 +15,8 @@ export interface BoothCatalogStore {
   updateAddon: (id: string, patch: Partial<BoothAddon>) => void;
   removeAddon: (id: string) => void;
   reorderAddons: (fromIndex: number, toIndex: number) => void;
+  visiblePackages: () => BoothPackage[];
+  visibleAddons: () => BoothAddon[];
   visiblePackagesForBranch: (branchId: string) => BoothPackage[];
   visibleAddonsForBranch: (branchId: string) => BoothAddon[];
   seed: () => void;
@@ -91,6 +93,16 @@ export const useBoothCatalogStore = create<BoothCatalogStore>()(
         sorted.splice(toIndex, 0, removed);
         set({ addons: sorted.map((addon, i) => ({ ...addon, order: i })) });
       },
+
+      visiblePackages: () =>
+        get()
+          .packages.filter((pkg) => pkg.visible)
+          .sort((a, b) => a.order - b.order),
+
+      visibleAddons: () =>
+        get()
+          .addons.filter((addon) => addon.visible)
+          .sort((a, b) => a.order - b.order),
 
       visiblePackagesForBranch: (branchId) =>
         get()

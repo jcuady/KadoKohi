@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Monitor, Moon, Sun } from 'lucide-react';
-import type { OrderStatus } from '../../types/domain';
+import type { Order } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useKioskTheme } from '../../hooks/useKioskTheme';
-import { kioskColumnStatus, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
 import OrderTableBadge from '../../components/OrderTableBadge';
 
+type KioskColumnId = NonNullable<ReturnType<typeof kioskColumnKey>>;
+
 type KioskColumn = {
-  status: OrderStatus;
+  id: KioskColumnId;
   label: string;
   accentLight: string;
   accentDark: string;
@@ -20,23 +22,23 @@ type KioskColumn = {
 
 const COLUMNS: KioskColumn[] = [
   {
-    status: 'pending_payment',
-    label: ORDER_STATUS_LABELS.pending_payment,
+    id: 'awaiting_payment',
+    label: 'Awaiting payment',
     accentLight: 'border-t-amber-500',
     accentDark: 'border-t-amber-400',
     badgeLight: 'bg-amber-500/15 text-amber-900',
     badgeDark: 'bg-amber-400/20 text-amber-200',
   },
   {
-    status: 'paid',
-    label: ORDER_STATUS_LABELS.paid,
+    id: 'paid_queue',
+    label: 'Paid · in queue',
     accentLight: 'border-t-sky-600',
     accentDark: 'border-t-sky-400',
     badgeLight: 'bg-sky-600/10 text-sky-900',
     badgeDark: 'bg-sky-400/15 text-sky-200',
   },
   {
-    status: 'preparing',
+    id: 'preparing',
     label: ORDER_STATUS_LABELS.preparing,
     accentLight: 'border-t-kado-red',
     accentDark: 'border-t-kado-red',
@@ -44,7 +46,7 @@ const COLUMNS: KioskColumn[] = [
     badgeDark: 'bg-kado-red/25 text-kado-cream',
   },
   {
-    status: 'ready',
+    id: 'ready',
     label: ORDER_STATUS_LABELS.ready,
     accentLight: 'border-t-emerald-600',
     accentDark: 'border-t-emerald-400',
@@ -75,7 +77,7 @@ export default function BaristaKioskDisplay() {
     () =>
       orders
         .filter((order) => order.branchId === activeBranchId)
-        .filter((order) => kioskColumnStatus(order.status) !== null)
+        .filter((order) => kioskColumnKey(order) !== null)
         .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
     [orders, activeBranchId],
   );
@@ -179,13 +181,13 @@ export default function BaristaKioskDisplay() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {COLUMNS.map((column) => {
-            const items = filtered.filter((order) => kioskColumnStatus(order.status) === column.status);
+            const items = filtered.filter((order) => kioskColumnKey(order) === column.id);
             const accent = isDark ? column.accentDark : column.accentLight;
             const badge = isDark ? column.badgeDark : column.badgeLight;
 
             return (
               <section
-                key={column.status}
+                key={column.id}
                 className={`flex min-h-[420px] flex-col rounded-3xl border border-t-4 p-4 md:p-5 ${accent}`}
                 style={{
                   background: 'var(--kiosk-surface)',

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { BoothBookingStatus } from '../../types/domain';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
-import { useBranchStore } from '../../store/branchStore';
 import {
   ALL_BOOTH_BOOKING_STATUSES,
   BOOTH_BOOKING_STATUS_LABELS,
@@ -23,23 +22,15 @@ function timeAgo(iso: string): string {
 
 export default function AdminBoothBookings() {
   const bookings = useBoothBookingStore((s) => s.bookings);
-  const branches = useBranchStore((s) => s.branches);
 
   const [statusFilter, setStatusFilter] = useState<BoothBookingStatus | 'all'>('all');
-  const [branchFilter, setBranchFilter] = useState<string>('all');
   const [manageId, setManageId] = useState<string | null>(null);
-
-  const branchName = useMemo(() => {
-    const map = new Map(branches.map((b) => [b.id, b.name]));
-    return (id: string) => map.get(id) ?? id;
-  }, [branches]);
 
   const filtered = useMemo(() => {
     let list = bookings;
     if (statusFilter !== 'all') list = list.filter((b) => b.status === statusFilter);
-    if (branchFilter !== 'all') list = list.filter((b) => b.branchId === branchFilter);
     return [...list].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
-  }, [bookings, statusFilter, branchFilter]);
+  }, [bookings, statusFilter]);
 
   const manageBooking = manageId ? bookings.find((b) => b.id === manageId) ?? null : null;
 
@@ -54,19 +45,6 @@ export default function AdminBoothBookings() {
       </p>
 
       <div className="flex flex-wrap gap-3 mb-6">
-        <select
-          value={branchFilter}
-          onChange={(e) => setBranchFilter(e.target.value)}
-          className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
-        >
-          <option value="all">All branches</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as BoothBookingStatus | 'all')}
@@ -107,7 +85,6 @@ export default function AdminBoothBookings() {
                           Quoted
                         </span>
                       )}
-                      <span className="text-xs dash-muted">{branchName(booking.branchId)}</span>
                       <span className="text-xs dash-muted">{timeAgo(booking.createdAt)}</span>
                     </div>
                     <p className="text-sm dash-muted">

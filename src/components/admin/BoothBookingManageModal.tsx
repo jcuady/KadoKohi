@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import type { BoothBooking, BoothBookingStatus } from '../../types/domain';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
-import { useBranchStore } from '../../store/branchStore';
 import { useUserStore } from '../../store/userStore';
 import {
   ALL_BOOTH_BOOKING_STATUSES,
@@ -26,7 +25,6 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
   const setFinalQuote = useBoothBookingStore((s) => s.setFinalQuote);
   const updateBooking = useBoothBookingStore((s) => s.updateBooking);
   const assignStaff = useBoothBookingStore((s) => s.assignStaff);
-  const branches = useBranchStore((s) => s.branches);
   const users = useUserStore((s) => s.users);
 
   const [status, setStatusLocal] = useState<BoothBookingStatus>('submitted');
@@ -36,8 +34,6 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
   const [staffId, setStaffId] = useState('');
 
   const staffUsers = users.filter((u) => u.role === 'staff' || u.role === 'admin');
-  const branchName = branches.find((b) => b.id === booking?.branchId)?.name ?? '';
-
   useEffect(() => {
     if (!booking) return;
     const display = getBookingDisplayEstimate(booking);
@@ -86,7 +82,7 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
           <div className="flex items-center justify-between px-5 py-4 border-b dash-border sticky top-0 bg-[var(--color-dash-surface)] z-10">
             <div>
               <h2 className="font-display font-bold text-lg dash-heading">{booking.shortCode}</h2>
-              <p className="text-xs dash-muted">{booking.eventName} · {branchName}</p>
+              <p className="text-xs dash-muted">{booking.eventName}</p>
             </div>
             <button type="button" onClick={onClose} className="p-2 dash-muted hover:text-kado-red" aria-label="Close">
               <X className="w-5 h-5" />

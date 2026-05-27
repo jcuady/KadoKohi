@@ -26,7 +26,7 @@ export interface BoothBookingStore {
     opts?: { quoteNotes?: string; status?: BoothBookingStatus },
   ) => void;
   bookingsForBranch: (branchId: string) => BoothBooking[];
-  bookingsForStaff: (staffId: string, branchId?: string) => BoothBooking[];
+  bookingsForStaff: (staffId: string) => BoothBooking[];
   bookingsForCustomer: (customerId: string) => BoothBooking[];
   seed: () => void;
 }
@@ -100,13 +100,9 @@ export const useBoothBookingStore = create<BoothBookingStore>()(
           .bookings.filter((booking) => booking.branchId === branchId)
           .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
 
-      bookingsForStaff: (staffId, branchId) =>
+      bookingsForStaff: (staffId) =>
         get()
-          .bookings.filter(
-            (booking) =>
-              (booking.assignedStaffId === staffId || !booking.assignedStaffId) &&
-              (!branchId || booking.branchId === branchId),
-          )
+          .bookings.filter((booking) => booking.assignedStaffId === staffId || !booking.assignedStaffId)
           .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
 
       bookingsForCustomer: (customerId) =>

@@ -66,6 +66,7 @@ export const api = {
     list: () => useOrderStore.getState().orders,
     create: useOrderStore.getState().createOrder,
     updateStatus: useOrderStore.getState().updateOrderStatus,
+    updatePaymentStatus: useOrderStore.getState().updatePaymentStatus,
     forBranch: (branchId: string, channels?: string[]) =>
       useOrderStore.getState().ordersForBranch(branchId, channels as never),
     forBarista: (branchId: string) => useOrderStore.getState().ordersForBarista(branchId),
@@ -146,6 +147,8 @@ export const api = {
   boothCatalog: {
     packages: () => useBoothCatalogStore.getState().packages,
     addons: () => useBoothCatalogStore.getState().addons,
+    visiblePackages: () => useBoothCatalogStore.getState().visiblePackages(),
+    visibleAddons: () => useBoothCatalogStore.getState().visibleAddons(),
     visiblePackagesForBranch: (branchId: string) =>
       useBoothCatalogStore.getState().visiblePackagesForBranch(branchId),
     visibleAddonsForBranch: (branchId: string) =>
@@ -191,8 +194,7 @@ export const api = {
     setFinalQuote: useBoothBookingStore.getState().setFinalQuote,
     assignStaff: useBoothBookingStore.getState().assignStaff,
     forBranch: (branchId: string) => useBoothBookingStore.getState().bookingsForBranch(branchId),
-    forStaff: (staffId: string, branchId?: string) =>
-      useBoothBookingStore.getState().bookingsForStaff(staffId, branchId),
+    forStaff: (staffId: string) => useBoothBookingStore.getState().bookingsForStaff(staffId),
     forCustomer: (customerId: string) => useBoothBookingStore.getState().bookingsForCustomer(customerId),
   },
 

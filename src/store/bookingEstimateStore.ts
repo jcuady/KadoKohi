@@ -10,7 +10,7 @@ import { newId } from '../lib/id';
 import { useBoothCatalogStore } from './boothCatalogStore';
 
 export interface BookingEstimateDraftInput {
-  branchId: string;
+  branchId?: string;
   packageId: string;
   guestCount: number;
   durationHours?: number;

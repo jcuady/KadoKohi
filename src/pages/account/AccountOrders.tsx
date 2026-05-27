@@ -6,7 +6,12 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { formatPhp } from '../../lib/money';
-import { ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import {
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  PAYMENT_STATUS_BADGE,
+  isGcashOrder,
+} from '../../lib/orderStatus';
 import GcashQrModal from '../../components/GcashQrModal';
 import OrderPaymentPanel from '../../components/OrderPaymentPanel';
 import OrderTableBadge from '../../components/OrderTableBadge';
@@ -25,8 +30,6 @@ import {
   Wallet,
 } from 'lucide-react';
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
-  pending_payment: { label: ORDER_STATUS_LABELS.pending_payment, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: Wallet },
-  paid: { label: ORDER_STATUS_LABELS.paid, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: CheckCircle2 },
   pending: { label: ORDER_STATUS_LABELS.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: Clock },
   accepted: { label: ORDER_STATUS_LABELS.accepted, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: CheckCircle2 },
   preparing: { label: ORDER_STATUS_LABELS.preparing, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200', icon: Coffee },
@@ -174,6 +177,13 @@ export default function AccountOrders() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
                         <span className="font-display font-black text-kado-dark text-base sm:text-lg">{o.shortCode}</span>
+                        {isGcashOrder(o) && o.paymentStatus !== 'paid' && (
+                          <span
+                            className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}
+                          >
+                            {PAYMENT_STATUS_LABELS[o.paymentStatus]}
+                          </span>
+                        )}
                         <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
                           {cfg.label}
                         </span>

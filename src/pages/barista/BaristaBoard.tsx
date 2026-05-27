@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import type { Order, OrderStatus } from '../../types/domain';
+import type { Order, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
-import { kioskColumnStatus, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
+import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
 import { Clock, ChefHat, CheckCircle2, Wallet } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
@@ -12,19 +12,19 @@ import OrderTableBadge from '../../components/OrderTableBadge';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
 
-type Column = {
-  status: OrderStatus;
+type BoardColumn = {
+  id: NonNullable<ReturnType<typeof kioskColumnKey>>;
   label: string;
   icon: typeof Clock;
   color: string;
   bgCard: string;
 };
 
-const COLUMNS: Column[] = [
-  { status: 'pending_payment', label: ORDER_STATUS_LABELS.pending_payment, icon: Wallet, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
-  { status: 'paid', label: ORDER_STATUS_LABELS.paid, icon: Clock, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
-  { status: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
-  { status: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
+const COLUMNS: BoardColumn[] = [
+  { id: 'awaiting_payment', label: 'Awaiting payment', icon: Wallet, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
+  { id: 'paid_queue', label: 'Paid · queue', icon: Clock, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
+  { id: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
+  { id: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
 ];
 
 function timeAgo(iso: string): string {
@@ -39,6 +39,7 @@ export default function BaristaBoard() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
+  const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
   const adminBranch = useBranchStore((s) => s.adminPosBranchId);
   const branches = useBranchStore((s) => s.branches);
 
@@ -57,9 +58,10 @@ export default function BaristaBoard() {
   const branchLabel = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
-  const applyStatus = (status: OrderStatus) => {
+  const applyPatch = (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
-    updateOrderStatus(editingOrder.id, status);
+    if (patch.status) updateOrderStatus(editingOrder.id, patch.status);
+    if (patch.paymentStatus) updatePaymentStatus(editingOrder.id, patch.paymentStatus);
     setEditingOrder(null);
   };
 
@@ -72,17 +74,17 @@ export default function BaristaBoard() {
             {user?.role === 'admin'
               ? `All channels (Admin POS branch: ${branchLabel(adminBranch ?? '')})`
               : `Branch: ${user?.branchId ? branchLabel(user.branchId) : '—'}`}
-            {' · '}Open a card to set status.
+            {' · '}Payment and order status are updated separately.
           </p>
         </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
         {COLUMNS.map((col) => {
-          const colOrders = visible.filter((o) => kioskColumnStatus(o.status) === col.status);
+          const colOrders = visible.filter((o) => kioskColumnKey(o) === col.id);
           const Icon = col.icon;
           return (
-            <div key={col.status} className="flex flex-col min-h-0">
+            <div key={col.id} className="flex flex-col min-h-0">
               <div className="flex items-center gap-2 mb-3 px-1">
                 <Icon className={`w-5 h-5 ${col.color}`} />
                 <span className="font-bold text-sm uppercase tracking-wider dash-muted">{col.label}</span>
@@ -111,6 +113,9 @@ export default function BaristaBoard() {
                         <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
                           {o.channel}
                         </span>
+                        <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/10">
+                          {PAYMENT_STATUS_LABELS[o.paymentStatus]}
+                        </span>
                         <OrderTableBadge order={o} variant="dash" />
                         {o.guestName && (
                           <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
@@ -127,9 +132,6 @@ export default function BaristaBoard() {
                             {item.qty}× {item.productNameSnapshot}
                           </li>
                         ))}
-                        {o.items.length > 4 && (
-                          <li className="dash-muted">+{o.items.length - 4} more</li>
-                        )}
                       </ul>
                       <OrderPaymentProofPreview order={o} />
                       <div className="mt-2 text-right">
@@ -147,7 +149,7 @@ export default function BaristaBoard() {
         open={!!editingOrder}
         order={editingOrder}
         onClose={() => setEditingOrder(null)}
-        onApply={applyStatus}
+        onApply={applyPatch}
       />
     </div>
   );

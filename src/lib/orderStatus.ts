@@ -1,16 +1,7 @@
-import type { Order, OrderStatus, PaymentMethod } from '../types/domain';
+import type { Order, OrderStatus, PaymentMethod, PaymentStatus } from '../types/domain';
 
-/** GCash QR pickup orders — staff advances manually after verifying proof. */
-export const GCASH_ORDER_FLOW: OrderStatus[] = [
-  'pending_payment',
-  'paid',
-  'preparing',
-  'ready',
-  'completed',
-];
-
-/** Legacy / POS / dine-in style flow. */
-export const LEGACY_ORDER_FLOW: OrderStatus[] = [
+/** Fulfillment / kitchen flow */
+export const FULFILLMENT_FLOW: OrderStatus[] = [
   'pending',
   'accepted',
   'preparing',
@@ -19,9 +10,16 @@ export const LEGACY_ORDER_FLOW: OrderStatus[] = [
   'completed',
 ];
 
-export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending_payment: 'Pending payment',
+export const GCASH_FULFILLMENT_FLOW: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  unpaid: 'Awaiting payment',
+  proof_submitted: 'Proof submitted',
   paid: 'Paid',
+  refunded: 'Refunded',
+};
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending',
   accepted: 'Accepted',
   preparing: 'Preparing',
@@ -31,29 +29,14 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-export function isGcashOrder(order: Pick<Order, 'paymentMethod' | 'status'>): boolean {
-  return (
-    order.paymentMethod === 'gcash-qr' ||
-    order.status === 'pending_payment' ||
-    order.status === 'paid'
-  );
-}
-
-export function statusFlowForOrder(order: Pick<Order, 'paymentMethod' | 'status'>): OrderStatus[] {
-  return isGcashOrder(order) ? GCASH_ORDER_FLOW : LEGACY_ORDER_FLOW;
-}
-
-export function nextStatusInFlow(order: Pick<Order, 'status' | 'paymentMethod'>): OrderStatus | null {
-  const flow = statusFlowForOrder(order);
-  const idx = flow.indexOf(order.status);
-  if (idx === -1 || idx >= flow.length - 1) return null;
-  return flow[idx + 1];
-}
-
-/** Tailwind badge classes for admin/staff tables. */
-export const ORDER_STATUS_BADGE: Record<OrderStatus, string> = {
-  pending_payment: 'bg-amber-100 text-amber-900 border-amber-200',
+export const PAYMENT_STATUS_BADGE: Record<PaymentStatus, string> = {
+  unpaid: 'bg-amber-100 text-amber-900 border-amber-200',
+  proof_submitted: 'bg-violet-100 text-violet-900 border-violet-200',
   paid: 'bg-blue-100 text-blue-800 border-blue-200',
+  refunded: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+};
+
+export const ORDER_STATUS_BADGE: Record<OrderStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   accepted: 'bg-blue-100 text-blue-800 border-blue-200',
   preparing: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -63,25 +46,112 @@ export const ORDER_STATUS_BADGE: Record<OrderStatus, string> = {
   cancelled: 'bg-red-100 text-red-700 border-red-200',
 };
 
-export const ALL_ORDER_STATUSES: OrderStatus[] = [
-  'pending_payment',
-  'paid',
-  'pending',
-  'accepted',
-  'preparing',
-  'ready',
-  'served',
-  'completed',
-  'cancelled',
+export const ALL_PAYMENT_STATUSES: PaymentStatus[] = ['unpaid', 'proof_submitted', 'paid', 'refunded'];
+export const ALL_ORDER_STATUSES: OrderStatus[] = [...FULFILLMENT_FLOW, 'cancelled'];
+
+/** Migrate legacy combined status + infer defaults for new orders. */
+export function normalizeOrderFields(
+  raw: Partial<Order> & { status?: string },
+): { status: OrderStatus; paymentStatus: PaymentStatus } {
+  const legacyStatus = raw.status as string | undefined;
+  let paymentStatus = raw.paymentStatus as PaymentStatus | undefined;
+  let status = raw.status as OrderStatus | undefined;
+
+  if (!paymentStatus) {
+    if (legacyStatus === 'pending_payment') {
+      paymentStatus = raw.paymentProofImage ? 'proof_submitted' : 'unpaid';
+    } else if (legacyStatus === 'paid') {
+      paymentStatus = 'paid';
+    } else if (raw.paymentMethod === 'gcash-qr') {
+      paymentStatus = raw.paymentProofImage ? 'proof_submitted' : 'unpaid';
+      if (legacyStatus && ['accepted', 'preparing', 'ready', 'served', 'completed'].includes(legacyStatus)) {
+        paymentStatus = 'paid';
+      }
+    } else {
+      paymentStatus = 'paid';
+    }
+  }
+
+  if (!status || legacyStatus === 'pending_payment' || legacyStatus === 'paid') {
+    if (legacyStatus === 'paid') {
+      status = 'accepted';
+    } else if (legacyStatus === 'pending_payment') {
+      status = 'pending';
+    } else if (
+      legacyStatus &&
+      ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed', 'cancelled'].includes(legacyStatus)
+    ) {
+      status = legacyStatus as OrderStatus;
+    } else {
+      status = paymentStatus === 'paid' ? 'accepted' : 'pending';
+    }
+  }
+
+  return { status, paymentStatus };
+}
+
+export function isGcashOrder(order: Pick<Order, 'paymentMethod'>): boolean {
+  return order.paymentMethod === 'gcash-qr';
+}
+
+export function fulfillmentFlowForOrder(order: Pick<Order, 'paymentMethod'>): OrderStatus[] {
+  return isGcashOrder(order) ? GCASH_FULFILLMENT_FLOW : FULFILLMENT_FLOW;
+}
+
+export function nextFulfillmentStatus(order: Pick<Order, 'status' | 'paymentMethod'>): OrderStatus | null {
+  const flow = fulfillmentFlowForOrder(order);
+  const idx = flow.indexOf(order.status);
+  if (idx === -1 || idx >= flow.length - 1) return null;
+  return flow[idx + 1];
+}
+
+/** Staff quick-advance: only when payment is settled (except cancelled path). */
+export function nextStatusInFlow(order: Order): OrderStatus | null {
+  if (order.status === 'cancelled' || order.status === 'completed') return null;
+  if (isGcashOrder(order) && order.paymentStatus !== 'paid') return null;
+  return nextFulfillmentStatus(order);
+}
+
+export type KanbanColumnId =
+  | 'awaiting_payment'
+  | 'proof_submitted'
+  | 'accepted'
+  | 'preparing'
+  | 'ready'
+  | 'completed'
+  | 'cancelled';
+
+export const KANBAN_COLUMNS: {
+  id: KanbanColumnId;
+  label: string;
+}[] = [
+  { id: 'awaiting_payment', label: 'Awaiting payment' },
+  { id: 'proof_submitted', label: 'Verify payment' },
+  { id: 'accepted', label: 'Accepted' },
+  { id: 'preparing', label: 'Preparing' },
+  { id: 'ready', label: 'Ready' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'cancelled', label: 'Cancelled' },
 ];
 
-/** Map any status to kiosk column (null = hidden from kiosk). */
-export function kioskColumnStatus(status: OrderStatus): OrderStatus | null {
-  if (['completed', 'cancelled', 'served'].includes(status)) return null;
-  if (status === 'pending' || status === 'pending_payment') return 'pending_payment';
-  if (status === 'accepted' || status === 'paid') return 'paid';
-  if (status === 'preparing' || status === 'ready') return status;
-  return null;
+export function kanbanColumnForOrder(order: Order): KanbanColumnId {
+  if (order.status === 'cancelled') return 'cancelled';
+  if (order.status === 'completed') return 'completed';
+  if (order.paymentStatus === 'unpaid') return 'awaiting_payment';
+  if (order.paymentStatus === 'proof_submitted') return 'proof_submitted';
+  if (order.status === 'preparing') return 'preparing';
+  if (order.status === 'ready' || order.status === 'served') return 'ready';
+  return 'accepted';
+}
+
+/** Kiosk display buckets (payment + prep). */
+export function kioskColumnKey(order: Order): 'awaiting_payment' | 'paid_queue' | 'preparing' | 'ready' | null {
+  if (['completed', 'cancelled', 'served'].includes(order.status)) return null;
+  if (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted') return 'awaiting_payment';
+  if (order.status === 'preparing') return 'preparing';
+  if (order.status === 'ready') return 'ready';
+  if (order.paymentStatus === 'paid') return 'paid_queue';
+  return 'awaiting_payment';
 }
 
 export function formatPaymentMethod(method?: PaymentMethod): string {
@@ -95,4 +165,14 @@ export function formatPaymentMethod(method?: PaymentMethod): string {
     default:
       return '—';
   }
+}
+
+export function defaultFieldsForNewOrder(paymentMethod?: PaymentMethod): {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+} {
+  if (paymentMethod === 'gcash-qr') {
+    return { status: 'pending', paymentStatus: 'unpaid' };
+  }
+  return { status: 'pending', paymentStatus: 'paid' };
 }

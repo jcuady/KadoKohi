@@ -5,7 +5,6 @@ import { useAuthStore } from '../store/authStore';
 import BookingSteps from '../components/booking/BookingSteps';
 import BookingEstimatePreview from '../components/booking/BookingEstimatePreview';
 import BookingForm, { type BookingFormValues } from '../components/booking/BookingForm';
-import { useBranchStore } from '../store/branchStore';
 import { useBoothCatalogStore } from '../store/boothCatalogStore';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useBookingEstimateStore } from '../store/bookingEstimateStore';
@@ -15,18 +14,15 @@ import { formatPhp } from '../lib/money';
 export default function BookBooth() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const branches = useBranchStore((s) => s.branches);
-  const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
 
-  const visiblePackagesForBranch = useBoothCatalogStore((s) => s.visiblePackagesForBranch);
-  const visibleAddonsForBranch = useBoothCatalogStore((s) => s.visibleAddonsForBranch);
+  const visiblePackages = useBoothCatalogStore((s) => s.visiblePackages);
+  const visibleAddons = useBoothCatalogStore((s) => s.visibleAddons);
 
   const calculateEstimate = useBookingEstimateStore((s) => s.calculateEstimate);
   const draftEstimate = useBookingEstimateStore((s) => s.draft);
   const saveEstimate = useBookingEstimateStore((s) => s.saveEstimate);
   const estimates = useBookingEstimateStore((s) => s.estimates);
   const createBooking = useBoothBookingStore((s) => s.createBooking);
-  /** Select raw `media` only — `visibleMedia()` returns a new array each call and breaks useSyncExternalStore snapshot equality (infinite re-renders). */
   const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
   const showcaseMedia = useMemo(
     () =>
@@ -36,7 +32,6 @@ export default function BookBooth() {
     [showcaseMediaRaw],
   );
 
-  const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? 'branch_marikina');
   const [selectedPackageId, setSelectedPackageId] = useState('');
   const [guestCount, setGuestCount] = useState(12);
   const [durationHours, setDurationHours] = useState(3);
@@ -44,8 +39,8 @@ export default function BookBooth() {
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [submittedCode, setSubmittedCode] = useState('');
 
-  const pkgList = useMemo(() => visiblePackagesForBranch(branchId), [visiblePackagesForBranch, branchId]);
-  const addonList = useMemo(() => visibleAddonsForBranch(branchId), [visibleAddonsForBranch, branchId]);
+  const pkgList = useMemo(() => visiblePackages(), [visiblePackages]);
+  const addonList = useMemo(() => visibleAddons(), [visibleAddons]);
   const selectedPackage = pkgList.find((pkg) => pkg.id === selectedPackageId);
 
   useEffect(() => {
@@ -76,9 +71,8 @@ export default function BookBooth() {
   );
 
   useEffect(() => {
-    if (!selectedPackageId || !branchId) return;
+    if (!selectedPackageId) return;
     calculateEstimate({
-      branchId,
       packageId: selectedPackageId,
       guestCount,
       durationHours,
@@ -89,7 +83,7 @@ export default function BookBooth() {
         selectedPackage ? `Package: ${selectedPackage.name}` : 'Package selected',
       ],
     });
-  }, [branchId, selectedPackageId, guestCount, durationHours, selectedAddonSelections, selectedPackage, calculateEstimate]);
+  }, [selectedPackageId, guestCount, durationHours, selectedAddonSelections, selectedPackage, calculateEstimate]);
 
   const handleSubmitBooking = async (values: BookingFormValues) => {
     if (!selectedPackage || !draftEstimate) {
@@ -123,7 +117,6 @@ export default function BookBooth() {
     });
 
     const booking = createBooking({
-      branchId,
       customerId: user?.role === 'customer' ? user.id : undefined,
       contactName: values.contactName.trim(),
       contactEmail: values.contactEmail.trim(),
@@ -173,21 +166,21 @@ export default function BookBooth() {
         <div className="max-w-6xl mx-auto">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {showcaseMedia.map((media) => (
-                <article
-                  key={media.id}
-                  className="rounded-2xl overflow-hidden border border-kado-dark/10 bg-white shadow-sm"
-                >
-                  <img
-                    src={media.image}
-                    alt={media.title}
-                    className="w-full aspect-[4/3] object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-display text-lg font-bold text-kado-dark">{media.title}</h3>
-                    {media.caption && <p className="text-sm text-kado-dark/60 mt-1">{media.caption}</p>}
-                  </div>
-                </article>
+              <article
+                key={media.id}
+                className="rounded-2xl overflow-hidden border border-kado-dark/10 bg-white shadow-sm"
+              >
+                <img
+                  src={media.image}
+                  alt={media.title}
+                  className="w-full aspect-[4/3] object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="p-4">
+                  <h3 className="font-display text-lg font-bold text-kado-dark">{media.title}</h3>
+                  {media.caption && <p className="text-sm text-kado-dark/60 mt-1">{media.caption}</p>}
+                </div>
+              </article>
             ))}
           </div>
         </div>
@@ -198,19 +191,9 @@ export default function BookBooth() {
       <section className="py-8 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="rounded-2xl bg-white border border-kado-dark/10 p-5 md:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div className="mb-5">
               <h2 className="font-display text-2xl md:text-3xl font-bold text-kado-dark">Build Your Booking</h2>
-              <select
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                className="rounded-xl border border-kado-dark/15 px-4 py-2.5 text-sm text-kado-dark bg-white focus:outline-none focus:ring-2 focus:ring-kado-red/20"
-              >
-                {activeBranches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm text-kado-dark/55 mt-1">Events bookings are managed brand-wide — no branch selection needed.</p>
             </div>
 
             <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6">
@@ -276,14 +259,12 @@ export default function BookBooth() {
 
                 {pkgList.length === 0 && (
                   <div className="rounded-xl border border-kado-dark/10 bg-kado-offwhite/60 px-4 py-3 text-sm text-kado-dark/65">
-                    No booth packages are configured for this branch yet.
+                    No event packages are available yet. Check back soon or contact us.
                   </div>
                 )}
 
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-dark/55 mb-2">
-                    Add-ons
-                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-dark/55 mb-2">Add-ons</p>
                   <div className="space-y-2.5">
                     {addonList.map((addon) => (
                       <label
@@ -372,27 +353,27 @@ export default function BookBooth() {
               .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
               .slice(0, 4)
               .map((estimate) => (
-              <article key={estimate.id} className="rounded-2xl bg-white border border-kado-dark/10 p-5">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <p className="font-display text-xl font-bold text-kado-dark">{estimate.shortCode}</p>
-                  <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full bg-kado-red/10 text-kado-red">
-                    {estimate.status}
-                  </span>
-                </div>
-                <div className="space-y-1.5 mb-3">
-                  {estimate.lineItems.map((line) => (
-                    <div key={line.id} className="flex justify-between text-sm text-kado-dark/70">
-                      <span>{line.labelSnapshot}</span>
-                      <span>{formatPhp(line.lineTotal)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-kado-dark/10 pt-2 flex justify-between font-bold text-kado-dark">
-                  <span>Total</span>
-                  <span className="text-kado-red">{formatPhp(estimate.total)}</span>
-                </div>
-              </article>
-            ))}
+                <article key={estimate.id} className="rounded-2xl bg-white border border-kado-dark/10 p-5">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="font-display text-xl font-bold text-kado-dark">{estimate.shortCode}</p>
+                    <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full bg-kado-red/10 text-kado-red">
+                      {estimate.status}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 mb-3">
+                    {estimate.lineItems.map((line) => (
+                      <div key={line.id} className="flex justify-between text-sm text-kado-dark/70">
+                        <span>{line.labelSnapshot}</span>
+                        <span>{formatPhp(line.lineTotal)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-kado-dark/10 pt-2 flex justify-between font-bold text-kado-dark">
+                    <span>Total</span>
+                    <span className="text-kado-red">{formatPhp(estimate.total)}</span>
+                  </div>
+                </article>
+              ))}
           </div>
         </div>
       </section>

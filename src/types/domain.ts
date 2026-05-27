@@ -79,9 +79,10 @@ export type OrderChannel = 'online' | 'dine-in' | 'takeout' | 'pos' | 'merch';
 
 export type PaymentMethod = 'gcash-qr' | 'pay-at-store' | 'paymongo';
 
+export type PaymentStatus = 'unpaid' | 'proof_submitted' | 'paid' | 'refunded';
+
+/** Kitchen / fulfillment status (separate from payment). */
 export type OrderStatus =
-  | 'pending_payment'
-  | 'paid'
   | 'pending'
   | 'accepted'
   | 'preparing'
@@ -126,6 +127,7 @@ export interface Order {
   /** Customer-uploaded GCash payment screenshot (data URL). */
   paymentProofImage?: string;
   paymentProofUploadedAt?: string;
+  paymentStatus: PaymentStatus;
   status: OrderStatus;
   items: OrderItem[];
   subtotal: number;
@@ -333,7 +335,7 @@ export interface BookingEstimateLineItem {
 export interface BookingEstimate {
   id: string;
   shortCode: string;
-  branchId: string;
+  branchId?: string;
   lineItems: BookingEstimateLineItem[];
   subtotal: number;
   tax?: number;
@@ -376,7 +378,8 @@ export interface BoothBookingSelectedAddonSnapshot {
 export interface BoothBooking {
   id: string;
   shortCode: string;
-  branchId: string;
+  /** Optional — events bookings are brand-wide, not tied to a single branch. */
+  branchId?: string;
   customerId?: string;
   contactName: string;
   contactEmail: string;

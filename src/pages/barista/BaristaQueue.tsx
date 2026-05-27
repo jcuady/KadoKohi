@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Order, OrderStatus } from '../../types/domain';
+import type { Order, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
@@ -22,6 +22,7 @@ export default function BaristaQueue() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
+  const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
   const branches = useBranchStore((s) => s.branches);
 
   const visible = useMemo(() => {
@@ -41,9 +42,10 @@ export default function BaristaQueue() {
 
   const branchLabel = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
 
-  const applyStatus = (status: OrderStatus) => {
+  const applyPatch = (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
-    updateOrderStatus(editingOrder.id, status);
+    if (patch.status) updateOrderStatus(editingOrder.id, patch.status);
+    if (patch.paymentStatus) updatePaymentStatus(editingOrder.id, patch.paymentStatus);
     setEditingOrder(null);
   };
 
@@ -106,7 +108,7 @@ export default function BaristaQueue() {
         open={!!editingOrder}
         order={editingOrder}
         onClose={() => setEditingOrder(null)}
-        onApply={applyStatus}
+        onApply={applyPatch}
       />
     </div>
   );

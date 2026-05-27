@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Order, OrderChannel, OrderStatus } from '../../types/domain';
+import type { Order, OrderChannel, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
@@ -9,29 +9,26 @@ import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPr
 import OrderTableBadge from '../../components/OrderTableBadge';
 import {
   ALL_ORDER_STATUSES,
+  KANBAN_COLUMNS,
   ORDER_STATUS_BADGE,
   ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_BADGE,
+  PAYMENT_STATUS_LABELS,
+  kanbanColumnForOrder,
   nextStatusInFlow,
 } from '../../lib/orderStatus';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
 
-type Column = {
-  status: OrderStatus;
-  label: string;
-  icon: any;
-  color: string;
-  bgCard: string;
+const KANBAN_STYLE: Record<string, { icon: typeof Clock; color: string; bgCard: string }> = {
+  awaiting_payment: { icon: Clock, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
+  proof_submitted: { icon: ThumbsUp, color: 'text-violet-400', bgCard: 'border-violet-500/30' },
+  accepted: { icon: ThumbsUp, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
+  preparing: { icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
+  ready: { icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
+  completed: { icon: CheckSquare, color: 'text-gray-400', bgCard: 'border-gray-500/30' },
+  cancelled: { icon: XCircle, color: 'text-red-400', bgCard: 'border-red-500/30' },
 };
-
-const COLUMNS: Column[] = [
-  { status: 'pending_payment', label: ORDER_STATUS_LABELS.pending_payment, icon: Clock, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
-  { status: 'paid', label: ORDER_STATUS_LABELS.paid, icon: ThumbsUp, color: 'text-sky-400', bgCard: 'border-sky-500/30' },
-  { status: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
-  { status: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
-  { status: 'completed', label: ORDER_STATUS_LABELS.completed, icon: CheckSquare, color: 'text-gray-400', bgCard: 'border-gray-500/30' },
-  { status: 'cancelled', label: ORDER_STATUS_LABELS.cancelled, icon: XCircle, color: 'text-red-400', bgCard: 'border-red-500/30' },
-];
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -46,6 +43,7 @@ function timeAgo(iso: string): string {
 export default function AdminOrders() {
   const orders = useOrderStore((s) => s.orders);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
+  const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
   const branches = useBranchStore((s) => s.branches);
 
   const [channelFilter, setChannelFilter] = useState<OrderChannel | 'all'>('all');
@@ -69,9 +67,10 @@ export default function AdminOrders() {
 
   const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
 
-  const applyStatus = (status: OrderStatus) => {
+  const applyPatch = (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
-    updateOrderStatus(editingOrder.id, status);
+    if (patch.status) updateOrderStatus(editingOrder.id, patch.status);
+    if (patch.paymentStatus) updatePaymentStatus(editingOrder.id, patch.paymentStatus);
     setEditingOrder(null);
   };
 
@@ -172,6 +171,9 @@ export default function AdminOrders() {
                         {o.channel}
                       </span>
                       <OrderTableBadge order={o} variant="dash" />
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}>
+                        {PAYMENT_STATUS_LABELS[o.paymentStatus]}
+                      </span>
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
@@ -231,19 +233,15 @@ export default function AdminOrders() {
       ) : (
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pb-4 snap-x">
           <div className="flex gap-4 h-full min-h-[500px] w-max snap-start">
-            {COLUMNS.map((col) => {
-              const colOrders = filtered.filter((o) => {
-                if (col.status === 'cancelled' || col.status === 'completed') return o.status === col.status;
-                return o.status === col.status || (col.status === 'pending_payment' && o.status === 'pending') || (col.status === 'paid' && o.status === 'accepted');
-              });
-              const Icon = col.icon;
-              // Skip empty columns in Kanban view if a specific status filter is set
-              if (statusFilter !== 'all' && statusFilter !== col.status) return null;
+            {KANBAN_COLUMNS.map((col) => {
+              const colOrders = filtered.filter((o) => kanbanColumnForOrder(o) === col.id);
+              const style = KANBAN_STYLE[col.id] ?? KANBAN_STYLE.accepted;
+              const Icon = style.icon;
               
               return (
-                <div key={col.status} className="flex flex-col h-full w-[280px] shrink-0">
+                <div key={col.id} className="flex flex-col h-full w-[280px] shrink-0">
                   <div className="flex items-center gap-2 mb-3 px-1 shrink-0">
-                    <Icon className={`w-5 h-5 ${col.color}`} />
+                    <Icon className={`w-5 h-5 ${style.color}`} />
                     <span className="font-bold text-sm uppercase tracking-wider dash-muted">{col.label}</span>
                     <span className="ml-auto text-xs font-bold dash-card-alt dash-muted px-2 py-0.5 rounded-full">
                       {colOrders.length}
@@ -260,7 +258,7 @@ export default function AdminOrders() {
                           key={o.id}
                           type="button"
                           onClick={() => setEditingOrder(o)}
-                          className={`w-full text-left rounded-xl border dash-card ${col.bgCard} p-4 transition-colors hover:border-kado-red/30`}
+                          className={`w-full text-left rounded-xl border dash-card ${style.bgCard} p-4 transition-colors hover:border-kado-red/30`}
                         >
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
@@ -309,7 +307,7 @@ export default function AdminOrders() {
         open={!!editingOrder}
         order={editingOrder}
         onClose={() => setEditingOrder(null)}
-        onApply={applyStatus}
+        onApply={applyPatch}
       />
     </div>
   );

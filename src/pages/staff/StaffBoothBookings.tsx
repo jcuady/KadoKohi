@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import type { BoothBookingStatus } from '../../types/domain';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useAuthStore } from '../../store/authStore';
-import { useBranchStore } from '../../store/branchStore';
 import {
   ALL_BOOTH_BOOKING_STATUSES,
   BOOTH_BOOKING_STATUS_LABELS,
@@ -24,20 +23,14 @@ function timeAgo(iso: string): string {
 
 export default function StaffBoothBookings() {
   const user = useAuthStore((s) => s.user);
-  const branches = useBranchStore((s) => s.branches);
   const bookingsForStaff = useBoothBookingStore((s) => s.bookingsForStaff);
   const allBookings = useBoothBookingStore((s) => s.bookings);
 
   const [statusFilter, setStatusFilter] = useState<BoothBookingStatus | 'all'>('all');
   const [manageId, setManageId] = useState<string | null>(null);
 
-  const branchName = useMemo(() => {
-    const map = new Map(branches.map((b) => [b.id, b.name]));
-    return (id: string) => map.get(id) ?? id;
-  }, [branches]);
-
   const list = useMemo(() => {
-    let items = user?.id ? bookingsForStaff(user.id, user.branchId) : allBookings;
+    let items = user?.id ? bookingsForStaff(user.id) : allBookings;
     if (statusFilter !== 'all') items = items.filter((b) => b.status === statusFilter);
     return items;
   }, [user, bookingsForStaff, allBookings, statusFilter]);
@@ -87,7 +80,6 @@ export default function StaffBoothBookings() {
                     {isOfficialQuote(booking) && (
                       <span className="text-[10px] font-bold uppercase text-violet-700">Quoted</span>
                     )}
-                    <span className="text-xs dash-muted">{branchName(booking.branchId)}</span>
                     <span className="text-xs dash-muted">{timeAgo(booking.createdAt)}</span>
                   </div>
                   <p className="text-sm dash-muted">
