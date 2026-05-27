@@ -2,16 +2,16 @@
  * QR payload builder and URL helpers.
  * QR images encode full HTTPS URLs so scans work on Vercel and locally.
  */
-import { getSiteOrigin } from './siteUrl';
+import { getQrScanOrigin } from './siteUrl';
 
-/** Canonical URL for a specific dine-in table QR. */
+/** Canonical URL for a specific dine-in table QR (production-safe when developing locally). */
 export function tableQrUrl(tableCode: string): string {
-  return `${getSiteOrigin()}/order/qr/${encodeURIComponent(tableCode)}`;
+  return `${getQrScanOrigin()}/order/qr/${encodeURIComponent(tableCode)}`;
 }
 
 /** Canonical URL for a branch-wide takeout QR. */
 export function takeoutQrUrl(branchSlug: string): string {
-  return `${getSiteOrigin()}/order/takeout?b=${encodeURIComponent(branchSlug)}`;
+  return `${getQrScanOrigin()}/order/takeout?b=${encodeURIComponent(branchSlug)}`;
 }
 
 /** Relative path (for display in admin UI). */
@@ -31,20 +31,10 @@ export function qrImageUrl(payload: string, size = 200): string {
   return `https://quickchart.io/qr?text=${encoded}&size=${size}&margin=2&dark=191919&light=FAF9F6`;
 }
 
-/** Download QR PNG for printing (fetches from QuickChart). */
+/** @deprecated Use downloadBrandedQrCard from brandedQrCard.ts for print-ready assets. */
 export async function downloadQrPng(scanUrl: string, filename: string, size = 512): Promise<void> {
-  const src = qrImageUrl(scanUrl, size);
-  const res = await fetch(src);
-  if (!res.ok) throw new Error('Could not generate QR image');
-  const blob = await res.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = objectUrl;
-  anchor.download = filename.endsWith('.png') ? filename : `${filename}.png`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(objectUrl);
+  const { downloadBrandedQrCard } = await import('./brandedQrCard');
+  await downloadBrandedQrCard({ title: 'Kado Kohi', scanUrl }, filename);
 }
 
 /** Short human-readable code derived from the branch slug + table label, e.g. 'mrk-t03'. */
