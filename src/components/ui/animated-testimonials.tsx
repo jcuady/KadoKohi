@@ -15,13 +15,18 @@ export interface Testimonial {
   avatar: string
 }
 
+export interface TrustedBrandItem {
+  label: string
+  imageUrl?: string
+}
+
 export interface AnimatedTestimonialsProps {
   title?: string
   subtitle?: string
   badgeText?: string
   testimonials?: Testimonial[]
   autoRotateInterval?: number
-  trustedCompanies?: string[]
+  trustedCompanies?: TrustedBrandItem[]
   trustedCompaniesTitle?: string
   className?: string
 }
@@ -207,15 +212,27 @@ export function AnimatedTestimonials({
             <p className="text-xs font-semibold tracking-widest uppercase text-kado-dark/40 mb-8">
               {trustedCompaniesTitle}
             </p>
-            <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
-              {trustedCompanies.map((company) => (
-                <span
-                  key={company}
-                  className="font-display text-lg font-bold text-kado-dark/25 tracking-tight hover:text-kado-dark/50 transition-colors duration-200"
-                >
-                  {company}
-                </span>
-              ))}
+            <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6">
+              {trustedCompanies
+                .filter((c) => c.label.trim() || c.imageUrl?.trim())
+                .map((company) => (
+                  <div
+                    key={`${company.label}-${company.imageUrl ?? 'text'}`}
+                    className="flex items-center justify-center min-h-[2.5rem]"
+                  >
+                    {company.imageUrl?.trim() ? (
+                      <img
+                        src={company.imageUrl}
+                        alt={company.label}
+                        className="h-8 md:h-10 w-auto max-w-[120px] object-contain opacity-70 hover:opacity-100 transition-opacity"
+                      />
+                    ) : (
+                      <span className="font-display text-lg font-bold text-kado-dark/25 tracking-tight hover:text-kado-dark/50 transition-colors duration-200">
+                        {company.label}
+                      </span>
+                    )}
+                  </div>
+                ))}
             </div>
           </motion.div>
         )}

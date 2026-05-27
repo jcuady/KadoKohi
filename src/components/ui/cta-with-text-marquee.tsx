@@ -3,19 +3,19 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mail } from 'lucide-react';
 import { HorizontalMarquee } from './marquee';
-import type { KadoCircleCopy } from '../../store/landingContentStore';
+import type { BrandMarqueeItem, KadoCircleCopy } from '../../store/landingContentStore';
 
 /** Partners & collaborators — default strip when CMS copy is absent. */
-export const KADO_CIRCLE_SPONSORS = [
-  'Anytime Fitness',
-  'foodpanda',
-  'GrabFood',
-  'Pick.A.Roo',
-  'Oatside',
-  'Lalamove',
-  'Emborg',
-  'Aiya Matcha',
-] as const;
+export const KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
+  { label: 'Kado Kohi', imageUrl: '/logo/Logo1.png' },
+  { label: 'Anytime Fitness', imageUrl: '' },
+  { label: 'foodpanda', imageUrl: '' },
+  { label: 'GrabFood', imageUrl: '' },
+  { label: 'Pick.A.Roo', imageUrl: '' },
+  { label: 'Oatside', imageUrl: '' },
+  { label: 'Lalamove', imageUrl: '' },
+  { label: 'Emborg', imageUrl: '' },
+];
 
 type KadoCircleCTAProps = {
   className?: string;
@@ -32,7 +32,8 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
   const [email, setEmail] = useState('');
   const marqueeRef = useRef<HTMLDivElement>(null);
 
-  const sponsors = copy?.sponsors?.length ? copy.sponsors : [...KADO_CIRCLE_SPONSORS];
+  const sponsors = copy?.sponsors?.length ? copy.sponsors : KADO_CIRCLE_SPONSORS;
+  const visibleSponsors = sponsors.filter((s) => s.label.trim() || s.imageUrl?.trim());
 
   useEffect(() => {
     const root = marqueeRef.current;
@@ -140,12 +141,22 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
           <div ref={marqueeRef} className="relative w-full py-2">
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] py-4 md:py-5">
               <HorizontalMarquee speed={32} pauseOnHover className="w-full">
-                {sponsors.map((name) => (
+                {visibleSponsors.map((item) => (
                   <div
-                    key={name}
-                    className="marquee-item-horizontal font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-white/90 px-6 sm:px-10 md:px-14 whitespace-nowrap"
+                    key={`${item.label}-${item.imageUrl ?? 'text'}`}
+                    className="marquee-item-horizontal flex items-center justify-center px-6 sm:px-10 md:px-14 whitespace-nowrap min-h-[3rem] md:min-h-[4rem]"
                   >
-                    {name}
+                    {item.imageUrl?.trim() ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.label}
+                        className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
+                      />
+                    ) : (
+                      <span className="font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-white/90">
+                        {item.label}
+                      </span>
+                    )}
                   </div>
                 ))}
               </HorizontalMarquee>

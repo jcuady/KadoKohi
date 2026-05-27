@@ -111,6 +111,95 @@ export default function AdminSettings() {
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
+          <h2 className="font-display font-bold text-lg dash-heading">Contact page & footer</h2>
+          <p className="text-xs dash-muted">
+            Shown on /contact and the site footer. Contact form opens the visitor&apos;s email app to the address below.
+          </p>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Public email</label>
+            <input
+              type="email"
+              value={settings.contactEmail}
+              onChange={(e) => updateSettings({ contactEmail: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              placeholder="kadocoffeeph@gmail.com"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Phone</label>
+            <input
+              type="tel"
+              value={settings.contactPhone}
+              onChange={(e) => updateSettings({ contactPhone: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Address</label>
+            <input
+              type="text"
+              value={settings.contactAddress}
+              onChange={(e) => updateSettings({ contactAddress: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Hours line</label>
+            <input
+              type="text"
+              value={settings.contactHours}
+              onChange={(e) => updateSettings({ contactHours: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
+              Google Maps embed URL
+            </label>
+            <input
+              type="url"
+              value={settings.mapsEmbedUrl}
+              onChange={(e) => updateSettings({ mapsEmbedUrl: e.target.value })}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              placeholder="https://www.google.com/maps/embed?pb=..."
+            />
+          </div>
+          <div className="pt-2 border-t dash-border space-y-4">
+            <p className="text-xs font-bold uppercase tracking-wider dash-muted">Social links</p>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Instagram</label>
+              <input
+                type="url"
+                value={settings.socialInstagram}
+                onChange={(e) => updateSettings({ socialInstagram: e.target.value })}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                placeholder="https://instagram.com/kadokohi"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Facebook</label>
+              <input
+                type="url"
+                value={settings.socialFacebook}
+                onChange={(e) => updateSettings({ socialFacebook: e.target.value })}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                placeholder="https://facebook.com/..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">TikTok</label>
+              <input
+                type="url"
+                value={settings.socialTiktok}
+                onChange={(e) => updateSettings({ socialTiktok: e.target.value })}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                placeholder="https://tiktok.com/@kadokohi"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Events / booth contact</h2>
           <p className="text-xs dash-muted">
             Shown on customer Events Bookings so they can call about estimates and official quotes.

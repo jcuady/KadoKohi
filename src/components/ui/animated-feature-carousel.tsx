@@ -17,6 +17,7 @@ import {
   type MotionStyle,
   type MotionValue,
 } from "motion/react";
+import type { OrderingCopy } from '../../store/landingContentStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -156,14 +157,16 @@ function VisualOnlineOrder() {
         </div>
       </div>
 
-      {/* Cart summary pill */}
-      <div className="absolute bottom-[10%] left-0 bg-kado-dark text-kado-cream rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3">
-        <div className="w-8 h-8 bg-kado-red rounded-xl flex items-center justify-center text-sm">🛍</div>
-        <div>
-          <p className="text-[9px] font-bold text-kado-cream/50 uppercase tracking-wider">Cart</p>
-          <p className="text-[11px] font-black text-kado-cream">2 items · ₱350</p>
+      {/* GCash checkout pill */}
+      <div className="absolute bottom-[10%] left-0 bg-kado-dark text-kado-cream rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 max-w-[88%]">
+        <div className="w-8 h-8 bg-[#007dfe] rounded-xl flex items-center justify-center text-[8px] font-black shrink-0">GC</div>
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold text-kado-cream/50 uppercase tracking-wider">GCash QR</p>
+          <p className="text-[10px] font-black text-kado-cream truncate">Pay · upload proof</p>
         </div>
-        <div className="ml-auto bg-kado-red text-white text-[8px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg">Order</div>
+        <div className="ml-auto bg-kado-red text-white text-[8px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg shrink-0">
+          Checkout
+        </div>
       </div>
     </div>
   );
@@ -195,7 +198,7 @@ function VisualQROrder() {
               }}
             />
           </div>
-          <p className="text-[8px] text-kado-dark/40 font-medium text-center">Point your camera here</p>
+          <p className="text-[8px] text-kado-dark/40 font-medium text-center">Scan → menu → GCash QR</p>
         </div>
       </div>
 
@@ -259,50 +262,75 @@ function VisualLoyalty() {
   );
 }
 
-// ─── Steps data ───────────────────────────────────────────────────────────────
+// ─── Step visuals (fixed layout; copy comes from CMS) ─────────────────────────
 
-const STEPS: readonly Step[] = [
+const STEP_VISUALS = [
+  <VisualInStore key="walk-in" />,
+  <VisualOnlineOrder key="online" />,
+  <VisualQROrder key="qr" />,
+  <VisualLoyalty key="loyalty" />,
+] as const;
+
+const DEFAULT_STEP_COPY = [
   {
-    id: "1",
+    id: "walk-in",
     eyebrow: "Walk In",
     title: "Order at the counter.",
     description:
-      "Pull up, pick your poison. Walk in to any branch, browse the board, and tell your barista exactly how you want it. Every cup is pulled fresh for you.",
+      "Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.",
     icon: "☕",
-    visual: <VisualInStore />,
   },
   {
-    id: "2",
+    id: "online-gcash",
     eyebrow: "Order Online",
-    title: "Order from the web.",
+    title: "Menu, cart & GCash QR.",
     description:
-      "Browse the full menu, customise your drink, and place your order before you even arrive. Skip the queue — your name's already on the cup.",
+      "Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order.",
     icon: "🌐",
-    visual: <VisualOnlineOrder />,
   },
   {
-    id: "3",
-    eyebrow: "Dine In",
-    title: "Scan the table QR.",
+    id: "table-qr",
+    eyebrow: "Dine In · Table QR",
+    title: "Scan, order, pay with GCash.",
     description:
-      "Every table has a Kado QR. Scan it with your camera, browse the menu, and order right from your seat — no app download required.",
+      "Scan the QR on your table to open the menu for your seat. Pay via GCash QR and upload proof — no app download required.",
     icon: "📷",
-    visual: <VisualQROrder />,
   },
   {
-    id: "4",
+    id: "loyalty",
     eyebrow: "Kado Circle",
-    title: "Earn loyalty rewards.",
+    title: "Earn stamps & vouchers.",
     description:
-      "Every order earns a stamp on your Kado Circle card. Collect 10 stamps and your next drink is on us — then start all over again.",
+      "Completed drink orders earn stamps. Claim voucher rewards in your account and apply them at checkout.",
     icon: "🏆",
-    visual: <VisualLoyalty />,
   },
-];
+] as const;
+
+function buildSteps(copySteps?: KadoOrderingCarouselCopy['steps']): Step[] {
+  return DEFAULT_STEP_COPY.map((fallback, i) => {
+    const cms = copySteps?.[i];
+    return {
+      id: fallback.id,
+      eyebrow: cms?.eyebrow ?? fallback.eyebrow,
+      title: cms?.title ?? fallback.title,
+      description: cms?.description ?? fallback.description,
+      icon: cms?.icon ?? fallback.icon,
+      visual: STEP_VISUALS[i] ?? STEP_VISUALS[0],
+    };
+  });
+}
 
 // ─── Inner card with mouse-tracking sheen ─────────────────────────────────────
 
-function FeatureCard({ children, step }: { children: ReactNode; step: number }) {
+function FeatureCard({
+  children,
+  step,
+  steps,
+}: {
+  children: ReactNode;
+  step: number;
+  steps: Step[];
+}) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const isMobile = useIsMobile();
@@ -356,9 +384,9 @@ function FeatureCard({ children, step }: { children: ReactNode; step: number }) 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.06, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <span className="text-xl">{STEPS[step].icon}</span>
+                  <span className="text-xl">{steps[step].icon}</span>
                   <span className="text-kado-red text-[10px] font-black uppercase tracking-[0.25em]">
-                    {STEPS[step].eyebrow}
+                    {steps[step].eyebrow}
                   </span>
                 </motion.div>
 
@@ -368,7 +396,7 @@ function FeatureCard({ children, step }: { children: ReactNode; step: number }) 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {STEPS[step].title}
+                  {steps[step].title}
                 </motion.h3>
 
                 <motion.p
@@ -377,7 +405,7 @@ function FeatureCard({ children, step }: { children: ReactNode; step: number }) 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.14, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {STEPS[step].description}
+                  {steps[step].description}
                 </motion.p>
               </motion.div>
             </AnimatePresence>
@@ -411,10 +439,18 @@ function FeatureCard({ children, step }: { children: ReactNode; step: number }) 
 
 // ─── Step nav ─────────────────────────────────────────────────────────────────
 
-function StepNav({ current, onChange }: { current: number; onChange: (i: number) => void }) {
+function StepNav({
+  steps,
+  current,
+  onChange,
+}: {
+  steps: Step[];
+  current: number;
+  onChange: (i: number) => void;
+}) {
   return (
     <div className="flex items-center justify-center gap-2 flex-wrap">
-      {STEPS.map((s, i) => {
+      {steps.map((s, i) => {
         const done = current > i;
         const active = current === i;
         return (
@@ -477,12 +513,7 @@ function ProgressBar({ step, total, interval }: { step: number; total: number; i
   );
 }
 
-export interface KadoOrderingCarouselCopy {
-  badge: string;
-  title: string;
-  subtitleDesktop: string;
-  subtitleMobile: string;
-}
+export type KadoOrderingCarouselCopy = OrderingCopy;
 
 // ─── Public export ────────────────────────────────────────────────────────────
 
@@ -494,7 +525,8 @@ export function KadoOrderingCarousel({
   copy?: KadoOrderingCarouselCopy;
 }) {
   const INTERVAL = 6000;
-  const { current, setStep } = useNumberCycler(STEPS.length, INTERVAL);
+  const steps = buildSteps(copy?.steps);
+  const { current, setStep } = useNumberCycler(steps.length, INTERVAL);
 
   return (
     <section
@@ -525,15 +557,15 @@ export function KadoOrderingCarousel({
         </p>
 
         {/* Progress */}
-        <ProgressBar step={current} total={STEPS.length} interval={INTERVAL} />
+        <ProgressBar step={current} total={steps.length} interval={INTERVAL} />
 
         {/* Card */}
-        <FeatureCard step={current}>
-          {STEPS[current].visual}
+        <FeatureCard step={current} steps={steps}>
+          {steps[current].visual}
         </FeatureCard>
 
         {/* Nav */}
-        <StepNav current={current} onChange={setStep} />
+        <StepNav steps={steps} current={current} onChange={setStep} />
 
       </div>
     </section>

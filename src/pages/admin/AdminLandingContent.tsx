@@ -20,9 +20,11 @@ export default function AdminLandingContent() {
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const updateTestimonials = useLandingContentStore((s) => s.updateTestimonials);
   const updateTestimonialItem = useLandingContentStore((s) => s.updateTestimonialItem);
-  const setTrustedBrands = useLandingContentStore((s) => s.setTrustedBrands);
+  const updateTrustedBrand = useLandingContentStore((s) => s.updateTrustedBrand);
   const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
+  const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
+  const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
 
@@ -46,20 +48,6 @@ export default function AdminLandingContent() {
         setUploadError(res.error);
         break;
     }
-  };
-
-  const patchTrustedBrand = (index: number, value: string) => {
-    const next = [...content.trustedBrands];
-    while (next.length < TRUSTED_BRAND_SLOTS) next.push('');
-    next[index] = value;
-    setTrustedBrands(next);
-  };
-
-  const patchSponsor = (index: number, value: string) => {
-    const next = [...content.kadoCircle.sponsors];
-    while (next.length < SPONSOR_SLOTS) next.push('');
-    next[index] = value;
-    updateKadoCircle({ sponsors: next });
   };
 
   return (
@@ -267,6 +255,34 @@ export default function AdminLandingContent() {
               onChange={(v) => updateOrdering({ subtitleMobile: v })}
             />
           </div>
+          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Carousel steps (4 fixed)</p>
+          <div className="space-y-4">
+            {content.ordering.steps.map((step, si) => (
+              <article key={step.id} className="rounded-xl border dash-border p-4 space-y-3">
+                <p className="text-xs font-bold dash-muted">Step {si + 1}</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <Field
+                    label="Eyebrow"
+                    value={step.eyebrow}
+                    onChange={(v) => updateOrderingStep(si, { eyebrow: v })}
+                  />
+                  <Field label="Icon (emoji)" value={step.icon} onChange={(v) => updateOrderingStep(si, { icon: v })} />
+                  <Field label="Title" value={step.title} onChange={(v) => updateOrderingStep(si, { title: v })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={step.description}
+                    onChange={(e) => updateOrderingStep(si, { description: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
@@ -358,17 +374,30 @@ export default function AdminLandingContent() {
               className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
             />
           </div>
-          <p className="text-xs font-bold uppercase dash-muted mb-2">Trusted brands ({TRUSTED_BRAND_SLOTS} slots)</p>
-          <div className="grid sm:grid-cols-2 gap-3 mb-6">
-            {Array.from({ length: TRUSTED_BRAND_SLOTS }, (_, i) => (
-              <div key={i}>
-                <Field
-                  label={`Brand ${i + 1}`}
-                  value={content.trustedBrands[i] ?? ''}
-                  onChange={(v) => patchTrustedBrand(i, v)}
-                />
-              </div>
-            ))}
+          <p className="text-xs font-bold uppercase dash-muted mb-2">
+            Trusted brands ({TRUSTED_BRAND_SLOTS} slots) — label or logo image
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4 mb-6">
+            {Array.from({ length: TRUSTED_BRAND_SLOTS }, (_, i) => {
+              const brand = content.trustedBrands[i] ?? { label: '', imageUrl: '' };
+              return (
+                <div key={i} className="rounded-lg border dash-border p-3 space-y-2">
+                  <Field
+                    label={`Brand ${i + 1} name`}
+                    value={brand.label}
+                    onChange={(v) => updateTrustedBrand(i, { label: v })}
+                  />
+                  <ImageUrlField
+                    label="Logo image (optional)"
+                    value={brand.imageUrl ?? ''}
+                    onChange={(v) => updateTrustedBrand(i, { imageUrl: v })}
+                    onPickFile={(files) =>
+                      onPickImage((dataUrl) => updateTrustedBrand(i, { imageUrl: dataUrl }), files)
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
 
           <p className="text-sm font-bold dash-heading mb-3">Customer quotes (4 fixed)</p>
@@ -459,17 +488,30 @@ export default function AdminLandingContent() {
               className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
             />
           </div>
-          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Sponsors ({SPONSOR_SLOTS} slots)</p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {Array.from({ length: SPONSOR_SLOTS }, (_, i) => (
-              <div key={i}>
-                <Field
-                label={`Sponsor ${i + 1}`}
-                value={content.kadoCircle.sponsors[i] ?? ''}
-                onChange={(v) => patchSponsor(i, v)}
-              />
-              </div>
-            ))}
+          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">
+            Marquee carousel ({SPONSOR_SLOTS} slots) — partner name and/or logo
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {Array.from({ length: SPONSOR_SLOTS }, (_, i) => {
+              const sponsor = content.kadoCircle.sponsors[i] ?? { label: '', imageUrl: '' };
+              return (
+                <div key={i} className="rounded-lg border dash-border p-3 space-y-2">
+                  <Field
+                    label={`Partner ${i + 1} name`}
+                    value={sponsor.label}
+                    onChange={(v) => updateKadoCircleSponsor(i, { label: v })}
+                  />
+                  <ImageUrlField
+                    label="Logo image (optional)"
+                    value={sponsor.imageUrl ?? ''}
+                    onChange={(v) => updateKadoCircleSponsor(i, { imageUrl: v })}
+                    onPickFile={(files) =>
+                      onPickImage((dataUrl) => updateKadoCircleSponsor(i, { imageUrl: dataUrl }), files)
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
           <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Stats row (4 fixed)</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">

@@ -15,6 +15,15 @@ export interface AppSettings {
   /** Phone number for booth booking inquiries (click-to-call). */
   boothContactPhone: string;
   boothContactName?: string;
+  /** Public contact page & footer */
+  contactEmail: string;
+  contactPhone: string;
+  contactAddress: string;
+  contactHours: string;
+  mapsEmbedUrl: string;
+  socialInstagram: string;
+  socialFacebook: string;
+  socialTiktok: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -27,6 +36,15 @@ const DEFAULTS: AppSettings = {
   gcashQrImage: '',
   boothContactPhone: '+63 917 123 4567',
   boothContactName: 'Kado Kohi Events',
+  contactEmail: 'kadocoffeeph@gmail.com',
+  contactPhone: '+63 920 948 2934',
+  contactAddress: 'J.P. Laurel St. Corner Mt. Everest, Marikina',
+  contactHours: 'Mon – Sun: 7 AM – 11 PM',
+  mapsEmbedUrl:
+    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890',
+  socialInstagram: '',
+  socialFacebook: '',
+  socialTiktok: '',
 };
 
 export interface SettingsStore {
@@ -51,20 +69,27 @@ export const useSettingsStore = create<SettingsStore>()(
       seed: () => set({ settings: DEFAULTS }),
     }),
     {
-      name: 'kado-settings-v2',
+      name: 'kado-settings-v3',
       merge: (persisted, current) => {
         const p = persisted as SettingsStore | undefined;
+        const saved: Partial<AppSettings> = p?.settings ?? {};
         return {
           ...current,
           settings: {
             ...DEFAULTS,
             ...current.settings,
-            ...(p?.settings ?? {}),
-            gcashQrImage: p?.settings?.gcashQrImage ?? current.settings.gcashQrImage ?? '',
-            boothContactPhone:
-              p?.settings?.boothContactPhone ?? current.settings.boothContactPhone ?? DEFAULTS.boothContactPhone,
-            boothContactName:
-              p?.settings?.boothContactName ?? current.settings.boothContactName ?? DEFAULTS.boothContactName,
+            ...saved,
+            gcashQrImage: saved.gcashQrImage ?? current.settings.gcashQrImage ?? '',
+            boothContactPhone: saved.boothContactPhone ?? current.settings.boothContactPhone ?? DEFAULTS.boothContactPhone,
+            boothContactName: saved.boothContactName ?? current.settings.boothContactName ?? DEFAULTS.boothContactName,
+            contactEmail: saved.contactEmail ?? DEFAULTS.contactEmail,
+            contactPhone: saved.contactPhone ?? DEFAULTS.contactPhone,
+            contactAddress: saved.contactAddress ?? DEFAULTS.contactAddress,
+            contactHours: saved.contactHours ?? DEFAULTS.contactHours,
+            mapsEmbedUrl: saved.mapsEmbedUrl ?? DEFAULTS.mapsEmbedUrl,
+            socialInstagram: saved.socialInstagram ?? '',
+            socialFacebook: saved.socialFacebook ?? '',
+            socialTiktok: saved.socialTiktok ?? '',
           },
         };
       },
