@@ -10,13 +10,27 @@ interface RoleGateProps {
 
 /**
  * Protects nested routes. Renders `<Outlet />` when used as a route `element` without children.
+ * Shows a minimal spinner while the Supabase session is being resolved to avoid a
+ * flash of redirect-to-login on first load.
  */
 export default function RoleGate({ allowed, children }: RoleGateProps) {
   const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
   const location = useLocation();
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
+      </div>
+    );
+  }
+
   if (!user || !allowed.includes(user.role)) {
-    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
+    const target = allowed.some((r) => r === 'admin' || r === 'barista' || r === 'staff')
+      ? '/management-portal'
+      : '/auth/login';
+    return <Navigate to={target} replace state={{ from: location.pathname }} />;
   }
 
   if (children) {

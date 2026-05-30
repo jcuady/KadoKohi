@@ -4,10 +4,12 @@ import type { Branch } from '../types/domain';
 import { SEED_BRANCHES } from '../data/seed';
 import { newId } from '../lib/id';
 import { useTableStore } from './tableStore';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 export interface BranchStore {
   branches: Branch[];
   adminPosBranchId: string | null;
+  hydrateFromRemote: () => Promise<void>;
   setAdminPosBranchId: (id: string | null) => void;
   addBranch: (input: Omit<Branch, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
   updateBranch: (id: string, patch: Partial<Branch>) => void;
@@ -21,6 +23,22 @@ export const useBranchStore = create<BranchStore>()(
     (set, get) => ({
       branches: SEED_BRANCHES,
       adminPosBranchId: SEED_BRANCHES[0]?.id ?? null,
+      hydrateFromRemote: async () => {
+        try {
+          const branches = await orderingRepo.fetchBranches();
+          if (branches.length) {
+            set((s) => ({
+              branches,
+              adminPosBranchId:
+                (s.adminPosBranchId && branches.some((b) => b.id === s.adminPosBranchId)
+                  ? s.adminPosBranchId
+                  : branches[0]?.id) ?? null,
+            }));
+          }
+        } catch {
+          // Keep seed fallback when remote fetch fails.
+        }
+      },
 
       setAdminPosBranchId: (id) => set({ adminPosBranchId: id }),
 
@@ -45,6 +63,7 @@ export const useBranchStore = create<BranchStore>()(
           branches: next,
           adminPosBranchId: get().adminPosBranchId ?? b.id,
         });
+        void orderingRepo.upsertBranch(b);
 
         // Auto-seed 4 default tables for the new branch
         const tableStore = useTableStore.getState();
@@ -55,9 +74,12 @@ export const useBranchStore = create<BranchStore>()(
 
       updateBranch: (id, patch) =>
         set({
-          branches: get().branches.map((br) =>
-            br.id === id ? { ...br, ...patch, updatedAt: new Date().toISOString() } : br,
-          ),
+          branches: get().branches.map((br) => {
+            if (br.id !== id) return br;
+            const updated = { ...br, ...patch, updatedAt: new Date().toISOString() };
+            void orderingRepo.upsertBranch(updated);
+            return updated;
+          }),
         }),
 
       removeBranch: (id) => {
@@ -71,6 +93,9 @@ export const useBranchStore = create<BranchStore>()(
 
       seed: () => set({ branches: SEED_BRANCHES, adminPosBranchId: SEED_BRANCHES[0]?.id ?? null }),
     }),
-    { name: 'kado-branches-v1' },
+    {
+      name: 'kado-admin-prefs-v1',
+      partialize: (state) => ({ adminPosBranchId: state.adminPosBranchId }),
+    },
   ),
 );

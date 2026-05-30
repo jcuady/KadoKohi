@@ -2,6 +2,9 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
+import { useUserStore } from '../../store/userStore';
+import { authRepo } from '../../lib/supabase/repositories/auth';
+import NotificationOptIn from '../../components/NotificationOptIn';
 import {
   User,
   Mail,
@@ -19,15 +22,53 @@ import {
 
 export default function AccountProfile() {
   const user = useAuthStore((s) => s.user);
+  const updateUser = useUserStore((s) => s.updateUser);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   if (!user) return null;
 
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    // Persist to the profile row and reflect immediately in the session user.
+    // Email is intentionally not editable here — it is the Supabase login
+    // credential and changing it requires a verified auth email-change flow.
+    updateUser(user.id, { name: trimmedName });
+    useAuthStore.setState({ user: { ...user, name: trimmedName } });
     setEditing(false);
+  };
+
+  const handlePasswordChange = async (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg('');
+    setPasswordError('');
+    if (newPassword.trim().length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await authRepo.updatePassword(newPassword.trim());
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMsg('Password updated successfully.');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Unable to change password.');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const profileFields = [
@@ -132,9 +173,13 @@ export default function AccountProfile() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
+                    disabled
+                    title="Email is your login and cannot be changed here."
+                    className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-kado-dark/5 text-sm font-bold text-kado-dark/50 cursor-not-allowed focus:outline-none"
                   />
+                  <p className="text-[10px] text-kado-dark/35 font-medium mt-1.5">
+                    Email is your sign-in credential and can't be changed here.
+                  </p>
                 </div>
                 <button
                   type="submit"
@@ -142,9 +187,6 @@ export default function AccountProfile() {
                 >
                   <Save className="w-3.5 h-3.5" /> Save Changes
                 </button>
-                <p className="text-[10px] text-kado-dark/30 font-medium">
-                  Changes are stored locally in mock mode. A real API will handle persistence.
-                </p>
               </form>
             ) : (
               <div className="divide-y divide-kado-dark/5">
@@ -161,6 +203,15 @@ export default function AccountProfile() {
                 ))}
               </div>
             )}
+          </motion.div>
+
+          {/* Push notifications (functional) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+          >
+            <NotificationOptIn label="Push notifications" />
           </motion.div>
 
           {/* Preferences */}
@@ -210,24 +261,48 @@ export default function AccountProfile() {
               <h2 className="text-[11px] font-black uppercase tracking-widest text-kado-dark">Security</h2>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
-                  <Lock className="w-4 h-4 text-kado-dark/40" />
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4 text-kado-dark/40" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-kado-dark">Password</p>
+                    <p className="text-xs text-kado-dark/40 font-medium">Use at least 8 characters.</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-kado-dark">Password</p>
-                  <p className="text-xs text-kado-dark/40 font-medium">Last changed: Never (mock mode)</p>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/40 mb-1.5">New Password</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={8}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
+                  />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/40 mb-1.5">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    minLength={8}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
+                  />
+                </div>
+                {passwordError && <p className="text-xs text-red-600 font-medium">{passwordError}</p>}
+                {passwordMsg && <p className="text-xs text-emerald-700 font-medium">{passwordMsg}</p>}
                 <button
-                  type="button"
-                  className="px-4 py-2 rounded-full border border-kado-dark/10 text-[10px] font-black uppercase tracking-widest text-kado-dark/50 hover:border-kado-red/30 hover:text-kado-red transition-all"
+                  type="submit"
+                  disabled={changingPassword}
+                  className="px-4 py-2 rounded-full border border-kado-dark/10 text-[10px] font-black uppercase tracking-widest text-kado-dark/70 hover:border-kado-red/30 hover:text-kado-red transition-all disabled:opacity-50"
                 >
-                  Change
+                  {changingPassword ? 'Updating…' : 'Change Password'}
                 </button>
-              </div>
-              <p className="text-[10px] text-kado-dark/30 mt-4 font-medium">
-                Password management will be available when connected to a real authentication API.
-              </p>
+              </form>
             </div>
           </motion.div>
         </div>

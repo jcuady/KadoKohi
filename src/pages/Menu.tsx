@@ -117,7 +117,7 @@ export default function Menu() {
         </section>
 
         {/* Category tabs */}
-        <section className="px-6 md:px-8 lg:px-16 pb-5 pt-6 md:pt-0 sticky top-0 z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
+        <section className="px-6 md:px-8 lg:px-16 pb-5 pt-6 md:pt-0 sticky top-14 md:top-[3.75rem] z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-nowrap md:flex-wrap items-center gap-3 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
               {sortedCategories.map((cat) => (

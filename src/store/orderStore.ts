@@ -1,9 +1,16 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Order, OrderStatus, PaymentStatus } from '../types/domain';
 import { newId } from '../lib/id';
 import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
-import { defaultFieldsForNewOrder, normalizeOrderFields } from '../lib/orderStatus';
+import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS } from '../lib/orderStatus';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { supabase } from '../lib/supabase/client';
+import { logAudit } from '../lib/audit';
+import {
+  notifyCustomerOrderStatus,
+  notifyBaristasNewOrder,
+  notifyBaristasProofSubmitted,
+} from '../lib/notify';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -15,26 +22,45 @@ function normalizeOrder(o: Order): Order {
   return { ...o, status, paymentStatus };
 }
 
+let kkOrdersSubscribed = false;
+
 export interface OrderStore {
   orders: Order[];
+  hydrateFromRemote: () => Promise<void>;
   createOrder: (
     order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
       Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string },
-  ) => Order;
-  updateOrderStatus: (id: string, status: OrderStatus) => void;
-  updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => void;
+  ) => Promise<Order>;
+  updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
+  updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
   updateOrderPaymentProof: (id: string, proofImage: string) => void;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
   ordersForBarista: (branchId: string) => Order[];
   seed: () => void;
 }
 
-export const useOrderStore = create<OrderStore>()(
-  persist(
-    (set, get) => ({
+/** Orders are sourced from Supabase; no localStorage cache (prevents stale order boards). */
+export const useOrderStore = create<OrderStore>()((set, get) => ({
       orders: [],
+      hydrateFromRemote: async () => {
+        try {
+          const orders = await orderingRepo.fetchOrders();
+          set({ orders: orders.map((o) => normalizeOrder(o)) });
+          if (supabase && !kkOrdersSubscribed) {
+            kkOrdersSubscribed = true;
+            supabase
+              .channel('kk_orders_live')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'kk_orders' }, () => {
+                void get().hydrateFromRemote();
+              })
+              .subscribe();
+          }
+        } catch {
+          // Keep in-memory state when remote fetch fails.
+        }
+      },
 
-      createOrder: (input) => {
+      createOrder: async (input) => {
         const t = new Date().toISOString();
         const defaults = defaultFieldsForNewOrder(input.paymentMethod);
         const o: Order = normalizeOrder({
@@ -63,12 +89,21 @@ export const useOrderStore = create<OrderStore>()(
           updatedAt: t,
         });
         set({ orders: [o, ...get().orders] });
+        try {
+          await orderingRepo.insertOrder(o);
+        } catch (err) {
+          set({ orders: get().orders.filter((row) => row.id !== o.id) });
+          throw err;
+        }
+        notifyBaristasNewOrder(o);
+        // Acknowledge the placing customer (e.g. "Order received") when known.
+        if (o.customerId) notifyCustomerOrderStatus(o, o.status);
         return o;
       },
 
-      updateOrderStatus: (id, status) => {
+      updateOrderStatus: async (id, status) => {
         const prev = get().orders.find((o) => o.id === id);
-        if (!prev) return;
+        if (!prev) return null;
 
         let next: Order = {
           ...prev,
@@ -76,36 +111,71 @@ export const useOrderStore = create<OrderStore>()(
           updatedAt: new Date().toISOString(),
         };
 
-        if (status === 'completed' && prev.status !== 'completed') {
+        const justCompleted = status === 'completed' && prev.status !== 'completed';
+        if (justCompleted) {
           next = applyLoyaltyStampsForCompletedOrder(next);
         }
 
         set({
           orders: get().orders.map((o) => (o.id === id ? next : o)),
         });
+
+        // Persist status (+ awarded stamps when completing) and surface any error.
+        try {
+          await orderingRepo.patchOrder(id, {
+            status: next.status,
+            ...(justCompleted ? { loyaltyStampsAwarded: next.loyaltyStampsAwarded } : {}),
+          });
+        } catch (err) {
+          // Roll back optimistic update.
+          set({ orders: get().orders.map((o) => (o.id === id ? prev : o)) });
+          return err instanceof Error ? err.message : 'Failed to update order status.';
+        }
+
+        // Audit the staff action + notify the customer of the new status.
+        logAudit({
+          action: 'order.status_changed',
+          entityType: 'order',
+          entityId: id,
+          branchId: next.branchId,
+          summary: `${next.shortCode}: ${ORDER_STATUS_LABELS[prev.status]} → ${ORDER_STATUS_LABELS[status]}`,
+          metadata: { from: prev.status, to: status, channel: next.channel },
+        });
+        notifyCustomerOrderStatus(next, status);
+        return null;
       },
 
-      updatePaymentStatus: (id, paymentStatus) => {
+      updatePaymentStatus: async (id, paymentStatus) => {
         const prev = get().orders.find((o) => o.id === id);
-        if (!prev) return;
+        if (!prev) return null;
 
         let status = prev.status;
         if (paymentStatus === 'paid' && status === 'pending') {
           status = 'accepted';
         }
 
+        const next: Order = { ...prev, paymentStatus, status, updatedAt: new Date().toISOString() };
         set({
-          orders: get().orders.map((o) =>
-            o.id === id
-              ? {
-                  ...o,
-                  paymentStatus,
-                  status,
-                  updatedAt: new Date().toISOString(),
-                }
-              : o,
-          ),
+          orders: get().orders.map((o) => (o.id === id ? next : o)),
         });
+        try {
+          await orderingRepo.patchOrder(id, { paymentStatus, status });
+        } catch (err) {
+          set({ orders: get().orders.map((o) => (o.id === id ? prev : o)) });
+          return err instanceof Error ? err.message : 'Failed to update payment status.';
+        }
+        logAudit({
+          action: 'order.payment_status_changed',
+          entityType: 'order',
+          entityId: id,
+          branchId: prev.branchId,
+          summary: `${prev.shortCode}: payment → ${paymentStatus}`,
+          metadata: { from: prev.paymentStatus, to: paymentStatus },
+        });
+        if (paymentStatus === 'paid' && prev.status === 'pending') {
+          notifyCustomerOrderStatus(next, 'accepted');
+        }
+        return null;
       },
 
       updateOrderPaymentProof: (id, proofImage) =>
@@ -114,13 +184,23 @@ export const useOrderStore = create<OrderStore>()(
             if (o.id !== id) return o;
             const paymentStatus: PaymentStatus =
               o.paymentMethod === 'gcash-qr' ? 'proof_submitted' : o.paymentStatus;
-            return normalizeOrder({
+            const updated = normalizeOrder({
               ...o,
               paymentProofImage: proofImage,
               paymentProofUploadedAt: new Date().toISOString(),
               paymentStatus,
               updatedAt: new Date().toISOString(),
             });
+            void orderingRepo.patchOrder(id, {
+              paymentProofImage: updated.paymentProofImage,
+              paymentProofUploadedAt: updated.paymentProofUploadedAt,
+              paymentStatus: updated.paymentStatus,
+            });
+            // Tell the branch a proof is awaiting verification.
+            if (paymentStatus === 'proof_submitted') {
+              notifyBaristasProofSubmitted(updated);
+            }
+            return updated;
           }),
         }),
 
@@ -134,14 +214,4 @@ export const useOrderStore = create<OrderStore>()(
         get().ordersForBranch(branchId, ['online', 'dine-in', 'takeout', 'pos']),
 
       seed: () => set({ orders: [] }),
-    }),
-    {
-      name: 'kado-orders-v3',
-      merge: (persisted, current) => {
-        const p = persisted as { orders?: Order[] } | undefined;
-        const orders = (p?.orders ?? current.orders).map((o) => normalizeOrder(o));
-        return { ...current, orders };
-      },
-    },
-  ),
-);
+}));

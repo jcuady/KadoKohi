@@ -92,21 +92,21 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45, delay: 0.05 }}
-          className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10 sm:mb-16"
+          className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-6 mb-8 md:mb-16"
         >
           <motion.div initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">{copy.badge}</span>
-            <h2 className="font-display text-[clamp(1.875rem,6vw,3.75rem)] md:text-5xl lg:text-6xl font-bold text-kado-dark leading-tight">
+            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-3 block">{copy.badge}</span>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-kado-dark leading-[1.1] md:leading-tight">
               {copy.title}
             </h2>
           </motion.div>
-          <p className="text-kado-dark/70 font-medium max-w-sm text-sm leading-relaxed md:text-base hidden md:block">
-            {copy.subtitleDesktop}
+          <p className="text-kado-dark/70 font-medium max-w-sm text-sm sm:text-base leading-relaxed mt-2 md:mt-0">
+            <span className="hidden md:inline">{copy.subtitleDesktop}</span>
+            <span className="md:hidden">{copy.subtitleMobile}</span>
           </p>
         </motion.div>
-        <p className="text-kado-dark/65 text-sm leading-relaxed mb-8 md:hidden -mt-2 max-w-md">{copy.subtitleMobile}</p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 w-full pb-6 sm:pb-8">
+        <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-4 md:gap-6 w-full pb-8 pt-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
           {showcaseDrinks.map((drink, i) => {
             const image =
               copy.cardImageOverrides[i]?.trim() ||
@@ -128,38 +128,47 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.45, delay: i * 0.08 }}
-                whileHover={{ y: -6 }}
                 onClick={() => setSelectedProduct(drink)}
-                className="group w-full text-left bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-6 shadow-xl shadow-black/5 border border-kado-dark/10 hover:border-kado-red/30 hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red"
+                className="group w-[85vw] sm:w-[45vw] md:w-auto shrink-0 snap-center snap-always text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red flex flex-col h-full"
               >
-                <div className="w-full aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden mb-5 sm:mb-6 relative bg-kado-cream">
+                <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
                   <img
                     src={image}
                     alt={drink.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
+                    referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <span className="absolute bottom-3 left-3 right-3 text-center text-[10px] font-black uppercase tracking-widest text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-md">
-                    View details
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {drink.tags?.[0] && (
+                    <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
+                      {drink.tags[0]}
+                    </span>
+                  )}
+
+                  <div className="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
+                      View details
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-start gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-display font-bold text-xl text-kado-dark group-hover:text-kado-red transition-colors">
+
+                <div className="p-3 sm:p-4 flex flex-col flex-1">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-display font-black text-sm sm:text-[0.95rem] leading-snug text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
                       {drink.name}
                     </h3>
-                    {drink.tags?.length ? (
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-kado-red/70 mt-1">
-                        {drink.tags.join(' · ')}
-                      </p>
-                    ) : null}
-                    <p className="text-sm font-medium text-kado-dark/70 mt-1 line-clamp-2">{desc}</p>
+                    <span className="font-sans font-black text-sm sm:text-base text-kado-dark shrink-0">
+                      {formatPhp(drink.basePrice)}
+                    </span>
                   </div>
-                  <span className="font-display font-bold text-kado-red shrink-0">{formatPhp(drink.basePrice)}</span>
+                  <p className="text-[10px] sm:text-xs font-medium text-kado-dark/60 leading-relaxed line-clamp-2 mt-auto pt-1">
+                    {desc}
+                  </p>
+                  <p className="mt-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 group-hover:text-kado-red transition-colors">
+                    {user?.role === 'customer' ? 'Tap to customize & order' : 'Tap to view — sign in to order'}
+                  </p>
                 </div>
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 group-hover:text-kado-red transition-colors">
-                  {user?.role === 'customer' ? 'Tap to customize & order' : 'Tap to view — sign in to order'}
-                </p>
               </motion.button>
             );
           })}

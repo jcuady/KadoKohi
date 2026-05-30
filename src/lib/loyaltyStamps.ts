@@ -1,6 +1,7 @@
 import type { Order, OrderItem } from '../types/domain';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
+import { orderingRepo } from './supabase/repositories/ordering';
 
 /** True when the line item counts as a drink toward Kado Circle stamps. */
 export function isDrinkLineItem(item: OrderItem, orderChannel: Order['channel']): boolean {
@@ -20,6 +21,9 @@ export function countDrinkStampsForOrder(order: Pick<Order, 'channel' | 'items'>
 /**
  * When an order becomes completed, award drink-based stamps to the customer account.
  * Idempotent via `loyaltyStampsAwarded` on the order.
+ *
+ * Returns the updated order immediately (with stampsAwarded set) and resolves
+ * the async DB write / fallback in the background.
  */
 export function applyLoyaltyStampsForCompletedOrder(order: Order): Order {
   if (order.status !== 'completed') return order;
@@ -31,16 +35,35 @@ export function applyLoyaltyStampsForCompletedOrder(order: Order): Order {
 
   if (delta <= 0) return stampedOrder;
 
-  const customer = useUserStore.getState().getById(order.customerId);
-  if (!customer) return stampedOrder;
-
-  const nextStamps = (customer.loyaltyStamps ?? 0) + delta;
-  useUserStore.getState().updateUser(order.customerId, { loyaltyStamps: nextStamps });
-
-  const session = useAuthStore.getState().user;
-  if (session?.id === order.customerId && session.role === 'customer') {
-    useAuthStore.setState({ user: { ...session, loyaltyStamps: nextStamps } });
-  }
+  // Fire-and-forget async stamp credit. The returned order already has the
+  // awarded count set so the DB patch for the order row is correct.
+  void applyStampsAsync(order.customerId, delta);
 
   return stampedOrder;
+}
+
+async function applyStampsAsync(customerId: string, delta: number) {
+  // Prefer local store (fast path) but fall back to a DB read so stamps are
+  // awarded even when the customer hasn't been loaded into this device's store.
+  let localCustomer = useUserStore.getState().getById(customerId);
+  if (!localCustomer) {
+    localCustomer = await orderingRepo.fetchUserById(customerId);
+  }
+  if (!localCustomer) return; // customer row doesn't exist — skip
+
+  const nextStamps = (localCustomer.loyaltyStamps ?? 0) + delta;
+
+  // Persist to DB.
+  void orderingRepo.updateUserStamps(customerId, nextStamps);
+
+  // Reflect in local stores.
+  useUserStore.setState({
+    users: useUserStore
+      .getState()
+      .users.map((u) => (u.id === customerId ? { ...u, loyaltyStamps: nextStamps } : u)),
+  });
+  const session = useAuthStore.getState().user;
+  if (session?.id === customerId && session.role === 'customer') {
+    useAuthStore.setState({ user: { ...session, loyaltyStamps: nextStamps } });
+  }
 }

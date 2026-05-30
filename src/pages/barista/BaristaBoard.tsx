@@ -5,7 +5,7 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
-import { Clock, ChefHat, CheckCircle2, Wallet } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, Wallet, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
@@ -57,11 +57,19 @@ export default function BaristaBoard() {
 
   const branchLabel = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [patchError, setPatchError] = useState<string | null>(null);
 
-  const applyPatch = (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
+  const applyPatch = async (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
-    if (patch.status) updateOrderStatus(editingOrder.id, patch.status);
-    if (patch.paymentStatus) updatePaymentStatus(editingOrder.id, patch.paymentStatus);
+    setPatchError(null);
+    if (patch.status) {
+      const err = await updateOrderStatus(editingOrder.id, patch.status);
+      if (err) { setPatchError(err); return; }
+    }
+    if (patch.paymentStatus) {
+      const payErr = await updatePaymentStatus(editingOrder.id, patch.paymentStatus);
+      if (payErr) { setPatchError(payErr); return; }
+    }
     setEditingOrder(null);
   };
 
@@ -148,9 +156,16 @@ export default function BaristaBoard() {
       <OrderStatusModal
         open={!!editingOrder}
         order={editingOrder}
-        onClose={() => setEditingOrder(null)}
+        onClose={() => { setEditingOrder(null); setPatchError(null); }}
         onApply={applyPatch}
       />
+      {patchError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {patchError}
+          <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>
+        </div>
+      )}
     </div>
   );
 }

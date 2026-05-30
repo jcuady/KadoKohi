@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { formatPhp } from '../../lib/money';
 import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS, nextStatusInFlow } from '../../lib/orderStatus';
 import type { Order } from '../../types/domain';
+import { AlertCircle } from 'lucide-react';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -24,6 +25,7 @@ export default function StaffMerchOrders() {
   const user = useAuthStore((s) => s.user);
 
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [patchError, setPatchError] = useState<string | null>(null);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));
@@ -98,7 +100,7 @@ export default function StaffMerchOrders() {
                     {next && (
                       <button
                         type="button"
-                        onClick={() => updateOrderStatus(o.id, next)}
+                        onClick={async () => { const e = await updateOrderStatus(o.id, next); if (e) setPatchError(e); }}
                         className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
                       >
                         → {ORDER_STATUS_LABELS[next]}
@@ -110,6 +112,13 @@ export default function StaffMerchOrders() {
             );
           })}
         </ul>
+      )}
+      {patchError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {patchError}
+          <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>
+        </div>
       )}
     </div>
   );

@@ -69,23 +69,27 @@ export default function OrderTakeout() {
     return { lines, subtotal, modifiers, tax, total };
   }, [cart, products, taxRate]);
 
-  const placeOrder = (e: FormEvent) => {
+  const placeOrder = async (e: FormEvent) => {
     e.preventDefault();
     if (!branch || cartTotals.lines.length === 0 || !pickupName.trim()) return;
-    createOrder({
-      channel: 'takeout',
-      branchId: branch.id,
-      customerId: user?.id,
-      guestName: pickupName.trim(),
-      status: 'pending',
-      items: cartTotals.lines,
-      subtotal: cartTotals.subtotal,
-      modifiersTotal: cartTotals.modifiers,
-      tax: cartTotals.tax,
-      total: cartTotals.total,
-    });
-    setCart([]);
-    setPlaced(true);
+    try {
+      await createOrder({
+        channel: 'takeout',
+        branchId: branch.id,
+        customerId: user?.id,
+        guestName: pickupName.trim(),
+        status: 'pending',
+        items: cartTotals.lines,
+        subtotal: cartTotals.subtotal,
+        modifiersTotal: cartTotals.modifiers,
+        tax: cartTotals.tax,
+        total: cartTotals.total,
+      });
+      setCart([]);
+      setPlaced(true);
+    } catch {
+      // Keep cart if persistence fails.
+    }
   };
 
   if (!branch) {

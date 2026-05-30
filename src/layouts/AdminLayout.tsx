@@ -1,4 +1,5 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   MapPin,
@@ -8,19 +9,24 @@ import {
   CalendarClock,
   Package,
   Gift,
+  Tag,
   CalendarDays,
   QrCode,
   Image,
   Users,
+  ScrollText,
   Settings,
   Monitor,
   LogOut,
   Sun,
   Moon,
+  Bell,
+  BellRing,
   ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
+import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
 
 const SIDEBAR_W = 'w-56'; /* 14rem — keep in sync with main margin */
 const MAIN_OFFSET = 'ml-56';
@@ -36,10 +42,12 @@ const nav = [
   { to: '/admin/booth-content', label: 'Booth Content', icon: CalendarClock },
   { to: '/admin/merch', label: 'Merch', icon: Package },
   { to: '/admin/loyalty', label: 'Loyalty', icon: Gift },
+  { to: '/admin/vouchers', label: 'Vouchers', icon: Tag },
   { to: '/admin/events', label: 'Kado Booth', icon: CalendarDays },
   { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
   { to: '/admin/landing', label: 'Homepage', icon: Image },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
   { to: '/barista/kiosk', label: 'KIOSK', icon: Monitor },
 ];
@@ -59,6 +67,25 @@ export default function AdminLayout() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { isDark, toggle } = useDashTheme();
+
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
+  }, []);
+
+  const togglePush = async () => {
+    setPushBusy(true);
+    if (pushOn) {
+      await unsubscribeFromPush();
+      setPushOn(false);
+    } else {
+      const res = await subscribeToPush();
+      setPushOn(res.ok);
+    }
+    setPushBusy(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -127,6 +154,16 @@ export default function AdminLayout() {
           >
             Workspace
           </p>
+          <button
+            type="button"
+            onClick={togglePush}
+            disabled={pushBusy}
+            className={`${sidebarFooterBtnClass()} ${pushOn ? '!text-green-600' : ''}`}
+            title={pushOn ? 'Order alerts on' : 'Enable order alerts'}
+          >
+            {pushOn ? <BellRing className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Bell className="h-4 w-4 shrink-0" strokeWidth={2} />}
+            {pushBusy ? 'Working…' : pushOn ? 'Alerts on' : 'Enable alerts'}
+          </button>
           <button type="button" onClick={toggle} className={sidebarFooterBtnClass()}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
             {isDark ? 'Light mode' : 'Dark mode'}

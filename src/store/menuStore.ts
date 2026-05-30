@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { MenuCategory, Product } from '../types/domain';
 import { SEED_CATEGORIES, SEED_PRODUCTS } from '../data/seed';
 import { newId } from '../lib/id';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 export interface MenuStore {
   categories: MenuCategory[];
   products: Product[];
+  hydrateFromRemote: () => Promise<void>;
   setCategories: (c: MenuCategory[]) => void;
   setProducts: (p: Product[]) => void;
   addCategory: (name: string, order?: number) => void;
@@ -21,11 +22,20 @@ export interface MenuStore {
   seed: () => void;
 }
 
-export const useMenuStore = create<MenuStore>()(
-  persist(
-    (set, get) => ({
+export const useMenuStore = create<MenuStore>()((set, get) => ({
       categories: SEED_CATEGORIES,
       products: SEED_PRODUCTS,
+      hydrateFromRemote: async () => {
+        try {
+          const remote = await orderingRepo.fetchMenu();
+          set({
+            categories: remote.categories,
+            products: remote.products,
+          });
+        } catch {
+          // Keep seed fallback when remote fetch fails.
+        }
+      },
 
       setCategories: (categories) => set({ categories }),
       setProducts: (products) => set({ products }),
@@ -41,11 +51,17 @@ export const useMenuStore = create<MenuStore>()(
           visible: true,
         };
         set({ categories: [...list, c] });
+        void orderingRepo.upsertCategory(c);
       },
 
       updateCategory: (id, patch) =>
         set({
-          categories: get().categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+          categories: get().categories.map((c) => {
+            if (c.id !== id) return c;
+            const updated = { ...c, ...patch };
+            void orderingRepo.upsertCategory(updated);
+            return updated;
+          }),
         }),
 
       removeCategory: (id) =>
@@ -75,13 +91,17 @@ export const useMenuStore = create<MenuStore>()(
           updatedAt: t,
         };
         set({ products: [...get().products, p] });
+        void orderingRepo.upsertProduct(p);
       },
 
       updateProduct: (id, patch) =>
         set({
-          products: get().products.map((pr) =>
-            pr.id === id ? { ...pr, ...patch, updatedAt: new Date().toISOString() } : pr,
-          ),
+          products: get().products.map((pr) => {
+            if (pr.id !== id) return pr;
+            const updated = { ...pr, ...patch, updatedAt: new Date().toISOString() };
+            void orderingRepo.upsertProduct(updated);
+            return updated;
+          }),
         }),
 
       removeProduct: (id) => set({ products: get().products.filter((pr) => pr.id !== id) }),
@@ -114,7 +134,4 @@ export const useMenuStore = create<MenuStore>()(
       },
 
       seed: () => set({ categories: SEED_CATEGORIES, products: SEED_PRODUCTS }),
-    }),
-    { name: 'kado-menu-v1' },
-  ),
-);
+}));

@@ -1,22 +1,28 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   LayoutGrid,
   ListOrdered,
   ShoppingCart,
   Coffee,
+  Stamp,
   LogOut,
   ExternalLink,
   Sun,
   Moon,
+  Bell,
+  BellRing,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
+import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
 
 const nav = [
   { to: '/barista', label: 'Board', end: true, icon: LayoutGrid },
   { to: '/barista/queue', label: 'Queue', icon: ListOrdered },
   { to: '/barista/pos', label: 'POS', icon: ShoppingCart },
   { to: '/barista/menu', label: 'Menu', icon: Coffee },
+  { to: '/barista/stamps', label: 'Stamps', icon: Stamp },
 ];
 
 function sidebarFooterBtnClass() {
@@ -33,6 +39,25 @@ export default function BaristaLayout() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { isDark, toggle } = useDashTheme();
+
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
+  }, []);
+
+  const togglePush = async () => {
+    setPushBusy(true);
+    if (pushOn) {
+      await unsubscribeFromPush();
+      setPushOn(false);
+    } else {
+      const res = await subscribeToPush();
+      setPushOn(res.ok);
+    }
+    setPushBusy(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -98,6 +123,16 @@ export default function BaristaLayout() {
           >
             Workspace
           </p>
+          <button
+            type="button"
+            onClick={togglePush}
+            disabled={pushBusy}
+            className={`${sidebarFooterBtnClass()} ${pushOn ? '!text-green-600' : ''}`}
+            title={pushOn ? 'New-order alerts on' : 'Enable new-order alerts'}
+          >
+            {pushOn ? <BellRing className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Bell className="h-4 w-4 shrink-0" strokeWidth={2} />}
+            <span className="hidden md:inline">{pushBusy ? 'Working…' : pushOn ? 'Alerts on' : 'Enable alerts'}</span>
+          </button>
           <button
             type="button"
             onClick={toggle}

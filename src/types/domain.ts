@@ -237,6 +237,37 @@ export interface MerchProduct {
   updatedAt: string;
 }
 
+// ─── Promo Codes ─────────────────────────────────────────────────────────────
+
+/** Admin-created promotional codes customers enter at checkout. */
+export type PromoCodeType = 'percent' | 'fixed' | 'free_drink' | 'bogo_drink';
+
+export interface PromoCode {
+  id: string;
+  /** Uppercase code the customer types, e.g. KADO10 */
+  code: string;
+  name: string;
+  description?: string;
+  type: PromoCodeType;
+  /** % for percent; ₱ amount for fixed; ignored for free_drink / bogo_drink */
+  value: number;
+  /** Minimum cart subtotal (₱) before tax required to use this code */
+  minOrderAmount: number;
+  /** Total redemption cap across all customers; undefined = unlimited */
+  maxUses?: number;
+  /** Cumulative uses counter (DB-incremented) */
+  uses: number;
+  /** How many times a single customer can use this code */
+  perCustomer: number;
+  active: boolean;
+  startsAt?: string;
+  expiresAt?: string;
+  /** null = valid for all branches */
+  branchId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Loyalty ────────────────────────────────────────────────────────────────
 
 export type LoyaltyRewardType = 'free_drink' | 'discount_percent' | 'discount_fixed' | 'free_merch' | 'custom';

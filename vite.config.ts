@@ -2,10 +2,56 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: [
+          'icons/favicon.ico',
+          'icons/favicon-16x16.png',
+          'icons/favicon-32x32.png',
+          'icons/apple-touch-icon.png',
+        ],
+        manifest: {
+          name: 'Kado Kohi',
+          short_name: 'KadoKohi',
+          description: 'Kado Kohi ordering and customer portal',
+          theme_color: '#9A1F24',
+          background_color: '#FAF7F2',
+          display: 'standalone',
+          start_url: '/',
+          scope: '/',
+          icons: [
+            { src: '/icons/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+            { src: '/icons/icon-144x144.png', sizes: '144x144', type: 'image/png' },
+            { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+            { src: '/icons/icon-310x310.png', sizes: '310x310', type: 'image/png' },
+          ],
+        },
+        workbox: {
+          navigateFallback: '/index.html',
+          importScripts: ['/push-sw.js'],
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.destination === 'image',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'kado-images',
+                expiration: {
+                  maxEntries: 120,
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         // shadcn-style: `@/` → `src/` (components/ui, lib/utils, etc.)

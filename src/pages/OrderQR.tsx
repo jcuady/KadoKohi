@@ -41,6 +41,7 @@ export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const table = useTableStore((s) => s.getByCode(code ?? ''));
+  const tablesHydrated = useTableStore((s) => s.hydrated);
   const branches = useBranchStore((s) => s.branches);
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
@@ -134,25 +135,38 @@ export default function OrderQR() {
     setCart((c) => c.map((x) => (x.key === key ? { ...x, qty } : x)));
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!table || cartTotals.lines.length === 0 || submitting) return;
     setSubmitting(true);
-    createOrder({
-      channel: 'dine-in',
-      branchId: table.branchId,
-      tableId: table.id,
-      status: 'pending',
-      items: cartTotals.lines,
-      subtotal: cartTotals.subtotal,
-      modifiersTotal: cartTotals.modifiers,
-      tax: cartTotals.tax,
-      total: cartTotals.total,
-    });
-    setCart([]);
-    setCartExpanded(false);
-    setPlaced(true);
-    setSubmitting(false);
+    try {
+      await createOrder({
+        channel: 'dine-in',
+        branchId: table.branchId,
+        tableId: table.id,
+        status: 'pending',
+        items: cartTotals.lines,
+        subtotal: cartTotals.subtotal,
+        modifiersTotal: cartTotals.modifiers,
+        tax: cartTotals.tax,
+        total: cartTotals.total,
+      });
+      setCart([]);
+      setCartExpanded(false);
+      setPlaced(true);
+    } catch {
+      // Order stays in cart if the server rejects the insert.
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!tablesHydrated) {
+    return (
+      <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
+      </div>
+    );
+  }
 
   if (!table) {
     return (

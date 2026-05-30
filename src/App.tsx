@@ -21,6 +21,8 @@ import AdminEvents from './pages/admin/AdminEvents';
 import AdminTables from './pages/admin/AdminTables';
 import AdminSections from './pages/admin/AdminSections';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminAuditLog from './pages/admin/AdminAuditLog';
+import AdminVouchers from './pages/admin/AdminVouchers';
 import AdminSettings from './pages/admin/AdminSettings';
 import Events from './pages/Events';
 import Order from './pages/Order';
@@ -42,6 +44,7 @@ import BaristaBoard from './pages/barista/BaristaBoard';
 import BaristaQueue from './pages/barista/BaristaQueue';
 import BaristaPOS from './pages/barista/BaristaPOS';
 import BaristaMenu from './pages/barista/BaristaMenu';
+import BaristaStamps from './pages/barista/BaristaStamps';
 import BaristaKioskDisplay from './pages/barista/BaristaKioskDisplay';
 import AccountDashboard from './pages/account/AccountDashboard';
 import AccountOrders from './pages/account/AccountOrders';
@@ -54,6 +57,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Standalone QR / takeout order pages — no marketing nav/footer */}
+        <Route path="/order/qr/:code" element={<OrderQR />} />
+        <Route path="/order/takeout" element={<OrderTakeout />} />
+
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
@@ -62,8 +69,6 @@ export default function App() {
           <Route path="/branches" element={<Branches />} />
           <Route path="/events" element={<Events />} />
           <Route path="/order" element={<Order />} />
-          <Route path="/order/qr/:code" element={<OrderQR />} />
-          <Route path="/order/takeout" element={<OrderTakeout />} />
           <Route path="/merch" element={<Merch />} />
           <Route path="/book/booth" element={<BookBooth />} />
           <Route path="*" element={<NotFound />} />
@@ -90,6 +95,8 @@ export default function App() {
             <Route path="sections" element={<AdminSections />} />
             <Route path="landing" element={<AdminLandingContent />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="audit" element={<AdminAuditLog />} />
+            <Route path="vouchers" element={<AdminVouchers />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
         </Route>
@@ -101,6 +108,7 @@ export default function App() {
             <Route path="queue" element={<BaristaQueue />} />
             <Route path="pos" element={<BaristaPOS />} />
             <Route path="menu" element={<BaristaMenu />} />
+            <Route path="stamps" element={<BaristaStamps />} />
           </Route>
         </Route>
 

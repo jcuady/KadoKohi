@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Role, User } from '../types/domain';
 import { newId } from '../lib/id';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { logAudit } from '../lib/audit';
 
 const SEED_USERS: User[] = [
   {
@@ -31,17 +32,26 @@ const SEED_USERS: User[] = [
 
 export interface UserStore {
   users: User[];
+  hydrateFromRemote: () => Promise<void>;
   addUser: (input: Omit<User, 'id' | 'createdAt'> & { id?: string }) => User;
   updateUser: (id: string, patch: Partial<User>) => void;
+  /** Admin/barista manual stamp adjustment (delta can be negative). Audited. */
+  adjustLoyaltyStamps: (id: string, delta: number, reason?: string) => void;
   removeUser: (id: string) => void;
   getById: (id: string) => User | undefined;
   seed: () => void;
 }
 
-export const useUserStore = create<UserStore>()(
-  persist(
-    (set, get) => ({
-      users: SEED_USERS,
+export const useUserStore = create<UserStore>()((set, get) => ({
+      users: [],
+      hydrateFromRemote: async () => {
+        try {
+          const users = await orderingRepo.fetchUsers();
+          set({ users });
+        } catch {
+          // Keep in-memory state when remote fetch fails.
+        }
+      },
 
       addUser: (input) => {
         const u: User = {
@@ -54,18 +64,63 @@ export const useUserStore = create<UserStore>()(
           createdAt: new Date().toISOString(),
         };
         set({ users: [...get().users, u] });
+        void orderingRepo.upsertUser(u);
         return u;
       },
 
       updateUser: (id, patch) =>
-        set({ users: get().users.map((u) => (u.id === id ? { ...u, ...patch } : u)) }),
+        set(() => {
+          const existing = get().users.find((u) => u.id === id);
+          if (!existing) {
+            const inserted: User = {
+              id,
+              email: typeof patch.email === 'string' ? patch.email : `${id}@kadokohi.local`,
+              name: typeof patch.name === 'string' ? patch.name : 'User',
+              role: (patch.role as Role | undefined) ?? 'customer',
+              branchId: patch.branchId,
+              loyaltyStamps: patch.loyaltyStamps,
+              createdAt: typeof patch.createdAt === 'string' ? patch.createdAt : new Date().toISOString(),
+            };
+            void orderingRepo.upsertUser(inserted);
+            return { users: [...get().users, inserted] };
+          }
+          const updated = { ...existing, ...patch };
+          void orderingRepo.upsertUser(updated);
+          return {
+            users: get().users.map((u) => (u.id === id ? updated : u)),
+          };
+        }),
 
-      removeUser: (id) => set({ users: get().users.filter((u) => u.id !== id) }),
+      adjustLoyaltyStamps: (id, delta, reason) => {
+        const user = get().getById(id);
+        if (!user || delta === 0) return;
+        const before = user.loyaltyStamps ?? 0;
+        const after = Math.max(0, before + delta);
+        if (after === before) return;
+        const updated = { ...user, loyaltyStamps: after };
+        set({ users: get().users.map((u) => (u.id === id ? updated : u)) });
+        void orderingRepo.updateUserStamps(id, after);
+        logAudit({
+          action: 'loyalty.stamps_adjusted',
+          entityType: 'customer',
+          entityId: id,
+          summary: `${user.name}: ${before} → ${after} stamps (${delta > 0 ? '+' : ''}${delta})`,
+          metadata: { before, after, delta, reason: reason ?? null },
+        });
+      },
+
+      removeUser: (id) => {
+        set({ users: get().users.filter((u) => u.id !== id) });
+        void orderingRepo.deleteUser(id);
+        logAudit({
+          action: 'user.deleted',
+          entityType: 'user',
+          entityId: id,
+          summary: `Deleted user ${id}`,
+        });
+      },
 
       getById: (id) => get().users.find((u) => u.id === id),
 
       seed: () => set({ users: SEED_USERS }),
-    }),
-    { name: 'kado-users-v1' },
-  ),
-);
+}));

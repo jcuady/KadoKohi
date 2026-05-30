@@ -135,7 +135,7 @@ export default function AdminPOS() {
 
   const placeOrder = () => {
     if (!branch || !user || cartTotals.lines.length === 0) return;
-    createOrder({
+    void createOrder({
       channel: 'pos',
       branchId: branch.id,
       staffId: user.id,
@@ -145,8 +145,7 @@ export default function AdminPOS() {
       modifiersTotal: cartTotals.modifiers,
       tax: cartTotals.tax,
       total: cartTotals.total,
-    });
-    setCart([]);
+    }).then(() => setCart([]));
   };
 
   if (!branch) {

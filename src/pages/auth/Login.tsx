@@ -1,21 +1,21 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useUserStore } from '../../store/userStore';
-import { AlertCircle, User as UserIcon } from 'lucide-react';
+import { AlertCircle, Check, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const loginAs = useAuthStore((s) => s.loginAs);
-  const users = useUserStore((s) => s.users);
+  const signIn = useAuthStore((s) => s.signIn);
   const from = (location.state as { from?: string } | null)?.from;
+  const notice = (location.state as { notice?: string } | null)?.notice;
 
-  const [email, setEmail] = useState('customer@kadokohi.com');
-  const [password, setPassword] = useState('customer1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -24,26 +24,23 @@ export default function Login() {
       return;
     }
 
-    const matchedUser = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-
-    if (!matchedUser) {
-      setError('No account found with that email. Try a demo credential or sign up.');
-      return;
+    setSubmitting(true);
+    try {
+      await signIn(email.trim().toLowerCase(), password);
+      const role = useAuthStore.getState().user?.role;
+      if (role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else if (role === 'barista') {
+        navigate('/barista', { replace: true });
+      } else if (role === 'staff') {
+        navigate('/staff', { replace: true });
+      } else {
+        navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
+      }
+    } catch {
+      setError('Invalid credentials. Please check your email and password.');
+      setSubmitting(false);
     }
-
-    if (matchedUser.role !== 'customer') {
-      setError('This sign in page is for customers only.');
-      return;
-    }
-
-    loginAs('customer', {
-      name: matchedUser.name,
-      email: matchedUser.email,
-      id: matchedUser.id,
-      loyaltyStamps: matchedUser.loyaltyStamps,
-      createdAt: matchedUser.createdAt,
-    });
-    navigate(from && from.startsWith('/account') ? from : '/', { replace: true });
   };
 
   return (
@@ -61,6 +58,14 @@ export default function Login() {
             Access your account, loyalty stamps, and orders.
           </p>
         </div>
+
+        {/* Notice (e.g. after signup confirmation) */}
+        {notice && !error && (
+          <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 mb-4 text-xs font-medium">
+            <Check className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{notice}</span>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -99,32 +104,27 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-kado-dark transition-colors mt-2"
+            disabled={submitting}
+            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-kado-dark transition-colors mt-2 disabled:opacity-60"
           >
             <span className="inline-flex items-center justify-center gap-2">
               <UserIcon className="w-4 h-4" />
-              Sign In
+              {submitting ? 'Signing in…' : 'Sign In'}
             </span>
           </button>
         </form>
-
-        {/* Auto-fill hint */}
-        <div className="mt-6 rounded-xl bg-kado-dark/5 border border-kado-dark/10 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-kado-dark/50 mb-2">
-            Demo credentials (auto-filled)
-          </p>
-          <div className="text-[11px] text-kado-dark/70">
-            <div>
-              <span className="font-bold block text-kado-dark">Customer</span>
-              customer@kadokohi.com<br />customer1234
-            </div>
-          </div>
-        </div>
 
         <p className="mt-5 text-center text-sm text-kado-dark/60">
           New customer?{' '}
           <Link to="/auth/signup" className="font-bold text-kado-red hover:underline">
             Create an account
+          </Link>
+        </p>
+
+        <p className="mt-5 text-center text-[11px] text-kado-dark/45">
+          Admin, barista, or staff?{' '}
+          <Link to="/management-portal" className="font-bold text-kado-dark/60 hover:text-kado-red">
+            Internal portal
           </Link>
         </p>
 

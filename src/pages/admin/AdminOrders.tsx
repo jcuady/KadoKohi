@@ -3,7 +3,7 @@ import type { Order, OrderChannel, OrderStatus, PaymentStatus } from '../../type
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
-import { List, LayoutGrid, Clock, ChefHat, CheckCircle2, Coffee, CheckSquare, XCircle, ThumbsUp } from 'lucide-react';
+import { List, LayoutGrid, Clock, ChefHat, CheckCircle2, Coffee, CheckSquare, XCircle, ThumbsUp, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
@@ -51,6 +51,7 @@ export default function AdminOrders() {
   const [branchFilter, setBranchFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [patchError, setPatchError] = useState<string | null>(null);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));
@@ -67,10 +68,17 @@ export default function AdminOrders() {
 
   const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
 
-  const applyPatch = (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
+  const applyPatch = async (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
-    if (patch.status) updateOrderStatus(editingOrder.id, patch.status);
-    if (patch.paymentStatus) updatePaymentStatus(editingOrder.id, patch.paymentStatus);
+    setPatchError(null);
+    if (patch.status) {
+      const err = await updateOrderStatus(editingOrder.id, patch.status);
+      if (err) { setPatchError(err); return; }
+    }
+    if (patch.paymentStatus) {
+      const payErr = await updatePaymentStatus(editingOrder.id, patch.paymentStatus);
+      if (payErr) { setPatchError(payErr); return; }
+    }
     setEditingOrder(null);
   };
 
@@ -208,7 +216,7 @@ export default function AdminOrders() {
                       {next && (
                         <button
                           type="button"
-                          onClick={() => updateOrderStatus(o.id, next)}
+                          onClick={async () => { const e = await updateOrderStatus(o.id, next); if (e) setPatchError(e); }}
                           className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
                         >
                           → {ORDER_STATUS_LABELS[next]}
@@ -217,7 +225,7 @@ export default function AdminOrders() {
                       {o.status !== 'cancelled' && o.status !== 'completed' && (
                         <button
                           type="button"
-                          onClick={() => updateOrderStatus(o.id, 'cancelled')}
+                          onClick={async () => { const e = await updateOrderStatus(o.id, 'cancelled'); if (e) setPatchError(e); }}
                           className="rounded-xl border border-red-200 text-red-600 px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors"
                         >
                           Cancel
@@ -306,9 +314,16 @@ export default function AdminOrders() {
       <OrderStatusModal
         open={!!editingOrder}
         order={editingOrder}
-        onClose={() => setEditingOrder(null)}
+        onClose={() => { setEditingOrder(null); setPatchError(null); }}
         onApply={applyPatch}
       />
+      {patchError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {patchError}
+          <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>
+        </div>
+      )}
     </div>
   );
 }

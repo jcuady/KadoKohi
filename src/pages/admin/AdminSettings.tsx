@@ -1,12 +1,24 @@
 import { type FormEvent, useRef, useState } from 'react';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { Check } from 'lucide-react';
 
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const flashSaved = () => {
+    setSavedFlash(true);
+    window.setTimeout(() => setSavedFlash(false), 2000);
+  };
+
+  const patch = (partial: Parameters<typeof updateSettings>[0]) => {
+    updateSettings(partial);
+    flashSaved();
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -20,22 +32,60 @@ export default function AdminSettings() {
       setUploadError(res.error);
       return;
     }
-    updateSettings({ gcashQrImage: res.dataUrl });
+    patch({ gcashQrImage: res.dataUrl });
   };
 
   return (
     <div className="dash-page max-w-2xl">
-      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Settings</h1>
-      <p className="dash-muted text-sm mb-8">Global configuration — persisted locally. Will sync to API when DB lands.</p>
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Settings</h1>
+          <p className="dash-muted text-sm">
+            Global shop configuration — synced to Supabase for all devices and customer-facing pages.
+          </p>
+        </div>
+        {savedFlash && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider shrink-0">
+            <Check className="w-3.5 h-3.5" /> Saved
+          </span>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
-          <h2 className="font-display font-bold text-lg dash-heading">Default hours</h2>
+          <h2 className="font-display font-bold text-lg dash-heading">Store & tax</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Shop name</label>
+              <input
+                type="text"
+                value={settings.shopName}
+                onChange={(e) => patch({ shopName: e.target.value })}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Tax rate (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={settings.taxRate}
+                onChange={(e) => patch({ taxRate: Math.max(0, Number(e.target.value) || 0) })}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              />
+              <p className="text-[10px] dash-muted mt-1">Applied to online cart, QR, takeout, and POS totals.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl dash-card border p-6 space-y-5">
+          <h2 className="font-display font-bold text-lg dash-heading">Online order hours</h2>
           <p className="text-xs dash-muted leading-relaxed">
-            Online pickup orders follow these hours. Checkout closes{' '}
-            <span className="font-semibold text-kado-dark">10 minutes before close</span>
-            {' '}(e.g. close 11:00 PM → last order 10:50 PM; 10:51 PM onwards cannot order).
+            Controls when customers can checkout from the menu cart. Checkout closes{' '}
+            <span className="font-semibold text-kado-dark">10 minutes before close</span>.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -43,7 +93,7 @@ export default function AdminSettings() {
               <input
                 type="time"
                 value={settings.defaultOpenTime}
-                onChange={(e) => updateSettings({ defaultOpenTime: e.target.value })}
+                onChange={(e) => patch({ defaultOpenTime: e.target.value })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               />
             </div>
@@ -52,7 +102,7 @@ export default function AdminSettings() {
               <input
                 type="time"
                 value={settings.defaultCloseTime}
-                onChange={(e) => updateSettings({ defaultCloseTime: e.target.value })}
+                onChange={(e) => patch({ defaultCloseTime: e.target.value })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               />
             </div>
@@ -62,7 +112,7 @@ export default function AdminSettings() {
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">GCash QR</h2>
           <p className="text-xs dash-muted">
-            Shown to customers after checkout and on My Orders. Upload your shop GCash QR image.
+            Shown to customers after checkout and on My Orders. Upload your shop GCash QR (PNG/JPG).
           </p>
           <input
             ref={fileRef}
@@ -91,7 +141,7 @@ export default function AdminSettings() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => updateSettings({ gcashQrImage: '' })}
+                  onClick={() => patch({ gcashQrImage: '' })}
                   className="w-full sm:w-auto min-h-[44px] rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation"
                 >
                   Remove
@@ -113,14 +163,14 @@ export default function AdminSettings() {
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Contact page & footer</h2>
           <p className="text-xs dash-muted">
-            Shown on /contact and the site footer. Contact form opens the visitor&apos;s email app to the address below.
+            Shown on /contact and the site footer.
           </p>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Public email</label>
             <input
               type="email"
               value={settings.contactEmail}
-              onChange={(e) => updateSettings({ contactEmail: e.target.value })}
+              onChange={(e) => patch({ contactEmail: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               placeholder="kadocoffeeph@gmail.com"
             />
@@ -130,7 +180,7 @@ export default function AdminSettings() {
             <input
               type="tel"
               value={settings.contactPhone}
-              onChange={(e) => updateSettings({ contactPhone: e.target.value })}
+              onChange={(e) => patch({ contactPhone: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             />
           </div>
@@ -139,7 +189,7 @@ export default function AdminSettings() {
             <input
               type="text"
               value={settings.contactAddress}
-              onChange={(e) => updateSettings({ contactAddress: e.target.value })}
+              onChange={(e) => patch({ contactAddress: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             />
           </div>
@@ -148,7 +198,7 @@ export default function AdminSettings() {
             <input
               type="text"
               value={settings.contactHours}
-              onChange={(e) => updateSettings({ contactHours: e.target.value })}
+              onChange={(e) => patch({ contactHours: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             />
           </div>
@@ -159,7 +209,7 @@ export default function AdminSettings() {
             <input
               type="url"
               value={settings.mapsEmbedUrl}
-              onChange={(e) => updateSettings({ mapsEmbedUrl: e.target.value })}
+              onChange={(e) => patch({ mapsEmbedUrl: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               placeholder="https://www.google.com/maps/embed?pb=..."
             />
@@ -171,7 +221,7 @@ export default function AdminSettings() {
               <input
                 type="url"
                 value={settings.socialInstagram}
-                onChange={(e) => updateSettings({ socialInstagram: e.target.value })}
+                onChange={(e) => patch({ socialInstagram: e.target.value })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 placeholder="https://instagram.com/kadokohi"
               />
@@ -181,7 +231,7 @@ export default function AdminSettings() {
               <input
                 type="url"
                 value={settings.socialFacebook}
-                onChange={(e) => updateSettings({ socialFacebook: e.target.value })}
+                onChange={(e) => patch({ socialFacebook: e.target.value })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 placeholder="https://facebook.com/..."
               />
@@ -191,7 +241,7 @@ export default function AdminSettings() {
               <input
                 type="url"
                 value={settings.socialTiktok}
-                onChange={(e) => updateSettings({ socialTiktok: e.target.value })}
+                onChange={(e) => patch({ socialTiktok: e.target.value })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 placeholder="https://tiktok.com/@kadokohi"
               />
@@ -202,7 +252,7 @@ export default function AdminSettings() {
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Events / booth contact</h2>
           <p className="text-xs dash-muted">
-            Shown on customer Events Bookings so they can call about estimates and official quotes.
+            Shown on customer booth bookings for estimates and official quotes.
           </p>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
@@ -211,7 +261,7 @@ export default function AdminSettings() {
             <input
               type="text"
               value={settings.boothContactName ?? ''}
-              onChange={(e) => updateSettings({ boothContactName: e.target.value })}
+              onChange={(e) => patch({ boothContactName: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               placeholder="Kado Kohi Events"
             />
@@ -223,7 +273,7 @@ export default function AdminSettings() {
             <input
               type="tel"
               value={settings.boothContactPhone}
-              onChange={(e) => updateSettings({ boothContactPhone: e.target.value })}
+              onChange={(e) => patch({ boothContactPhone: e.target.value })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               placeholder="+63 9XX XXX XXXX"
             />
@@ -231,12 +281,12 @@ export default function AdminSettings() {
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
-          <h2 className="font-display font-bold text-lg dash-heading">Brand</h2>
+          <h2 className="font-display font-bold text-lg dash-heading">Admin dashboard theme</h2>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Brand mode</label>
             <select
               value={settings.brandMode}
-              onChange={(e) => updateSettings({ brandMode: e.target.value as DashTheme })}
+              onChange={(e) => patch({ brandMode: e.target.value as DashTheme })}
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             >
               <option value="light">Light (default)</option>
@@ -245,7 +295,7 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <p className="text-xs dash-muted">Settings auto-save on change (Zustand persist).</p>
+        <p className="text-xs dash-muted">Changes save automatically to the database when you edit a field.</p>
       </form>
     </div>
   );

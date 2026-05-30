@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { QrCode, Upload, ImageIcon, ExternalLink } from 'lucide-react';
 import type { Order } from '../types/domain';
 import { formatPhp } from '../lib/money';
-import { readImageDataUrl } from '../lib/readImageDataUrl';
 import { isGcashOrder } from '../lib/orderStatus';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 type Props = {
   order: Order;
@@ -25,15 +25,20 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
-    setError(null);
-    setUploading(true);
-    const res = await readImageDataUrl(file, 800_000);
-    setUploading(false);
-    if (res.ok === false) {
-      setError(res.error);
+    if (file.size > 8_000_000) {
+      setError('Please use an image smaller than 8MB.');
       return;
     }
-    onUploadProof(res.dataUrl);
+    setError(null);
+    setUploading(true);
+    try {
+      const signedUrl = await orderingRepo.uploadPaymentProof(order.id, file);
+      onUploadProof(signedUrl);
+    } catch {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (

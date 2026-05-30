@@ -133,7 +133,7 @@ export default function BaristaPOS() {
 
   const placeOrder = () => {
     if (!branch || !user || cartTotals.lines.length === 0) return;
-    createOrder({
+    void createOrder({
       channel: 'pos',
       branchId: branch.id,
       staffId: user.id,
@@ -143,8 +143,7 @@ export default function BaristaPOS() {
       modifiersTotal: cartTotals.modifiers,
       tax: cartTotals.tax,
       total: cartTotals.total,
-    });
-    setCart([]);
+    }).then(() => setCart([]));
   };
 
   if (!branch) {

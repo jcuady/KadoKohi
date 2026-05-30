@@ -2,38 +2,28 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Coffee, Package, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useUserStore } from '../../store/userStore';
-import { useBranchStore } from '../../store/branchStore';
 import type { Role } from '../../types/domain';
 
 type InternalTab = 'admin' | 'barista' | 'staff';
 
-const DEMO_CREDENTIALS: Record<InternalTab, { email: string; password: string }> = {
-  admin: { email: 'admin@kadokohi.com', password: 'admin1234' },
-  barista: { email: 'barista@kadokohi.com', password: 'barista1234' },
-  staff: { email: 'staff@kadokohi.com', password: 'staff1234' },
-};
+const INTERNAL_ROLES: InternalTab[] = ['admin', 'barista', 'staff'];
 
 export default function InternalLogin() {
   const navigate = useNavigate();
-  const loginAs = useAuthStore((s) => s.loginAs);
-  const users = useUserStore((s) => s.users);
-  const branches = useBranchStore((s) => s.branches);
+  const signIn = useAuthStore((s) => s.signIn);
 
   const [tab, setTab] = useState<InternalTab>('admin');
-  const [email, setEmail] = useState(DEMO_CREDENTIALS.admin.email);
-  const [password, setPassword] = useState(DEMO_CREDENTIALS.admin.password);
-  const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const switchTab = (nextTab: InternalTab) => {
     setTab(nextTab);
-    setEmail(DEMO_CREDENTIALS[nextTab].email);
-    setPassword(DEMO_CREDENTIALS[nextTab].password);
     setError('');
   };
 
-  const handleLogin = (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -42,29 +32,35 @@ export default function InternalLogin() {
       return;
     }
 
-    const matchedUser = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!matchedUser) {
-      setError('No internal account found with that email.');
+    setSubmitting(true);
+    try {
+      await signIn(email.trim().toLowerCase(), password);
+    } catch {
+      setError('Invalid credentials.');
+      setSubmitting(false);
       return;
     }
 
-    if (!['admin', 'barista', 'staff'].includes(matchedUser.role)) {
-      setError('This route is for internal team members only.');
+    const profile = useAuthStore.getState().user;
+    const role = profile?.role as Role | undefined;
+    if (!profile || !role || !INTERNAL_ROLES.includes(role as InternalTab)) {
+      await useAuthStore.getState().logout();
+      setError('This portal is for admin, barista, and staff accounts only.');
+      setSubmitting(false);
       return;
     }
 
-    const role = matchedUser.role as Exclude<Role, 'guest' | 'customer'>;
-    loginAs(role, {
-      id: matchedUser.id,
-      name: matchedUser.name,
-      email: matchedUser.email,
-      branchId: role === 'barista' || role === 'staff' ? (matchedUser.branchId ?? branchId) : undefined,
-      createdAt: matchedUser.createdAt,
-    });
+    if (role !== tab) {
+      // End the session so a mismatched login does not leave the user authenticated.
+      await useAuthStore.getState().logout();
+      setError(`This account is registered as ${role}. Switch to the ${role} tab or use the correct account.`);
+      setSubmitting(false);
+      return;
+    }
 
     if (role === 'admin') navigate('/admin', { replace: true });
-    if (role === 'barista') navigate('/barista', { replace: true });
-    if (role === 'staff') navigate('/staff', { replace: true });
+    else if (role === 'barista') navigate('/barista', { replace: true });
+    else navigate('/staff', { replace: true });
   };
 
   const tabs: { key: InternalTab; label: string; icon: typeof Shield; desc: string }[] = [
@@ -84,7 +80,7 @@ export default function InternalLogin() {
             <span className="font-display font-bold text-xl text-kado-cream">Kado Kohi Internal</span>
           </div>
           <h1 className="font-display text-2xl font-bold text-white">Internal Access</h1>
-          <p className="text-sm text-white/60 mt-2">Authorized team portal only.</p>
+          <p className="text-sm text-white/60 mt-2">Sign in with credentials provisioned by your administrator.</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-6">
@@ -124,11 +120,13 @@ export default function InternalLogin() {
             <input
               id="email"
               type="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 setError('');
               }}
+              required
               className="w-full rounded-xl border border-white/15 bg-[#232323] px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red"
             />
           </div>
@@ -139,50 +137,27 @@ export default function InternalLogin() {
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 setError('');
               }}
+              required
               className="w-full rounded-xl border border-white/15 bg-[#232323] px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red"
             />
           </div>
 
-          {(tab === 'barista' || tab === 'staff') && (
-            <div>
-              <label htmlFor="branch" className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                Branch
-              </label>
-              <select
-                id="branch"
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                className="w-full rounded-xl border border-white/15 bg-[#232323] px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red"
-              >
-                {branches
-                  .filter((b) => b.status === 'active')
-                  .map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
-
           <button
             type="submit"
-            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-[#7d1115] transition-colors mt-2"
+            disabled={submitting}
+            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-[#7d1115] transition-colors mt-2 disabled:opacity-60"
           >
-            Sign in as {tabs.find((currentTab) => currentTab.key === tab)?.label}
+            {submitting ? 'Signing in…' : `Sign in — ${tabs.find((currentTab) => currentTab.key === tab)?.label}`}
           </button>
         </form>
 
-        <p className="mt-6 rounded-xl bg-black/20 border border-white/10 p-4 text-[11px] text-white/65">
-          Use internal credentials provisioned in the user directory.
-        </p>
-
-        <Link to="/" className="mt-4 block text-center text-sm font-semibold text-white/55 hover:text-kado-red">
+        <Link to="/" className="mt-6 block text-center text-sm font-semibold text-white/55 hover:text-kado-red">
           Back to site
         </Link>
       </div>

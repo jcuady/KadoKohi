@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 export type DashTheme = 'light' | 'dark';
 
@@ -49,50 +49,38 @@ const DEFAULTS: AppSettings = {
 
 export interface SettingsStore {
   settings: AppSettings;
+  hydrateFromRemote: () => Promise<void>;
   updateSettings: (patch: Partial<AppSettings>) => void;
   toggleDashTheme: () => void;
   seed: () => void;
 }
 
-export const useSettingsStore = create<SettingsStore>()(
-  persist(
-    (set) => ({
+/** App settings from Supabase; no localStorage cache (GCash QR etc. must stay current). */
+export const useSettingsStore = create<SettingsStore>()((set) => ({
       settings: DEFAULTS,
-      updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
-      toggleDashTheme: () =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            brandMode: s.settings.brandMode === 'light' ? 'dark' : 'light',
-          },
-        })),
-      seed: () => set({ settings: DEFAULTS }),
-    }),
-    {
-      name: 'kado-settings-v3',
-      merge: (persisted, current) => {
-        const p = persisted as SettingsStore | undefined;
-        const saved: Partial<AppSettings> = p?.settings ?? {};
-        return {
-          ...current,
-          settings: {
-            ...DEFAULTS,
-            ...current.settings,
-            ...saved,
-            gcashQrImage: saved.gcashQrImage ?? current.settings.gcashQrImage ?? '',
-            boothContactPhone: saved.boothContactPhone ?? current.settings.boothContactPhone ?? DEFAULTS.boothContactPhone,
-            boothContactName: saved.boothContactName ?? current.settings.boothContactName ?? DEFAULTS.boothContactName,
-            contactEmail: saved.contactEmail ?? DEFAULTS.contactEmail,
-            contactPhone: saved.contactPhone ?? DEFAULTS.contactPhone,
-            contactAddress: saved.contactAddress ?? DEFAULTS.contactAddress,
-            contactHours: saved.contactHours ?? DEFAULTS.contactHours,
-            mapsEmbedUrl: saved.mapsEmbedUrl ?? DEFAULTS.mapsEmbedUrl,
-            socialInstagram: saved.socialInstagram ?? '',
-            socialFacebook: saved.socialFacebook ?? '',
-            socialTiktok: saved.socialTiktok ?? '',
-          },
-        };
+      hydrateFromRemote: async () => {
+        try {
+          const remote = await orderingRepo.fetchSettings();
+          if (!remote) return;
+          set({ settings: { ...DEFAULTS, ...remote } });
+        } catch {
+          // Keep defaults when remote fetch fails.
+        }
       },
-    },
-  ),
-);
+      updateSettings: (patch) =>
+        set((s) => {
+          const settings = { ...s.settings, ...patch };
+          void orderingRepo.upsertSettings(settings);
+          return { settings };
+        }),
+      toggleDashTheme: () =>
+        set((s) => {
+          const settings = {
+            ...s.settings,
+            brandMode: (s.settings.brandMode === 'light' ? 'dark' : 'light') as DashTheme,
+          };
+          void orderingRepo.upsertSettings(settings);
+          return { settings };
+        }),
+      seed: () => set({ settings: DEFAULTS }),
+}));

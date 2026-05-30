@@ -33,6 +33,10 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
   const paymentValue = selectedPaymentStatus ?? currentPaymentStatus ?? 'unpaid';
   const gcash = order ? isGcashOrder(order) : false;
 
+  // Prevent completing a GCash order that has not been paid yet.
+  const unpaidGcashCompletion =
+    gcash && statusValue === 'completed' && paymentValue !== 'paid';
+
   if (!open || !order) return null;
 
   return (
@@ -98,6 +102,12 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
               Order: {ORDER_STATUS_LABELS[order.status]}
             </span>
           </div>
+
+          {unpaidGcashCompletion && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs font-semibold text-amber-800">
+              ⚠ Payment must be verified (set to <strong>Paid</strong>) before marking this order as Completed.
+            </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t border-kado-dark/10 flex items-center justify-between gap-2">
@@ -116,13 +126,14 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
             )}
             <button
               type="button"
+              disabled={unpaidGcashCompletion}
               onClick={() =>
                 onApply({
                   status: statusValue,
                   ...(gcash ? { paymentStatus: paymentValue } : {}),
                 })
               }
-              className="rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark"
+              className="rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Apply
             </button>

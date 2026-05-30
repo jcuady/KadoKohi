@@ -31,7 +31,8 @@ export const api = {
   /* ───── Auth ───── */
   auth: {
     getUser: () => useAuthStore.getState().user,
-    loginAs: useAuthStore.getState().loginAs,
+    signIn: useAuthStore.getState().signIn,
+    signUp: useAuthStore.getState().signUp,
     logout: useAuthStore.getState().logout,
     addLoyaltyStamps: useAuthStore.getState().addLoyaltyStamps,
     spendLoyaltyStamps: useAuthStore.getState().spendLoyaltyStamps,

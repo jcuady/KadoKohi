@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Table } from '../types/domain';
 import { newId } from '../lib/id';
 import { buildTableCode, tableQrPath } from '../lib/qr';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 const SEED_TABLES: Table[] = [
   { id: 'tbl_mrk_01', branchId: 'branch_marikina', code: 'mrk-t01', label: 'Table 1', qrPayload: '/order/qr/mrk-t01', active: true },
@@ -13,6 +13,9 @@ const SEED_TABLES: Table[] = [
 
 export interface TableStore {
   tables: Table[];
+  /** True once the first remote fetch has completed (or failed). */
+  hydrated: boolean;
+  hydrateFromRemote: () => Promise<void>;
   addTable: (branchId: string, label: string, branchSlug?: string) => Table;
   updateTable: (id: string, patch: Partial<Pick<Table, 'label' | 'active'>>) => void;
   removeTable: (id: string) => void;
@@ -22,10 +25,18 @@ export interface TableStore {
   seed: () => void;
 }
 
-export const useTableStore = create<TableStore>()(
-  persist(
-    (set, get) => ({
+export const useTableStore = create<TableStore>()((set, get) => ({
       tables: SEED_TABLES,
+      hydrated: false,
+      hydrateFromRemote: async () => {
+        try {
+          const tables = await orderingRepo.fetchTables();
+          set({ tables, hydrated: true });
+        } catch {
+          // Keep seed fallback when remote fetch fails but still mark as resolved.
+          set({ hydrated: true });
+        }
+      },
 
       addTable: (branchId, label, branchSlug) => {
         const slug = branchSlug ?? branchId.replace('branch_', '');
@@ -40,23 +51,38 @@ export const useTableStore = create<TableStore>()(
           active: true,
         };
         set({ tables: [...get().tables, t] });
+        void orderingRepo.upsertTable(t);
         return t;
       },
 
       updateTable: (id, patch) =>
-        set({ tables: get().tables.map((t) => (t.id === id ? { ...t, ...patch } : t)) }),
+        set({
+          tables: get().tables.map((t) => {
+            if (t.id !== id) return t;
+            const updated = { ...t, ...patch };
+            void orderingRepo.upsertTable(updated);
+            return updated;
+          }),
+        }),
 
-      removeTable: (id) => set({ tables: get().tables.filter((t) => t.id !== id) }),
+      removeTable: (id) => {
+        set({ tables: get().tables.filter((t) => t.id !== id) });
+        void orderingRepo.deleteTable(id);
+      },
 
       toggleActive: (id) =>
-        set({ tables: get().tables.map((t) => (t.id === id ? { ...t, active: !t.active } : t)) }),
+        set({
+          tables: get().tables.map((t) => {
+            if (t.id !== id) return t;
+            const updated = { ...t, active: !t.active };
+            void orderingRepo.upsertTable(updated);
+            return updated;
+          }),
+        }),
 
       tablesForBranch: (branchId) => get().tables.filter((t) => t.branchId === branchId),
 
       getByCode: (code) => get().tables.find((t) => t.code === code),
 
       seed: () => set({ tables: SEED_TABLES }),
-    }),
-    { name: 'kado-tables-v1' },
-  ),
-);
+}));

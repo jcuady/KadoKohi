@@ -82,7 +82,7 @@ export default function Order() {
   const placeOrder = (e: FormEvent) => {
     e.preventDefault();
     if (cartTotals.lines.length === 0 || !branchId) return;
-    createOrder({
+    void createOrder({
       channel: 'online',
       branchId,
       customerId: user?.id,
@@ -93,9 +93,10 @@ export default function Order() {
       modifiersTotal: cartTotals.modifiers,
       tax: cartTotals.tax,
       total: cartTotals.total,
+    }).then(() => {
+      setCart([]);
+      setPlaced(true);
     });
-    setCart([]);
-    setPlaced(true);
   };
 
   if (placed) {

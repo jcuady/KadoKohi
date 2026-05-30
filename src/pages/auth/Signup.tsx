@@ -2,8 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
-import { useUserStore } from '../../store/userStore';
-import { api } from '../../lib/api';
 import {
   AlertCircle,
   Check,
@@ -25,8 +23,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const location = useLocation();
   const prefilledEmail = (location.state as { email?: string } | null)?.email?.trim() ?? '';
-  const loginAs = useAuthStore((s) => s.loginAs);
-  const users = useUserStore((s) => s.users);
+  const signUp = useAuthStore((s) => s.signUp);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState(prefilledEmail);
@@ -44,8 +41,8 @@ export default function Signup() {
       return;
     }
 
-    if (password.trim().length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.trim().length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
 
@@ -54,31 +51,26 @@ export default function Signup() {
       return;
     }
 
-    const exists = users.some((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (exists) {
-      setError('An account with this email already exists. Try signing in.');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      // DB-ready: create user via API layer (today → Zustand; later → POST /users)
-      const created = api.users.create({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role: 'customer',
-        loyaltyStamps: 0,
-      });
-
-      loginAs('customer', {
-        id: created.id,
-        name: created.name,
-        email: created.email,
-        loyaltyStamps: created.loyaltyStamps ?? 0,
-        createdAt: created.createdAt,
-      });
-
+      const { needsEmailConfirmation } = await signUp(name.trim(), email.trim().toLowerCase(), password);
+      if (needsEmailConfirmation) {
+        navigate('/auth/login', {
+          replace: true,
+          state: { notice: 'Account created! Please check your email to confirm, then sign in.' },
+        });
+        return;
+      }
       navigate('/account', { replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (/already registered|already exists|User already/i.test(message)) {
+        setError('That email is already registered. Try signing in instead.');
+      } else if (/password/i.test(message)) {
+        setError('Password is too weak. Use at least 8 characters.');
+      } else {
+        setError('Unable to create account. Please try another email or try again later.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -155,7 +147,7 @@ export default function Signup() {
         </ul>
 
         <p className="relative z-10 hidden xl:block text-[9px] uppercase tracking-[0.16em] text-kado-cream/35 leading-snug">
-          Passwords validated locally — replace with your auth API when live.
+          Secure sign-up — your account is ready to order and earn Kado Circle stamps.
         </p>
       </aside>
 
@@ -263,7 +255,7 @@ export default function Signup() {
                       setError('');
                     }}
                     required
-                    minLength={6}
+                    minLength={8}
                     className="w-full rounded-xl border border-kado-dark/12 bg-kado-offwhite/50 px-3 py-2.5 lg:py-2 text-sm text-kado-dark placeholder:text-kado-dark/35 focus:outline-none focus:ring-2 focus:ring-kado-red/25 focus:border-kado-red transition-shadow"
                     placeholder="6+ characters"
                   />
@@ -290,8 +282,7 @@ export default function Signup() {
 
               <p className="flex items-center gap-1 text-[10px] text-kado-dark/40 -mt-0.5">
                 <Check className="w-3 h-3 text-kado-red shrink-0" />
-                <span className="lg:hidden">Secure local profile — swap for API later</span>
-                <span className="hidden lg:inline">Profile stored locally until your API is connected</span>
+                <span>Minimum 8 characters. You can change your password anytime in your profile.</span>
               </p>
 
               <button

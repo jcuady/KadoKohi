@@ -30,6 +30,8 @@ import { newId } from '../lib/id';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
+import { usePromoStore } from '../store/promoStore';
+import { Tag, X as XIcon } from 'lucide-react';
 
 export default function CartDrawer() {
   const navigate = useNavigate();
@@ -44,6 +46,17 @@ export default function CartDrawer() {
   const selectedVoucherId = useCheckoutStore((s) => s.selectedVoucherId);
   const setSelectedVoucherId = useCheckoutStore((s) => s.setSelectedVoucherId);
   const clearVoucher = useCheckoutStore((s) => s.clearVoucher);
+  const appliedPromoCode = useCheckoutStore((s) => s.appliedPromoCode);
+  const promoDiscount = useCheckoutStore((s) => s.promoDiscount);
+  const setAppliedPromoCode = useCheckoutStore((s) => s.setAppliedPromoCode);
+  const clearPromoCode = useCheckoutStore((s) => s.clearPromoCode);
+  const clearAll = useCheckoutStore((s) => s.clearAll);
+  const validateCode = usePromoStore((s) => s.validateCode);
+  const recordClaim = usePromoStore((s) => s.recordClaim);
+
+  const [promoInput, setPromoInput] = useState('');
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const activeBranches = useMemo(
     () => branches.filter((b) => b.status === 'active'),
@@ -52,6 +65,7 @@ export default function CartDrawer() {
 
   const [branchId, setBranchId] = useState<string>(() => activeBranches[0]?.id ?? '');
   const [loading, setLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const paymentMethod: PaymentMethod = 'gcash-qr';
 
   const selectedBranch = useMemo(
@@ -76,9 +90,12 @@ export default function CartDrawer() {
     return computeVoucherDiscount(items, selectedVoucher.rewardType, selectedVoucher.rewardValue);
   }, [items, selectedVoucher]);
 
+  // Total discount = loyalty voucher OR promo code (not both simultaneously)
+  const effectiveDiscount = appliedPromoCode ? promoDiscount : voucherCalc.discount;
+
   const totals = useMemo(
-    () => computeCartTotalsWithDiscount(items, taxRate, voucherCalc.discount),
-    [items, taxRate, voucherCalc.discount],
+    () => computeCartTotalsWithDiscount(items, taxRate, effectiveDiscount),
+    [items, taxRate, effectiveDiscount],
   );
 
   const voucherBlocksCheckout =
@@ -89,6 +106,22 @@ export default function CartDrawer() {
       clearVoucher();
     }
   }, [activeVouchers, selectedVoucherId, clearVoucher]);
+
+  const handleApplyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setPromoLoading(true);
+    setPromoMsg(null);
+    const subtotal = items.reduce((s, i) => s + i.lineTotal, 0);
+    const result = await validateCode(promoInput, subtotal, branchId);
+    if (result.ok && result.code) {
+      setAppliedPromoCode(result.code, result.discount);
+      setPromoMsg({ ok: true, text: `"${result.code.code}" applied — saves ₱${result.discount.toFixed(2)}` });
+      setPromoInput('');
+    } else {
+      setPromoMsg({ ok: false, text: result.reason ?? 'Invalid code.' });
+    }
+    setPromoLoading(false);
+  };
 
   const isCustomer = user?.role === 'customer';
   const canOrder =
@@ -104,6 +137,7 @@ export default function CartDrawer() {
   const placeOrder = async () => {
     if (!canOrder) return;
     setLoading(true);
+    setCheckoutError('');
 
     const orderItems: OrderItem[] = items.map((line) => ({
       id: newId(),
@@ -127,32 +161,45 @@ export default function CartDrawer() {
 
     const channel = hasCoffee ? 'online' : 'merch';
 
-    const order = createOrder({
-      channel,
-      branchId,
-      customerId: user!.id,
-      paymentMethod,
-      status: 'pending',
-      paymentStatus: 'unpaid',
-      items: orderItems,
-      subtotal: totals.subtotal,
-      modifiersTotal: 0,
-      tax: totals.tax,
-      total: totals.total,
-      loyaltyVoucherId: selectedVoucher?.id,
-      loyaltyVoucherCode: selectedVoucher?.code,
-      loyaltyDiscountTotal: totals.discount > 0 ? totals.discount : undefined,
-    });
+    try {
+      const order = await createOrder({
+        channel,
+        branchId,
+        customerId: user!.id,
+        paymentMethod,
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        items: orderItems,
+        subtotal: totals.subtotal,
+        modifiersTotal: 0,
+        tax: totals.tax,
+        total: totals.total,
+        loyaltyVoucherId: selectedVoucher?.id,
+        loyaltyVoucherCode: selectedVoucher?.code,
+        loyaltyDiscountTotal: totals.discount > 0 ? totals.discount : undefined,
+      });
 
-    if (selectedVoucher) {
-      redeemVoucher(selectedVoucher.id, order.id);
+      if (selectedVoucher) {
+        redeemVoucher(selectedVoucher.id, order.id);
+      }
+      if (appliedPromoCode && promoDiscount > 0) {
+        void recordClaim({
+          promoCodeId: appliedPromoCode.id,
+          orderId: order.id,
+          discountAmount: promoDiscount,
+          customerId: user?.id,
+        });
+      }
+
+      clear();
+      clearAll();
+      closeCart();
+      navigate(`/account/orders?placed=${order.id}`);
+    } catch {
+      setCheckoutError('Could not place your order. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
-
-    clear();
-    clearVoucher();
-    closeCart();
-    setLoading(false);
-    navigate(`/account/orders?placed=${order.id}`);
   };
 
   return (
@@ -471,6 +518,54 @@ export default function CartDrawer() {
                     </div>
                   )}
 
+                  {/* Promo code input */}
+                  {isCustomer && (
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-kado-red" />
+                        Promo code
+                      </label>
+                      {appliedPromoCode ? (
+                        <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5">
+                          <div>
+                            <p className="text-xs font-black text-emerald-800 font-mono tracking-wider">{appliedPromoCode.code}</p>
+                            <p className="text-[10px] text-emerald-700">{appliedPromoCode.name} · saves ₱{promoDiscount.toFixed(2)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { clearPromoCode(); setPromoMsg(null); }}
+                            className="text-emerald-600 hover:text-emerald-900 p-1"
+                          >
+                            <XIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            value={promoInput}
+                            onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoMsg(null); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleApplyPromo(); } }}
+                            placeholder="Enter code"
+                            className="flex-1 rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-xs font-mono font-bold text-kado-dark uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-kado-red/25"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleApplyPromo()}
+                            disabled={promoLoading || !promoInput.trim()}
+                            className="rounded-xl bg-kado-dark text-kado-cream px-3 py-2.5 text-[10px] font-black uppercase tracking-wider hover:bg-kado-red transition-colors disabled:opacity-40"
+                          >
+                            {promoLoading ? '…' : 'Apply'}
+                          </button>
+                        </div>
+                      )}
+                      {promoMsg && (
+                        <p className={`text-[10px] mt-1.5 leading-snug font-semibold ${promoMsg.ok ? 'text-emerald-700' : 'text-red-600'}`}>
+                          {promoMsg.text}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Totals */}
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between text-kado-dark/58">
@@ -479,7 +574,9 @@ export default function CartDrawer() {
                     </div>
                     {totals.discount > 0 && (
                       <div className="flex justify-between text-emerald-700 font-semibold">
-                        <span>Voucher ({selectedVoucher?.code})</span>
+                        <span>
+                          {appliedPromoCode ? `Promo (${appliedPromoCode.code})` : `Voucher (${selectedVoucher?.code})`}
+                        </span>
                         <span>−{formatPhp(totals.discount)}</span>
                       </div>
                     )}
@@ -494,6 +591,10 @@ export default function CartDrawer() {
                       <span className="text-kado-red">{formatPhp(totals.total)}</span>
                     </div>
                   </div>
+
+                  {checkoutError && (
+                    <p className="text-xs text-red-600 font-medium text-center">{checkoutError}</p>
+                  )}
 
                   {/* Place order */}
                   <button
