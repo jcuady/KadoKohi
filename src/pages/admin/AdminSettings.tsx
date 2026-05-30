@@ -60,7 +60,7 @@ export default function AdminSettings() {
       setResetPhrase('');
       const d = result.deleted;
       setResetSuccess(
-        `Data reset complete — removed ${d.orders} orders, ${d.users} non-admin accounts, ${d.auditLogs} audit entries, and ${d.promoCodes} vouchers. Admin accounts, menu, branches, and settings were kept.`,
+        `Data reset complete — removed ${d.orders} orders, ${d.users} non-admin accounts, ${d.branches} branches, ${d.products} products, ${d.tables} tables, and ${d.auditLogs} audit entries. Shop settings restored to defaults. Your admin login is unchanged.`,
       );
     } catch (err) {
       setResetError(err instanceof Error ? err.message : 'Unable to reset data. Try again or redeploy the admin edge function.');
@@ -337,7 +337,7 @@ export default function AdminSettings() {
             <div>
               <h2 className="font-display font-bold text-lg text-red-900">Reset all data</h2>
               <p className="text-xs text-red-800/80 mt-1 leading-relaxed">
-                Permanently clears operational data from Supabase. Use before go-live or to wipe test orders and accounts.
+                Wipes the entire shop back to a clean slate. Your admin email and password stay — everything else in the database is removed or reset to defaults.
               </p>
             </div>
           </div>
@@ -345,14 +345,15 @@ export default function AdminSettings() {
           <div className="rounded-xl border border-red-200 bg-white/70 p-4 text-xs text-red-900/80 space-y-2">
             <p className="font-bold uppercase tracking-wider text-[10px] text-red-700">Will be deleted</p>
             <ul className="list-disc pl-4 space-y-1">
-              <li>All orders and order line items</li>
-              <li>All customer, barista, and staff accounts</li>
-              <li>Audit logs, push subscriptions, and voucher codes/claims</li>
+              <li>All orders, customers, baristas, and staff accounts</li>
+              <li>All branches, menu items, tables, and QR codes</li>
+              <li>Audit logs, push subscriptions, vouchers, and GCash QR</li>
+              <li>Shop settings restored to factory defaults</li>
             </ul>
             <p className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 pt-2">Will be kept</p>
             <ul className="list-disc pl-4 space-y-1 text-emerald-900/80">
-              <li>All admin accounts (including yours)</li>
-              <li>Menu, branches, tables, QR codes, and shop settings</li>
+              <li>Admin login (email + password) — you stay signed in</li>
+              <li>Admin profile name and role only</li>
             </ul>
           </div>
 

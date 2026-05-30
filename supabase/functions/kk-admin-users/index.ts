@@ -154,7 +154,12 @@ Deno.serve(async (req: Request) => {
       pushSubscriptions: 0,
       promoClaims: 0,
       promoCodes: 0,
+      tables: 0,
+      products: 0,
+      menuCategories: 0,
+      branches: 0,
       users: 0,
+      settingsReset: false,
     };
 
     const countDelete = async (table: string) => {
@@ -189,6 +194,45 @@ Deno.serve(async (req: Request) => {
       deleted.promoCodes = await countDelete("kk_promo_codes");
       await deleteAll("kk_promo_codes");
 
+      deleted.tables = await countDelete("kk_tables");
+      await deleteAll("kk_tables");
+
+      deleted.products = await countDelete("kk_products");
+      await deleteAll("kk_products");
+
+      deleted.menuCategories = await countDelete("kk_menu_categories");
+      await deleteAll("kk_menu_categories");
+
+      deleted.branches = await countDelete("kk_branches");
+      await deleteAll("kk_branches");
+
+      const defaultSiteConfig = {
+        defaultOpenTime: "07:00",
+        defaultCloseTime: "23:00",
+        brandMode: "light",
+        shopName: "Kado Kohi",
+        currency: "PHP",
+        boothContactPhone: "+63 917 123 4567",
+        boothContactName: "Kado Kohi Events",
+        contactEmail: "kadocoffeeph@gmail.com",
+        contactPhone: "+63 920 948 2934",
+        contactAddress: "J.P. Laurel St. Corner Mt. Everest, Marikina",
+        contactHours: "Mon – Sun: 7 AM – 11 PM",
+        mapsEmbedUrl:
+          "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890",
+        socialInstagram: "",
+        socialFacebook: "",
+        socialTiktok: "",
+      };
+      const { error: settingsErr } = await adminClient.from("kk_app_settings").upsert({
+        id: true,
+        tax_rate: 0,
+        gcash_qr_image: null,
+        order_hours: defaultSiteConfig,
+      });
+      if (settingsErr) throw settingsErr;
+      deleted.settingsReset = true;
+
       const { data: nonAdminProfiles, error: profileErr } = await adminClient
         .from("kk_profiles")
         .select("id, email, role")
@@ -205,7 +249,10 @@ Deno.serve(async (req: Request) => {
         deleted.users += 1;
       }
 
-      await adminClient.from("kk_profiles").update({ loyalty_stamps: 0 }).eq("role", "admin");
+      await adminClient
+        .from("kk_profiles")
+        .update({ loyalty_stamps: 0, branch_id: null })
+        .eq("role", "admin");
 
       return new Response(JSON.stringify({ success: true, deleted }), {
         headers: { "Content-Type": "application/json" },

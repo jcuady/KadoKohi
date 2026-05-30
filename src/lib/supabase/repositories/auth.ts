@@ -84,7 +84,12 @@ export const authRepo = {
         pushSubscriptions: number;
         promoClaims: number;
         promoCodes: number;
+        tables: number;
+        products: number;
+        menuCategories: number;
+        branches: number;
         users: number;
+        settingsReset: boolean;
       };
     };
   },
