@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   CalendarClock,
   Package,
@@ -7,13 +7,11 @@ import {
   LogOut,
   Sun,
   Moon,
-  Bell,
-  BellRing,
   ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
-import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
+import NotificationToggle from '../components/NotificationToggle';
 import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
 
 const SIDEBAR_W = 'w-56';
@@ -40,30 +38,11 @@ export default function StaffLayout() {
   const navigate = useNavigate();
   const { isDark, toggle } = useDashTheme();
 
-  const [pushOn, setPushOn] = useState(false);
-  const [pushBusy, setPushBusy] = useState(false);
-
-  useEffect(() => {
-    void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
-  }, []);
-
   useEffect(() => {
     if (user?.role !== 'staff') return;
     startOperationsRealtime();
     void refreshOperationsData();
   }, [user?.id, user?.role]);
-
-  const togglePush = async () => {
-    setPushBusy(true);
-    if (pushOn) {
-      await unsubscribeFromPush();
-      setPushOn(false);
-    } else {
-      const res = await subscribeToPush();
-      setPushOn(res.ok);
-    }
-    setPushBusy(false);
-  };
 
   const handleLogout = () => {
     logout();
@@ -124,16 +103,7 @@ export default function StaffLayout() {
           className="shrink-0 space-y-1 border-t px-2 pb-3 pt-3"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
-          <button
-            type="button"
-            onClick={togglePush}
-            disabled={pushBusy}
-            className={`${sidebarFooterBtnClass()} ${pushOn ? '!text-green-600' : ''}`}
-            title={pushOn ? 'Order alerts on' : 'Enable order alerts'}
-          >
-            {pushOn ? <BellRing className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Bell className="h-4 w-4 shrink-0" strokeWidth={2} />}
-            {pushBusy ? 'Working…' : pushOn ? 'Alerts on' : 'Enable alerts'}
-          </button>
+          <NotificationToggle variant="sidebar" audience="staff" label="Enable alerts" />
           <button type="button" onClick={toggle} className={sidebarFooterBtnClass()}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
             {isDark ? 'Light mode' : 'Dark mode'}

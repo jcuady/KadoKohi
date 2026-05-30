@@ -10,13 +10,25 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'Kado Kohi';
+  const isOrderAlert = typeof data.tag === 'string' && data.tag.startsWith('order-');
+  const isNewOrder = typeof data.tag === 'string' && data.tag.startsWith('new-order-');
+  const isProof = typeof data.tag === 'string' && data.tag.startsWith('proof-');
+
   const options = {
     body: data.body || '',
-    icon: '/logo/Logo2.png',
-    badge: '/logo/Logo2.png',
+    icon: data.icon || '/icons/icon-192x192.png',
+    badge: '/icons/icon-96x96.png',
+    image: data.image || undefined,
     tag: data.tag || 'kado-order',
     renotify: true,
-    data: { url: data.url || '/' },
+    requireInteraction: isNewOrder || isProof,
+    vibrate: isNewOrder || isProof ? [120, 60, 120, 60, 120] : [80, 40, 80],
+    timestamp: Date.now(),
+    silent: false,
+    data: {
+      url: data.url || '/',
+      tag: data.tag || 'kado-order',
+    },
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -37,4 +49,9 @@ self.addEventListener('notificationclick', (event) => {
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     }),
   );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  // Reserved for analytics — no-op for now.
+  void event;
 });

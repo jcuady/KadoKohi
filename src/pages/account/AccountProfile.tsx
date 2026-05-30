@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { authRepo } from '../../lib/supabase/repositories/auth';
-import NotificationOptIn from '../../components/NotificationOptIn';
+import NotificationToggle from '../../components/NotificationToggle';
 import {
   User,
   Mail,
@@ -15,7 +15,6 @@ import {
   Save,
   X,
   Coffee,
-  Bell,
   Globe,
   Lock,
 } from 'lucide-react';
@@ -80,7 +79,6 @@ export default function AccountProfile() {
   ];
 
   const preferences = [
-    { icon: Bell, label: 'Order Notifications', desc: 'Get notified when your order status changes', enabled: true },
     { icon: Coffee, label: 'Loyalty Rewards', desc: 'Earn stamps with every order you place', enabled: true },
     { icon: Globe, label: 'Marketing Emails', desc: 'Receive news about events and promotions', enabled: false },
   ];
@@ -129,6 +127,15 @@ export default function AccountProfile() {
 
         {/* ─── DETAILS + PREFERENCES ─── */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Push notifications — functional toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12, duration: 0.4 }}
+          >
+            <NotificationToggle variant="profile" audience="customer" label="Order notifications" />
+          </motion.div>
+
           {/* Account Details */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -203,15 +210,6 @@ export default function AccountProfile() {
                 ))}
               </div>
             )}
-          </motion.div>
-
-          {/* Push notifications (functional) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-          >
-            <NotificationOptIn label="Push notifications" />
           </motion.div>
 
           {/* Preferences */}
