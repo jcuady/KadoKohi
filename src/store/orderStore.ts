@@ -10,6 +10,7 @@ import {
   notifyBaristasNewOrder,
   notifyBaristasProofSubmitted,
 } from '../lib/notify';
+import { broadcastGuestOrderUpdate } from '../lib/supabase/guestOrderTracking';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -130,6 +131,14 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           metadata: { from: prev.status, to: status, channel: next.channel },
         });
         notifyCustomerOrderStatus(next, status);
+        if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
+          void broadcastGuestOrderUpdate(id, {
+            status: next.status,
+            paymentStatus: next.paymentStatus,
+            updatedAt: next.updatedAt,
+            shortCode: next.shortCode,
+          });
+        }
         return null;
       },
 
@@ -162,6 +171,14 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         });
         if (paymentStatus === 'paid' && prev.status === 'pending') {
           notifyCustomerOrderStatus(next, 'accepted');
+        }
+        if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
+          void broadcastGuestOrderUpdate(id, {
+            status: next.status,
+            paymentStatus: next.paymentStatus,
+            updatedAt: next.updatedAt,
+            shortCode: next.shortCode,
+          });
         }
         return null;
       },

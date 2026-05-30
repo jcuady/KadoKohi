@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import type { OrderStatus } from '../../types/domain';
-import { orderingRepo, type TrackedOrderStatus } from '../../lib/supabase/repositories/ordering';
+import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
 
 type Channel = 'dine-in' | 'takeout';
 
@@ -44,8 +43,6 @@ const ORDER_RANK: Record<OrderStatus, number> = {
   cancelled: -1,
 };
 
-const POLL_MS = 6000;
-
 export default function OrderTrackingPanel({
   orderId,
   channel,
@@ -53,37 +50,7 @@ export default function OrderTrackingPanel({
   isLoggedIn,
   onOrderAgain,
 }: Props) {
-  const [tracked, setTracked] = useState<TrackedOrderStatus | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const poll = async () => {
-      try {
-        const next = await orderingRepo.trackOrder(orderId);
-        if (cancelled) return;
-        if (next) {
-          setTracked(next);
-          setLoadFailed(false);
-          if (next.status === 'completed' || next.status === 'cancelled') {
-            if (timer.current) clearInterval(timer.current);
-          }
-        }
-      } catch {
-        if (!cancelled && !tracked) setLoadFailed(true);
-      }
-    };
-
-    void poll();
-    timer.current = setInterval(poll, POLL_MS);
-    return () => {
-      cancelled = true;
-      if (timer.current) clearInterval(timer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
+  const { tracked, loadFailed, isLive } = useGuestOrderTracking(orderId);
 
   const steps = channel === 'takeout' ? TAKEOUT_STEPS : DINE_IN_STEPS;
   const status = tracked?.status ?? 'pending';
@@ -146,7 +113,8 @@ export default function OrderTrackingPanel({
               </p>
               {!isCompleted && (
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-kado-red">
-                  <span className="w-1.5 h-1.5 rounded-full bg-kado-red animate-pulse" /> Live
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isLive ? 'bg-kado-red' : 'bg-kado-dark/30'}`} />
+                  {isLive ? 'Live' : 'Updating…'}
                 </span>
               )}
             </div>

@@ -14,6 +14,7 @@ import { newId } from '../lib/id';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
+import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import {
   ShoppingBag,
   ChevronUp,
@@ -75,6 +76,11 @@ export default function OrderQR() {
     const ref = getTrackedOrder(sessionKey);
     if (ref) setTrackedOrderId(ref.orderId);
   }, [sessionKey]);
+
+  useEffect(() => {
+    startGuestPageRealtime();
+    return () => stopGuestPageRealtime();
+  }, []);
 
   useEffect(() => {
     if (!sortedCategories.length) return;
