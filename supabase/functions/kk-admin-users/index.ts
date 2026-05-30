@@ -138,6 +138,71 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (action === "reset_operational_data") {
+    const { data: rpcData, error: rpcError } = await adminClient.rpc(
+      "kk_reset_operational_data",
+    );
+
+    if (rpcError) {
+      const code = rpcError.message ?? "";
+      if (code.includes("STORE_OPEN")) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Reset is only allowed when the store is closed for online orders (outside open hours and after last order time).",
+          }),
+          { status: 409, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (code.includes("STORE_HOURS_INVALID")) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Store hours are misconfigured. Fix open/close times in Settings before resetting.",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ error: rpcError.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const {
+      data: { users },
+      error: listError,
+    } = await adminClient.auth.admin.listUsers();
+    if (listError) {
+      return new Response(JSON.stringify({ error: listError.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: adminProfiles } = await adminClient
+      .from("kk_profiles")
+      .select("id")
+      .eq("role", "admin");
+    const adminIds = new Set((adminProfiles ?? []).map((p) => p.id));
+
+    let authDeleted = 0;
+    for (const u of users ?? []) {
+      if (adminIds.has(u.id)) continue;
+      const { error: delErr } = await adminClient.auth.admin.deleteUser(u.id);
+      if (!delErr) authDeleted += 1;
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        deletedProfiles: rpcData?.deletedProfiles ?? 0,
+        deletedAuthUsers: authDeleted,
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   return new Response(JSON.stringify({ error: "Unknown action" }), {
     status: 400,
     headers: { "Content-Type": "application/json" },

@@ -1,7 +1,10 @@
 import { type FormEvent, useRef, useState } from 'react';
+import { AlertTriangle, Check, Clock, RotateCcw } from 'lucide-react';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
-import { Check } from 'lucide-react';
+import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
+import { authRepo } from '../../lib/supabase/repositories/auth';
+import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
@@ -9,6 +12,11 @@ export default function AdminSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const hoursStatus = useOnlineOrderHours();
 
   const flashSaved = () => {
     setSavedFlash(true);
@@ -33,6 +41,31 @@ export default function AdminSettings() {
       return;
     }
     patch({ gcashQrImage: res.dataUrl });
+  };
+
+  const handleResetOperationalData = async () => {
+    if (!resetConfirm) {
+      setResetConfirm(true);
+      setResetError(null);
+      setResetSuccess(null);
+      return;
+    }
+    setResetBusy(true);
+    setResetError(null);
+    setResetSuccess(null);
+    try {
+      const result = await authRepo.resetOperationalData();
+      setResetConfirm(false);
+      setResetSuccess(
+        `Reset complete — removed ${result.deletedProfiles ?? 0} non-admin account(s) and all orders. Store hours and admin login were kept.`,
+      );
+      await refreshOperationsData();
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : 'Reset failed.');
+      setResetConfirm(false);
+    } finally {
+      setResetBusy(false);
+    }
   };
 
   return (
@@ -292,6 +325,74 @@ export default function AdminSettings() {
               <option value="light">Light (default)</option>
               <option value="dark">Dark</option>
             </select>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg text-red-900">Reset operational data</h2>
+              <p className="text-xs text-red-900/70 mt-1 leading-relaxed">
+                Clears all orders, audit logs, push subscriptions, voucher claims, and every account except admin.
+                Keeps store settings, online order hours, menu, branches, tables, and voucher definitions.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-red-200/60 bg-white/80 px-4 py-3 flex items-start gap-2.5">
+            <Clock className="w-4 h-4 text-red-700 shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-bold text-red-900">
+                {hoursStatus.isOpen ? 'Store is open — reset locked' : 'Store is closed — reset available'}
+              </p>
+              <p className="text-red-900/70 mt-0.5">
+                Reset follows your online order hours ({hoursStatus.openLabel} – {hoursStatus.closeLabel},
+                last order {hoursStatus.lastOrderLabel}). It is only allowed outside that window.
+              </p>
+              {!hoursStatus.isOpen && (
+                <p className="text-red-900/60 mt-1">{hoursStatus.message}</p>
+              )}
+            </div>
+          </div>
+
+          {resetSuccess && (
+            <p className="text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+              {resetSuccess}
+            </p>
+          )}
+          {resetError && (
+            <p className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              {resetError}
+            </p>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              disabled={hoursStatus.isOpen || resetBusy}
+              onClick={() => void handleResetOperationalData()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 text-white px-5 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-red-900 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-4 h-4" />
+              {resetBusy
+                ? 'Resetting…'
+                : resetConfirm
+                  ? 'Confirm reset — click again'
+                  : 'Reset all data (keep admin)'}
+            </button>
+            {resetConfirm && !resetBusy && (
+              <button
+                type="button"
+                onClick={() => setResetConfirm(false)}
+                className="rounded-xl border border-red-200 text-red-800 px-5 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-red-50"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </div>
 

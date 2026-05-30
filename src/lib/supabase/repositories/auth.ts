@@ -65,4 +65,13 @@ export const authRepo = {
     if (error) throw error;
     return data;
   },
+  async resetOperationalData(): Promise<{ ok: boolean; deletedProfiles?: number }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.functions.invoke('kk-admin-users', {
+      body: { action: 'reset_operational_data' },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(String(data.error));
+    return data as { ok: boolean; deletedProfiles?: number };
+  },
 };
