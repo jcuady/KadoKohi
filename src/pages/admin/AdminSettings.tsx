@@ -1,10 +1,11 @@
 import { type FormEvent, useRef, useState } from 'react';
-import { AlertTriangle, Check, Clock, RotateCcw } from 'lucide-react';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
-import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
+import { AlertTriangle, Check, Loader2, Trash2 } from 'lucide-react';
+
+const RESET_PHRASE = 'RESET ALL DATA';
 
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
@@ -12,11 +13,11 @@ export default function AdminSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetPhrase, setResetPhrase] = useState('');
   const [resetBusy, setResetBusy] = useState(false);
-  const [resetError, setResetError] = useState<string | null>(null);
-  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
-  const hoursStatus = useOnlineOrderHours();
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
 
   const flashSaved = () => {
     setSavedFlash(true);
@@ -43,26 +44,26 @@ export default function AdminSettings() {
     patch({ gcashQrImage: res.dataUrl });
   };
 
-  const handleResetOperationalData = async () => {
-    if (!resetConfirm) {
-      setResetConfirm(true);
-      setResetError(null);
-      setResetSuccess(null);
+  const handleResetAllData = async (e: FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+    if (resetPhrase.trim() !== RESET_PHRASE) {
+      setResetError(`Type "${RESET_PHRASE}" exactly to confirm.`);
       return;
     }
     setResetBusy(true);
-    setResetError(null);
-    setResetSuccess(null);
     try {
-      const result = await authRepo.resetOperationalData();
-      setResetConfirm(false);
-      setResetSuccess(
-        `Reset complete — removed ${result.deletedProfiles ?? 0} non-admin account(s) and all orders. Store hours and admin login were kept.`,
-      );
+      const result = await authRepo.resetAllData(RESET_PHRASE);
       await refreshOperationsData();
+      setResetOpen(false);
+      setResetPhrase('');
+      const d = result.deleted;
+      setResetSuccess(
+        `Data reset complete — removed ${d.orders} orders, ${d.users} non-admin accounts, ${d.auditLogs} audit entries, and ${d.promoCodes} vouchers. Admin accounts, menu, branches, and settings were kept.`,
+      );
     } catch (err) {
-      setResetError(err instanceof Error ? err.message : 'Reset failed.');
-      setResetConfirm(false);
+      setResetError(err instanceof Error ? err.message : 'Unable to reset data. Try again or redeploy the admin edge function.');
     } finally {
       setResetBusy(false);
     }
@@ -328,72 +329,92 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-6 space-y-4">
+        <div className="rounded-2xl border-2 border-red-200 bg-red-50/40 p-6 space-y-5">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
-              <RotateCcw className="w-5 h-5" />
+              <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg text-red-900">Reset operational data</h2>
-              <p className="text-xs text-red-900/70 mt-1 leading-relaxed">
-                Clears all orders, audit logs, push subscriptions, voucher claims, and every account except admin.
-                Keeps store settings, online order hours, menu, branches, tables, and voucher definitions.
+              <h2 className="font-display font-bold text-lg text-red-900">Reset all data</h2>
+              <p className="text-xs text-red-800/80 mt-1 leading-relaxed">
+                Permanently clears operational data from Supabase. Use before go-live or to wipe test orders and accounts.
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-red-200/60 bg-white/80 px-4 py-3 flex items-start gap-2.5">
-            <Clock className="w-4 h-4 text-red-700 shrink-0 mt-0.5" />
-            <div className="text-xs leading-relaxed">
-              <p className="font-bold text-red-900">
-                {hoursStatus.isOpen ? 'Store is open — reset locked' : 'Store is closed — reset available'}
-              </p>
-              <p className="text-red-900/70 mt-0.5">
-                Reset follows your online order hours ({hoursStatus.openLabel} – {hoursStatus.closeLabel},
-                last order {hoursStatus.lastOrderLabel}). It is only allowed outside that window.
-              </p>
-              {!hoursStatus.isOpen && (
-                <p className="text-red-900/60 mt-1">{hoursStatus.message}</p>
-              )}
-            </div>
+          <div className="rounded-xl border border-red-200 bg-white/70 p-4 text-xs text-red-900/80 space-y-2">
+            <p className="font-bold uppercase tracking-wider text-[10px] text-red-700">Will be deleted</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>All orders and order line items</li>
+              <li>All customer, barista, and staff accounts</li>
+              <li>Audit logs, push subscriptions, and voucher codes/claims</li>
+            </ul>
+            <p className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 pt-2">Will be kept</p>
+            <ul className="list-disc pl-4 space-y-1 text-emerald-900/80">
+              <li>All admin accounts (including yours)</li>
+              <li>Menu, branches, tables, QR codes, and shop settings</li>
+            </ul>
           </div>
 
           {resetSuccess && (
-            <p className="text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 font-medium flex items-start gap-2">
+              <Check className="w-4 h-4 shrink-0 mt-0.5" />
               {resetSuccess}
-            </p>
-          )}
-          {resetError && (
-            <p className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              {resetError}
-            </p>
+            </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          {!resetOpen ? (
             <button
               type="button"
-              disabled={hoursStatus.isOpen || resetBusy}
-              onClick={() => void handleResetOperationalData()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 text-white px-5 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-red-900 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+              onClick={() => {
+                setResetOpen(true);
+                setResetError('');
+                setResetSuccess('');
+                setResetPhrase('');
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-red-700 transition-colors"
             >
-              <RotateCcw className="w-4 h-4" />
-              {resetBusy
-                ? 'Resetting…'
-                : resetConfirm
-                  ? 'Confirm reset — click again'
-                  : 'Reset all data (keep admin)'}
+              <Trash2 className="w-4 h-4" />
+              Reset all data
             </button>
-            {resetConfirm && !resetBusy && (
-              <button
-                type="button"
-                onClick={() => setResetConfirm(false)}
-                className="rounded-xl border border-red-200 text-red-800 px-5 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-red-50"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
+          ) : (
+            <form onSubmit={(e) => void handleResetAllData(e)} className="space-y-3 rounded-xl border border-red-300 bg-white p-4">
+              <p className="text-xs text-red-900 font-medium">
+                This cannot be undone. Type <span className="font-black">{RESET_PHRASE}</span> below to confirm.
+              </p>
+              <input
+                type="text"
+                value={resetPhrase}
+                onChange={(e) => setResetPhrase(e.target.value)}
+                placeholder={RESET_PHRASE}
+                autoComplete="off"
+                className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+              />
+              {resetError && <p className="text-xs text-red-600 font-medium">{resetError}</p>}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={resetBusy || resetPhrase.trim() !== RESET_PHRASE}
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-2.5 text-xs font-black uppercase tracking-wider hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {resetBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {resetBusy ? 'Resetting…' : 'Confirm reset'}
+                </button>
+                <button
+                  type="button"
+                  disabled={resetBusy}
+                  onClick={() => {
+                    setResetOpen(false);
+                    setResetPhrase('');
+                    setResetError('');
+                  }}
+                  className="rounded-xl border border-red-200 text-red-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         <p className="text-xs dash-muted">Changes save automatically to the database when you edit a field.</p>

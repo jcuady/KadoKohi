@@ -138,69 +138,85 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  if (action === "reset_operational_data") {
-    const { data: rpcData, error: rpcError } = await adminClient.rpc(
-      "kk_reset_operational_data",
-    );
+  if (action === "reset_all_data") {
+    const { confirmPhrase } = body;
+    if (confirmPhrase !== "RESET ALL DATA") {
+      return new Response(
+        JSON.stringify({ error: 'Type "RESET ALL DATA" to confirm.' }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
-    if (rpcError) {
-      const code = rpcError.message ?? "";
-      if (code.includes("STORE_OPEN")) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "Reset is only allowed when the store is closed for online orders (outside open hours and after last order time).",
-          }),
-          { status: 409, headers: { "Content-Type": "application/json" } },
-        );
+    const deleted = {
+      orderItems: 0,
+      orders: 0,
+      auditLogs: 0,
+      pushSubscriptions: 0,
+      promoClaims: 0,
+      promoCodes: 0,
+      users: 0,
+    };
+
+    const countDelete = async (table: string) => {
+      const { count, error } = await adminClient
+        .from(table)
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    };
+
+    const deleteAll = async (table: string, column = "id", sentinel = "00000000-0000-0000-0000-000000000000") => {
+      const { error } = await adminClient.from(table).delete().neq(column, sentinel);
+      if (error) throw error;
+    };
+
+    try {
+      deleted.orderItems = await countDelete("kk_order_items");
+      await deleteAll("kk_order_items");
+
+      deleted.orders = await countDelete("kk_orders");
+      await deleteAll("kk_orders");
+
+      deleted.auditLogs = await countDelete("kk_audit_logs");
+      await deleteAll("kk_audit_logs");
+
+      deleted.pushSubscriptions = await countDelete("kk_push_subscriptions");
+      await deleteAll("kk_push_subscriptions", "endpoint", "__never__");
+
+      deleted.promoClaims = await countDelete("kk_promo_claims");
+      await deleteAll("kk_promo_claims");
+
+      deleted.promoCodes = await countDelete("kk_promo_codes");
+      await deleteAll("kk_promo_codes");
+
+      const { data: nonAdminProfiles, error: profileErr } = await adminClient
+        .from("kk_profiles")
+        .select("id, email, role")
+        .neq("role", "admin");
+      if (profileErr) throw profileErr;
+
+      for (const profile of nonAdminProfiles ?? []) {
+        if (profile.id === user.id) continue;
+        const { error: authDelErr } = await adminClient.auth.admin.deleteUser(profile.id);
+        if (authDelErr) {
+          console.warn(`auth delete failed for ${profile.id}:`, authDelErr.message);
+        }
+        await adminClient.from("kk_profiles").delete().eq("id", profile.id);
+        deleted.users += 1;
       }
-      if (code.includes("STORE_HOURS_INVALID")) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "Store hours are misconfigured. Fix open/close times in Settings before resetting.",
-          }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
-        );
-      }
-      return new Response(JSON.stringify({ error: rpcError.message }), {
-        status: 400,
+
+      await adminClient.from("kk_profiles").update({ loyalty_stamps: 0 }).eq("role", "admin");
+
+      return new Response(JSON.stringify({ success: true, deleted }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Reset failed.";
+      return new Response(JSON.stringify({ error: message }), {
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    const {
-      data: { users },
-      error: listError,
-    } = await adminClient.auth.admin.listUsers();
-    if (listError) {
-      return new Response(JSON.stringify({ error: listError.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: adminProfiles } = await adminClient
-      .from("kk_profiles")
-      .select("id")
-      .eq("role", "admin");
-    const adminIds = new Set((adminProfiles ?? []).map((p) => p.id));
-
-    let authDeleted = 0;
-    for (const u of users ?? []) {
-      if (adminIds.has(u.id)) continue;
-      const { error: delErr } = await adminClient.auth.admin.deleteUser(u.id);
-      if (!delErr) authDeleted += 1;
-    }
-
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        deletedProfiles: rpcData?.deletedProfiles ?? 0,
-        deletedAuthUsers: authDeleted,
-      }),
-      { headers: { "Content-Type": "application/json" } },
-    );
   }
 
   return new Response(JSON.stringify({ error: "Unknown action" }), {
