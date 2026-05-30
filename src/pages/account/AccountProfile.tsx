@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { authRepo } from '../../lib/supabase/repositories/auth';
@@ -17,6 +18,8 @@ import {
   Coffee,
   Globe,
   Lock,
+  Smartphone,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function AccountProfile() {
@@ -134,6 +137,29 @@ export default function AccountProfile() {
             transition={{ delay: 0.12, duration: 0.4 }}
           >
             <NotificationToggle variant="profile" audience="customer" label="Order notifications" />
+          </motion.div>
+
+          {/* Install app shortcut */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.16, duration: 0.4 }}
+          >
+            <Link
+              to="/help/install"
+              className="flex items-center gap-4 rounded-2xl border border-kado-dark/8 bg-white p-5 hover:border-kado-red/20 hover:shadow-sm transition-all group"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kado-dark/6 group-hover:bg-kado-red/10 transition-colors">
+                <Smartphone className="w-5 h-5 text-kado-dark/60 group-hover:text-kado-red transition-colors" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-display font-black text-kado-dark text-sm">Install Kado Kohi app</p>
+                <p className="text-[11px] text-kado-dark/50 mt-0.5 leading-snug">
+                  Add to your home screen for faster ordering and push notifications.
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-kado-dark/30 group-hover:text-kado-red transition-colors shrink-0" />
+            </Link>
           </motion.div>
 
           {/* Account Details */}

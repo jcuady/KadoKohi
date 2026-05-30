@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
+import OnboardingBanner from '../../components/customer/OnboardingBanner';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
@@ -55,6 +56,9 @@ export default function AccountDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* ─── ONBOARDING BANNER (notifications + install) ─── */}
+      <OnboardingBanner />
+
       {/* ─── WELCOME HEADER ─── */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>

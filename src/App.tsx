@@ -52,11 +52,15 @@ import AccountProfile from './pages/account/AccountProfile';
 import AccountBoothBookings from './pages/account/AccountBoothBookings';
 import AccountVouchers from './pages/account/AccountVouchers';
 import NotFound from './pages/NotFound';
+import HelpInstall from './pages/HelpInstall';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Standalone utility pages */}
+        <Route path="/help/install" element={<HelpInstall />} />
+
         {/* Standalone QR / takeout order pages — no marketing nav/footer */}
         <Route path="/order/qr/:code" element={<OrderQR />} />
         <Route path="/order/takeout" element={<OrderTakeout />} />
