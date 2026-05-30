@@ -11,6 +11,7 @@ import { useOrderStore } from './store/orderStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useUserStore } from './store/userStore';
 import { supabase } from './lib/supabase/client';
+import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
 import { registerSW } from 'virtual:pwa-register';
 
 function Bootstrap() {
@@ -40,6 +41,7 @@ function Bootstrap() {
       // session is already cleared at the Supabase layer, so just reset local
       // state (calling logout()/signOut() here would re-fire SIGNED_OUT → loop).
       if (event === 'SIGNED_OUT') {
+        stopOperationsRealtime();
         useAuthStore.setState({ user: null, loading: false });
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         // Defer so we don't re-enter the auth lock held during this callback.

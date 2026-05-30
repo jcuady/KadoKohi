@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
+import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
 
 const nav = [
   { to: '/barista', label: 'Board', end: true, icon: LayoutGrid },
@@ -46,6 +47,12 @@ export default function BaristaLayout() {
   useEffect(() => {
     void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'barista' && user?.role !== 'admin') return;
+    startOperationsRealtime();
+    void refreshOperationsData();
+  }, [user?.id, user?.role]);
 
   const togglePush = async () => {
     setPushBusy(true);

@@ -27,6 +27,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
+import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
 
 const SIDEBAR_W = 'w-56'; /* 14rem — keep in sync with main margin */
 const MAIN_OFFSET = 'ml-56';
@@ -74,6 +75,13 @@ export default function AdminLayout() {
   useEffect(() => {
     void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
   }, []);
+
+  // Ensure live sync is active whenever an admin session is in this shell.
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    startOperationsRealtime();
+    void refreshOperationsData();
+  }, [user?.id, user?.role]);
 
   const togglePush = async () => {
     setPushBusy(true);

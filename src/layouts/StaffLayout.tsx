@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 import { getPushStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
+import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
 
 const SIDEBAR_W = 'w-56';
 const MAIN_OFFSET = 'ml-56';
@@ -45,6 +46,12 @@ export default function StaffLayout() {
   useEffect(() => {
     void getPushStatus().then((s) => setPushOn(s === 'subscribed'));
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'staff') return;
+    startOperationsRealtime();
+    void refreshOperationsData();
+  }, [user?.id, user?.role]);
 
   const togglePush = async () => {
     setPushBusy(true);

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import type { Order } from '../../types/domain';
@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useKioskTheme } from '../../hooks/useKioskTheme';
+import { startOperationsRealtime, refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
 import OrderTableBadge from '../../components/OrderTableBadge';
 
@@ -72,6 +73,12 @@ export default function BaristaKioskDisplay() {
 
   const activeBranchId = user?.role === 'barista' ? user.branchId : adminPosBranchId ?? branches[0]?.id;
   const activeBranchName = branches.find((branch) => branch.id === activeBranchId)?.name ?? 'Kado Kohi';
+
+  useEffect(() => {
+    if (!user || (user.role !== 'barista' && user.role !== 'admin')) return;
+    startOperationsRealtime();
+    void refreshOperationsData();
+  }, [user?.id, user?.role]);
 
   const filtered = useMemo(
     () =>

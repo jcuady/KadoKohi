@@ -1,9 +1,30 @@
 import { create } from 'zustand';
 import type { User } from '../types/domain';
 import { useUserStore } from './userStore';
+import { useOrderStore } from './orderStore';
 import { authRepo } from '../lib/supabase/repositories/auth';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
+import {
+  refreshOperationsData,
+  startOperationsRealtime,
+  stopOperationsRealtime,
+} from '../lib/supabase/operationsRealtime';
+
+function isInternalRole(role: User['role']): boolean {
+  return role === 'admin' || role === 'barista' || role === 'staff';
+}
+
+/** After JWT is available, wire live sync for staff surfaces. */
+function syncOperationalSession(profile: User): void {
+  if (isInternalRole(profile.role)) {
+    startOperationsRealtime();
+    void refreshOperationsData();
+    return;
+  }
+  // Customers: refresh their own orders (no full ops channel).
+  void useOrderStore.getState().hydrateFromRemote();
+}
 
 export interface AuthStore {
   user: User | null;
@@ -33,6 +54,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         try {
           const session = await authRepo.session();
           if (!session?.user) {
+            stopOperationsRealtime();
             set({ user: null, loading: false });
             return;
           }
@@ -48,6 +70,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             } as User);
           set({ user: profile, loading: false });
           useUserStore.getState().updateUser(profile.id, profile);
+          syncOperationalSession(profile);
         } catch {
           set({ loading: false });
         }
@@ -67,6 +90,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             createdAt: new Date().toISOString(),
           } as User);
         set({ user: profile });
+        syncOperationalSession(profile);
       },
       signUp: async (name, email, password) => {
         const res = await authRepo.signUp(email, password, name);
@@ -90,6 +114,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         return { needsEmailConfirmation: false };
       },
       logout: async () => {
+        stopOperationsRealtime();
         await authRepo.signOut();
         set({ user: null });
       },

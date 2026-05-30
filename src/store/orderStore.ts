@@ -4,7 +4,6 @@ import { newId } from '../lib/id';
 import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
 import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS } from '../lib/orderStatus';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
-import { supabase } from '../lib/supabase/client';
 import { logAudit } from '../lib/audit';
 import {
   notifyCustomerOrderStatus,
@@ -21,8 +20,6 @@ function normalizeOrder(o: Order): Order {
   const { status, paymentStatus } = normalizeOrderFields(o);
   return { ...o, status, paymentStatus };
 }
-
-let kkOrdersSubscribed = false;
 
 export interface OrderStore {
   orders: Order[];
@@ -46,15 +43,6 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         try {
           const orders = await orderingRepo.fetchOrders();
           set({ orders: orders.map((o) => normalizeOrder(o)) });
-          if (supabase && !kkOrdersSubscribed) {
-            kkOrdersSubscribed = true;
-            supabase
-              .channel('kk_orders_live')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'kk_orders' }, () => {
-                void get().hydrateFromRemote();
-              })
-              .subscribe();
-          }
         } catch {
           // Keep in-memory state when remote fetch fails.
         }
