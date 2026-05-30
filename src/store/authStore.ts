@@ -11,6 +11,13 @@ import {
   stopOperationsRealtime,
 } from '../lib/supabase/operationsRealtime';
 
+function normalizeProfile(profile: User): User {
+  if (profile.role === 'admin') {
+    return { ...profile, branchId: undefined, loyaltyStamps: undefined };
+  }
+  return profile;
+}
+
 function isInternalRole(role: User['role']): boolean {
   return role === 'admin' || role === 'barista' || role === 'staff';
 }
@@ -59,7 +66,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             return;
           }
           const users = await orderingRepo.fetchUsers();
-          const profile =
+          const profile = normalizeProfile(
             users.find((u) => u.id === session.user.id) ??
             ({
               id: session.user.id,
@@ -67,7 +74,8 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
               name: (session.user.user_metadata?.name as string | undefined) ?? 'Customer',
               role: 'customer',
               createdAt: new Date().toISOString(),
-            } as User);
+            } as User),
+          );
           set({ user: profile, loading: false });
           useUserStore.getState().updateUser(profile.id, profile);
           syncOperationalSession(profile);
@@ -80,7 +88,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         const sessionUser = res.user;
         if (!sessionUser) return;
         const users = await orderingRepo.fetchUsers();
-        const profile =
+        const profile = normalizeProfile(
           users.find((u) => u.id === sessionUser.id) ??
           ({
             id: sessionUser.id,
@@ -88,7 +96,8 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             name: (sessionUser.user_metadata?.name as string | undefined) ?? 'Customer',
             role: 'customer',
             createdAt: new Date().toISOString(),
-          } as User);
+          } as User),
+        );
         set({ user: profile });
         syncOperationalSession(profile);
       },

@@ -1,6 +1,7 @@
 import { useState, useMemo, type FormEvent } from 'react';
 import type { Role } from '../../types/domain';
 import { useUserStore } from '../../store/userStore';
+import { hasAllBranchAccess, isSuperAdmin } from '../../lib/roles';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Pencil, Trash2, Shield, AlertCircle, KeyRound, Stamp } from 'lucide-react';
 import { authRepo } from '../../lib/supabase/repositories/auth';
@@ -97,7 +98,7 @@ export default function AdminUsers() {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       role: form.role,
-      branchId: needsBranch ? form.branchId : undefined,
+      branchId: form.role === 'admin' ? undefined : (needsBranch ? form.branchId : undefined),
     };
     setSaving(true);
     try {
@@ -172,8 +173,13 @@ export default function AdminUsers() {
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm dash-heading">{u.name}</span>
                 <span className="text-[9px] font-bold uppercase tracking-widest dash-card-alt dash-muted px-2 py-0.5 rounded-full dash-border border">{u.role}</span>
+                {hasAllBranchAccess(u) && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest bg-kado-red/10 text-kado-red px-2 py-0.5 rounded-full border border-kado-red/20">
+                    {isSuperAdmin(u) ? 'Super admin' : 'All branches'}
+                  </span>
+                )}
               </div>
-              <p className="text-[10px] dash-muted">{u.email}{u.branchId ? ` · ${branches.find((b) => b.id === u.branchId)?.name ?? u.branchId}` : ''}</p>
+              <p className="text-[10px] dash-muted">{u.email}{u.branchId && u.role !== 'admin' ? ` · ${branches.find((b) => b.id === u.branchId)?.name ?? u.branchId}` : hasAllBranchAccess(u) ? ' · All branches' : ''}</p>
             </div>
             {u.role === 'customer' && (
               <button
@@ -230,12 +236,22 @@ export default function AdminUsers() {
               )}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Role</label>
-                <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))} className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30">
+                <select
+                  value={form.role}
+                  onChange={(e) => {
+                    const role = e.target.value as Role;
+                    setForm((f) => ({ ...f, role, branchId: role === 'admin' ? '' : f.branchId }));
+                  }}
+                  className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                >
                   {(editingId && form.role === 'staff' ? ALL_DISPLAY_ROLES : CREATABLE_ROLES).map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                   {!editingId && <option disabled value="staff">Staff — coming soon</option>}
                 </select>
+                {form.role === 'admin' && (
+                  <p className="text-[10px] dash-muted mt-1">Admin accounts have super-admin access to every branch — no branch assignment.</p>
+                )}
                 {!editingId && (
                   <ComingSoonBadge
                     title="Staff accounts"

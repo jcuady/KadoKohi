@@ -4,6 +4,41 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const RESET_CONFIRM_PHRASE = "RESET ALL DATA";
+
+const DEFAULT_SITE_CONFIG = {
+  defaultOpenTime: "07:00",
+  defaultCloseTime: "23:00",
+  brandMode: "light",
+  shopName: "Kado Kohi",
+  currency: "PHP",
+  boothContactPhone: "+63 917 123 4567",
+  boothContactName: "Kado Kohi Events",
+  contactEmail: "kadocoffeeph@gmail.com",
+  contactPhone: "+63 920 948 2934",
+  contactAddress: "J.P. Laurel St. Corner Mt. Everest, Marikina",
+  contactHours: "Mon – Sun: 7 AM – 11 PM",
+  mapsEmbedUrl:
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890",
+  socialInstagram: "",
+  socialFacebook: "",
+  socialTiktok: "",
+};
+
+/** Tables wiped on reset — order respects foreign keys (children before parents). */
+const RESET_DELETE_TABLES: Array<{ table: string; column?: string; sentinel?: string }> = [
+  { table: "kk_order_items" },
+  { table: "kk_orders" },
+  { table: "kk_audit_logs" },
+  { table: "kk_push_subscriptions", column: "endpoint", sentinel: "__never__" },
+  { table: "kk_promo_claims" },
+  { table: "kk_promo_codes" },
+  { table: "kk_tables" },
+  { table: "kk_products" },
+  { table: "kk_menu_categories" },
+  { table: "kk_branches" },
+];
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -82,7 +117,7 @@ Deno.serve(async (req: Request) => {
       email,
       name,
       role,
-      branch_id: branchId ?? null,
+      branch_id: role === "admin" ? null : (branchId ?? null),
       loyalty_stamps: 0,
     });
     return new Response(JSON.stringify({ user: newUser.user }), {
@@ -140,29 +175,20 @@ Deno.serve(async (req: Request) => {
 
   if (action === "reset_all_data") {
     const { confirmPhrase } = body;
-    if (confirmPhrase !== "RESET ALL DATA") {
+    if (confirmPhrase !== RESET_CONFIRM_PHRASE) {
       return new Response(
-        JSON.stringify({ error: 'Type "RESET ALL DATA" to confirm.' }),
+        JSON.stringify({ error: `Type "${RESET_CONFIRM_PHRASE}" to confirm.` }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
-    const deleted = {
-      orderItems: 0,
-      orders: 0,
-      auditLogs: 0,
-      pushSubscriptions: 0,
-      promoClaims: 0,
-      promoCodes: 0,
-      tables: 0,
-      products: 0,
-      menuCategories: 0,
-      branches: 0,
-      users: 0,
+    const deleted: Record<string, number | boolean> = {
       settingsReset: false,
+      adminsPreserved: 0,
+      usersRemoved: 0,
     };
 
-    const countDelete = async (table: string) => {
+    const countRows = async (table: string) => {
       const { count, error } = await adminClient
         .from(table)
         .select("*", { count: "exact", head: true });
@@ -170,89 +196,56 @@ Deno.serve(async (req: Request) => {
       return count ?? 0;
     };
 
-    const deleteAll = async (table: string, column = "id", sentinel = "00000000-0000-0000-0000-000000000000") => {
+    const deleteAllRows = async (
+      table: string,
+      column = "id",
+      sentinel = "00000000-0000-0000-0000-000000000000",
+    ) => {
       const { error } = await adminClient.from(table).delete().neq(column, sentinel);
       if (error) throw error;
     };
 
     try {
-      deleted.orderItems = await countDelete("kk_order_items");
-      await deleteAll("kk_order_items");
+      for (const { table, column, sentinel } of RESET_DELETE_TABLES) {
+        deleted[table] = await countRows(table);
+        await deleteAllRows(table, column, sentinel);
+      }
 
-      deleted.orders = await countDelete("kk_orders");
-      await deleteAll("kk_orders");
-
-      deleted.auditLogs = await countDelete("kk_audit_logs");
-      await deleteAll("kk_audit_logs");
-
-      deleted.pushSubscriptions = await countDelete("kk_push_subscriptions");
-      await deleteAll("kk_push_subscriptions", "endpoint", "__never__");
-
-      deleted.promoClaims = await countDelete("kk_promo_claims");
-      await deleteAll("kk_promo_claims");
-
-      deleted.promoCodes = await countDelete("kk_promo_codes");
-      await deleteAll("kk_promo_codes");
-
-      deleted.tables = await countDelete("kk_tables");
-      await deleteAll("kk_tables");
-
-      deleted.products = await countDelete("kk_products");
-      await deleteAll("kk_products");
-
-      deleted.menuCategories = await countDelete("kk_menu_categories");
-      await deleteAll("kk_menu_categories");
-
-      deleted.branches = await countDelete("kk_branches");
-      await deleteAll("kk_branches");
-
-      const defaultSiteConfig = {
-        defaultOpenTime: "07:00",
-        defaultCloseTime: "23:00",
-        brandMode: "light",
-        shopName: "Kado Kohi",
-        currency: "PHP",
-        boothContactPhone: "+63 917 123 4567",
-        boothContactName: "Kado Kohi Events",
-        contactEmail: "kadocoffeeph@gmail.com",
-        contactPhone: "+63 920 948 2934",
-        contactAddress: "J.P. Laurel St. Corner Mt. Everest, Marikina",
-        contactHours: "Mon – Sun: 7 AM – 11 PM",
-        mapsEmbedUrl:
-          "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890",
-        socialInstagram: "",
-        socialFacebook: "",
-        socialTiktok: "",
-      };
       const { error: settingsErr } = await adminClient.from("kk_app_settings").upsert({
         id: true,
         tax_rate: 0,
         gcash_qr_image: null,
-        order_hours: defaultSiteConfig,
+        order_hours: DEFAULT_SITE_CONFIG,
       });
       if (settingsErr) throw settingsErr;
       deleted.settingsReset = true;
 
       const { data: nonAdminProfiles, error: profileErr } = await adminClient
         .from("kk_profiles")
-        .select("id, email, role")
+        .select("id")
         .neq("role", "admin");
       if (profileErr) throw profileErr;
 
       for (const profile of nonAdminProfiles ?? []) {
         if (profile.id === user.id) continue;
-        const { error: authDelErr } = await adminClient.auth.admin.deleteUser(profile.id);
-        if (authDelErr) {
-          console.warn(`auth delete failed for ${profile.id}:`, authDelErr.message);
-        }
+        await adminClient.auth.admin.deleteUser(profile.id).catch((err) => {
+          console.warn(`auth delete failed for ${profile.id}:`, err.message);
+        });
         await adminClient.from("kk_profiles").delete().eq("id", profile.id);
-        deleted.users += 1;
+        deleted.usersRemoved = (deleted.usersRemoved as number) + 1;
       }
+
+      const { data: adminProfiles, error: adminErr } = await adminClient
+        .from("kk_profiles")
+        .select("id")
+        .eq("role", "admin");
+      if (adminErr) throw adminErr;
 
       await adminClient
         .from("kk_profiles")
         .update({ loyalty_stamps: 0, branch_id: null })
         .eq("role", "admin");
+      deleted.adminsPreserved = adminProfiles?.length ?? 0;
 
       return new Response(JSON.stringify({ success: true, deleted }), {
         headers: { "Content-Type": "application/json" },

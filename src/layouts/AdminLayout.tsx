@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
+import { hasAllBranchAccess } from '../lib/roles';
 import NotificationToggle from '../components/NotificationToggle';
 import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
 
@@ -106,6 +107,11 @@ export default function AdminLayout() {
               <p className="truncate text-[10px] leading-tight" style={{ color: 'var(--color-dash-text-muted)' }}>
                 {user?.email}
               </p>
+              {hasAllBranchAccess(user) && (
+                <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wider text-kado-red">
+                  Super admin · All branches
+                </p>
+              )}
             </div>
           </div>
         </div>

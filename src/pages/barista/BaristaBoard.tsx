@@ -40,7 +40,6 @@ export default function BaristaBoard() {
   const orders = useOrderStore((s) => s.orders);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
   const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
-  const adminBranch = useBranchStore((s) => s.adminPosBranchId);
   const branches = useBranchStore((s) => s.branches);
 
   const visible = useMemo(() => {
@@ -80,7 +79,7 @@ export default function BaristaBoard() {
           <h1 className="font-display text-2xl md:text-3xl font-bold dash-heading">Order Board</h1>
           <p className="dash-muted text-xs mt-1">
             {user?.role === 'admin'
-              ? `All channels (Admin POS branch: ${branchLabel(adminBranch ?? '')})`
+              ? 'All branches · all channels'
               : `Branch: ${user?.branchId ? branchLabel(user.branchId) : '—'}`}
             {' · '}Payment and order status are updated separately.
           </p>

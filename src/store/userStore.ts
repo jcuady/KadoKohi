@@ -84,7 +84,11 @@ export const useUserStore = create<UserStore>()((set, get) => ({
             void orderingRepo.upsertUser(inserted);
             return { users: [...get().users, inserted] };
           }
-          const updated = { ...existing, ...patch };
+          const merged = { ...existing, ...patch };
+          const updated: User =
+            merged.role === 'admin'
+              ? { ...merged, branchId: undefined }
+              : merged;
           void orderingRepo.upsertUser(updated);
           return {
             users: get().users.map((u) => (u.id === id ? updated : u)),

@@ -26,6 +26,7 @@ export type TrackedOrderStatus = {
 import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
 import { supabase } from '../client';
 import { authRepo } from './auth';
+import { profileBranchId } from '../../roles';
 
 function mapBranch(row: any): Branch {
   return {
@@ -135,12 +136,13 @@ function mapOrder(row: any): Order {
 }
 
 function mapUser(row: any): User {
+  const role = row.role as User['role'];
   return {
     id: row.id,
     email: row.email,
     name: row.name,
-    role: row.role,
-    branchId: row.branch_id ?? undefined,
+    role,
+    branchId: role === 'admin' ? undefined : (row.branch_id ?? undefined),
     loyaltyStamps: row.loyalty_stamps ?? undefined,
     createdAt: row.created_at,
   };
@@ -365,8 +367,8 @@ export const orderingRepo = {
       email: u.email,
       name: u.name,
       role: u.role,
-      branch_id: u.branchId ?? null,
-      loyalty_stamps: u.loyaltyStamps ?? 0,
+      branch_id: profileBranchId(u),
+      loyalty_stamps: u.role === 'customer' ? (u.loyaltyStamps ?? 0) : 0,
     });
     if (error) throw error;
   },

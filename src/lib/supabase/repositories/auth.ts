@@ -77,20 +77,7 @@ export const authRepo = {
     if (data?.error) throw new Error(data.error as string);
     return data as {
       success: boolean;
-      deleted: {
-        orderItems: number;
-        orders: number;
-        auditLogs: number;
-        pushSubscriptions: number;
-        promoClaims: number;
-        promoCodes: number;
-        tables: number;
-        products: number;
-        menuCategories: number;
-        branches: number;
-        users: number;
-        settingsReset: boolean;
-      };
+      deleted: Record<string, number | boolean>;
     };
   },
 };

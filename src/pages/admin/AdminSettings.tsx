@@ -3,6 +3,8 @@ import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
+import { useBranchStore } from '../../store/branchStore';
+import { useAuthStore } from '../../store/authStore';
 import { AlertTriangle, Check, Loader2, Trash2 } from 'lucide-react';
 
 const RESET_PHRASE = 'RESET ALL DATA';
@@ -55,12 +57,21 @@ export default function AdminSettings() {
     setResetBusy(true);
     try {
       const result = await authRepo.resetAllData(RESET_PHRASE);
+      useBranchStore.getState().setAdminPosBranchId(null);
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.role === 'admin') {
+        useAuthStore.setState({ user: { ...currentUser, branchId: undefined, loyaltyStamps: undefined } });
+      }
       await refreshOperationsData();
       setResetOpen(false);
       setResetPhrase('');
       const d = result.deleted;
+      const orders = Number(d.kk_orders ?? 0);
+      const branches = Number(d.kk_branches ?? 0);
+      const usersRemoved = Number(d.usersRemoved ?? 0);
+      const adminsKept = Number(d.adminsPreserved ?? 0);
       setResetSuccess(
-        `Data reset complete — removed ${d.orders} orders, ${d.users} non-admin accounts, ${d.branches} branches, ${d.products} products, ${d.tables} tables, and ${d.auditLogs} audit entries. Shop settings restored to defaults. Your admin login is unchanged.`,
+        `Reset complete — cleared ${orders} orders, ${branches} branches, and ${usersRemoved} non-admin accounts. ${adminsKept} admin login(s) preserved with access to all branches. Shop settings restored to defaults.`,
       );
     } catch (err) {
       setResetError(err instanceof Error ? err.message : 'Unable to reset data. Try again or redeploy the admin edge function.');
@@ -353,7 +364,7 @@ export default function AdminSettings() {
             <p className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 pt-2">Will be kept</p>
             <ul className="list-disc pl-4 space-y-1 text-emerald-900/80">
               <li>Admin login (email + password) — you stay signed in</li>
-              <li>Admin profile name and role only</li>
+              <li>Super admin access to all branches (no branch lock)</li>
             </ul>
           </div>
 
