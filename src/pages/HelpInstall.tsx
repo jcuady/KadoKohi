@@ -20,8 +20,14 @@ import {
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { usePushToggle } from '../hooks/usePushToggle';
+import { useAuthStore } from '../store/authStore';
 
 type OSTab = 'android' | 'ios';
+
+function detectDefaultTab(): OSTab {
+  if (typeof navigator === 'undefined') return 'android';
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android';
+}
 
 const ANDROID_STEPS = [
   {
@@ -85,7 +91,11 @@ const BENEFITS = [
 ];
 
 export default function HelpInstall() {
-  const [tab, setTab] = useState<OSTab>('android');
+  const user = useAuthStore((s) => s.user);
+  const backTo = user?.role === 'customer' || user?.role === 'admin' ? '/account' : '/';
+  const backLabel = backTo === '/account' ? 'Back to account' : 'Back to home';
+
+  const [tab, setTab] = useState<OSTab>(detectDefaultTab);
   const { canInstall, isInstalled, install } = usePWAInstall();
   const { status: pushStatus, busy: pushBusy, enable: enablePush } = usePushToggle('customer');
 
@@ -97,11 +107,11 @@ export default function HelpInstall() {
       <header className="sticky top-0 z-40 border-b border-kado-dark/10 bg-kado-cream/90 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-5 py-4 flex items-center gap-4">
           <Link
-            to="/account"
+            to={backTo}
             className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-kado-dark/50 hover:text-kado-red transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to account</span>
+            <span className="hidden sm:inline">{backLabel}</span>
           </Link>
           <div className="flex-1 flex justify-center">
             <Link to="/" className="flex items-center gap-2.5">
@@ -402,11 +412,11 @@ export default function HelpInstall() {
           className="mt-12 flex flex-col sm:flex-row items-center gap-4 justify-center"
         >
           <Link
-            to="/account"
+            to={backTo}
             className="inline-flex items-center gap-2 rounded-full bg-kado-dark text-white px-8 py-4 text-[11px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors shadow-lg"
           >
             <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to dashboard
+            {backTo === '/account' ? 'Back to dashboard' : 'Back to home'}
           </Link>
           <Link
             to="/menu"

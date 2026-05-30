@@ -40,7 +40,7 @@ export function usePushToggle(audience: 'customer' | 'staff' = 'customer') {
     return () => window.removeEventListener('focus', onFocus);
   }, [refresh]);
 
-  const enable = useCallback(async () => {
+  const enable = useCallback(async (): Promise<boolean> => {
     setBusy(true);
     setFeedback(null);
     const res = await subscribeToPush();
@@ -53,14 +53,16 @@ export function usePushToggle(audience: 'customer' | 'staff' = 'customer') {
             ? BARISTA_SUCCESS_ON
             : CUSTOMER_SUCCESS_ON,
       });
-    } else {
-      if (res.reason === 'denied') setStatus('denied');
-      setFeedback({
-        type: 'error',
-        message: REASON_MESSAGES[res.reason ?? ''] ?? 'Could not enable notifications.',
-      });
+      setBusy(false);
+      return true;
     }
+    if (res.reason === 'denied') setStatus('denied');
+    setFeedback({
+      type: 'error',
+      message: REASON_MESSAGES[res.reason ?? ''] ?? 'Could not enable notifications.',
+    });
     setBusy(false);
+    return false;
   }, [audience]);
 
   const disable = useCallback(async () => {

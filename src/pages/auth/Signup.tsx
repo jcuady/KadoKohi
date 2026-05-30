@@ -61,7 +61,7 @@ export default function Signup() {
         });
         return;
       }
-      navigate('/account', { replace: true });
+      navigate('/account', { replace: true, state: { onboard: true } });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (/already registered|already exists|User already/i.test(message)) {

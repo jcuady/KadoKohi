@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import OnboardingBanner from '../../components/customer/OnboardingBanner';
@@ -23,6 +23,8 @@ import { useVoucherStore } from '../../store/voucherStore';
 
 export default function AccountDashboard() {
   const user = useAuthStore((s) => s.user);
+  const location = useLocation();
+  const isNewUser = Boolean((location.state as { onboard?: boolean } | null)?.onboard);
   const orders = useOrderStore((s) => s.orders);
   const branches = useBranchStore((s) => s.branches);
 
@@ -57,16 +59,20 @@ export default function AccountDashboard() {
   return (
     <div className="space-y-8">
       {/* ─── ONBOARDING BANNER (notifications + install) ─── */}
-      <OnboardingBanner />
+      <OnboardingBanner isNewUser={isNewUser} />
 
       {/* ─── WELCOME HEADER ─── */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Dashboard</p>
           <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-            Welcome back, {user?.name}
+            {isNewUser ? `Welcome, ${user?.name}` : `Welcome back, ${user?.name}`}
           </h1>
-          <p className="text-sm text-kado-dark/50 mt-1 font-medium">Your Kado Kohi account overview.</p>
+          <p className="text-sm text-kado-dark/50 mt-1 font-medium">
+            {isNewUser
+              ? 'Your account is ready — enable notifications and install the app below to stay connected.'
+              : 'Your Kado Kohi account overview.'}
+          </p>
         </div>
         <Link
           to="/menu"
