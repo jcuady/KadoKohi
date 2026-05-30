@@ -9,8 +9,10 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  // Cap parallelism: many specs sign in to the same Supabase accounts, and a
+  // large worker pool can trip GoTrue auth throttling and cause flaky hangs.
+  workers: process.env.CI ? 1 : 3,
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:4173',

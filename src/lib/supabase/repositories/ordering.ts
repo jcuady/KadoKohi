@@ -1,5 +1,28 @@
-import type { Branch, MenuCategory, Order, OrderItem, Product, Table, User } from '../../../types/domain';
+import type {
+  Branch,
+  MenuCategory,
+  Order,
+  OrderItem,
+  OrderStatus,
+  PaymentStatus,
+  Product,
+  Table,
+  User,
+} from '../../../types/domain';
 import type { AppSettings } from '../../../store/settingsStore';
+
+/** Public-safe order status returned by the kk_track_order RPC (guest-readable). */
+export type TrackedOrderStatus = {
+  id: string;
+  shortCode: string;
+  channel: Order['channel'];
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  guestName?: string;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+};
 import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
 import { supabase } from '../client';
 import { authRepo } from './auth';
@@ -277,6 +300,29 @@ export const orderingRepo = {
       const itemRes = await supabase.from('kk_order_items').insert(items);
       if (itemRes.error) throw itemRes.error;
     }
+  },
+  /**
+   * Capability-based status lookup for a single order by its (unguessable) id.
+   * Works for guests/anon since it calls the SECURITY DEFINER `kk_track_order`
+   * RPC — see supabase/migrations/0001_kk_track_order.sql.
+   */
+  async trackOrder(id: string): Promise<TrackedOrderStatus | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc('kk_track_order', { order_id: id });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return {
+      id: row.id,
+      shortCode: row.short_code,
+      channel: row.channel,
+      status: row.status,
+      paymentStatus: row.payment_status,
+      guestName: row.guest_name ?? undefined,
+      total: Number(row.total ?? 0),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
   },
   async patchOrder(id: string, patch: Partial<Order>) {
     if (!supabase) return;

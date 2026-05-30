@@ -35,10 +35,15 @@ function Bootstrap() {
     // sign-out from another tab, OAuth callback, email confirmation, etc.).
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      // IMPORTANT: never call supabase.auth.* (signOut/getSession) synchronously
+      // inside this callback — it deadlocks the auth lock. On SIGNED_OUT the
+      // session is already cleared at the Supabase layer, so just reset local
+      // state (calling logout()/signOut() here would re-fire SIGNED_OUT → loop).
       if (event === 'SIGNED_OUT') {
-        useAuthStore.getState().logout();
+        useAuthStore.setState({ user: null, loading: false });
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        void useAuthStore.getState().initFromSupabase();
+        // Defer so we don't re-enter the auth lock held during this callback.
+        setTimeout(() => { void useAuthStore.getState().initFromSupabase(); }, 0);
       }
     });
     return () => subscription.unsubscribe();

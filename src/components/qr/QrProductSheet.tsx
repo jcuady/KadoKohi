@@ -17,9 +17,11 @@ type Props = {
   product: Product | null;
   onClose: () => void;
   onAdd: (payload: QrCartPayload) => void;
+  /** CTA verb shown on the add button, e.g. "Add to order". */
+  ctaLabel?: string;
 };
 
-export default function QrProductSheet({ product, onClose, onAdd }: Props) {
+export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Add to table order' }: Props) {
   const [qty, setQty] = useState(1);
   const [milkId, setMilkId] = useState('');
   const [temp, setTemp] = useState<'hot' | 'iced'>('hot');
@@ -191,7 +193,7 @@ export default function QrProductSheet({ product, onClose, onAdd }: Props) {
                 className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors touch-manipulation"
               >
                 <ShoppingBag className="w-4 h-4" />
-                Add to table order — {formatPhp(unitPrice * qty)}
+                {ctaLabel} — {formatPhp(unitPrice * qty)}
               </button>
             </div>
           </motion.div>

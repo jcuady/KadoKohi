@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import type { OrderItem, Product } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
+import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useTableStore } from '../store/tableStore';
 import { useBranchStore } from '../store/branchStore';
@@ -10,10 +11,11 @@ import { formatPhp, computeOrderTotals } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
+import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
+import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import {
   ShoppingBag,
-  Check,
   ChevronUp,
   ChevronDown,
   Minus,
@@ -39,6 +41,7 @@ function resolveUnit(product: Product, milkId?: string): { unit: number; milkLab
 
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
+  const user = useAuthStore((s) => s.user);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const table = useTableStore((s) => s.getByCode(code ?? ''));
   const tablesHydrated = useTableStore((s) => s.hydrated);
@@ -58,12 +61,20 @@ export default function OrderQR() {
     [categories],
   );
 
+  const sessionKey = `qr.${code ?? 'unknown'}`;
+
   const [activeCat, setActiveCat] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [placed, setPlaced] = useState(false);
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
+
+  // Restore an in-progress order for this browser session (per-table).
+  useEffect(() => {
+    const ref = getTrackedOrder(sessionKey);
+    if (ref) setTrackedOrderId(ref.orderId);
+  }, [sessionKey]);
 
   useEffect(() => {
     if (!sortedCategories.length) return;
@@ -139,10 +150,11 @@ export default function OrderQR() {
     if (!table || cartTotals.lines.length === 0 || submitting) return;
     setSubmitting(true);
     try {
-      await createOrder({
+      const order = await createOrder({
         channel: 'dine-in',
         branchId: table.branchId,
         tableId: table.id,
+        customerId: user?.id,
         status: 'pending',
         items: cartTotals.lines,
         subtotal: cartTotals.subtotal,
@@ -150,14 +162,25 @@ export default function OrderQR() {
         tax: cartTotals.tax,
         total: cartTotals.total,
       });
+      setTrackedOrder(sessionKey, {
+        orderId: order.id,
+        shortCode: order.shortCode,
+        label: table.label,
+        placedAt: order.createdAt,
+      });
+      setTrackedOrderId(order.id);
       setCart([]);
       setCartExpanded(false);
-      setPlaced(true);
     } catch {
       // Order stays in cart if the server rejects the insert.
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleOrderAgain = () => {
+    clearTrackedOrder(sessionKey);
+    setTrackedOrderId(null);
   };
 
   if (!tablesHydrated) {
@@ -185,6 +208,18 @@ export default function OrderQR() {
     );
   }
 
+  if (trackedOrderId) {
+    return (
+      <OrderTrackingPanel
+        orderId={trackedOrderId}
+        channel="dine-in"
+        contextLabel={table.label}
+        isLoggedIn={Boolean(user)}
+        onOrderAgain={handleOrderAgain}
+      />
+    );
+  }
+
   if (!table.active) {
     return (
       <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center px-6 py-16 text-center">
@@ -196,29 +231,6 @@ export default function OrderQR() {
           <Link to="/" className="text-sm font-bold text-kado-red hover:underline">
             Back to home
           </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (placed) {
-    return (
-      <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center px-6 py-16 text-center">
-        <div className="max-w-md">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-6 mx-auto">
-            <Check className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-black text-kado-dark mb-2">Order sent!</h1>
-          <p className="text-kado-dark/60 text-sm sm:text-base mb-8 leading-relaxed">
-            Your dine-in order for <strong>{table.label}</strong> at {branchName} is with the barista. Sit tight!
-          </p>
-          <button
-            type="button"
-            onClick={() => setPlaced(false)}
-            className="w-full sm:w-auto min-h-[48px] rounded-2xl bg-kado-dark text-kado-cream px-8 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors touch-manipulation"
-          >
-            Order more
-          </button>
         </div>
       </div>
     );

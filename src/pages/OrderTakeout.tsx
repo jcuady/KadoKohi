@@ -1,5 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import type { OrderItem, Product } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
@@ -7,17 +8,32 @@ import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp, computeOrderTotals } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
+import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
-import { ShoppingBag, Check } from 'lucide-react';
+import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
+import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
+import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
+import {
+  ShoppingBag,
+  ChevronUp,
+  ChevronDown,
+  Minus,
+  Plus,
+  Trash2,
+  Store,
+} from 'lucide-react';
 
-type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
+type CartLine = QrCartPayload & { key: string };
 
 function resolveUnit(product: Product, milkId?: string): { unit: number; milkLabel?: string } {
   let unit = product.basePrice;
   let milkLabel: string | undefined;
   if (milkId && product.milks?.length) {
     const m = product.milks.find((x) => x.id === milkId);
-    if (m) { unit += m.priceDelta; milkLabel = m.label; }
+    if (m) {
+      unit += m.priceDelta;
+      milkLabel = m.label;
+    }
   }
   return { unit, milkLabel };
 }
@@ -28,7 +44,8 @@ export default function OrderTakeout() {
   const [searchParams] = useSearchParams();
   const branchSlug = searchParams.get('b') ?? '';
   const branches = useBranchStore((s) => s.branches);
-  const branch = branches.find((b) => b.slug === branchSlug) ?? branches.find((b) => b.status === 'active');
+  const branch =
+    branches.find((b) => b.slug === branchSlug) ?? branches.find((b) => b.status === 'active');
 
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
@@ -40,18 +57,39 @@ export default function OrderTakeout() {
     [categories],
   );
 
-  const [activeCat, setActiveCat] = useState(sortedCategories[0]?.id ?? '');
+  const sessionKey = `takeout.${branch?.slug ?? branchSlug ?? 'default'}`;
+
+  const [activeCat, setActiveCat] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [pickupName, setPickupName] = useState('');
-  const [placed, setPlaced] = useState(false);
+  const [pickupName, setPickupName] = useState(user?.name ?? '');
+  const [cartExpanded, setCartExpanded] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
+  const [trackedLabel, setTrackedLabel] = useState('');
 
-  const list = productsByCategory(activeCat || sortedCategories[0]?.id || '');
+  // Restore an in-progress order for this browser session (per-branch).
+  useEffect(() => {
+    const ref = getTrackedOrder(sessionKey);
+    if (ref) {
+      setTrackedOrderId(ref.orderId);
+      setTrackedLabel(ref.label);
+    }
+  }, [sessionKey]);
 
-  const addToCart = (product: Product) => {
-    const defaultMilk = product.milks?.[0]?.id;
-    const temp: 'hot' | 'iced' = product.temperature === 'iced' ? 'iced' : 'hot';
-    setCart((c) => [...c, { key: newId(), productId: product.id, qty: 1, milkId: defaultMilk, temperature: temp }]);
-  };
+  useEffect(() => {
+    if (!sortedCategories.length) return;
+    if (!activeCat || !sortedCategories.some((c) => c.id === activeCat)) {
+      setActiveCat(sortedCategories[0].id);
+    }
+  }, [sortedCategories, activeCat]);
+
+  const list = useMemo(
+    () => (activeCat ? productsByCategory(activeCat) : []),
+    [activeCat, productsByCategory],
+  );
+
+  const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
 
   const cartTotals = useMemo(() => {
     let subtotal = 0;
@@ -63,17 +101,52 @@ export default function OrderTakeout() {
       const { unit, milkLabel } = resolveUnit(p, line.milkId);
       subtotal += p.basePrice * line.qty;
       modifiers += (unit - p.basePrice) * line.qty;
-      lines.push({ id: newId(), productId: p.id, productNameSnapshot: p.name, milkId: line.milkId, milkLabelSnapshot: milkLabel, temperature: line.temperature, unitPrice: unit, qty: line.qty, lineTotal: unit * line.qty });
+      lines.push({
+        id: newId(),
+        productId: p.id,
+        productNameSnapshot: p.name,
+        itemType: 'coffee',
+        milkId: line.milkId,
+        milkLabelSnapshot: milkLabel ?? line.milkLabel,
+        temperature: line.temperature,
+        unitPrice: unit,
+        qty: line.qty,
+        lineTotal: unit * line.qty,
+      });
     }
     const { tax, total } = computeOrderTotals(subtotal, modifiers, taxRate);
     return { lines, subtotal, modifiers, tax, total };
   }, [cart, products, taxRate]);
 
-  const placeOrder = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!branch || cartTotals.lines.length === 0 || !pickupName.trim()) return;
+  const addLine = (payload: QrCartPayload) => {
+    setCart((prev) => {
+      const match = prev.find(
+        (l) =>
+          l.productId === payload.productId &&
+          l.milkId === payload.milkId &&
+          l.temperature === payload.temperature,
+      );
+      if (match) {
+        return prev.map((l) => (l.key === match.key ? { ...l, qty: l.qty + payload.qty } : l));
+      }
+      return [...prev, { ...payload, key: newId() }];
+    });
+    setCartExpanded(true);
+  };
+
+  const updateLineQty = (key: string, qty: number) => {
+    if (qty <= 0) {
+      setCart((c) => c.filter((x) => x.key !== key));
+      return;
+    }
+    setCart((c) => c.map((x) => (x.key === key ? { ...x, qty } : x)));
+  };
+
+  const placeOrder = async () => {
+    if (!branch || cartTotals.lines.length === 0 || !pickupName.trim() || submitting) return;
+    setSubmitting(true);
     try {
-      await createOrder({
+      const order = await createOrder({
         channel: 'takeout',
         branchId: branch.id,
         customerId: user?.id,
@@ -85,122 +158,315 @@ export default function OrderTakeout() {
         tax: cartTotals.tax,
         total: cartTotals.total,
       });
+      setTrackedOrder(sessionKey, {
+        orderId: order.id,
+        shortCode: order.shortCode,
+        label: pickupName.trim(),
+        placedAt: order.createdAt,
+      });
+      setTrackedOrderId(order.id);
+      setTrackedLabel(pickupName.trim());
       setCart([]);
-      setPlaced(true);
+      setCartExpanded(false);
     } catch {
       // Keep cart if persistence fails.
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleOrderAgain = () => {
+    clearTrackedOrder(sessionKey);
+    setTrackedOrderId(null);
+    setTrackedLabel('');
   };
 
   if (!branch) {
     return (
-      <div className="min-h-screen bg-kado-cream flex items-center justify-center px-6 py-24 text-center">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-kado-dark mb-2">Branch not found</h1>
-          <p className="text-kado-dark/65 mb-6">Could not resolve the branch from this QR code.</p>
-          <Link to="/" className="text-sm font-bold text-kado-red hover:underline">Back to home</Link>
+      <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center px-6 py-16 text-center">
+        <div className="max-w-sm">
+          <Store className="w-12 h-12 text-kado-red/40 mx-auto mb-4" />
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-kado-dark mb-2">
+            Branch not found
+          </h1>
+          <p className="text-kado-dark/60 text-sm mb-6">
+            Could not resolve the branch from this link.
+          </p>
+          <Link to="/" className="text-sm font-bold text-kado-red hover:underline">
+            Back to home
+          </Link>
         </div>
       </div>
     );
   }
 
-  if (placed) {
+  if (trackedOrderId) {
     return (
-      <div className="min-h-screen bg-kado-cream flex items-center justify-center px-6 py-24 text-center">
-        <div>
-          <div className="w-16 h-16 rounded-full bg-kado-red/10 flex items-center justify-center mb-6 mx-auto">
-            <Check className="w-8 h-8 text-kado-red" />
-          </div>
-          <h1 className="font-display text-3xl font-bold text-kado-dark mb-2">Takeout order placed!</h1>
-          <p className="text-kado-dark/65 max-w-md mb-6">
-            We'll call out <strong>{pickupName}</strong> when your order is ready. Stay nearby!
-          </p>
-          <button type="button" onClick={() => { setPlaced(false); setPickupName(''); }} className="rounded-full bg-kado-dark text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors">
-            Order again
-          </button>
-        </div>
-      </div>
+      <OrderTrackingPanel
+        orderId={trackedOrderId}
+        channel="takeout"
+        contextLabel={trackedLabel || pickupName || 'your order'}
+        isLoggedIn={Boolean(user)}
+        onOrderAgain={handleOrderAgain}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-kado-cream font-sans px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-6">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-kado-red">Takeout · {branch.name}</span>
-          <h1 className="font-display text-2xl font-bold text-kado-dark mt-1">Grab & Go</h1>
+    <div className="min-h-[100dvh] bg-[#FAF7F2] font-sans flex flex-col">
+      {/* Header */}
+      <header className="shrink-0 sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-kado-dark/8">
+        <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-lg shrink-0">
+              角
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
+                Takeout · {branch.name}
+              </p>
+              <h1 className="font-display text-lg sm:text-xl font-black text-kado-dark truncate">
+                Grab &amp; Go
+              </h1>
+              <p className="text-[11px] text-kado-dark/45 truncate">Order ahead, pick up fresh</p>
+            </div>
+            {cartCount > 0 && (
+              <span className="shrink-0 min-w-[2rem] h-8 px-2 rounded-full bg-kado-red text-white text-xs font-black flex items-center justify-center">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </div>
         </div>
 
-        <form onSubmit={placeOrder}>
-          <div className="mb-5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-kado-dark/60 mb-1.5">Your name (for pickup)</label>
-            <input
-              value={pickupName}
-              onChange={(e) => setPickupName(e.target.value)}
-              placeholder="e.g. Juan"
-              required
-              className="w-full rounded-xl border border-kado-dark/15 bg-kado-offwhite px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2 mb-4 justify-center">
+        {/* Categories */}
+        <div className="max-w-3xl mx-auto px-4 pb-3 overflow-x-auto scrollbar-none">
+          <div className="flex gap-2 w-max min-w-full sm:min-w-0 sm:flex-wrap sm:w-auto pb-0.5">
             {sortedCategories.map((c) => (
-              <button key={c.id} type="button" onClick={() => setActiveCat(c.id)} className={`px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border ${activeCat === c.id ? 'bg-kado-dark text-kado-cream border-kado-dark' : 'bg-kado-offwhite border-kado-dark/10'}`}>
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveCat(c.id)}
+                className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors touch-manipulation ${
+                  activeCat === c.id
+                    ? 'bg-kado-dark text-kado-cream border-kado-dark'
+                    : 'bg-white text-kado-dark/60 border-kado-dark/10 hover:border-kado-red/30'
+                }`}
+              >
                 {c.name}
               </button>
             ))}
           </div>
+        </div>
+      </header>
 
-          <div className="grid sm:grid-cols-2 gap-2 mb-6">
-            {list.map((p) => (
-              <button key={p.id} type="button" onClick={() => addToCart(p)} className="text-left rounded-xl border border-kado-dark/10 bg-kado-offwhite p-4 hover:border-kado-red/40 transition-colors">
-                <div className="flex justify-between items-start gap-2">
-                  <span className="font-display font-bold text-sm text-kado-dark">{p.name}</span>
-                  <span className="font-display font-bold text-sm text-kado-red">{formatPhp(p.basePrice)}</span>
+      {/* Main */}
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-4 sm:py-6 pb-44 sm:pb-48">
+        {/* Pickup name */}
+        <div className="mb-4 rounded-2xl border border-kado-dark/8 bg-white p-4">
+          <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/45 mb-2">
+            Your name (for pickup)
+          </label>
+          <input
+            value={pickupName}
+            onChange={(e) => setPickupName(e.target.value)}
+            placeholder="e.g. Juan"
+            className="w-full rounded-xl border border-kado-dark/12 bg-[#FAF7F2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+          />
+        </div>
+
+        {list.length === 0 ? (
+          <p className="text-center text-sm text-kado-dark/50 py-16">
+            No items in this category right now. Check another tab or ask staff.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {list.map((p, i) => {
+              const image = getProductImageUrl(p);
+              const tag = p.tags?.[0];
+              return (
+                <motion.button
+                  key={p.id}
+                  type="button"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.03, 0.2) }}
+                  onClick={() => setSelectedProduct(p)}
+                  className="text-left bg-white border border-kado-dark/8 rounded-2xl overflow-hidden hover:border-kado-red/25 hover:shadow-md transition-all touch-manipulation flex flex-col h-full"
+                >
+                  <div className="relative aspect-[4/3] bg-kado-dark/5 shrink-0">
+                    <img
+                      src={image}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                    {tag && (
+                      <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-kado-dark/85 text-white px-1.5 py-0.5 rounded-full">
+                        {tag}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-1 mb-0.5">
+                      <h3 className="font-display font-bold text-xs sm:text-sm text-kado-dark line-clamp-2 leading-snug">
+                        {p.name}
+                      </h3>
+                      <span className="font-black text-xs sm:text-sm text-kado-red shrink-0">
+                        {formatPhp(p.basePrice)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-kado-dark/45 line-clamp-2 leading-snug mt-auto">
+                      {getProductDescription(p)}
+                    </p>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {/* Sticky cart */}
+      <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
+        <div className="pointer-events-auto max-w-3xl mx-auto px-3 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="rounded-2xl border border-kado-dark/10 bg-white shadow-[0_-8px_32px_rgba(25,25,25,0.12)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => cart.length > 0 && setCartExpanded((v) => !v)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left touch-manipulation"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <ShoppingBag className="w-5 h-5 text-kado-red shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-sm text-kado-dark">
+                    {cartCount === 0
+                      ? 'Your takeout bag'
+                      : `${cartCount} item${cartCount !== 1 ? 's' : ''}`}
+                  </p>
+                  <p className="text-[10px] text-kado-dark/45 truncate">
+                    {cartCount === 0 ? 'Tap a drink to add' : formatPhp(cartTotals.total)}
+                  </p>
                 </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Cart */}
-          <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-5">
-            <h2 className="font-display font-bold text-kado-dark mb-3 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-kado-red" /> Cart
-            </h2>
-            {cart.length === 0 ? (
-              <p className="text-sm text-kado-dark/50">Tap items above to add.</p>
-            ) : (
-              <ul className="space-y-2 mb-4">
-                {cart.map((line) => {
-                  const p = products.find((x) => x.id === line.productId);
-                  if (!p) return null;
-                  const { unit } = resolveUnit(p, line.milkId);
-                  return (
-                    <li key={line.key} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-kado-dark/5">
-                      <span className="text-sm font-bold text-kado-dark">{p.name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-kado-red font-bold">{formatPhp(unit)}</span>
-                        <button type="button" onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))} className="text-[10px] text-red-500 font-bold">×</button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="space-y-1 text-xs text-kado-dark/60 border-t border-kado-dark/10 pt-3 mb-2">
-              <div className="flex justify-between"><span>Subtotal</span><span>{formatPhp(cartTotals.subtotal)}</span></div>
-              {cartTotals.modifiers > 0 && <div className="flex justify-between"><span>Modifiers</span><span>+{formatPhp(cartTotals.modifiers)}</span></div>}
-              {cartTotals.tax > 0 && <div className="flex justify-between"><span>Tax ({taxRate}%)</span><span>{formatPhp(cartTotals.tax)}</span></div>}
-            </div>
-            <div className="flex justify-between font-display font-bold text-kado-dark mb-4">
-              <span>Total</span><span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
-            </div>
-            <button type="submit" disabled={cart.length === 0 || !pickupName.trim()} className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors">
-              Place takeout order
+              </div>
+              {cart.length > 0 &&
+                (cartExpanded ? (
+                  <ChevronDown className="w-5 h-5 text-kado-dark/40 shrink-0" />
+                ) : (
+                  <ChevronUp className="w-5 h-5 text-kado-dark/40 shrink-0" />
+                ))}
             </button>
+
+            {cartExpanded && cart.length > 0 && (
+              <div className="border-t border-kado-dark/8 px-4 py-3 max-h-[40dvh] overflow-y-auto">
+                <ul className="space-y-2">
+                  {cart.map((line) => {
+                    const p = products.find((x) => x.id === line.productId);
+                    if (!p) return null;
+                    const { unit } = resolveUnit(p, line.milkId);
+                    return (
+                      <li
+                        key={line.key}
+                        className="flex gap-2 items-center rounded-xl bg-[#FAF7F2] border border-kado-dark/5 p-2"
+                      >
+                        <img
+                          src={getProductImageUrl(p)}
+                          alt=""
+                          className="w-12 h-12 rounded-lg object-cover shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-kado-dark truncate">{p.name}</p>
+                          <p className="text-[10px] text-kado-dark/45 truncate">
+                            {[line.milkLabel, line.temperature].filter(Boolean).join(' · ')}
+                          </p>
+                          <p className="text-xs font-bold text-kado-red mt-0.5">
+                            {formatPhp(unit * line.qty)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))}
+                            className="p-1 text-kado-dark/35 hover:text-red-500"
+                            aria-label="Remove"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <div className="flex items-center gap-1 bg-white rounded-full border border-kado-dark/10 px-1">
+                            <button
+                              type="button"
+                              onClick={() => updateLineQty(line.key, line.qty - 1)}
+                              className="w-7 h-7 flex items-center justify-center"
+                              aria-label="Less"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-[10px] font-bold w-4 text-center">{line.qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateLineQty(line.key, line.qty + 1)}
+                              className="w-7 h-7 flex items-center justify-center"
+                              aria-label="More"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="mt-3 pt-3 border-t border-kado-dark/8 space-y-1 text-[11px] text-kado-dark/55">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatPhp(cartTotals.subtotal)}</span>
+                  </div>
+                  {cartTotals.modifiers > 0 && (
+                    <div className="flex justify-between">
+                      <span>Modifiers</span>
+                      <span>+{formatPhp(cartTotals.modifiers)}</span>
+                    </div>
+                  )}
+                  {cartTotals.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tax ({taxRate}%)</span>
+                      <span>{formatPhp(cartTotals.tax)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-kado-dark text-sm pt-1">
+                    <span>Total</span>
+                    <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-kado-dark/8 p-3 sm:p-4">
+              {cart.length > 0 && !pickupName.trim() && (
+                <p className="text-[11px] text-kado-red font-semibold text-center mb-2">
+                  Add your name above so we can call you for pickup.
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={placeOrder}
+                disabled={cart.length === 0 || !pickupName.trim() || submitting}
+                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
+              >
+                {submitting ? 'Sending…' : 'Place takeout order'}
+              </button>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
+
+      <QrProductSheet
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAdd={addLine}
+        ctaLabel="Add to order"
+      />
     </div>
   );
 }

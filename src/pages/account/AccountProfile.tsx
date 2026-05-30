@@ -234,17 +234,13 @@ export default function AccountProfile() {
                     <p className="text-sm font-bold text-kado-dark">{label}</p>
                     <p className="text-xs text-kado-dark/40 font-medium">{desc}</p>
                   </div>
-                  <div
-                    className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors ${
-                      enabled ? 'bg-kado-red' : 'bg-kado-dark/15'
+                  <span
+                    className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                      enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-kado-dark/5 text-kado-dark/40'
                     }`}
                   >
-                    <div
-                      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
-                        enabled ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </div>
+                    {enabled ? 'On' : 'Off'}
+                  </span>
                 </div>
               ))}
             </div>

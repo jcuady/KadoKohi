@@ -36,6 +36,16 @@ export default function AdminUsers() {
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      return;
+    }
+    removeUser(id);
+    setConfirmDeleteId(null);
+  };
 
   const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
 
@@ -179,7 +189,15 @@ export default function AdminUsers() {
             <button type="button" onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetError(''); }} className="dash-muted hover:text-kado-red p-1" title="Reset password">
               <KeyRound className="w-4 h-4" />
             </button>
-            <button type="button" onClick={() => removeUser(u.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+            <button
+              type="button"
+              onClick={() => handleDelete(u.id)}
+              onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
+              className={`p-1 rounded-lg transition-colors ${confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'}`}
+              title={confirmDeleteId === u.id ? 'Click again to confirm delete' : 'Delete user'}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </li>
         ))}
       </ul>

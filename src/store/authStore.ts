@@ -21,9 +21,14 @@ export interface AuthStore {
 /** Session lives in Supabase Auth (localStorage). No Zustand persist — avoids stale user after logout. */
 export const useAuthStore = create<AuthStore>()((set, get) => ({
       user: null,
-      loading: false,
+      // Starts true so route guards show a spinner (not a redirect) until the
+      // Supabase session is restored on a fresh load / hard refresh / deep link.
+      loading: true,
       initFromSupabase: async () => {
-        if (!supabase) return;
+        if (!supabase) {
+          set({ loading: false });
+          return;
+        }
         set({ loading: true });
         try {
           const session = await authRepo.session();

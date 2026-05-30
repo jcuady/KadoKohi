@@ -257,7 +257,7 @@ export default function Signup() {
                     required
                     minLength={8}
                     className="w-full rounded-xl border border-kado-dark/12 bg-kado-offwhite/50 px-3 py-2.5 lg:py-2 text-sm text-kado-dark placeholder:text-kado-dark/35 focus:outline-none focus:ring-2 focus:ring-kado-red/25 focus:border-kado-red transition-shadow"
-                    placeholder="6+ characters"
+                    placeholder="8+ characters"
                   />
                 </div>
                 <div className="min-w-0">
