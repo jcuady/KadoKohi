@@ -8,6 +8,7 @@ import { useBranchStore } from '../../store/branchStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuditStore } from '../../store/auditStore';
 import { usePromoStore } from '../../store/promoStore';
+import { useMerchStore } from '../../store/merchStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -20,6 +21,8 @@ const OPS_TABLES = [
   'kk_app_settings',
   'kk_audit_logs',
   'kk_promo_codes',
+  'kk_merch_categories',
+  'kk_merch_products',
 ] as const;
 
 type OpsTable = (typeof OPS_TABLES)[number];
@@ -44,6 +47,7 @@ const refresh = {
   settings: debounce(() => void useSettingsStore.getState().hydrateFromRemote(), 300),
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
+  merch: debounce(() => void useMerchStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: OpsTable) {
@@ -73,6 +77,10 @@ function onTableChange(table: OpsTable) {
     case 'kk_promo_codes':
       refresh.promos();
       break;
+    case 'kk_merch_categories':
+    case 'kk_merch_products':
+      refresh.merch();
+      break;
     default:
       break;
   }
@@ -89,6 +97,7 @@ export async function refreshOperationsData(): Promise<void> {
     useSettingsStore.getState().hydrateFromRemote(),
     useAuditStore.getState().refresh(),
     usePromoStore.getState().fetchAll(),
+    useMerchStore.getState().hydrateFromRemote(),
   ]);
 }
 

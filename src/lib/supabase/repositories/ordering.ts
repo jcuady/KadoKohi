@@ -1,5 +1,7 @@
 import type {
   Branch,
+  MerchCategory,
+  MerchProduct,
   MenuCategory,
   Order,
   OrderItem,
@@ -69,6 +71,32 @@ function mapProduct(row: any): Product {
     milks: row.milks ?? [],
     tags: row.tags ?? [],
     customFields: row.custom_fields ?? [],
+    visible: row.visible,
+    order: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapMerchCategory(row: any): MerchCategory {
+  return {
+    id: row.id,
+    name: row.name,
+    order: row.sort_order,
+    visible: row.visible,
+  };
+}
+
+function mapMerchProduct(row: any): MerchProduct {
+  return {
+    id: row.id,
+    categoryId: row.category_id,
+    name: row.name,
+    description: row.description ?? undefined,
+    basePrice: Number(row.base_price ?? 0),
+    image: row.image ?? undefined,
+    variants: row.variants ?? [],
+    tags: row.tags ?? [],
     visible: row.visible,
     order: row.sort_order,
     createdAt: row.created_at,
@@ -221,6 +249,55 @@ export const orderingRepo = {
       visible: p.visible,
       sort_order: p.order,
     });
+    if (error) throw error;
+  },
+  async fetchMerch(): Promise<{ categories: MerchCategory[]; products: MerchProduct[] }> {
+    if (!supabase) return { categories: [], products: [] };
+    const [catRes, prodRes] = await Promise.all([
+      supabase.from('kk_merch_categories').select('*').order('sort_order'),
+      supabase.from('kk_merch_products').select('*').order('sort_order'),
+    ]);
+    if (catRes.error) throw catRes.error;
+    if (prodRes.error) throw prodRes.error;
+    return {
+      categories: (catRes.data ?? []).map(mapMerchCategory),
+      products: (prodRes.data ?? []).map(mapMerchProduct),
+    };
+  },
+  async upsertMerchCategory(c: MerchCategory) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_merch_categories').upsert({
+      id: c.id,
+      name: c.name,
+      sort_order: c.order,
+      visible: c.visible,
+    });
+    if (error) throw error;
+  },
+  async deleteMerchCategory(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_merch_categories').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async upsertMerchProduct(p: MerchProduct) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_merch_products').upsert({
+      id: p.id,
+      category_id: p.categoryId,
+      name: p.name,
+      description: p.description ?? null,
+      base_price: p.basePrice,
+      image: p.image ?? null,
+      variants: p.variants ?? [],
+      tags: p.tags ?? [],
+      visible: p.visible,
+      sort_order: p.order,
+    });
+    if (error) throw error;
+  },
+  async deleteMerchProduct(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_merch_products').delete().eq('id', id);
     if (error) throw error;
   },
   async fetchTables(): Promise<Table[]> {

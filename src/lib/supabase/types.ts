@@ -109,6 +109,52 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['kk_products']['Insert']>;
       };
+      kk_merch_categories: {
+        Row: {
+          id: string;
+          name: string;
+          sort_order: number;
+          visible: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          sort_order?: number;
+          visible?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['kk_merch_categories']['Insert']>;
+      };
+      kk_merch_products: {
+        Row: {
+          id: string;
+          category_id: string;
+          name: string;
+          description: string | null;
+          base_price: number;
+          image: string | null;
+          variants: Json;
+          tags: Json;
+          visible: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          category_id: string;
+          name: string;
+          description?: string | null;
+          base_price: number;
+          image?: string | null;
+          variants?: Json;
+          tags?: Json;
+          visible?: boolean;
+          sort_order?: number;
+        };
+        Update: Partial<Database['public']['Tables']['kk_merch_products']['Insert']>;
+      };
       kk_tables: {
         Row: {
           id: string;

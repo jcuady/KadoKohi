@@ -1,0 +1,2 @@
+-- Historical placeholder migration kept to match remote migration history.
+-- This file intentionally contains no statements.

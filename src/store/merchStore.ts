@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { MerchCategory, MerchProduct } from '../types/domain';
 import { SEED_MERCH_CATEGORIES, SEED_MERCH_PRODUCTS } from '../data/seed';
 import { newId } from '../lib/id';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 export interface MerchStore {
   categories: MerchCategory[];
   products: MerchProduct[];
+  hydrateFromRemote: () => Promise<void>;
   setCategories: (c: MerchCategory[]) => void;
   setProducts: (p: MerchProduct[]) => void;
   addCategory: (name: string, order?: number) => void;
@@ -21,11 +22,22 @@ export interface MerchStore {
   seed: () => void;
 }
 
-export const useMerchStore = create<MerchStore>()(
-  persist(
-    (set, get) => ({
+export const useMerchStore = create<MerchStore>()((set, get) => ({
       categories: SEED_MERCH_CATEGORIES,
       products: SEED_MERCH_PRODUCTS,
+      hydrateFromRemote: async () => {
+        try {
+          const remote = await orderingRepo.fetchMerch();
+          if (remote.categories.length > 0 || remote.products.length > 0) {
+            set({
+              categories: remote.categories,
+              products: remote.products,
+            });
+          }
+        } catch {
+          // Keep seed fallback when remote fetch fails.
+        }
+      },
 
       setCategories: (categories) => set({ categories }),
       setProducts: (products) => set({ products }),
@@ -39,16 +51,26 @@ export const useMerchStore = create<MerchStore>()(
           visible: true,
         };
         set({ categories: [...list, c] });
+        void orderingRepo.upsertMerchCategory(c);
       },
 
       updateCategory: (id, patch) =>
-        set({ categories: get().categories.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
+        set({
+          categories: get().categories.map((c) => {
+            if (c.id !== id) return c;
+            const updated = { ...c, ...patch };
+            void orderingRepo.upsertMerchCategory(updated);
+            return updated;
+          }),
+        }),
 
-      removeCategory: (id) =>
+      removeCategory: (id) => {
         set({
           categories: get().categories.filter((c) => c.id !== id),
           products: get().products.filter((p) => p.categoryId !== id),
-        }),
+        });
+        void orderingRepo.deleteMerchCategory(id);
+      },
 
       addProduct: (input) => {
         const t = new Date().toISOString();
@@ -67,16 +89,26 @@ export const useMerchStore = create<MerchStore>()(
           updatedAt: t,
         };
         set({ products: [...get().products, p] });
+        void orderingRepo.upsertMerchProduct(p);
       },
 
       updateProduct: (id, patch) =>
         set({
           products: get().products.map((pr) =>
-            pr.id === id ? { ...pr, ...patch, updatedAt: new Date().toISOString() } : pr,
+            pr.id === id
+              ? (() => {
+                  const updated = { ...pr, ...patch, updatedAt: new Date().toISOString() };
+                  void orderingRepo.upsertMerchProduct(updated);
+                  return updated;
+                })()
+              : pr,
           ),
         }),
 
-      removeProduct: (id) => set({ products: get().products.filter((pr) => pr.id !== id) }),
+      removeProduct: (id) => {
+        set({ products: get().products.filter((pr) => pr.id !== id) });
+        void orderingRepo.deleteMerchProduct(id);
+      },
 
       productsByCategory: (categoryId) =>
         get()
@@ -109,6 +141,4 @@ export const useMerchStore = create<MerchStore>()(
 
       seed: () => set({ categories: SEED_MERCH_CATEGORIES, products: SEED_MERCH_PRODUCTS }),
     }),
-    { name: 'kado-merch-v1' },
-  ),
 );

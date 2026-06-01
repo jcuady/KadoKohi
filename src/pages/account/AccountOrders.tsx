@@ -42,6 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 const FILTER_TABS: { label: string; value: string }[] = [
   { label: 'All', value: 'all' },
   { label: 'Active', value: 'active' },
+  { label: 'Merch', value: 'merch' },
   { label: 'Completed', value: 'completed' },
   { label: 'Cancelled', value: 'cancelled' },
 ];
@@ -85,6 +86,7 @@ export default function AccountOrders() {
   const filteredOrders = useMemo(() => {
     let list = myOrders;
     if (filter === 'active') list = list.filter((o) => !['completed', 'cancelled'].includes(o.status));
+    else if (filter === 'merch') list = list.filter((o) => o.channel === 'merch');
     else if (filter === 'completed') list = list.filter((o) => o.status === 'completed');
     else if (filter === 'cancelled') list = list.filter((o) => o.status === 'cancelled');
     if (search.trim()) {
