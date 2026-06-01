@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { QrCode, Upload, ImageIcon, ExternalLink } from 'lucide-react';
+import { QrCode, ImageIcon, ExternalLink } from 'lucide-react';
 import type { Order } from '../types/domain';
 import { formatPhp } from '../lib/money';
 import { isGcashOrder } from '../lib/orderStatus';
@@ -13,6 +13,9 @@ type Props = {
 
 const actionBtn =
   'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-kado-dark/15 bg-white px-4 py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-kado-dark hover:border-kado-red/40 active:scale-[0.98] transition touch-manipulation w-full sm:w-auto';
+
+/** No `capture` — on phones, opens gallery/files for GCash screenshots (not the camera). */
+const GCASH_PROOF_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif';
 
 export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +68,8 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
 
       {order.paymentStatus === 'unpaid' && (
         <p className="text-xs sm:text-sm text-kado-dark/50 leading-relaxed">
-          Pay {formatPhp(order.total)} via GCash, then upload your screenshot so we can verify.
+          Pay {formatPhp(order.total)} via GCash, then upload a screenshot or saved receipt image from your
+          photos (not a live camera photo).
         </p>
       )}
 
@@ -74,8 +78,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept={GCASH_PROOF_ACCEPT}
             className="hidden"
             onChange={(e) => {
               void handleFile(e.target.files?.[0]);
@@ -88,8 +91,12 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
             onClick={() => inputRef.current?.click()}
             className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-kado-red text-kado-cream py-3.5 px-4 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-50 transition-colors touch-manipulation"
           >
-            <Upload className="w-4 h-4 shrink-0" />
-            {uploading ? 'Uploading…' : order.paymentProofImage ? 'Replace proof of payment' : 'Upload proof of payment'}
+            <ImageIcon className="w-4 h-4 shrink-0" />
+            {uploading
+              ? 'Uploading…'
+              : order.paymentProofImage
+                ? 'Replace screenshot'
+                : 'Upload GCash screenshot'}
           </button>
         </>
       )}
