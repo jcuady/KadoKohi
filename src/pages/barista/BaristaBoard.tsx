@@ -10,7 +10,7 @@ import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
 
-const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
+const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos', 'merch'] as const;
 
 type BoardColumn = {
   id: NonNullable<ReturnType<typeof kioskColumnKey>>;

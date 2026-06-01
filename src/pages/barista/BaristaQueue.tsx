@@ -8,7 +8,7 @@ import { formatPhp } from '../../lib/money';
 import { Clock, ChevronRight, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 
-const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos'] as const;
+const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos', 'merch'] as const;
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
