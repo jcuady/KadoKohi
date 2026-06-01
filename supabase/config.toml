@@ -1,0 +1,3 @@
+# Public customer sign-up uses service role server-side (avoids Auth /signup 429 limits).
+[functions.kk-customer-signup]
+verify_jwt = false

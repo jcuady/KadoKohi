@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import { clampText, isValidEmail } from '../../lib/validation';
-import { formatAuthErrorMessage, recoverStaleAuthSession } from '../../lib/supabase/authSession';
+import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 import {
   AlertCircle,
@@ -36,7 +36,7 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    void recoverStaleAuthSession();
+    void clearLocalAuthBeforeSignup();
   }, []);
 
   const handleSignup = async (e: FormEvent) => {

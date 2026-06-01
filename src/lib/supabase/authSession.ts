@@ -27,7 +27,7 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
   const lower = msg.toLowerCase();
 
   if (isRateLimitAuthError(error)) {
-    return 'Too many attempts. Please wait a few minutes, then try again.';
+    return 'Please wait about a minute and try again, or sign in if you already have an account.';
   }
   if (isInvalidRefreshTokenError(error)) {
     return 'Your session expired. Please try signing up again.';
@@ -62,6 +62,12 @@ function hasLocalAuthStorage(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Clears local tokens only — no Auth API call (safe on the sign-up page). */
+export async function clearLocalAuthBeforeSignup(): Promise<void> {
+  if (!supabase) return;
+  await supabase.auth.signOut({ scope: 'local' });
 }
 
 export async function recoverStaleAuthSession(): Promise<void> {
