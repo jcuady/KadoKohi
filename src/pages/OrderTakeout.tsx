@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp, computeOrderTotals } from '../lib/money';
-import { clampText, requireGuestName } from '../lib/validation';
+import { clampText, formatOrderError, requireGuestName } from '../lib/validation';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
@@ -182,8 +182,8 @@ export default function OrderTakeout() {
       setTrackedLabel(pickupName.trim());
       setCart([]);
       setCartExpanded(false);
-    } catch {
-      // Keep cart if persistence fails.
+    } catch (err) {
+      setOrderError(formatOrderError(err));
     } finally {
       setSubmitting(false);
     }

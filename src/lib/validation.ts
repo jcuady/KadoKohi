@@ -31,3 +31,18 @@ export function clampPositiveInt(value: number, min: number, max: number): numbe
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.floor(value)));
 }
+
+/** Map Supabase / PostgREST errors to short user-facing copy. */
+export function formatOrderError(err: unknown): string {
+  const msg =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: string }).message)
+      : '';
+  if (!msg) return 'Could not place your order. Please check your connection and try again.';
+  if (/guest name/i.test(msg)) return msg;
+  if (/product.*not available/i.test(msg)) return 'An item in your cart is no longer available. Refresh and try again.';
+  if (/branch is not active/i.test(msg)) return 'This location is not accepting orders right now.';
+  if (/promo/i.test(msg)) return msg;
+  if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
+  return msg.length < 120 ? msg : 'Could not place your order. Please try again.';
+}

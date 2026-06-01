@@ -11,6 +11,7 @@ import { formatPhp, computeOrderTotals } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
+import { clampText, formatOrderError } from '../lib/validation';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
@@ -69,6 +70,7 @@ export default function OrderQR() {
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
 
   // Restore an in-progress order for this browser session (per-table).
@@ -154,6 +156,7 @@ export default function OrderQR() {
 
   const placeOrder = async () => {
     if (!table || cartTotals.lines.length === 0 || submitting) return;
+    setOrderError('');
     setSubmitting(true);
     try {
       const order = await createOrder({
@@ -161,6 +164,7 @@ export default function OrderQR() {
         branchId: table.branchId,
         tableId: table.id,
         customerId: user?.id,
+        guestName: user?.name ? clampText(user.name, 80) : table.label,
         status: 'pending',
         items: cartTotals.lines,
         subtotal: cartTotals.subtotal,
@@ -177,8 +181,8 @@ export default function OrderQR() {
       setTrackedOrderId(order.id);
       setCart([]);
       setCartExpanded(false);
-    } catch {
-      // Order stays in cart if the server rejects the insert.
+    } catch (err) {
+      setOrderError(formatOrderError(err));
     } finally {
       setSubmitting(false);
     }
@@ -456,6 +460,9 @@ export default function OrderQR() {
             )}
 
             <div className="border-t border-kado-dark/8 p-3 sm:p-4">
+              {orderError && (
+                <p className="mb-2 text-xs text-red-600 font-medium">{orderError}</p>
+              )}
               <button
                 type="button"
                 onClick={placeOrder}
