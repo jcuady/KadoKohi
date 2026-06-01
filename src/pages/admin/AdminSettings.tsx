@@ -6,6 +6,7 @@ import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
 import { AlertTriangle, Check, Loader2, Trash2 } from 'lucide-react';
+import { clampTaxRate } from '../../lib/validation';
 
 const RESET_PHRASE = 'RESET ALL DATA';
 
@@ -118,7 +119,7 @@ export default function AdminSettings() {
                 max={100}
                 step={0.01}
                 value={settings.taxRate}
-                onChange={(e) => patch({ taxRate: Math.max(0, Number(e.target.value) || 0) })}
+                onChange={(e) => patch({ taxRate: clampTaxRate(Number(e.target.value)) })}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               />
               <p className="text-[10px] dash-muted mt-1">Applied to online cart, QR, takeout, and POS totals.</p>

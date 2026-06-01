@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp, computeOrderTotals } from '../lib/money';
+import { clampText, requireGuestName } from '../lib/validation';
 import { useSettingsStore } from '../store/settingsStore';
 import { newId } from '../lib/id';
 import { ShoppingBag, Check } from 'lucide-react';
@@ -43,6 +44,7 @@ export default function Order() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? '');
   const [guestName, setGuestName] = useState('');
+  const [guestOrderError, setGuestOrderError] = useState('');
   const [placed, setPlaced] = useState(false);
 
   const list = productsByCategory(activeCat || sortedCategories[0]?.id || '');
@@ -82,11 +84,19 @@ export default function Order() {
   const placeOrder = (e: FormEvent) => {
     e.preventDefault();
     if (cartTotals.lines.length === 0 || !branchId) return;
+    if (!user) {
+      const nameErr = requireGuestName(guestName);
+      if (nameErr) {
+        setGuestOrderError(nameErr);
+        return;
+      }
+    }
+    setGuestOrderError('');
     void createOrder({
       channel: 'online',
       branchId,
       customerId: user?.id,
-      guestName: user ? undefined : guestName || 'Guest',
+      guestName: user ? undefined : clampText(guestName, 80),
       status: 'pending',
       items: cartTotals.lines,
       subtotal: cartTotals.subtotal,
@@ -240,10 +250,17 @@ export default function Order() {
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-kado-dark/60 mb-1">Your name (guest)</label>
                         <input
                           value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
+                          onChange={(e) => {
+                            setGuestName(e.target.value);
+                            setGuestOrderError('');
+                          }}
                           placeholder="e.g. Juan"
+                          maxLength={80}
                           className="w-full rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-sm"
                         />
+                        {guestOrderError && (
+                          <p className="mt-1 text-xs text-red-600 font-medium">{guestOrderError}</p>
+                        )}
                       </div>
                       <p className="text-[10px] text-kado-dark/50">
                         <Link to="/auth/signup" className="font-bold text-kado-red hover:underline">Create a free account</Link>

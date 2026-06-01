@@ -17,22 +17,6 @@ function guestChannelName(orderId: string) {
   return `guest-order:${orderId}`;
 }
 
-function mapRowToTracked(row: Record<string, unknown>): TrackedOrderStatus | null {
-  const id = row.id;
-  if (typeof id !== 'string') return null;
-  return {
-    id,
-    shortCode: String(row.short_code ?? ''),
-    channel: row.channel as TrackedOrderStatus['channel'],
-    status: row.status as OrderStatus,
-    paymentStatus: row.payment_status as PaymentStatus,
-    guestName: row.guest_name ? String(row.guest_name) : undefined,
-    total: Number(row.total ?? 0),
-    createdAt: String(row.created_at ?? ''),
-    updatedAt: String(row.updated_at ?? ''),
-  };
-}
-
 /** Notify guest tracking pages immediately after a staff-side status change. */
 export function broadcastGuestOrderUpdate(
   orderId: string,
@@ -52,14 +36,14 @@ export function broadcastGuestOrderUpdate(
 }
 
 export type GuestOrderTrackingHandle = {
-  /** True once postgres_changes or broadcast subscription is active. */
+  /** True when the broadcast channel is subscribed. */
   isLive: () => boolean;
   stop: () => void;
 };
 
 /**
  * Live order status for guest QR / takeout pages.
- * Layers: Supabase Realtime postgres_changes → broadcast → RPC poll fallback.
+ * Uses staff broadcast + kk_track_order RPC polling (no broad RLS SELECT on kk_orders).
  */
 export function subscribeGuestOrderTracking(
   orderId: string,
@@ -100,26 +84,7 @@ export function subscribeGuestOrderTracking(
 
   channel = supabase
     .channel(guestChannelName(orderId), { config: { broadcast: { self: false } } })
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'kk_orders',
-        filter: `id=eq.${orderId}`,
-      },
-      (payload) => {
-        const mapped = mapRowToTracked(payload.new as Record<string, unknown>);
-        if (mapped) apply(mapped);
-        else void refresh();
-      },
-    )
-    .on('broadcast', { event: 'status' }, (msg) => {
-      const p = msg.payload as GuestOrderTrackingPayload | undefined;
-      if (!p?.status) {
-        void refresh();
-        return;
-      }
+    .on('broadcast', { event: 'status' }, () => {
       void refresh();
     })
     .subscribe((status) => {

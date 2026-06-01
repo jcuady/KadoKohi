@@ -27,7 +27,7 @@ export interface OrderStore {
   hydrateFromRemote: () => Promise<void>;
   createOrder: (
     order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
-      Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string },
+      Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string; promoCode?: string },
   ) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
   updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
@@ -78,16 +78,19 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           updatedAt: t,
         });
         set({ orders: [o, ...get().orders] });
+        let persisted = o;
         try {
-          await orderingRepo.insertOrder(o);
+          persisted = normalizeOrder(await orderingRepo.placeOrder(o, { promoCode: input.promoCode }));
         } catch (err) {
           set({ orders: get().orders.filter((row) => row.id !== o.id) });
           throw err;
         }
-        notifyBaristasNewOrder(o);
-        // Acknowledge the placing customer (e.g. "Order received") when known.
-        if (o.customerId) notifyCustomerOrderStatus(o, o.status);
-        return o;
+        set({
+          orders: get().orders.map((row) => (row.id === o.id ? persisted : row)),
+        });
+        notifyBaristasNewOrder(persisted);
+        if (persisted.customerId) notifyCustomerOrderStatus(persisted, persisted.status);
+        return persisted;
       },
 
       updateOrderStatus: async (id, status) => {

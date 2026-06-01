@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { isValidEmail } from '../../lib/validation';
 import { AlertCircle, Check, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
@@ -21,6 +22,10 @@ export default function Login() {
 
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
       return;
     }
 

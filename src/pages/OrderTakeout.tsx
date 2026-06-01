@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp, computeOrderTotals } from '../lib/money';
+import { clampText, requireGuestName } from '../lib/validation';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
@@ -68,6 +69,7 @@ export default function OrderTakeout() {
   const [submitting, setSubmitting] = useState(false);
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
   const [trackedLabel, setTrackedLabel] = useState('');
+  const [orderError, setOrderError] = useState('');
 
   // Restore an in-progress order for this browser session (per-branch).
   useEffect(() => {
@@ -149,14 +151,20 @@ export default function OrderTakeout() {
   };
 
   const placeOrder = async () => {
-    if (!branch || cartTotals.lines.length === 0 || !pickupName.trim() || submitting) return;
+    const nameErr = requireGuestName(pickupName);
+    if (!branch || cartTotals.lines.length === 0 || submitting) return;
+    if (nameErr) {
+      setOrderError(nameErr);
+      return;
+    }
+    setOrderError('');
     setSubmitting(true);
     try {
       const order = await createOrder({
         channel: 'takeout',
         branchId: branch.id,
         customerId: user?.id,
-        guestName: pickupName.trim(),
+        guestName: clampText(pickupName, 80),
         status: 'pending',
         items: cartTotals.lines,
         subtotal: cartTotals.subtotal,
@@ -274,10 +282,15 @@ export default function OrderTakeout() {
           </label>
           <input
             value={pickupName}
-            onChange={(e) => setPickupName(e.target.value)}
+            onChange={(e) => {
+              setPickupName(e.target.value);
+              setOrderError('');
+            }}
             placeholder="e.g. Juan"
+            maxLength={80}
             className="w-full rounded-xl border border-kado-dark/12 bg-[#FAF7F2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
           />
+          {orderError && <p className="mt-2 text-xs text-red-600 font-medium">{orderError}</p>}
         </div>
 
         {list.length === 0 ? (

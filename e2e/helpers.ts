@@ -1,3 +1,5 @@
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 import { type Page, expect } from '@playwright/test';
 
 /**
@@ -45,4 +47,33 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow, 'horizontal overflow in px').toBeLessThanOrEqual(2);
+}
+
+function loadDotEnv(): Record<string, string> {
+  const envPath = resolve(process.cwd(), '.env');
+  if (!existsSync(envPath)) return {};
+  return Object.fromEntries(
+    readFileSync(envPath, 'utf8')
+      .split(/\r?\n/)
+      .filter((l) => l && !l.startsWith('#'))
+      .map((l) => {
+        const i = l.indexOf('=');
+        let val = l.slice(i + 1);
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+        return [l.slice(0, i), val];
+      }),
+  );
+}
+
+/** Supabase anon credentials for API-level security tests (from .env or process.env). */
+export function supabaseAnonConfig(): { url: string; anonKey: string } | null {
+  const file = loadDotEnv();
+  const url = process.env.VITE_SUPABASE_URL ?? file.VITE_SUPABASE_URL;
+  const anonKey =
+    process.env.VITE_SUPABASE_ANON_KEY ??
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+    file.VITE_SUPABASE_ANON_KEY ??
+    file.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !anonKey) return null;
+  return { url, anonKey };
 }

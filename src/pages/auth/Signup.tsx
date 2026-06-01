@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
+import { clampText, isValidEmail } from '../../lib/validation';
 import {
   AlertCircle,
   Check,
@@ -40,6 +41,14 @@ export default function Signup() {
       setError('Please fill in all fields.');
       return;
     }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    if (clampText(name, 80).length < 2) {
+      setError('Name must be at least 2 characters.');
+      return;
+    }
 
     if (password.trim().length < 8) {
       setError('Password must be at least 8 characters.');
@@ -53,7 +62,11 @@ export default function Signup() {
 
     setSubmitting(true);
     try {
-      const { needsEmailConfirmation } = await signUp(name.trim(), email.trim().toLowerCase(), password);
+      const { needsEmailConfirmation } = await signUp(
+        clampText(name, 80),
+        email.trim().toLowerCase(),
+        password,
+      );
       if (needsEmailConfirmation) {
         navigate('/auth/login', {
           replace: true,

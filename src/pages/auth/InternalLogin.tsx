@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Coffee, Package, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { isValidEmail } from '../../lib/validation';
 import type { Role } from '../../types/domain';
 
 type InternalTab = 'admin' | 'barista' | 'staff';
@@ -29,6 +30,10 @@ export default function InternalLogin() {
 
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
       return;
     }
 

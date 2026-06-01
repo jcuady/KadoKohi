@@ -52,7 +52,6 @@ export default function CartDrawer() {
   const clearPromoCode = useCheckoutStore((s) => s.clearPromoCode);
   const clearAll = useCheckoutStore((s) => s.clearAll);
   const validateCode = usePromoStore((s) => s.validateCode);
-  const recordClaim = usePromoStore((s) => s.recordClaim);
 
   const [promoInput, setPromoInput] = useState('');
   const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -177,18 +176,11 @@ export default function CartDrawer() {
         loyaltyVoucherId: selectedVoucher?.id,
         loyaltyVoucherCode: selectedVoucher?.code,
         loyaltyDiscountTotal: totals.discount > 0 ? totals.discount : undefined,
+        promoCode: appliedPromoCode?.code,
       });
 
       if (selectedVoucher) {
         redeemVoucher(selectedVoucher.id, order.id);
-      }
-      if (appliedPromoCode && promoDiscount > 0) {
-        void recordClaim({
-          promoCodeId: appliedPromoCode.id,
-          orderId: order.id,
-          discountAmount: promoDiscount,
-          customerId: user?.id,
-        });
       }
 
       clear();

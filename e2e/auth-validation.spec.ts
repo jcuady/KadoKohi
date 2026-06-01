@@ -20,6 +20,14 @@ test.describe('Customer login validation', () => {
     await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page.getByText(/invalid credentials/i)).toBeVisible({ timeout: 20000 });
   });
+
+  test('invalid email format shows error', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('input#email').fill('user@domain');
+    await page.locator('input#password').fill('password123');
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page.getByText(/valid email/i)).toBeVisible();
+  });
 });
 
 test.describe('Customer signup validation', () => {

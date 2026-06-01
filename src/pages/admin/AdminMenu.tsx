@@ -10,6 +10,7 @@ import type {
 import { useMenuStore } from '../../store/menuStore';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
+import { clampText } from '../../lib/validation';
 import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check, X } from 'lucide-react';
 
 type ProductFormData = {
@@ -68,6 +69,7 @@ export default function AdminMenu() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [addingToCat, setAddingToCat] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyProductForm);
+  const [productFormError, setProductFormError] = useState('');
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
 
@@ -215,12 +217,21 @@ export default function AdminMenu() {
 
   const submitProduct = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.basePrice) return;
+    setProductFormError('');
+    if (!form.name.trim()) {
+      setProductFormError('Product name is required.');
+      return;
+    }
+    const basePrice = Number(form.basePrice);
+    if (!Number.isFinite(basePrice) || basePrice < 0) {
+      setProductFormError('Enter a valid price (0 or greater).');
+      return;
+    }
 
     const payload = {
-      name: form.name.trim(),
-      description: form.description.trim() || undefined,
-      basePrice: Number(form.basePrice),
+      name: clampText(form.name, 120),
+      description: clampText(form.description, 500) || undefined,
+      basePrice,
       image: form.image.trim() || undefined,
       temperature: form.temperature,
       visible: form.visible,
@@ -467,6 +478,9 @@ export default function AdminMenu() {
             <h2 className="font-display font-bold text-xl dash-heading mb-4">
               {editingProduct ? 'Edit product' : 'Add product'}
             </h2>
+            {productFormError && (
+              <p className="mb-3 text-xs text-red-600 font-medium">{productFormError}</p>
+            )}
 
             <div className="space-y-4">
               <div>

@@ -255,53 +255,61 @@ export const orderingRepo = {
     if (error) throw error;
     return (data ?? []).map(mapOrder);
   },
-  async insertOrder(o: Order) {
-    if (!supabase) return;
-    const { error } = await supabase.from('kk_orders').insert({
+  buildPlaceOrderPayload(o: Order, promoCode?: string) {
+    return {
       id: o.id,
-      short_code: o.shortCode,
       channel: o.channel,
       branch_id: o.branchId,
       table_id: o.tableId ?? null,
-      customer_id: o.customerId ?? null,
       guest_name: o.guestName ?? null,
-      staff_id: o.staffId ?? null,
       payment_method: o.paymentMethod ?? null,
-      payment_proof_image: o.paymentProofImage ?? null,
-      payment_proof_uploaded_at: o.paymentProofUploadedAt ?? null,
       payment_status: o.paymentStatus,
       status: o.status,
-      subtotal: o.subtotal,
-      modifiers_total: o.modifiersTotal,
-      tax: o.tax ?? 0,
-      total: o.total,
-      loyalty_stamps_awarded: o.loyaltyStampsAwarded ?? null,
+      promo_code: promoCode ?? null,
       loyalty_voucher_id: o.loyaltyVoucherId ?? null,
       loyalty_voucher_code: o.loyaltyVoucherCode ?? null,
       loyalty_discount_total: o.loyaltyDiscountTotal ?? null,
+      items: o.items.map((it) => ({
+        id: it.id,
+        product_id: it.productId,
+        product_name_snapshot: it.productNameSnapshot,
+        item_type: it.itemType ?? 'coffee',
+        size_id: it.sizeId ?? null,
+        size_label_snapshot: it.sizeLabelSnapshot ?? null,
+        milk_id: it.milkId ?? null,
+        milk_label_snapshot: it.milkLabelSnapshot ?? null,
+        temperature: it.temperature ?? null,
+        merch_variants: it.merchVariants ?? [],
+        notes: it.notes ?? null,
+        qty: it.qty,
+      })),
+    };
+  },
+
+  /** Server-validated order insert (replaces direct table INSERT). */
+  async placeOrder(o: Order, opts?: { promoCode?: string }): Promise<Order> {
+    if (!supabase) return o;
+    const { data, error } = await supabase.rpc('kk_place_order', {
+      payload: orderingRepo.buildPlaceOrderPayload(o, opts?.promoCode),
     });
     if (error) throw error;
-    const items = o.items.map((it) => ({
-      id: it.id,
-      order_id: o.id,
-      product_id: it.productId ?? null,
-      product_name_snapshot: it.productNameSnapshot,
-      item_type: it.itemType ?? null,
-      size_id: it.sizeId ?? null,
-      size_label_snapshot: it.sizeLabelSnapshot ?? null,
-      milk_id: it.milkId ?? null,
-      milk_label_snapshot: it.milkLabelSnapshot ?? null,
-      temperature: it.temperature ?? null,
-      merch_variants: it.merchVariants ?? [],
-      notes: it.notes ?? null,
-      unit_price: it.unitPrice,
-      qty: it.qty,
-      line_total: it.lineTotal,
-    }));
-    if (items.length) {
-      const itemRes = await supabase.from('kk_order_items').insert(items);
-      if (itemRes.error) throw itemRes.error;
-    }
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      ...o,
+      shortCode: String(row.short_code ?? o.shortCode),
+      subtotal: Number(row.subtotal ?? o.subtotal),
+      modifiersTotal: Number(row.modifiers_total ?? o.modifiersTotal),
+      tax: Number(row.tax ?? o.tax ?? 0),
+      total: Number(row.total ?? o.total),
+      loyaltyDiscountTotal:
+        row.loyalty_discount_total != null ? Number(row.loyalty_discount_total) : o.loyaltyDiscountTotal,
+      createdAt: String(row.created_at ?? o.createdAt),
+      updatedAt: String(row.updated_at ?? o.updatedAt),
+    };
+  },
+
+  async insertOrder(o: Order, opts?: { promoCode?: string }) {
+    return this.placeOrder(o, opts);
   },
   /**
    * Capability-based status lookup for a single order by its (unguessable) id.
