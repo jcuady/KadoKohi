@@ -16,6 +16,7 @@ import { useBoothBookingStore } from './store/boothBookingStore';
 import { useLandingContentStore } from './store/landingContentStore';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
+import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
 import { registerSW } from 'virtual:pwa-register';
 
 function Bootstrap() {
@@ -32,7 +33,7 @@ function Bootstrap() {
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
 
   useEffect(() => {
-    void initAuth();
+    void recoverStaleAuthSession().then(() => initAuth());
     void hydrateBranches();
     void hydrateMenu();
     void hydrateTables();
@@ -56,8 +57,12 @@ function Bootstrap() {
         stopOperationsRealtime();
         useAuthStore.setState({ user: null, loading: false });
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (isAuthListenerPaused()) return;
         // Defer so we don't re-enter the auth lock held during this callback.
-        setTimeout(() => { void useAuthStore.getState().initFromSupabase(); }, 0);
+        setTimeout(() => {
+          if (isAuthListenerPaused()) return;
+          void useAuthStore.getState().initFromSupabase();
+        }, 0);
       }
     });
     return () => subscription.unsubscribe();

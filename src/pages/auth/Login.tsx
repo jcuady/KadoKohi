@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { isValidEmail } from '../../lib/validation';
+import { formatAuthErrorMessage, recoverStaleAuthSession } from '../../lib/supabase/authSession';
 import { AlertCircle, Check, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
@@ -15,6 +16,10 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    void recoverStaleAuthSession();
+  }, []);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,8 +47,10 @@ export default function Login() {
       } else {
         navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
       }
-    } catch {
-      setError('Invalid credentials. Please check your email and password.');
+    } catch (err) {
+      setError(
+        formatAuthErrorMessage(err, 'Invalid credentials. Please check your email and password.'),
+      );
       setSubmitting(false);
     }
   };

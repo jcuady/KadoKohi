@@ -6,6 +6,12 @@ import { authRepo } from '../lib/supabase/repositories/auth';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 import {
+  isInvalidRefreshTokenError,
+  pauseAuthListener,
+  recoverStaleAuthSession,
+  resumeAuthListener,
+} from '../lib/supabase/authSession';
+import {
   refreshOperationsData,
   startOperationsRealtime,
   stopOperationsRealtime,
@@ -26,8 +32,7 @@ async function resolveSessionProfile(
   sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown> },
   fallbackName?: string,
 ): Promise<User> {
-  const users = await orderingRepo.fetchUsers();
-  const existing = users.find((u) => u.id === sessionUser.id);
+  const existing = await orderingRepo.fetchUserById(sessionUser.id);
   if (existing) return normalizeProfile(existing);
 
   const metaName =
@@ -86,6 +91,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         }
         set({ loading: true });
         try {
+          await recoverStaleAuthSession();
           const session = await authRepo.session();
           if (!session?.user) {
             stopOperationsRealtime();
@@ -96,31 +102,48 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           set({ user: profile, loading: false });
           useUserStore.getState().updateUser(profile.id, profile);
           syncOperationalSession(profile);
-        } catch {
-          set({ loading: false });
+        } catch (err) {
+          if (isInvalidRefreshTokenError(err)) {
+            await recoverStaleAuthSession();
+          }
+          set({ user: null, loading: false });
         }
       },
       signIn: async (email, password) => {
-        const res = await authRepo.signIn(email, password);
-        const sessionUser = res.user;
-        if (!sessionUser) return;
-        const profile = await resolveSessionProfile(sessionUser);
-        set({ user: profile });
-        useUserStore.getState().updateUser(profile.id, profile);
-        syncOperationalSession(profile);
+        pauseAuthListener();
+        try {
+          const res = await authRepo.signIn(email, password);
+          const sessionUser = res.user;
+          if (!sessionUser) return;
+          const profile = await resolveSessionProfile(sessionUser);
+          set({ user: profile, loading: false });
+          useUserStore.getState().updateUser(profile.id, profile);
+          syncOperationalSession(profile);
+        } finally {
+          resumeAuthListener();
+        }
       },
       signUp: async (name, email, password) => {
-        const res = await authRepo.signUp(email, password, name);
-        const sessionUser = res.user;
-        if (!sessionUser) throw new Error('Sign up failed. Please try again.');
-        // When email confirmation is enabled, signUp returns a user but NO session.
-        // Don't fake a logged-in state — let the UI ask them to confirm their email.
-        if (!res.session) {
-          return { needsEmailConfirmation: true };
+        pauseAuthListener();
+        try {
+          const res = await authRepo.signUp(email, password, name);
+          const sessionUser = res.user;
+          if (!sessionUser) throw new Error('Sign up failed. Please try again.');
+          if (sessionUser.identities && sessionUser.identities.length === 0) {
+            throw new Error('That email is already registered. Try signing in instead.');
+          }
+          // When email confirmation is enabled, signUp returns a user but NO session.
+          if (!res.session) {
+            return { needsEmailConfirmation: true };
+          }
+          const profile = await resolveSessionProfile(sessionUser, name);
+          set({ user: profile, loading: false });
+          useUserStore.getState().updateUser(profile.id, profile);
+          syncOperationalSession(profile);
+          return { needsEmailConfirmation: false };
+        } finally {
+          resumeAuthListener();
         }
-        const profile = await resolveSessionProfile(sessionUser, name);
-        set({ user: profile });
-        return { needsEmailConfirmation: false };
       },
       logout: async () => {
         stopOperationsRealtime();

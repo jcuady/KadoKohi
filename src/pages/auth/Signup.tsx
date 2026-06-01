@@ -1,8 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import { clampText, isValidEmail } from '../../lib/validation';
+import { formatAuthErrorMessage, recoverStaleAuthSession } from '../../lib/supabase/authSession';
+import { isSupabaseConfigured } from '../../lib/supabase/client';
 import {
   AlertCircle,
   Check,
@@ -33,9 +35,18 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    void recoverStaleAuthSession();
+  }, []);
+
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isSupabaseConfigured) {
+      setError('Sign-up is unavailable — the app is not connected to the server. Please try again later.');
+      return;
+    }
 
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Please fill in all fields.');
@@ -76,14 +87,12 @@ export default function Signup() {
       }
       navigate('/account', { replace: true, state: { onboard: true } });
     } catch (err) {
-      const message = err instanceof Error ? err.message : '';
-      if (/already registered|already exists|User already/i.test(message)) {
-        setError('That email is already registered. Try signing in instead.');
-      } else if (/password/i.test(message)) {
-        setError('Password is too weak. Use at least 8 characters.');
-      } else {
-        setError('Unable to create account. Please try another email or try again later.');
-      }
+      setError(
+        formatAuthErrorMessage(
+          err,
+          'Unable to create account. Please try another email or try again later.',
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
