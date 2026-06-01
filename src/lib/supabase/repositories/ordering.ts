@@ -1,5 +1,9 @@
 import type {
+  BoothBooking,
+  BoothBookingStatus,
   Branch,
+  Event,
+  EventRegistration,
   MerchCategory,
   MerchProduct,
   MenuCategory,
@@ -99,6 +103,80 @@ function mapMerchProduct(row: any): MerchProduct {
     tags: row.tags ?? [],
     visible: row.visible,
     order: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function parseEventImages(row: { images?: unknown; cover?: string | null }): string[] {
+  const raw = row.images;
+  if (Array.isArray(raw)) {
+    return raw.filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
+  }
+  if (row.cover?.trim()) return [row.cover.trim()];
+  return [];
+}
+
+function mapEvent(row: any): Event {
+  const images = parseEventImages(row);
+  return {
+    id: row.id,
+    branchId: row.branch_id ?? null,
+    title: row.title,
+    description: row.description ?? '',
+    startsAt: row.starts_at,
+    endsAt: row.ends_at ?? undefined,
+    images,
+    cover: images[0] ?? row.cover ?? undefined,
+    cta: row.cta ?? undefined,
+    visible: row.visible,
+    highlight: row.highlight ?? false,
+    signupEnabled: row.signup_enabled ?? false,
+    signupOpensAt: row.signup_opens_at ?? undefined,
+    signupClosesAt: row.signup_closes_at ?? undefined,
+    maxSignups: row.max_signups != null ? Number(row.max_signups) : undefined,
+  };
+}
+
+function mapEventRegistration(row: any): EventRegistration {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    customerId: row.customer_id ?? undefined,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    createdAt: row.created_at,
+  };
+}
+
+function mapBooking(row: any): BoothBooking {
+  return {
+    id: row.id,
+    shortCode: row.short_code,
+    branchId: row.branch_id ?? undefined,
+    customerId: row.customer_id ?? undefined,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    eventName: row.event_name,
+    occasion: row.occasion,
+    guestCount: row.guest_count ?? 0,
+    eventDate: row.event_date,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    packageId: row.package_id,
+    packageNameSnapshot: row.package_name_snapshot,
+    packageBasePriceSnapshot: Number(row.package_base_price_snapshot ?? 0),
+    selectedAddons: row.selected_addons ?? [],
+    specialRequests: row.special_requests ?? undefined,
+    estimateSnapshot: row.estimate_snapshot ?? undefined,
+    finalQuote: row.final_quote ?? undefined,
+    quoteNotes: row.quote_notes ?? undefined,
+    quotedAt: row.quoted_at ?? undefined,
+    status: row.status,
+    assignedStaffId: row.assigned_staff_id ?? undefined,
+    internalNotes: row.internal_notes ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -323,6 +401,149 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_tables').delete().eq('id', id);
     if (error) throw error;
   },
+  async fetchEvents(): Promise<Event[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('kk_events').select('*').order('starts_at');
+    if (error) throw error;
+    return (data ?? []).map(mapEvent);
+  },
+  async upsertEvent(e: Event, sortOrder?: number) {
+    if (!supabase) return;
+    const images = e.images?.length ? e.images : e.cover ? [e.cover] : [];
+    const { error } = await supabase.from('kk_events').upsert({
+      id: e.id,
+      branch_id: e.branchId ?? null,
+      title: e.title,
+      description: e.description ?? '',
+      starts_at: new Date(e.startsAt).toISOString(),
+      ends_at: e.endsAt ? new Date(e.endsAt).toISOString() : null,
+      cover: images[0] ?? e.cover ?? null,
+      images,
+      cta: e.cta ?? null,
+      visible: e.visible,
+      highlight: e.highlight ?? false,
+      signup_enabled: e.signupEnabled ?? false,
+      signup_opens_at: e.signupOpensAt ? new Date(e.signupOpensAt).toISOString() : null,
+      signup_closes_at: e.signupClosesAt ? new Date(e.signupClosesAt).toISOString() : null,
+      max_signups: e.maxSignups ?? null,
+      ...(sortOrder !== undefined ? { sort_order: sortOrder } : {}),
+    });
+    if (error) throw error;
+  },
+  async fetchEventRegistrationCounts(): Promise<Record<string, number>> {
+    if (!supabase) return {};
+    const { data, error } = await supabase.from('kk_event_registrations').select('event_id');
+    if (error) throw error;
+    const counts: Record<string, number> = {};
+    for (const row of data ?? []) {
+      const id = row.event_id as string;
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts;
+  },
+  async fetchEventRegistrations(eventId: string): Promise<EventRegistration[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('kk_event_registrations')
+      .select('*')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapEventRegistration);
+  },
+  async registerForEvent(input: {
+    id: string;
+    eventId: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+  }): Promise<EventRegistration> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_register_for_event', {
+      payload: {
+        id: input.id,
+        event_id: input.eventId,
+        contact_name: input.contactName.trim(),
+        contact_email: input.contactEmail.trim().toLowerCase(),
+        contact_phone: input.contactPhone,
+      },
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      id: String(row.id ?? input.id),
+      eventId: input.eventId,
+      contactName: input.contactName.trim(),
+      contactEmail: input.contactEmail.trim().toLowerCase(),
+      contactPhone: input.contactPhone,
+      createdAt: String(row.created_at ?? new Date().toISOString()),
+    };
+  },
+  async deleteEvent(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_events').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async fetchBookings(): Promise<BoothBooking[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('kk_booth_bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapBooking);
+  },
+  buildPlaceBookingPayload(b: BoothBooking) {
+    return {
+      id: b.id,
+      branch_id: b.branchId ?? null,
+      contact_name: b.contactName,
+      contact_email: b.contactEmail,
+      contact_phone: b.contactPhone,
+      event_name: b.eventName,
+      occasion: b.occasion,
+      guest_count: b.guestCount,
+      event_date: new Date(b.eventDate).toISOString(),
+      starts_at: new Date(b.startsAt).toISOString(),
+      ends_at: new Date(b.endsAt).toISOString(),
+      package_id: b.packageId,
+      package_name_snapshot: b.packageNameSnapshot,
+      package_base_price_snapshot: b.packageBasePriceSnapshot,
+      selected_addons: b.selectedAddons ?? [],
+      special_requests: b.specialRequests ?? null,
+      estimate_snapshot: b.estimateSnapshot ?? {},
+    };
+  },
+  /** Server-validated booking submission (replaces direct table INSERT). */
+  async placeBooking(b: BoothBooking): Promise<BoothBooking> {
+    if (!supabase) return b;
+    const { data, error } = await supabase.rpc('kk_place_booth_booking', {
+      payload: orderingRepo.buildPlaceBookingPayload(b),
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      ...b,
+      shortCode: String(row.short_code ?? b.shortCode),
+      customerId: (row.customer_id as string | null) ?? b.customerId,
+      status: (row.status as BoothBookingStatus) ?? b.status,
+      createdAt: String(row.created_at ?? b.createdAt),
+      updatedAt: String(row.updated_at ?? b.updatedAt),
+    };
+  },
+  async patchBooking(id: string, patch: Partial<BoothBooking>) {
+    if (!supabase) return;
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.status !== undefined) dbPatch.status = patch.status;
+    if (patch.assignedStaffId !== undefined) dbPatch.assigned_staff_id = patch.assignedStaffId ?? null;
+    if (patch.finalQuote !== undefined) dbPatch.final_quote = patch.finalQuote ?? null;
+    if (patch.quoteNotes !== undefined) dbPatch.quote_notes = patch.quoteNotes ?? null;
+    if (patch.quotedAt !== undefined) dbPatch.quoted_at = patch.quotedAt ?? null;
+    if (patch.internalNotes !== undefined) dbPatch.internal_notes = patch.internalNotes ?? null;
+    if (Object.keys(dbPatch).length === 0) return;
+    const { error } = await supabase.from('kk_booth_bookings').update(dbPatch).eq('id', id);
+    if (error) throw error;
+  },
   async fetchOrders(): Promise<Order[]> {
     if (!supabase) return [];
     const { data, error } = await supabase
@@ -439,6 +660,14 @@ export const orderingRepo = {
     if (signed.error) throw signed.error;
     return signed.data.signedUrl;
   },
+  async ensureMyProfile(name?: string): Promise<User> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_ensure_my_profile', {
+      p_name: name?.trim() || null,
+    });
+    if (error) throw error;
+    return mapUser(data);
+  },
   async fetchUsers(): Promise<User[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('kk_profiles').select('*').order('created_at');
@@ -489,6 +718,24 @@ export const orderingRepo = {
       gcash_qr_image: settings.gcashQrImage || null,
       order_hours: siteConfigFromSettings(settings),
     });
+    if (error) throw error;
+  },
+  /** Shared landing-page CMS content (admin-published, publicly readable). */
+  async fetchLandingContent(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('landing_content')
+      .eq('id', true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return (data as { landing_content?: unknown }).landing_content ?? null;
+  },
+  async upsertLandingContent(content: unknown) {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('kk_app_settings')
+      .upsert({ id: true, landing_content: content });
     if (error) throw error;
   },
 };

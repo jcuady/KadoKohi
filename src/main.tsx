@@ -11,6 +11,9 @@ import { useOrderStore } from './store/orderStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useUserStore } from './store/userStore';
 import { useMerchStore } from './store/merchStore';
+import { useEventStore } from './store/eventStore';
+import { useBoothBookingStore } from './store/boothBookingStore';
+import { useLandingContentStore } from './store/landingContentStore';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
 import { registerSW } from 'virtual:pwa-register';
@@ -24,6 +27,9 @@ function Bootstrap() {
   const hydrateSettings = useSettingsStore((s) => s.hydrateFromRemote);
   const hydrateUsers = useUserStore((s) => s.hydrateFromRemote);
   const hydrateMerch = useMerchStore((s) => s.hydrateFromRemote);
+  const hydrateEvents = useEventStore((s) => s.hydrateFromRemote);
+  const hydrateBookings = useBoothBookingStore((s) => s.hydrateFromRemote);
+  const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
 
   useEffect(() => {
     void initAuth();
@@ -34,6 +40,9 @@ function Bootstrap() {
     void hydrateSettings();
     void hydrateUsers();
     void hydrateMerch();
+    void hydrateEvents();
+    void hydrateBookings();
+    void hydrateLanding();
 
     // Keep auth state in sync with Supabase session events (token refresh,
     // sign-out from another tab, OAuth callback, email confirmation, etc.).

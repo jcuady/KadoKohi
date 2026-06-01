@@ -171,10 +171,26 @@ export interface Event {
   description: string;
   startsAt: string;
   endsAt?: string;
+  /** @deprecated Use images[0] — kept for legacy rows. */
   cover?: string;
+  images?: string[];
   cta?: { label: string; href: string };
   visible: boolean;
   highlight?: boolean;
+  signupEnabled?: boolean;
+  signupOpensAt?: string;
+  signupClosesAt?: string;
+  maxSignups?: number;
+}
+
+export interface EventRegistration {
+  id: string;
+  eventId: string;
+  customerId?: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  createdAt: string;
 }
 
 export interface TakeoutQr {

@@ -193,7 +193,7 @@ export default function AccountDashboard() {
           <h2 className="font-display text-lg font-black text-kado-dark">Events Bookings</h2>
           <p className="text-xs text-kado-dark/50 mt-0.5">
             {myBoothCount > 0
-              ? `${myBoothCount} booth request${myBoothCount !== 1 ? 's' : ''} — view estimates and official quotes`
+              ? `${myBoothCount} event request${myBoothCount !== 1 ? 's' : ''} — view estimates and official quotes`
               : 'Plan a celebration — submit a request and we will send a quote'}
           </p>
         </div>
@@ -201,7 +201,7 @@ export default function AccountDashboard() {
           to="/account/booth"
           className="inline-flex items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors shrink-0"
         >
-          {myBoothCount > 0 ? 'View bookings' : 'Book booth'} <ArrowRight className="w-3 h-3" />
+          {myBoothCount > 0 ? 'View bookings' : 'Book an event'} <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
 

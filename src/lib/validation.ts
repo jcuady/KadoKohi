@@ -1,3 +1,5 @@
+import { isValidPhilippinePhone } from './phonePhilippines';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidEmail(value: string): boolean {
@@ -33,6 +35,13 @@ export function clampPositiveInt(value: number, min: number, max: number): numbe
 }
 
 /** Map Supabase / PostgREST errors to short user-facing copy. */
+export function requirePhilippinePhone(value: string): string | null {
+  const v = value.trim();
+  if (!v) return 'Phone number is required.';
+  if (!isValidPhilippinePhone(v)) return 'Enter a valid Philippine mobile number (e.g. 917 123 4567).';
+  return null;
+}
+
 export function formatOrderError(err: unknown): string {
   const msg =
     err && typeof err === 'object' && 'message' in err

@@ -9,6 +9,9 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useAuditStore } from '../../store/auditStore';
 import { usePromoStore } from '../../store/promoStore';
 import { useMerchStore } from '../../store/merchStore';
+import { useEventStore } from '../../store/eventStore';
+import { useBoothBookingStore } from '../../store/boothBookingStore';
+import { useLandingContentStore } from '../../store/landingContentStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -23,6 +26,8 @@ const OPS_TABLES = [
   'kk_promo_codes',
   'kk_merch_categories',
   'kk_merch_products',
+  'kk_events',
+  'kk_booth_bookings',
 ] as const;
 
 type OpsTable = (typeof OPS_TABLES)[number];
@@ -48,6 +53,9 @@ const refresh = {
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
   merch: debounce(() => void useMerchStore.getState().hydrateFromRemote(), 300),
+  events: debounce(() => void useEventStore.getState().hydrateFromRemote(), 300),
+  bookings: debounce(() => void useBoothBookingStore.getState().hydrateFromRemote(), 300),
+  landing: debounce(() => void useLandingContentStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: OpsTable) {
@@ -70,6 +78,7 @@ function onTableChange(table: OpsTable) {
       break;
     case 'kk_app_settings':
       refresh.settings();
+      refresh.landing();
       break;
     case 'kk_audit_logs':
       refresh.audit();
@@ -80,6 +89,12 @@ function onTableChange(table: OpsTable) {
     case 'kk_merch_categories':
     case 'kk_merch_products':
       refresh.merch();
+      break;
+    case 'kk_events':
+      refresh.events();
+      break;
+    case 'kk_booth_bookings':
+      refresh.bookings();
       break;
     default:
       break;
@@ -98,6 +113,9 @@ export async function refreshOperationsData(): Promise<void> {
     useAuditStore.getState().refresh(),
     usePromoStore.getState().fetchAll(),
     useMerchStore.getState().hydrateFromRemote(),
+    useEventStore.getState().hydrateFromRemote(),
+    useBoothBookingStore.getState().hydrateFromRemote(),
+    useLandingContentStore.getState().hydrateFromRemote(),
   ]);
 }
 

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { supabase } from '../lib/supabase/client';
 
 export interface HeroChrome {
   locationBadge: string;
@@ -124,6 +126,7 @@ interface LandingContentStore {
   /** When true, home + ?preview=1 read from draft. */
   isPreviewMode: boolean;
 
+  hydrateFromRemote: () => Promise<void>;
   initDraft: () => void;
   discardDraft: () => void;
   publishDraft: () => void;
@@ -268,7 +271,7 @@ export const SEED_CONTENT: LandingContentState = {
     subtitle: 'Coffee shop by day. Club and hangout by night. The definitive Marikina social experience.',
     coverImageOverride: '',
     noEventBody: 'No upcoming events right now. Check back soon.',
-    noEventBrowseLabel: 'View Kado Booth →',
+    noEventBrowseLabel: 'View Kado Events →',
   },
   testimonials: {
     badge: 'Customers',
@@ -443,6 +446,18 @@ export const useLandingContentStore = create<LandingContentStore>()(
       draft: null,
       isPreviewMode: false,
 
+      hydrateFromRemote: async () => {
+        if (!supabase) return;
+        try {
+          const remote = await orderingRepo.fetchLandingContent();
+          if (remote && typeof remote === 'object') {
+            set({ published: normalizeLandingContent(remote as Partial<LandingContentState>) });
+          }
+        } catch {
+          // Keep current published content when remote fetch fails.
+        }
+      },
+
       initDraft: () => {
         const draft = cloneContent(get().published);
         set({ draft });
@@ -455,7 +470,10 @@ export const useLandingContentStore = create<LandingContentStore>()(
         const { draft } = get();
         if (!draft) return;
         clearLandingPreviewDraft();
-        set({ published: cloneContent(draft), draft: null, isPreviewMode: false });
+        const published = cloneContent(draft);
+        set({ published, draft: null, isPreviewMode: false });
+        // Persist to the shared CMS so real visitors see the update across devices.
+        void orderingRepo.upsertLandingContent(published).catch(() => {});
       },
       setPreviewMode: (active) => {
         const { draft, published } = get();

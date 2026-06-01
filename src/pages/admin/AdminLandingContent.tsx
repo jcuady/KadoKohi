@@ -56,7 +56,7 @@ export default function AdminLandingContent() {
         <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Homepage content</h1>
         <p className="dash-muted text-sm mt-1">
           Section order and layout are fixed. Replace text and images only, then preview (Zustand draft) or publish to
-          go live. Product names/prices still come from Menu; Kado Booth details from Kado Booth admin; branch rows from Branches.
+          go live. Product names/prices still come from Menu; Kado Events details from Kado Events admin; branch rows from Branches.
         </p>
         {uploadError ? <p className="mt-2 text-sm text-red-600 font-medium">{uploadError}</p> : null}
       </div>
@@ -72,7 +72,7 @@ export default function AdminLandingContent() {
             <li>Featured products</li>
             <li>How to order</li>
             <li>Cafe hours</li>
-            <li>Kado Booth</li>
+            <li>Kado Events</li>
             <li>Testimonials</li>
             <li>Branches</li>
             <li>Kado Circle</li>
@@ -309,7 +309,7 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Booth block</h2>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Badge" value={content.events.badge} onChange={(v) => updateEvents({ badge: v })} />
             <Field label="Title" value={content.events.title} onChange={(v) => updateEvents({ title: v })} />

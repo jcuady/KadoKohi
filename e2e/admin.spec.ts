@@ -10,6 +10,7 @@ const ADMIN_ROUTES = [
   '/admin',
   '/admin/orders',
   '/admin/menu',
+  '/admin/merch',
   '/admin/branches',
   '/admin/tables',
   '/admin/users',

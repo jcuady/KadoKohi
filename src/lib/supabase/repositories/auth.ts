@@ -1,6 +1,20 @@
 import { supabase } from '../client';
 import type { Role } from '../../../types/domain';
 
+function parseEdgePayload(data: unknown): void {
+  if (data && typeof data === 'object' && 'error' in data && data.error) {
+    throw new Error(String((data as { error: unknown }).error));
+  }
+}
+
+async function invokeAdminUsers<T = unknown>(body: Record<string, unknown>): Promise<T> {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { data, error } = await supabase.functions.invoke('kk-admin-users', { body });
+  if (error) throw error;
+  parseEdgePayload(data);
+  return data as T;
+}
+
 export const authRepo = {
   async signIn(email: string, password: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
@@ -43,41 +57,31 @@ export const authRepo = {
     role: Extract<Role, 'admin' | 'barista' | 'staff' | 'customer'>;
     branchId?: string;
   }) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase.functions.invoke('kk-admin-users', {
-      body: {
-        action: 'create_user',
-        ...input,
-      },
+    return invokeAdminUsers<{ user?: { id: string } }>({
+      action: 'create_user',
+      ...input,
     });
-    if (error) throw error;
-    return data;
   },
   async resetInternalPassword(userId: string, newPassword: string) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase.functions.invoke('kk-admin-users', {
-      body: {
-        action: 'reset_password',
-        userId,
-        newPassword,
-      },
+    return invokeAdminUsers({
+      action: 'reset_password',
+      userId,
+      newPassword,
     });
-    if (error) throw error;
-    return data;
+  },
+  async deleteUser(userId: string) {
+    return invokeAdminUsers<{ success: boolean }>({
+      action: 'delete_user',
+      userId,
+    });
   },
   async resetAllData(confirmPhrase: string) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase.functions.invoke('kk-admin-users', {
-      body: {
-        action: 'reset_all_data',
-        confirmPhrase,
-      },
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error as string);
-    return data as {
+    return invokeAdminUsers<{
       success: boolean;
       deleted: Record<string, number | boolean>;
-    };
+    }>({
+      action: 'reset_all_data',
+      confirmPhrase,
+    });
   },
 };

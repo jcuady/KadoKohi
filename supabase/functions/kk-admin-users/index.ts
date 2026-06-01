@@ -125,6 +125,76 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (action === "delete_user") {
+    const { userId } = body;
+    if (!userId || typeof userId !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Missing userId" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (userId === user.id) {
+      return new Response(
+        JSON.stringify({ error: "You cannot delete your own account while signed in." }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const { data: target, error: targetErr } = await adminClient
+      .from("kk_profiles")
+      .select("id, role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (targetErr) {
+      return new Response(JSON.stringify({ error: targetErr.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!target) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (target.role === "admin") {
+      const { count, error: adminCountErr } = await adminClient
+        .from("kk_profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
+      if (adminCountErr) {
+        return new Response(JSON.stringify({ error: adminCountErr.message }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if ((count ?? 0) <= 1) {
+        return new Response(
+          JSON.stringify({ error: "Cannot delete the last admin account." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    await adminClient.from("kk_push_subscriptions").delete().eq("user_id", userId);
+    await adminClient.from("kk_event_registrations").delete().eq("customer_id", userId);
+
+    const { error: authDeleteErr } = await adminClient.auth.admin.deleteUser(userId);
+    if (authDeleteErr) {
+      return new Response(JSON.stringify({ error: authDeleteErr.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    await adminClient.from("kk_profiles").delete().eq("id", userId);
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   if (action === "reset_password") {
     const { userId, newPassword } = body;
     if (!userId || !newPassword) {

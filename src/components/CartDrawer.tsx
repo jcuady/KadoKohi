@@ -374,10 +374,21 @@ export default function CartDrawer() {
                 <div className="shrink-0 border-t border-kado-dark/10 px-5 py-5 space-y-4 bg-[#FAF7F2]">
                   <OnlineOrderHoursNotice status={orderHours} variant="compact" />
 
+                  {hasMerch && (
+                    <div className="rounded-xl border border-kado-red/20 bg-kado-red/5 px-4 py-3 text-xs text-kado-dark/70 flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-kado-red shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">
+                        <span className="font-bold text-kado-dark">Merch is claim-in-store only.</span>{' '}
+                        We don&apos;t deliver merch — pay with GCash now, then pick up your items at your
+                        selected branch once we confirm payment.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Branch selector */}
                   <div>
                     <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
-                      Pickup at
+                      {hasMerch && !hasCoffee ? 'Claim / pick up at' : 'Pickup at'}
                     </label>
                     <select
                       value={branchId}

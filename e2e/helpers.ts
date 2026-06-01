@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import { type Page, expect } from '@playwright/test';
+import { type APIRequestContext, type Page, expect } from '@playwright/test';
 
 /**
  * Shared test credentials (live Supabase project idwtlujcdfnnndxmlaco).
@@ -76,4 +76,84 @@ export function supabaseAnonConfig(): { url: string; anonKey: string } | null {
     file.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !anonKey) return null;
   return { url, anonKey };
+}
+
+export function uniqueTestId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function supabaseHeaders(cfg: { url: string; anonKey: string }, token?: string) {
+  const bearer = token ?? cfg.anonKey;
+  return {
+    apikey: cfg.anonKey,
+    Authorization: `Bearer ${bearer}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+/** Password grant for seeded customer account (live Supabase). */
+export async function customerAccessToken(request: APIRequestContext): Promise<string | null> {
+  const cfg = supabaseAnonConfig();
+  if (!cfg) return null;
+
+  const res = await request.post(`${cfg.url}/auth/v1/token?grant_type=password`, {
+    headers: supabaseHeaders(cfg),
+    data: { email: CREDS.customer.email, password: CREDS.customer.password },
+  });
+
+  if (!res.ok()) return null;
+  const body = (await res.json()) as { access_token?: string };
+  return body.access_token ?? null;
+}
+
+export async function supabaseGet<T>(
+  request: APIRequestContext,
+  path: string,
+  token?: string,
+): Promise<T | null> {
+  const cfg = supabaseAnonConfig();
+  if (!cfg) return null;
+
+  const res = await request.get(`${cfg.url}/rest/v1/${path}`, {
+    headers: supabaseHeaders(cfg, token),
+  });
+  if (!res.ok()) return null;
+  return (await res.json()) as T;
+}
+
+export async function placeOrderRpc(
+  request: APIRequestContext,
+  payload: Record<string, unknown>,
+  token?: string,
+): Promise<{ status: number; body: Record<string, unknown> | string }> {
+  const cfg = supabaseAnonConfig();
+  if (!cfg) return { status: 0, body: 'missing supabase config' };
+
+  const res = await request.post(`${cfg.url}/rest/v1/rpc/kk_place_order`, {
+    headers: supabaseHeaders(cfg, token),
+    data: { payload },
+  });
+
+  const text = await res.text();
+  try {
+    return { status: res.status(), body: JSON.parse(text) as Record<string, unknown> };
+  } catch {
+    return { status: res.status(), body: text };
+  }
+}
+
+export async function trackOrderRpc(
+  request: APIRequestContext,
+  orderId: string,
+): Promise<Record<string, unknown>[]> {
+  const cfg = supabaseAnonConfig();
+  if (!cfg) return [];
+
+  const res = await request.post(`${cfg.url}/rest/v1/rpc/kk_track_order`, {
+    headers: supabaseHeaders(cfg),
+    data: { order_id: orderId },
+  });
+  if (!res.ok()) return [];
+  const body = await res.json();
+  return Array.isArray(body) ? (body as Record<string, unknown>[]) : [];
 }

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Role, User } from '../types/domain';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { authRepo } from '../lib/supabase/repositories/auth';
 import { logAudit } from '../lib/audit';
 
 const SEED_USERS: User[] = [
@@ -37,7 +38,7 @@ export interface UserStore {
   updateUser: (id: string, patch: Partial<User>) => void;
   /** Admin/barista manual stamp adjustment (delta can be negative). Audited. */
   adjustLoyaltyStamps: (id: string, delta: number, reason?: string) => void;
-  removeUser: (id: string) => void;
+  removeUser: (id: string) => Promise<void>;
   getById: (id: string) => User | undefined;
   seed: () => void;
 }
@@ -113,14 +114,15 @@ export const useUserStore = create<UserStore>()((set, get) => ({
         });
       },
 
-      removeUser: (id) => {
+      removeUser: async (id) => {
+        const deleted = get().users.find((u) => u.id === id);
+        await authRepo.deleteUser(id);
         set({ users: get().users.filter((u) => u.id !== id) });
-        void orderingRepo.deleteUser(id);
         logAudit({
           action: 'user.deleted',
           entityType: 'user',
           entityId: id,
-          summary: `Deleted user ${id}`,
+          summary: deleted ? `Deleted user ${deleted.name} (${deleted.email})` : `Deleted user ${id}`,
         });
       },
 

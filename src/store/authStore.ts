@@ -22,6 +22,33 @@ function isInternalRole(role: User['role']): boolean {
   return role === 'admin' || role === 'barista' || role === 'staff';
 }
 
+async function resolveSessionProfile(
+  sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown> },
+  fallbackName?: string,
+): Promise<User> {
+  const users = await orderingRepo.fetchUsers();
+  const existing = users.find((u) => u.id === sessionUser.id);
+  if (existing) return normalizeProfile(existing);
+
+  const metaName =
+    (typeof sessionUser.user_metadata?.name === 'string' ? sessionUser.user_metadata.name : undefined) ??
+    fallbackName;
+  try {
+    const ensured = await orderingRepo.ensureMyProfile(metaName);
+    useUserStore.getState().updateUser(ensured.id, ensured);
+    return normalizeProfile(ensured);
+  } catch {
+    return normalizeProfile({
+      id: sessionUser.id,
+      email: sessionUser.email ?? '',
+      name: metaName ?? 'Customer',
+      role: 'customer',
+      loyaltyStamps: 0,
+      createdAt: new Date().toISOString(),
+    } as User);
+  }
+}
+
 /** After JWT is available, wire live sync for staff surfaces. */
 function syncOperationalSession(profile: User): void {
   if (isInternalRole(profile.role)) {
@@ -65,17 +92,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             set({ user: null, loading: false });
             return;
           }
-          const users = await orderingRepo.fetchUsers();
-          const profile = normalizeProfile(
-            users.find((u) => u.id === session.user.id) ??
-            ({
-              id: session.user.id,
-              email: session.user.email ?? '',
-              name: (session.user.user_metadata?.name as string | undefined) ?? 'Customer',
-              role: 'customer',
-              createdAt: new Date().toISOString(),
-            } as User),
-          );
+          const profile = await resolveSessionProfile(session.user);
           set({ user: profile, loading: false });
           useUserStore.getState().updateUser(profile.id, profile);
           syncOperationalSession(profile);
@@ -87,18 +104,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         const res = await authRepo.signIn(email, password);
         const sessionUser = res.user;
         if (!sessionUser) return;
-        const users = await orderingRepo.fetchUsers();
-        const profile = normalizeProfile(
-          users.find((u) => u.id === sessionUser.id) ??
-          ({
-            id: sessionUser.id,
-            email: sessionUser.email ?? email,
-            name: (sessionUser.user_metadata?.name as string | undefined) ?? 'Customer',
-            role: 'customer',
-            createdAt: new Date().toISOString(),
-          } as User),
-        );
+        const profile = await resolveSessionProfile(sessionUser);
         set({ user: profile });
+        useUserStore.getState().updateUser(profile.id, profile);
         syncOperationalSession(profile);
       },
       signUp: async (name, email, password) => {
@@ -110,15 +118,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         if (!res.session) {
           return { needsEmailConfirmation: true };
         }
-        const profile: User = {
-          id: sessionUser.id,
-          email: email.toLowerCase(),
-          name,
-          role: 'customer',
-          loyaltyStamps: 0,
-          createdAt: new Date().toISOString(),
-        };
-        useUserStore.getState().updateUser(profile.id, profile);
+        const profile = await resolveSessionProfile(sessionUser, name);
         set({ user: profile });
         return { needsEmailConfirmation: false };
       },

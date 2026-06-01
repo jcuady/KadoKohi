@@ -10,6 +10,8 @@ import HomeHeroSlider from '../ui/home-hero-slider';
 import CafeScheduleSection from './CafeScheduleSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
+import { useCountdown } from '../../hooks/useCountdown';
+import { eventImages, getEventSignupPhase, signupCountdownTarget } from '../../lib/eventTiming';
 import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
@@ -200,39 +202,6 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
   );
 }
 
-function useCountdown(isoDate: string | undefined) {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  useEffect(() => {
-    if (!isoDate) return;
-    const target = new Date(isoDate).getTime();
-    const zero = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-
-    const tick = () => {
-      const diff = target - Date.now();
-      if (diff <= 0) {
-        setTimeLeft(zero);
-        return false;
-      }
-      setTimeLeft({
-        days: Math.floor(diff / 86400000),
-        hours: Math.floor((diff / 3600000) % 24),
-        minutes: Math.floor((diff / 60000) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
-      });
-      return true;
-    };
-
-    if (!tick()) return;
-
-    const id = window.setInterval(() => {
-      if (!tick()) window.clearInterval(id);
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [isoDate]);
-  return timeLeft;
-}
-
 const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1200&auto=format&fit=crop';
 
 function EventsSection({ copy }: { copy: EventsCopy }) {
@@ -244,7 +213,10 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
       .filter((e) => e.visible)
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
   }, [events]);
-  const countdown = useCountdown(ev?.startsAt);
+  const signupPhase = ev ? getEventSignupPhase(ev, 0) : 'disabled';
+  const countdownTarget = ev ? signupCountdownTarget(ev, signupPhase) ?? ev.startsAt : undefined;
+  const countdown = useCountdown(countdownTarget);
+  const heroImage = copy.coverImageOverride?.trim() || (ev ? eventImages(ev)[0] : '') || FALLBACK_EVENT_IMG;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -288,7 +260,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
           >
             <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group cursor-pointer border border-[#2A2626]/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:h-[750px] w-full">
               <motion.img
-                src={(copy.coverImageOverride?.trim() || ev.cover || FALLBACK_EVENT_IMG) as string}
+                src={heroImage}
                 alt={ev.title}
                 className="w-full h-full object-cover brightness-[0.7] contrast-[1.1]"
                 whileHover={{ scale: 1.05 }}
@@ -373,7 +345,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                       to="/events"
                       className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
                     >
-                      View Kado Booth <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
+                      View Kado Events <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
                     </Link>
                   )}
                 </motion.div>

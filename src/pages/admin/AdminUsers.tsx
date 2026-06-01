@@ -5,6 +5,7 @@ import { hasAllBranchAccess, isSuperAdmin } from '../../lib/roles';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Pencil, Trash2, Shield, AlertCircle, KeyRound, Stamp } from 'lucide-react';
 import { authRepo } from '../../lib/supabase/repositories/auth';
+import { useAuthStore } from '../../store/authStore';
 import ComingSoonBadge from '../../components/admin/ComingSoonBadge';
 
 /** Roles admins can provision via the edge function. Staff creation is deferred. */
@@ -15,10 +16,12 @@ type FormData = { name: string; email: string; role: Role; branchId: string };
 const emptyForm: FormData = { name: '', email: '', role: 'customer', branchId: '' };
 
 export default function AdminUsers() {
+  const currentUserId = useAuthStore((s) => s.user?.id);
   const users = useUserStore((s) => s.users);
   const addUser = useUserStore((s) => s.addUser);
   const updateUser = useUserStore((s) => s.updateUser);
   const removeUser = useUserStore((s) => s.removeUser);
+  const hydrateUsers = useUserStore((s) => s.hydrateFromRemote);
   const adjustLoyaltyStamps = useUserStore((s) => s.adjustLoyaltyStamps);
   const branches = useBranchStore((s) => s.branches);
 
@@ -38,14 +41,30 @@ export default function AdminUsers() {
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    setDeleteError('');
+    if (id === currentUserId) {
+      setDeleteError('You cannot delete your own account while signed in.');
+      return;
+    }
     if (confirmDeleteId !== id) {
       setConfirmDeleteId(id);
       return;
     }
-    removeUser(id);
-    setConfirmDeleteId(null);
+    setDeletingId(id);
+    try {
+      await removeUser(id);
+      setConfirmDeleteId(null);
+      await hydrateUsers();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Unable to delete user.');
+      setConfirmDeleteId(null);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
@@ -117,10 +136,13 @@ export default function AdminUsers() {
           role: payload.role as Extract<Role, 'admin' | 'barista' | 'staff' | 'customer'>,
           branchId: payload.branchId,
         });
+        const newId = created?.user?.id;
+        if (!newId) throw new Error('Account was created but no user id was returned.');
         addUser({
-          id: created?.user?.id,
+          id: newId,
           ...payload,
         });
+        await hydrateUsers();
       }
       cancel();
     } catch (err) {
@@ -165,6 +187,13 @@ export default function AdminUsers() {
         </button>
       </div>
 
+      {deleteError && (
+        <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-xs font-medium">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{deleteError}</span>
+        </div>
+      )}
+
       <ul className="space-y-2">
         {users.map((u) => (
           <li key={u.id} className="rounded-xl dash-card border px-5 py-4 flex items-center gap-4">
@@ -197,10 +226,19 @@ export default function AdminUsers() {
             </button>
             <button
               type="button"
-              onClick={() => handleDelete(u.id)}
+              onClick={() => void handleDelete(u.id)}
               onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
-              className={`p-1 rounded-lg transition-colors ${confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'}`}
-              title={confirmDeleteId === u.id ? 'Click again to confirm delete' : 'Delete user'}
+              disabled={u.id === currentUserId || deletingId === u.id}
+              className={`p-1 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+                confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'
+              }`}
+              title={
+                u.id === currentUserId
+                  ? 'Cannot delete your own account'
+                  : confirmDeleteId === u.id
+                    ? 'Click again to confirm delete'
+                    : 'Delete user (removes login and profile)'
+              }
             >
               <Trash2 className="w-4 h-4" />
             </button>

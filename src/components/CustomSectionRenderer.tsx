@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: 'What are your opening hours?',
-    a: 'We\'re open Monday through Sunday, 7:00 AM to 11:00 PM. On event nights we sometimes stay open later — check our Kado Booth page for the schedule.',
+    a: 'We\'re open Monday through Sunday, 7:00 AM to 11:00 PM. On event nights we sometimes stay open later — check our Kado Events page for the schedule.',
   },
   {
     q: 'How do I order online?',

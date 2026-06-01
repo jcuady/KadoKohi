@@ -12,7 +12,7 @@ const navLinks = [
   { label: 'Merch', path: '/merch' },
   { label: 'Events Bookings', path: '/book/booth' },
   { label: 'Branches', path: '/branches' },
-  { label: 'Kado Booth', path: '/events' },
+  { label: 'Kado Events', path: '/events' },
   { label: 'About Us', path: '/about' },
   { label: 'Contact Us', path: '/contact' },
 ];

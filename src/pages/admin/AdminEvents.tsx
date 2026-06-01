@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import type { Event } from '../../types/domain';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { Event, EventRegistration } from '../../types/domain';
 import { useEventStore } from '../../store/eventStore';
 import { useBranchStore } from '../../store/branchStore';
-import { Plus, Pencil, Trash2, Star } from 'lucide-react';
+import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { eventImages, signupClosesBeforeEventStart } from '../../lib/eventTiming';
+import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users } from 'lucide-react';
 
 type EventFormData = {
   title: string;
@@ -13,7 +16,12 @@ type EventFormData = {
   visible: boolean;
   highlight: boolean;
   ctaLabel: string;
-  ctaHref: string;
+  images: string[];
+  signupEnabled: boolean;
+  signupOpensAt: string;
+  signupClosesAt: string;
+  signupDaysBefore: string;
+  maxSignups: string;
 };
 
 const emptyForm: EventFormData = {
@@ -24,9 +32,22 @@ const emptyForm: EventFormData = {
   endsAt: '',
   visible: true,
   highlight: false,
-  ctaLabel: '',
-  ctaHref: '',
+  ctaLabel: 'Sign up',
+  images: [],
+  signupEnabled: true,
+  signupOpensAt: '',
+  signupClosesAt: '',
+  signupDaysBefore: '1',
+  maxSignups: '',
 };
+
+function toLocalDatetime(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function AdminEvents() {
   const events = useEventStore((s) => s.events);
@@ -38,26 +59,46 @@ export default function AdminEvents() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EventFormData>(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const [registrationsEventId, setRegistrationsEventId] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+
+  const loadCounts = () => {
+    void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadCounts();
+  }, [events.length]);
 
   const startAdd = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageError('');
     setShowForm(true);
   };
 
   const startEdit = (evt: Event) => {
     setEditingId(evt.id);
+    const imgs = eventImages(evt);
     setForm({
       title: evt.title,
       description: evt.description,
       branchId: evt.branchId ?? '',
-      startsAt: evt.startsAt.slice(0, 16),
-      endsAt: evt.endsAt?.slice(0, 16) ?? '',
+      startsAt: toLocalDatetime(evt.startsAt),
+      endsAt: toLocalDatetime(evt.endsAt),
       visible: evt.visible,
       highlight: evt.highlight ?? false,
-      ctaLabel: evt.cta?.label ?? '',
-      ctaHref: evt.cta?.href ?? '',
+      ctaLabel: evt.cta?.label ?? 'Sign up',
+      images: imgs,
+      signupEnabled: evt.signupEnabled ?? false,
+      signupOpensAt: toLocalDatetime(evt.signupOpensAt),
+      signupClosesAt: toLocalDatetime(evt.signupClosesAt),
+      signupDaysBefore: '1',
+      maxSignups: evt.maxSignups != null ? String(evt.maxSignups) : '',
     });
+    setImageError('');
     setShowForm(true);
   };
 
@@ -65,11 +106,47 @@ export default function AdminEvents() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setImageError('');
+  };
+
+  const applySignupDuration = (daysBefore: string, startsAt: string) => {
+    if (!startsAt) return;
+    const closes = signupClosesBeforeEventStart(startsAt, Number(daysBefore) || 1);
+    if (closes) setForm((f) => ({ ...f, signupClosesAt: toLocalDatetime(closes) }));
+  };
+
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+    if (form.images.length >= 8) {
+      setImageError('Maximum 8 images per event.');
+      return;
+    }
+    setImageError('');
+    const result = await readImageDataUrl(file);
+    if ('dataUrl' in result) {
+      setForm((f) => ({ ...f, images: [...f.images, result.dataUrl] }));
+    } else {
+      setImageError(result.error);
+    }
+  };
+
+  const addImageUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    if (form.images.length >= 8) {
+      setImageError('Maximum 8 images per event.');
+      return;
+    }
+    setForm((f) => ({ ...f, images: [...f.images, trimmed] }));
   };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.startsAt) return;
+    if (form.signupEnabled && !form.signupClosesAt) {
+      setImageError('Set a sign-up close date/time or use the duration preset.');
+      return;
+    }
 
     const payload: Omit<Event, 'id'> = {
       title: form.title.trim(),
@@ -79,7 +156,15 @@ export default function AdminEvents() {
       endsAt: form.endsAt || undefined,
       visible: form.visible,
       highlight: form.highlight,
-      cta: form.ctaLabel.trim() ? { label: form.ctaLabel.trim(), href: form.ctaHref.trim() || '#' } : undefined,
+      images: form.images,
+      cover: form.images[0],
+      signupEnabled: form.signupEnabled,
+      signupOpensAt: form.signupOpensAt ? new Date(form.signupOpensAt).toISOString() : undefined,
+      signupClosesAt: form.signupEnabled && form.signupClosesAt
+        ? new Date(form.signupClosesAt).toISOString()
+        : undefined,
+      maxSignups: form.maxSignups.trim() ? Math.max(1, Number(form.maxSignups)) : undefined,
+      cta: form.ctaLabel.trim() ? { label: form.ctaLabel.trim(), href: '/events' } : undefined,
     };
 
     if (editingId) {
@@ -87,15 +172,26 @@ export default function AdminEvents() {
     } else {
       addEvent(payload);
     }
+    loadCounts();
     cancel();
+  };
+
+  const openRegistrations = async (eventId: string) => {
+    setRegistrationsEventId(eventId);
+    try {
+      const rows = await orderingRepo.fetchEventRegistrations(eventId);
+      setRegistrations(rows);
+    } catch {
+      setRegistrations([]);
+    }
   };
 
   return (
     <div className="dash-page max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Kado Booth</h1>
-          <p className="dash-muted text-sm mt-1">{events.length} event(s) — manage what shows on the public site.</p>
+          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Kado Events</h1>
+          <p className="dash-muted text-sm mt-1">{events.length} event(s) — manage listings, images, and sign-ups.</p>
         </div>
         <button
           type="button"
@@ -106,35 +202,63 @@ export default function AdminEvents() {
         </button>
       </div>
 
-      {/* List */}
       <ul className="space-y-3 mb-8">
-        {events.map((evt) => (
-          <li key={evt.id} className="rounded-2xl dash-card border p-5 flex items-start gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-display font-bold dash-heading">{evt.title}</span>
-                {evt.highlight && <Star className="w-3.5 h-3.5 text-kado-red fill-kado-red" />}
-                {!evt.visible && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest dash-muted dash-card-alt px-2 py-0.5 rounded-full">Hidden</span>
+        {events.map((evt) => {
+          const thumb = eventImages(evt)[0];
+          const count = regCounts[evt.id] ?? 0;
+          return (
+            <li key={evt.id} className="rounded-2xl dash-card border p-5 flex items-start gap-4">
+              {thumb ? (
+                <img src={thumb} alt={evt.title} className="w-16 h-16 rounded-xl object-cover shrink-0 border dash-border" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl shrink-0 border dash-border flex items-center justify-center dash-card-alt">
+                  <ImageIcon className="w-5 h-5 dash-muted" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-display font-bold dash-heading">{evt.title}</span>
+                  {evt.highlight && <Star className="w-3.5 h-3.5 text-kado-red fill-kado-red" />}
+                  {evt.signupEnabled && (
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/10 px-2 py-0.5 rounded-full">
+                      Sign-ups
+                    </span>
+                  )}
+                  {!evt.visible && (
+                    <span className="text-[9px] font-bold uppercase tracking-widest dash-muted dash-card-alt px-2 py-0.5 rounded-full">
+                      Hidden
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs dash-muted truncate">{evt.description}</p>
+                <p className="text-[10px] dash-muted mt-1">
+                  {new Date(evt.startsAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {evt.branchId ? ` · ${branches.find((b) => b.id === evt.branchId)?.name ?? evt.branchId}` : ' · All branches'}
+                  {evt.signupEnabled && evt.signupClosesAt
+                    ? ` · Sign-up until ${new Date(evt.signupClosesAt).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}`
+                    : ''}
+                </p>
+                {evt.signupEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => void openRegistrations(evt.id)}
+                    className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
+                  >
+                    <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''}
+                  </button>
                 )}
               </div>
-              <p className="text-xs dash-muted truncate">{evt.description}</p>
-              <p className="text-[10px] dash-muted mt-1">
-                {new Date(evt.startsAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                {evt.branchId ? ` · ${branches.find((b) => b.id === evt.branchId)?.name ?? evt.branchId}` : ' · All branches'}
-              </p>
-            </div>
-            <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1">
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button type="button" onClick={() => removeEvent(evt.id)} className="text-red-400 hover:text-red-600 p-1">
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </li>
-        ))}
+              <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button type="button" onClick={() => removeEvent(evt.id)} className="text-red-400 hover:text-red-600 p-1">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
-      {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <form
@@ -164,13 +288,68 @@ export default function AdminEvents() {
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 resize-none"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Event images (up to 8)
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    placeholder="Image URL"
+                    className="flex-1 rounded-xl dash-input border px-4 py-2 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addImageUrl((e.target as HTMLInputElement).value);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                  />
+                </div>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/*"
+                  onChange={(e) => void handleImageUpload(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-xs"
+                />
+                {imageError && <p className="text-xs text-red-500 mt-1">{imageError}</p>}
+                {form.images.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {form.images.map((src, i) => (
+                      <div key={`${i}-${src.slice(0, 24)}`} className="relative rounded-lg overflow-hidden border dash-border">
+                        <img src={src} alt="" className="w-full h-20 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, j) => j !== i) }))}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label="Remove image"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Starts at</label>
                   <input
                     type="datetime-local"
                     value={form.startsAt}
-                    onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))}
+                    onChange={(e) => {
+                      const startsAt = e.target.value;
+                      setForm((f) => {
+                        const next = { ...f, startsAt };
+                        if (f.signupEnabled && f.signupDaysBefore) {
+                          const closes = signupClosesBeforeEventStart(startsAt, Number(f.signupDaysBefore) || 1);
+                          return { ...next, signupClosesAt: closes ? toLocalDatetime(closes) : f.signupClosesAt };
+                        }
+                        return next;
+                      });
+                    }}
                     className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     required
                   />
@@ -185,6 +364,7 @@ export default function AdminEvents() {
                   />
                 </div>
               </div>
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Branch</label>
                 <select
@@ -194,30 +374,111 @@ export default function AdminEvents() {
                 >
                   <option value="">All branches</option>
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">CTA label</label>
+
+              <div className="rounded-xl border dash-border p-4 space-y-3">
+                <label className="flex items-center gap-2 text-sm dash-muted font-bold">
                   <input
-                    value={form.ctaLabel}
-                    onChange={(e) => setForm((f) => ({ ...f, ctaLabel: e.target.value }))}
-                    placeholder="e.g. RSVP Now"
-                    className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                    type="checkbox"
+                    checked={form.signupEnabled}
+                    onChange={(e) => setForm((f) => ({ ...f, signupEnabled: e.target.checked }))}
+                    className="rounded"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">CTA link</label>
-                  <input
-                    value={form.ctaHref}
-                    onChange={(e) => setForm((f) => ({ ...f, ctaHref: e.target.value }))}
-                    placeholder="/contact"
-                    className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-                  />
-                </div>
+                  Enable sign-ups (Name, +63 phone, email)
+                </label>
+
+                {form.signupEnabled && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                        Sign-up button label
+                      </label>
+                      <input
+                        value={form.ctaLabel}
+                        onChange={(e) => setForm((f) => ({ ...f, ctaLabel: e.target.value }))}
+                        placeholder="Sign up"
+                        className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                          Closes (days before event)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={365}
+                          value={form.signupDaysBefore}
+                          onChange={(e) => {
+                            const days = e.target.value;
+                            setForm((f) => {
+                              const next = { ...f, signupDaysBefore: days };
+                              if (f.startsAt) {
+                                const closes = signupClosesBeforeEventStart(f.startsAt, Number(days) || 0);
+                                return { ...next, signupClosesAt: closes ? toLocalDatetime(closes) : '' };
+                              }
+                              return next;
+                            });
+                          }}
+                          className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => applySignupDuration(form.signupDaysBefore, form.startsAt)}
+                          className="mt-1 text-[10px] font-bold text-kado-red hover:underline"
+                        >
+                          Apply duration preset
+                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                          Max sign-ups (optional)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={form.maxSignups}
+                          onChange={(e) => setForm((f) => ({ ...f, maxSignups: e.target.value }))}
+                          placeholder="Unlimited"
+                          className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                          Sign-ups open
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={form.signupOpensAt}
+                          onChange={(e) => setForm((f) => ({ ...f, signupOpensAt: e.target.value }))}
+                          className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                          Sign-ups close
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={form.signupClosesAt}
+                          onChange={(e) => setForm((f) => ({ ...f, signupClosesAt: e.target.value }))}
+                          className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                          required={form.signupEnabled}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
+
               <div className="flex gap-6">
                 <label className="flex items-center gap-2 text-sm dash-muted">
                   <input
@@ -235,7 +496,7 @@ export default function AdminEvents() {
                     onChange={(e) => setForm((f) => ({ ...f, highlight: e.target.checked }))}
                     className="rounded"
                   />
-                  Featured / Highlight
+                  Featured
                 </label>
               </div>
             </div>
@@ -256,6 +517,35 @@ export default function AdminEvents() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {registrationsEventId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md dash-card rounded-2xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-bold text-lg dash-heading">Registrations</h2>
+              <button type="button" onClick={() => setRegistrationsEventId(null)} className="dash-muted hover:text-kado-dark">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {registrations.length === 0 ? (
+              <p className="text-sm dash-muted">No registrations yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {registrations.map((r) => (
+                  <li key={r.id} className="rounded-xl border dash-border p-3 text-sm">
+                    <p className="font-bold dash-heading">{r.contactName}</p>
+                    <p className="dash-muted text-xs">{r.contactEmail}</p>
+                    <p className="dash-muted text-xs">{r.contactPhone}</p>
+                    <p className="text-[10px] dash-muted mt-1">
+                      {new Date(r.createdAt).toLocaleString('en-PH')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>

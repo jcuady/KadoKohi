@@ -36,7 +36,7 @@ export default function Footer() {
                 Events Bookings
               </Link>
               <Link to="/events" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
-                Kado Booth
+                Kado Events
               </Link>
               <Link to="/about" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 About Us
