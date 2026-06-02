@@ -5,6 +5,7 @@ import {
   MENU_PRODUCTS,
   filterCoffeeMenu,
 } from '../data/menuCatalog';
+import { coffeeMenuIsEmpty, pushMenuCatalogToRemote } from '../lib/menuCatalogSync';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -14,11 +15,11 @@ export type MenuDataSource = 'seed' | 'remote';
 export interface MenuStore {
   categories: MenuCategory[];
   products: Product[];
-  /** True after the first remote hydrate attempt finishes. */
   remoteLoaded: boolean;
-  /** `remote` when menu rows were loaded from Supabase (`kk_*` tables). */
   dataSource: MenuDataSource;
+  hydrateError: string | null;
   hydrateFromRemote: () => Promise<void>;
+  ensureCatalogInDatabase: () => Promise<void>;
   setCategories: (c: MenuCategory[]) => void;
   setProducts: (p: Product[]) => void;
   addCategory: (name: string, order?: number) => void;
@@ -37,6 +38,7 @@ function applyMenuSnapshot(
   categories: MenuCategory[],
   products: Product[],
   dataSource: MenuDataSource,
+  hydrateError: string | null = null,
 ) {
   const coffee = filterCoffeeMenu(categories, products);
   return {
@@ -44,7 +46,34 @@ function applyMenuSnapshot(
     products: coffee.products,
     dataSource,
     remoteLoaded: true,
+    hydrateError,
   };
+}
+
+async function loadRemoteMenu(): Promise<{ categories: MenuCategory[]; products: Product[] }> {
+  return orderingRepo.fetchMenu();
+}
+
+async function bootstrapRemoteCatalog(): Promise<{ categories: MenuCategory[]; products: Product[] }> {
+  let remote = await loadRemoteMenu();
+  if (!coffeeMenuIsEmpty(remote.categories, remote.products)) {
+    return remote;
+  }
+
+  await orderingRepo.ensureMenuCatalog();
+  remote = await loadRemoteMenu();
+  if (!coffeeMenuIsEmpty(remote.categories, remote.products)) {
+    return remote;
+  }
+
+  try {
+    await pushMenuCatalogToRemote();
+    remote = await loadRemoteMenu();
+  } catch {
+    // Admin RLS push may fail for guests; RPC path above is the primary bootstrap.
+  }
+
+  return remote;
 }
 
 export const useMenuStore = create<MenuStore>()((set, get) => ({
@@ -52,26 +81,49 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
       products: [],
       remoteLoaded: false,
       dataSource: 'seed',
+      hydrateError: null,
+
       hydrateFromRemote: async () => {
         if (!supabase) {
-          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed'));
+          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed', null));
           return;
         }
         try {
-          const remote = await orderingRepo.fetchMenu();
-          set(applyMenuSnapshot(remote.categories, remote.products, 'remote'));
-        } catch {
-          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed'));
+          const remote = await bootstrapRemoteCatalog();
+          if (coffeeMenuIsEmpty(remote.categories, remote.products)) {
+            set(
+              applyMenuSnapshot(
+                MENU_CATEGORIES,
+                MENU_PRODUCTS,
+                'seed',
+                'Menu tables are empty in this Supabase project. Use “Initialize KADO MENU V2” or check VITE_SUPABASE_URL.',
+              ),
+            );
+            return;
+          }
+          set(applyMenuSnapshot(remote.categories, remote.products, 'remote', null));
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Could not load menu from Supabase.';
+          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed', message));
         }
       },
 
+      ensureCatalogInDatabase: async () => {
+        if (!supabase) throw new Error('Supabase is not configured.');
+        await orderingRepo.ensureMenuCatalog();
+        await get().hydrateFromRemote();
+      },
+
       setCategories: (categories) =>
-        set(applyMenuSnapshot(categories, get().products, get().dataSource)),
+        set({
+          ...applyMenuSnapshot(categories, get().products, get().dataSource, get().hydrateError),
+        }),
       setProducts: (products) =>
-        set(applyMenuSnapshot(get().categories, products, get().dataSource)),
+        set({
+          ...applyMenuSnapshot(get().categories, products, get().dataSource, get().hydrateError),
+        }),
 
       addCategory: (name, order) => {
-        const t = new Date().toISOString();
         const list = get().categories;
         const c: MenuCategory = {
           id: newId(),
@@ -81,25 +133,38 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           visible: true,
         };
         set({ categories: [...list, c] });
-        void orderingRepo.upsertCategory(c);
+        void orderingRepo.upsertCategory(c).catch(() => {
+          set({ hydrateError: 'Could not save category to database.' });
+        });
       },
 
-      updateCategory: (id, patch) =>
+      updateCategory: (id, patch) => {
+        const prev = get().categories.find((c) => c.id === id);
+        if (!prev) return;
+        const updated = { ...prev, ...patch };
         set({
-          categories: get().categories.map((c) => {
-            if (c.id !== id) return c;
-            const updated = { ...c, ...patch };
-            void orderingRepo.upsertCategory(updated);
-            return updated;
-          }),
-        }),
+          categories: get().categories.map((c) => (c.id === id ? updated : c)),
+          hydrateError: null,
+        });
+        void orderingRepo.upsertCategory(updated).catch(() => {
+          set({
+            categories: get().categories.map((c) => (c.id === id ? prev : c)),
+            hydrateError: 'Could not update category in database.',
+          });
+        });
+      },
 
       removeCategory: (id) => {
+        const prevCats = get().categories;
+        const prevProds = get().products;
         set({
-          categories: get().categories.filter((c) => c.id !== id),
-          products: get().products.filter((p) => p.categoryId !== id),
+          categories: prevCats.filter((c) => c.id !== id),
+          products: prevProds.filter((p) => p.categoryId !== id),
+          hydrateError: null,
         });
-        void orderingRepo.deleteCategory(id);
+        void orderingRepo.deleteCategory(id).catch(() => {
+          set({ categories: prevCats, products: prevProds, hydrateError: 'Could not delete category.' });
+        });
       },
 
       addProduct: (input) => {
@@ -116,29 +181,43 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           sizes: input.sizes ?? [],
           milks: input.milks ?? [],
           tags: input.tags,
-          customFields: input.customFields,
+          customFields: input.customFields ?? [],
           visible: input.visible ?? true,
           order: input.order ?? get().products.filter((x) => x.categoryId === input.categoryId).length,
           createdAt: t,
           updatedAt: t,
         };
-        set({ products: [...get().products, p] });
-        void orderingRepo.upsertProduct(p);
+        set({ products: [...get().products, p], hydrateError: null });
+        void orderingRepo.upsertProduct(p).catch(() => {
+          set({
+            products: get().products.filter((row) => row.id !== p.id),
+            hydrateError: 'Could not save product to database.',
+          });
+        });
       },
 
-      updateProduct: (id, patch) =>
+      updateProduct: (id, patch) => {
+        const prev = get().products.find((p) => p.id === id);
+        if (!prev) return;
+        const updated = { ...prev, ...patch, updatedAt: new Date().toISOString() };
         set({
-          products: get().products.map((pr) => {
-            if (pr.id !== id) return pr;
-            const updated = { ...pr, ...patch, updatedAt: new Date().toISOString() };
-            void orderingRepo.upsertProduct(updated);
-            return updated;
-          }),
-        }),
+          products: get().products.map((pr) => (pr.id === id ? updated : pr)),
+          hydrateError: null,
+        });
+        void orderingRepo.upsertProduct(updated).catch(() => {
+          set({
+            products: get().products.map((pr) => (pr.id === id ? prev : pr)),
+            hydrateError: 'Could not update product in database.',
+          });
+        });
+      },
 
       removeProduct: (id) => {
-        set({ products: get().products.filter((pr) => pr.id !== id) });
-        void orderingRepo.deleteProduct(id);
+        const prev = get().products;
+        set({ products: prev.filter((pr) => pr.id !== id), hydrateError: null });
+        void orderingRepo.deleteProduct(id).catch(() => {
+          set({ products: prev, hydrateError: 'Could not delete product.' });
+        });
       },
 
       productsByCategory: (categoryId) =>
@@ -153,7 +232,9 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         sorted.splice(toIndex, 0, removed);
         const next = sorted.map((c, i) => ({ ...c, order: i }));
         set({ categories: next });
-        for (const c of next) void orderingRepo.upsertCategory(c);
+        void Promise.all(next.map((c) => orderingRepo.upsertCategory(c))).catch(() => {
+          set({ hydrateError: 'Could not save category order.' });
+        });
       },
 
       reorderProductsInCategory: (categoryId, fromIndex, toIndex) => {
@@ -163,12 +244,17 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         inCat.splice(toIndex, 0, removed);
         const orderMap = new Map(inCat.map((p, i) => [p.id, i]));
         const t = new Date().toISOString();
-        const next = get().products.map((p) =>
+        const prev = get().products;
+        const next = prev.map((p) =>
           orderMap.has(p.id) ? { ...p, order: orderMap.get(p.id)!, updatedAt: t } : p,
         );
         set({ products: next });
-        for (const p of next.filter((row) => orderMap.has(row.id))) void orderingRepo.upsertProduct(p);
+        void Promise.all(
+          next.filter((row) => orderMap.has(row.id)).map((p) => orderingRepo.upsertProduct(p)),
+        ).catch(() => {
+          set({ products: prev, hydrateError: 'Could not save product order.' });
+        });
       },
 
-      seed: () => set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed')),
+      seed: () => set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed', null)),
 }));

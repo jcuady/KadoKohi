@@ -8,6 +8,7 @@ import type {
   ProductCustomField,
 } from '../../types/domain';
 import { useMenuStore } from '../../store/menuStore';
+import { MENU_MILK_OPTIONS } from '../../data/menuCatalog';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { clampText } from '../../lib/validation';
@@ -34,7 +35,7 @@ const emptyProductForm: ProductFormData = {
   temperature: 'both',
   visible: true,
   tags: '',
-  milks: [],
+  milks: MENU_MILK_OPTIONS,
   sizes: [],
   customFields: [],
 };
@@ -44,6 +45,8 @@ export default function AdminMenu() {
   const products = useMenuStore((s) => s.products);
   const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const dataSource = useMenuStore((s) => s.dataSource);
+  const hydrateError = useMenuStore((s) => s.hydrateError);
+  const ensureCatalogInDatabase = useMenuStore((s) => s.ensureCatalogInDatabase);
   const addCategory = useMenuStore((s) => s.addCategory);
   const updateCategory = useMenuStore((s) => s.updateCategory);
   const removeCategory = useMenuStore((s) => s.removeCategory);
@@ -84,6 +87,20 @@ export default function AdminMenu() {
   const [productFormError, setProductFormError] = useState('');
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
+  const [initializingCatalog, setInitializingCatalog] = useState(false);
+  const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
+
+  const handleInitializeCatalog = async () => {
+    setInitCatalogError(null);
+    setInitializingCatalog(true);
+    try {
+      await ensureCatalogInDatabase();
+    } catch (err) {
+      setInitCatalogError(err instanceof Error ? err.message : 'Could not initialize menu catalog.');
+    } finally {
+      setInitializingCatalog(false);
+    }
+  };
 
   const handleAddCategory = (e: FormEvent) => {
     e.preventDefault();
@@ -280,9 +297,35 @@ export default function AdminMenu() {
         {categories.length} categories ({activeCategoryCount} visible) · {products.length} products
         {dataSource === 'remote' ? ' · synced from Supabase' : ' · offline catalog fallback'}
       </p>
-      <p className="text-[10px] dash-muted mb-6">
+      <p className="text-[10px] dash-muted mb-4">
         KADO MENU V2 — edit here or on the public Menu page after changes save to the database.
       </p>
+
+      {(hydrateError || initCatalogError) && (
+        <div
+          className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
+          role="alert"
+        >
+          {initCatalogError ?? hydrateError}
+        </div>
+      )}
+
+      {categories.length === 0 && (
+        <div className="mb-6 rounded-xl border border-dashed border-kado-red/30 bg-kado-cream/50 px-4 py-4">
+          <p className="text-sm dash-muted mb-3">
+            No coffee categories in this Supabase project yet. Initialize the flyer catalog (4 categories, 19 drinks) or
+            add your own below.
+          </p>
+          <button
+            type="button"
+            disabled={initializingCatalog}
+            onClick={() => void handleInitializeCatalog()}
+            className="rounded-xl bg-kado-red text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {initializingCatalog ? 'Initializing…' : 'Initialize KADO MENU V2'}
+          </button>
+        </div>
+      )}
 
       {/* Add category */}
       <form onSubmit={handleAddCategory} className="flex gap-2 mb-8">

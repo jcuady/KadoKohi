@@ -299,6 +299,17 @@ export const orderingRepo = {
       products: (prodRes.data ?? []).map(mapProduct),
     };
   },
+  /** Idempotent KADO MENU V2 seed (works on empty DB — any environment). */
+  async ensureMenuCatalog(): Promise<{ categories: number; products: number }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_ensure_menu_catalog');
+    if (error) throw error;
+    const row = (data ?? {}) as { categories?: number; products?: number };
+    return {
+      categories: Number(row.categories ?? 0),
+      products: Number(row.products ?? 0),
+    };
+  },
   async upsertCategory(c: MenuCategory) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_menu_categories').upsert({

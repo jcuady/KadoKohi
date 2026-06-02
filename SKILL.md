@@ -113,13 +113,14 @@ Apply the four checks above first; use this section for repo-specific facts.
 
 ### Coffee menu catalog
 
-- **Source of truth:** `src/data/menuCatalog.ts` (categories + 19 drinks from KADO MENU V2).
-- **DB seed:** `supabase/migrations/0021_menu_v2_catalog.sql` — apply with `npx supabase db push --include-all`.
+- **Source of truth:** `src/data/menuCatalog.ts` (4 categories + 18 drinks from KADO MENU V2).
+- **DB seed:** migrations `0021` / `0022`; empty environments auto-bootstrap via RPC `kk_ensure_menu_catalog` (`0023`) on first `hydrateFromRemote()`.
+- **Supabase project:** `VITE_SUPABASE_URL` on Vercel/local must match the project where migrations ran (linked: `ytulzzftxjlmtqwukdqq.supabase.co`).
 - **Milk modifiers:** `Milk` +0, `Oat` +40 (`MENU_MILK_OPTIONS`). No milk on AmeriKADO, Yuzu AmeriKado, Yuzu sodas.
 - **Temperature:** `both` = hot + iced; `iced` = iced only (KADO Latte, Yuzu AmeriKado, Nori Salted Cream, Matcha Strawberry Oat, Salted Cream Hojicha, Yuzu sodas). Tag `iced-only` for UI hints.
 - **Images:** `image` is null until assets are uploaded in Admin → Menu.
 - **Admin Menu Manager** loads only coffee categories (`cat_classics` … `cat_yuzu`), not `cat_hidden_merch`. Legacy dummy rows are removed by migration `0022_cleanup_legacy_menu.sql`.
-- **menuStore** starts empty until `hydrateFromRemote()`; always reads Supabase on Vercel when env vars are set.
+- **menuStore** starts empty until `hydrateFromRemote()`; if coffee categories are missing it calls `kk_ensure_menu_catalog`, then re-fetches. Admin → Menu shows **Initialize KADO MENU V2** when still empty.
 
 ### Branded QR cards (dine-in & takeout)
 
