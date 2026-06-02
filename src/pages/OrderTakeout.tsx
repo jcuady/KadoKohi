@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import type { OrderItem, Product } from '../types/domain';
+import type { OrderItem, Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
@@ -14,6 +14,7 @@ import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
+import QrPaymentSelector from '../components/qr/QrPaymentSelector';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import {
@@ -72,6 +73,7 @@ export default function OrderTakeout() {
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
   const [trackedLabel, setTrackedLabel] = useState('');
   const [orderError, setOrderError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
 
   // Restore an in-progress order for this browser session (per-branch).
   useEffect(() => {
@@ -178,7 +180,7 @@ export default function OrderTakeout() {
         branchId: branch.id,
         customerId: user?.id,
         guestName: clampText(pickupName, 80),
-        status: 'pending',
+        paymentMethod,
         items: cartTotals.lines,
         subtotal: cartTotals.subtotal,
         modifiersTotal: cartTotals.modifiers,
@@ -479,6 +481,9 @@ export default function OrderTakeout() {
                     <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
                   </div>
                 </div>
+                <div className="mt-4">
+                  <QrPaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
+                </div>
               </div>
             )}
 
@@ -494,7 +499,7 @@ export default function OrderTakeout() {
                 disabled={cart.length === 0 || !pickupName.trim() || submitting || cartStale}
                 className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
               >
-                {submitting ? 'Sending…' : 'Place takeout order'}
+                {submitting ? 'Sending…' : paymentMethod === 'gcash-qr' ? 'Place order · pay with GCash' : 'Place order · pay cash at counter'}
               </button>
             </div>
           </div>

@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle } from 'lucide-react';
+import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle, Wallet } from 'lucide-react';
 import type { OrderStatus } from '../../types/domain';
 import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
+import { isGcashOrder } from '../../lib/orderStatus';
+import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
+import GcashQrModal from '../GcashQrModal';
+import { useSettingsStore } from '../../store/settingsStore';
 
 type Channel = 'dine-in' | 'takeout';
 
@@ -33,6 +38,21 @@ const TAKEOUT_STEPS: Step[] = [
   { status: 'ready', label: 'Ready for pickup', Icon: PackageCheck },
 ];
 
+const GCASH_DINE_IN_STEPS: Step[] = [
+  { status: 'pending', label: 'Order received', Icon: Clock },
+  { status: 'accepted', label: 'Payment verified', Icon: Wallet },
+  { status: 'preparing', label: 'Preparing', Icon: CookingPot },
+  { status: 'ready', label: 'Ready', Icon: Coffee },
+  { status: 'served', label: 'Served', Icon: PackageCheck },
+];
+
+const GCASH_TAKEOUT_STEPS: Step[] = [
+  { status: 'pending', label: 'Order received', Icon: Clock },
+  { status: 'accepted', label: 'Payment verified', Icon: Wallet },
+  { status: 'preparing', label: 'Preparing', Icon: CookingPot },
+  { status: 'ready', label: 'Ready for pickup', Icon: PackageCheck },
+];
+
 const ORDER_RANK: Record<OrderStatus, number> = {
   pending: 0,
   accepted: 1,
@@ -50,27 +70,44 @@ export default function OrderTrackingPanel({
   isLoggedIn,
   onOrderAgain,
 }: Props) {
-  const { tracked, loadFailed, isLive } = useGuestOrderTracking(orderId);
+  const gcashQrImage = useSettingsStore((s) => s.settings.gcashQrImage);
+  const { tracked, loadFailed, isLive, refresh } = useGuestOrderTracking(orderId);
+  const [gcashModalOpen, setGcashModalOpen] = useState(false);
 
-  const steps = channel === 'takeout' ? TAKEOUT_STEPS : DINE_IN_STEPS;
+  const gcash = isGcashOrder({ paymentMethod: tracked?.paymentMethod });
+  const steps =
+    channel === 'takeout'
+      ? gcash
+        ? GCASH_TAKEOUT_STEPS
+        : TAKEOUT_STEPS
+      : gcash
+        ? GCASH_DINE_IN_STEPS
+        : DINE_IN_STEPS;
+
   const status = tracked?.status ?? 'pending';
+  const paymentStatus = tracked?.paymentStatus ?? 'unpaid';
   const isCancelled = status === 'cancelled';
   const isCompleted = status === 'completed';
   const currentRank = ORDER_RANK[status];
+  const awaitingGcash = gcash && paymentStatus === 'unpaid';
 
   const headline = isCancelled
     ? 'Order cancelled'
     : isCompleted
       ? 'Order complete'
-      : channel === 'takeout'
-        ? 'Takeout order placed!'
-        : 'Order sent!';
+      : awaitingGcash
+        ? 'Complete GCash payment'
+        : channel === 'takeout'
+          ? 'Takeout order placed!'
+          : 'Order sent!';
 
   const sub = isCancelled
     ? 'This order was cancelled. Please ask our staff if you need help.'
-    : channel === 'takeout'
-      ? <>We&apos;ll call out <strong>{contextLabel}</strong> when it&apos;s ready for pickup.</>
-      : <>Your dine-in order for <strong>{contextLabel}</strong> is with the barista.</>;
+    : awaitingGcash
+      ? 'Scan the GCash QR, pay the total, then upload your receipt below.'
+      : channel === 'takeout'
+        ? <>We&apos;ll call out <strong>{contextLabel}</strong> when it&apos;s ready for pickup.</>
+        : <>Your dine-in order for <strong>{contextLabel}</strong> is with the barista.</>;
 
   return (
     <div className="min-h-[100dvh] bg-[#FAF7F2] flex flex-col items-center px-4 py-10 sm:py-14">
@@ -80,11 +117,13 @@ export default function OrderTrackingPanel({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', damping: 18, stiffness: 260 }}
           className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 mx-auto ${
-            isCancelled ? 'bg-red-100' : 'bg-emerald-100'
+            isCancelled ? 'bg-red-100' : awaitingGcash ? 'bg-amber-100' : 'bg-emerald-100'
           }`}
         >
           {isCancelled ? (
             <XCircle className="w-8 h-8 text-red-600" />
+          ) : awaitingGcash ? (
+            <Wallet className="w-8 h-8 text-amber-700" />
           ) : (
             <Check className="w-8 h-8 text-emerald-600" />
           )}
@@ -104,7 +143,19 @@ export default function OrderTrackingPanel({
           </div>
         )}
 
-        {/* Live status stepper */}
+        {gcash && tracked && !isCancelled && (
+          <GuestOrderPaymentBlock
+            orderId={orderId}
+            shortCode={tracked.shortCode}
+            total={tracked.total}
+            channel={channel}
+            paymentMethod={tracked.paymentMethod}
+            paymentStatus={paymentStatus}
+            onViewQr={() => setGcashModalOpen(true)}
+            onProofSubmitted={() => void refresh()}
+          />
+        )}
+
         {!isCancelled && (
           <div className="rounded-2xl border border-kado-dark/10 bg-white p-5 sm:p-6 mb-4">
             <div className="flex items-center justify-between mb-4">
@@ -157,7 +208,9 @@ export default function OrderTrackingPanel({
                         {step.label}
                       </p>
                       {active && (
-                        <p className="text-[11px] text-kado-dark/45 mt-0.5">In progress…</p>
+                        <p className="text-[11px] text-kado-dark/45 mt-0.5">
+                          {awaitingGcash && step.status === 'pending' ? 'Awaiting GCash payment…' : 'In progress…'}
+                        </p>
                       )}
                     </div>
                   </li>
@@ -178,7 +231,6 @@ export default function OrderTrackingPanel({
           </div>
         )}
 
-        {/* Optional sign-in CTA — never forced */}
         {!isLoggedIn && (
           <div className="rounded-2xl border border-kado-red/15 bg-kado-red/[0.04] p-5 mb-4">
             <div className="flex items-start gap-2.5 mb-3">
@@ -214,6 +266,15 @@ export default function OrderTrackingPanel({
           Order again
         </button>
       </div>
+
+      <GcashQrModal
+        open={gcashModalOpen}
+        onClose={() => setGcashModalOpen(false)}
+        shortCode={tracked?.shortCode ?? '—'}
+        total={tracked?.total ?? 0}
+        qrImageUrl={gcashQrImage}
+        actionLabel="Done"
+      />
     </div>
   );
 }

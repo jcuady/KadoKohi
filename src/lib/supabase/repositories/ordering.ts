@@ -24,8 +24,10 @@ export type TrackedOrderStatus = {
   channel: Order['channel'];
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod?: Order['paymentMethod'];
   guestName?: string;
   total: number;
+  hasPaymentProof?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -665,11 +667,21 @@ export const orderingRepo = {
       channel: row.channel,
       status: row.status,
       paymentStatus: row.payment_status,
+      paymentMethod: row.payment_method ?? undefined,
       guestName: row.guest_name ?? undefined,
       total: Number(row.total ?? 0),
+      hasPaymentProof: Boolean(row.has_payment_proof),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  },
+  async submitGuestPaymentProof(orderId: string, proofDataUrl: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_submit_guest_payment_proof', {
+      p_order_id: orderId,
+      p_proof_data_url: proofDataUrl,
+    });
+    if (error) throw error;
   },
   async patchOrder(id: string, patch: Partial<Order>) {
     if (!supabase) return;

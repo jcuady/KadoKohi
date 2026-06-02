@@ -122,6 +122,7 @@ Apply the four checks above first; use this section for repo-specific facts.
 - **Admin Menu Manager** loads only coffee categories (`cat_classics` … `cat_yuzu`), not `cat_hidden_merch`. Legacy dummy rows are removed by migration `0022_cleanup_legacy_menu.sql`.
 - **menuStore** starts empty until `hydrateFromRemote()`; if coffee categories are missing it calls `kk_ensure_menu_catalog`, then re-fetches. Admin → Menu shows **Initialize KADO MENU V2** when still empty.
 - **Orders (QR / takeout / online):** `ensureOrderReadiness()` runs `kk_ensure_menu_catalog` + `kk_ensure_default_tables` (migration `0024`), refreshes menu/tables, prunes stale `kado-cart-v2` lines. `kk_place_order` validates product ids and dine-in `table_id` in Supabase — client seed-only data will fail until bootstrap runs.
+- **QR checkout payment:** Dine-in (`/order/qr/:code`) and takeout (`/order/takeout?b=…`) carts offer **GCash QR** or **Cash** (`QrPaymentSelector`). GCash orders use `payment_method: gcash-qr`, `payment_status: unpaid`; guests upload proof via `kk_submit_guest_payment_proof` (migration `0025`). Admin/barista Orders kanban shows awaiting payment / verify payment like online cart orders.
 
 ### Branded QR cards (dine-in & takeout)
 

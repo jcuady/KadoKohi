@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import type { OrderItem, Product } from '../types/domain';
+import type { OrderItem, Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
@@ -15,6 +15,7 @@ import { clampText, formatOrderError } from '../lib/validation';
 import { cartLinesMatchMenu, ensureOrderReadiness } from '../lib/orderReadiness';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
+import QrPaymentSelector from '../components/qr/QrPaymentSelector';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import {
@@ -73,6 +74,7 @@ export default function OrderQR() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
 
   // Restore an in-progress order for this browser session (per-table).
@@ -178,7 +180,7 @@ export default function OrderQR() {
         tableId: table.id,
         customerId: user?.id,
         guestName: user?.name ? clampText(user.name, 80) : table.label,
-        status: 'pending',
+        paymentMethod,
         items: cartTotals.lines,
         subtotal: cartTotals.subtotal,
         modifiersTotal: cartTotals.modifiers,
@@ -469,6 +471,9 @@ export default function OrderQR() {
                     <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
                   </div>
                 </div>
+                <div className="mt-4">
+                  <QrPaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
+                </div>
               </div>
             )}
 
@@ -482,7 +487,7 @@ export default function OrderQR() {
                 disabled={cart.length === 0 || submitting || cartStale}
                 className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
               >
-                {submitting ? 'Sending…' : 'Place dine-in order'}
+                {submitting ? 'Sending…' : paymentMethod === 'gcash-qr' ? 'Place order · pay with GCash' : 'Place order · pay cash at counter'}
               </button>
             </div>
           </div>

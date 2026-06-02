@@ -14,6 +14,7 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_BADGE,
   PAYMENT_STATUS_LABELS,
+  formatPaymentMethod,
   kanbanColumnForOrder,
   nextStatusInFlow,
 } from '../../lib/orderStatus';
@@ -177,6 +178,9 @@ export default function AdminOrders() {
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}>
                         {PAYMENT_STATUS_LABELS[o.paymentStatus]}
                       </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border dash-border dash-card-alt dash-muted">
+                        {formatPaymentMethod(o.paymentMethod)}
+                      </span>
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
@@ -272,6 +276,9 @@ export default function AdminOrders() {
                           <div className="flex flex-wrap items-center gap-1.5 mb-2">
                             <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
                               {o.channel}
+                            </span>
+                            <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
+                              {formatPaymentMethod(o.paymentMethod)}
                             </span>
                             <OrderTableBadge order={o} variant="dash" />
                             {o.guestName && (
