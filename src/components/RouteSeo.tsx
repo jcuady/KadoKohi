@@ -85,7 +85,7 @@ const PUBLIC_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/menu', name: 'Coffee Menu' },
   { path: '/merch', name: 'Merch' },
   { path: '/events', name: 'Kado Events' },
-  { path: '/book/booth', name: 'Booth Booking' },
+  { path: '/book/booth', name: 'Event Booking' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About Us' },
   { path: '/contact', name: 'Contact Us' },

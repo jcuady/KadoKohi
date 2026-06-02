@@ -17,7 +17,7 @@ export type AccountNavItem = {
 export const ACCOUNT_NAV: AccountNavItem[] = [
   { to: '/account', label: 'Dashboard', end: true, icon: LayoutDashboard },
   { to: '/account/orders', label: 'My Orders', icon: ClipboardList },
-  { to: '/account/booth', label: 'Events Bookings', icon: CalendarHeart },
+  { to: '/account/booth', label: 'Event Booking', icon: CalendarHeart },
   { to: '/account/vouchers', label: 'Vouchers', icon: Gift },
   { to: '/account/profile', label: 'Profile', icon: User },
 ];

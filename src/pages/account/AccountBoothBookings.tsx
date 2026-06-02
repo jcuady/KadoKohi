@@ -39,7 +39,7 @@ export default function AccountBoothBookings() {
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Events</p>
           <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-            Events Bookings
+            Event Booking
           </h1>
           <p className="text-sm text-kado-dark/55 mt-2 max-w-xl">
             Track booth requests, estimates, and official quotes. Prices start as estimates until our team sends a

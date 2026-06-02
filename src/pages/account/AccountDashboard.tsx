@@ -184,13 +184,13 @@ export default function AccountDashboard() {
         </Link>
       </div>
 
-      {/* ─── EVENTS BOOKINGS ─── */}
+      {/* ─── EVENT BOOKING ─── */}
       <div className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-kado-red/10 flex items-center justify-center shrink-0">
           <CalendarHeart className="w-6 h-6 text-kado-red" />
         </div>
         <div className="flex-1">
-          <h2 className="font-display text-lg font-black text-kado-dark">Events Bookings</h2>
+          <h2 className="font-display text-lg font-black text-kado-dark">Event Booking</h2>
           <p className="text-xs text-kado-dark/50 mt-0.5">
             {myBoothCount > 0
               ? `${myBoothCount} event request${myBoothCount !== 1 ? 's' : ''} — view estimates and official quotes`

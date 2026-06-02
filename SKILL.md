@@ -91,7 +91,7 @@ Apply the four checks above first; use this section for repo-specific facts.
 
 ### Navigation (public + account shell)
 
-- **One list for site links:** `src/config/siteNav.ts` → `PUBLIC_SITE_NAV`. Used by `Navbar` and `CustomerLayout` mobile menu so labels and paths stay identical (Coffee, Merch, Events Bookings, etc.).
+- **One list for site links:** `src/config/siteNav.ts` → `PUBLIC_SITE_NAV`. Used by `Navbar` and `CustomerLayout` mobile menu so labels and paths stay identical (Coffee, Merch, Event Booking, etc.).
 - **One list for account tabs:** `src/config/accountNav.ts` → `ACCOUNT_NAV`. Used by account header tabs (desktop) and the mobile hamburger account section.
 - **Mobile account UX:** On viewports below `lg`, hide the horizontal account tab strip; account links live in the hamburger menu only (same items as desktop tabs).
 

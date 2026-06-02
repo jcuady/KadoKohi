@@ -33,7 +33,7 @@ export default function Footer() {
                 Coffee
               </Link>
               <Link to="/book/booth" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
-                Events Bookings
+                Event Booking
               </Link>
               <Link to="/events" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 Kado Events

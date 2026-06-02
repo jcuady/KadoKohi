@@ -431,7 +431,7 @@ export interface BoothBookingSelectedAddonSnapshot {
 export interface BoothBooking {
   id: string;
   shortCode: string;
-  /** Optional — events bookings are brand-wide, not tied to a single branch. */
+  /** Optional — event booking is brand-wide, not tied to a single branch. */
   branchId?: string;
   customerId?: string;
   contactName: string;

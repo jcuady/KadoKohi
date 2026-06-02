@@ -167,7 +167,7 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
             Reference <strong className="text-kado-dark">{submittedCode}</strong>. This is an{' '}
             <strong>estimate only</strong> — our team will review and send an official quote.
           </p>
-          <p className="text-sm text-kado-dark/55 mb-7">You can track its status anytime under Events Bookings.</p>
+          <p className="text-sm text-kado-dark/55 mb-7">You can track its status anytime under Event Booking.</p>
           <Link
             to="/account/booth"
             className="inline-flex items-center justify-center gap-2 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-full hover:bg-kado-dark transition-colors"
@@ -285,7 +285,7 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
           <div className="mb-6">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-kado-dark">Build Your Booking</h2>
             <p className="text-sm text-kado-dark/55 mt-1">
-              Events bookings are managed brand-wide — follow the steps below.
+              Event booking is managed brand-wide — follow the steps below.
             </p>
           </div>
 
