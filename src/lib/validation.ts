@@ -60,6 +60,11 @@ export function formatOrderError(err: unknown): string {
     return 'This table QR is not active. Ask staff for a current table code.';
   }
   if (/branch is not active/i.test(msg)) return 'This location is not accepting orders right now.';
+  if (/proof image is too large/i.test(msg)) return msg;
+  if (/proof image is required/i.test(msg)) return msg;
+  if (/not a gcash order/i.test(msg)) return 'This order is not set up for GCash. Ask staff for help.';
+  if (/payment already verified/i.test(msg)) return 'Payment was already verified for this order.';
+  if (/could not process this photo/i.test(msg)) return msg;
   if (/promo/i.test(msg)) return msg;
   if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
   return msg.length < 120 ? msg : 'Could not place your order. Please try again.';

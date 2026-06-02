@@ -4,7 +4,8 @@ import type { Order, OrderChannel, PaymentMethod } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { isGcashOrder } from '../../lib/orderStatus';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { prepareGuestPaymentProof } from '../../lib/compressPaymentProof';
+import { formatOrderError } from '../../lib/validation';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { notifyBaristasProofSubmitted } from '../../lib/notify';
@@ -65,13 +66,13 @@ export default function GuestOrderPaymentBlock({
         updateOrderPaymentProof(orderId, signedUrl);
         setLocalProof(signedUrl);
       } else {
-        const read = await readImageDataUrl(file, 800_000);
-        if (!read.ok) {
-          setError(read.error);
+        const prepared = await prepareGuestPaymentProof(file);
+        if (!prepared.ok) {
+          setError(prepared.error);
           return;
         }
-        await orderingRepo.submitGuestPaymentProof(orderId, read.dataUrl);
-        setLocalProof(read.dataUrl);
+        await orderingRepo.submitGuestPaymentProof(orderId, prepared.dataUrl);
+        setLocalProof(prepared.dataUrl);
         void broadcastGuestOrderUpdate(orderId, {
           status: 'pending',
           paymentStatus: 'proof_submitted',
@@ -95,8 +96,8 @@ export default function GuestOrderPaymentBlock({
         });
       }
       onProofSubmitted?.();
-    } catch {
-      setError('Upload failed. Please try again.');
+    } catch (err) {
+      setError(formatOrderError(err));
     } finally {
       setUploading(false);
     }
