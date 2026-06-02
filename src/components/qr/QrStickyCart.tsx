@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { PaymentMethod, Product } from '../../types/domain';
 import type { QrCartLine } from '../../lib/qrOrderCart';
 import { formatPhp } from '../../lib/money';
@@ -40,7 +41,7 @@ type Props = {
   placeDisabled: boolean;
   placeButtonLabel: string;
   emptyCartTitle: string;
-  beforePlaceButton?: React.ReactNode;
+  beforePlaceButton?: ReactNode;
 };
 
 export default function QrStickyCart({

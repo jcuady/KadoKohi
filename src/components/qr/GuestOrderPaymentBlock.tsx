@@ -67,7 +67,7 @@ export default function GuestOrderPaymentBlock({
         setLocalProof(signedUrl);
       } else {
         const prepared = await prepareGuestPaymentProof(file);
-        if (!prepared.ok) {
+        if (prepared.ok === false) {
           setError(prepared.error);
           return;
         }

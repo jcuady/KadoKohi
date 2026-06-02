@@ -52,7 +52,10 @@ export function buildQrCartTotals(
   return { lines, subtotal, modifiers, tax, total };
 }
 
-export function qrCartIsStale(cart: QrCartLine[], lines: OrderItem[]): boolean {
+export function qrCartIsStale(
+  cart: { productId: string }[],
+  lines: OrderItem[],
+): boolean {
   if (cart.length === 0) return false;
   return lines.length !== cart.length || lines.length === 0;
 }
