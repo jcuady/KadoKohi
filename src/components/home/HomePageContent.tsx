@@ -11,12 +11,20 @@ import CafeScheduleSection from './CafeScheduleSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useCountdown } from '../../hooks/useCountdown';
-import { eventImages, getEventSignupPhase, signupCountdownTarget } from '../../lib/eventTiming';
+import {
+  eventDurationLabel,
+  eventImages,
+  getEventLifecyclePhase,
+  getEventSignupPhase,
+  pickCurrentOrUpcoming,
+  signupCountdownTarget,
+} from '../../lib/eventTiming';
 import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
 import type { FeaturedCopy, EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import { formatPhp } from '../../lib/money';
+import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 
 type Props = {
   landing: LandingContentState;
@@ -42,7 +50,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         </motion.div>
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
-      <SignatureSipsSection copy={landing.featured} />
+      <BestCoffeesSection copy={landing.featured} />
       <KadoOrderingCarousel copy={landing.ordering} />
       <CafeScheduleSection copy={landing.schedule} />
       <EventsSection copy={landing.events} />
@@ -66,19 +74,37 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=400&auto=format&fit=crop',
 ];
 
-function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
+function BestCoffeesSection({ copy }: { copy: FeaturedCopy }) {
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
   const user = useAuthStore((s) => s.user);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const sigCat = categories.find((c) => c.name.toLowerCase().includes('signature'));
+  const categoryById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name])),
+    [categories],
+  );
+
+  const visibleCoffeeProducts = useMemo(
+    () =>
+      products.filter(
+        (p) =>
+          p.visible &&
+          p.categoryId &&
+          !categoryById.get(p.categoryId)?.toLowerCase().includes('merch'),
+      ),
+    [products, categoryById],
+  );
+
   const showcaseDrinks = useMemo(() => {
-    const src = sigCat
-      ? products.filter((p) => p.categoryId === sigCat.id && p.visible)
-      : products.filter((p) => p.visible);
-    return src.slice(0, 3);
-  }, [products, sigCat]);
+    const byId = new Map(visibleCoffeeProducts.map((p) => [p.id, p]));
+    const picked = copy.productIds
+      .map((id) => byId.get(id))
+      .filter((p): p is Product => Boolean(p));
+    if (picked.length >= 3) return picked.slice(0, 3);
+    const fallback = visibleCoffeeProducts.filter((p) => !picked.some((x) => x.id === p.id));
+    return [...picked, ...fallback].slice(0, 3);
+  }, [copy.productIds, visibleCoffeeProducts]);
 
   return (
     <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
@@ -89,26 +115,44 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
         transition={{ duration: 0.5 }}
         className="max-w-[1400px] mx-auto"
       >
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.05 }}
-          className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-6 mb-8 md:mb-16"
-        >
-          <motion.div initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-3 block">{copy.badge}</span>
-            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-kado-dark leading-[1.1] md:leading-tight">
-              {copy.title}
-            </h2>
-          </motion.div>
-          <p className="text-kado-dark/70 font-medium max-w-sm text-sm sm:text-base leading-relaxed mt-2 md:mt-0">
-            <span className="hidden md:inline">{copy.subtitleDesktop}</span>
-            <span className="md:hidden">{copy.subtitleMobile}</span>
-          </p>
-        </motion.div>
+        <div className="rounded-[1.75rem] border border-kado-dark/10 bg-gradient-to-br from-white to-kado-cream p-5 sm:p-8 md:p-10 shadow-[0_14px_40px_rgba(25,25,25,0.08)]">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: 0.05 }}
+            className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-5 md:gap-8 mb-8 md:mb-10"
+          >
+            <motion.div initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
+              <span className="inline-flex items-center gap-2 rounded-full bg-kado-red/10 border border-kado-red/25 px-3 py-1.5 text-kado-red font-black tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-3">
+                {copy.badge}
+              </span>
+              <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-kado-dark leading-[1.08] md:leading-tight">
+                {copy.title}
+              </h2>
+              <p className="text-kado-dark/70 font-medium max-w-xl text-sm sm:text-base leading-relaxed mt-3 md:mt-4">
+                <span className="hidden md:inline">{copy.subtitleDesktop}</span>
+                <span className="md:hidden">{copy.subtitleMobile}</span>
+              </p>
+            </motion.div>
 
-        <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-4 md:gap-6 w-full pb-8 pt-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
+            <div className="w-full lg:w-auto flex items-center gap-3">
+              <Link
+                to={copy.shopCtaPath || '/menu'}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-kado-red px-5 py-3 text-white text-xs font-black uppercase tracking-[0.14em] hover:bg-kado-dark transition-colors"
+              >
+                {copy.shopCtaLabel || 'View Shop'} <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/menu"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-kado-dark/20 bg-white/80 px-5 py-3 text-kado-dark text-xs font-black uppercase tracking-[0.14em] hover:border-kado-red/35 hover:text-kado-red transition-colors"
+              >
+                {copy.menuCtaLabel}
+              </Link>
+            </div>
+          </motion.div>
+
+          <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-4 md:gap-6 w-full pb-6 pt-1 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
           {showcaseDrinks.map((drink, i) => {
             const image =
               copy.cardImageOverrides[i]?.trim() ||
@@ -142,11 +186,9 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
-                  {drink.tags?.[0] && (
-                    <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
-                      {drink.tags[0]}
-                    </span>
-                  )}
+                  <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
+                    {drink.tags?.[0] ?? 'Best Coffee'}
+                  </span>
 
                   <div className="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
@@ -156,6 +198,9 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
                 </div>
 
                 <div className="p-3 sm:p-4 flex flex-col flex-1">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 mb-1">
+                    {drink.categoryId ? categoryById.get(drink.categoryId) ?? 'Coffee' : 'Coffee'}
+                  </p>
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h3 className="font-display font-black text-sm sm:text-[0.95rem] leading-snug text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
                       {drink.name}
@@ -174,27 +219,15 @@ function SignatureSipsSection({ copy }: { copy: FeaturedCopy }) {
               </motion.button>
             );
           })}
+          </div>
         </div>
-
-        <motion.div
-          className="mt-12 sm:mt-16 flex justify-center px-1"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-        >
-          <Link
-            to="/menu"
-            className="inline-flex items-center justify-center gap-2 min-h-[44px] border-b-2 border-kado-red pb-1 text-kado-dark font-bold uppercase tracking-widest text-sm sm:text-base hover:text-kado-red transition-colors"
-          >
-            {copy.menuCtaLabel} <ArrowRight className="w-4 h-4 shrink-0" aria-hidden />
-          </Link>
-        </motion.div>
       </motion.div>
 
       <ProductDetailDrawer
         product={selectedProduct}
-        categoryName={sigCat?.name ?? 'Signatures'}
+        categoryName={
+          selectedProduct?.categoryId ? categoryById.get(selectedProduct.categoryId) ?? 'Coffee' : 'Coffee'
+        }
         onClose={() => setSelectedProduct(null)}
         requireAuthToOrder
       />
@@ -206,17 +239,31 @@ const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e77
 
 function EventsSection({ copy }: { copy: EventsCopy }) {
   const events = useEventStore((s) => s.events);
+  const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
+  }, [events.length]);
+
   const ev = useMemo(() => {
-    const highlighted = events.find((e) => e.highlight && e.visible);
-    if (highlighted) return highlighted;
-    return [...events]
-      .filter((e) => e.visible)
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
+    return pickCurrentOrUpcoming(events);
   }, [events]);
-  const signupPhase = ev ? getEventSignupPhase(ev, 0) : 'disabled';
-  const countdownTarget = ev ? signupCountdownTarget(ev, signupPhase) ?? ev.startsAt : undefined;
+  const signupPhase = ev ? getEventSignupPhase(ev, regCounts[ev.id] ?? 0) : 'disabled';
+  const lifecycle = ev ? getEventLifecyclePhase(ev) : 'upcoming';
+  const countdownTarget = useMemo(() => {
+    if (!ev) return undefined;
+    if (lifecycle === 'upcoming') return ev.startsAt;
+    if (lifecycle === 'current' && ev.endsAt) return ev.endsAt;
+    return signupCountdownTarget(ev, signupPhase);
+  }, [ev, lifecycle, signupPhase]);
   const countdown = useCountdown(countdownTarget);
   const heroImage = copy.coverImageOverride?.trim() || (ev ? eventImages(ev)[0] : '') || FALLBACK_EVENT_IMG;
+  const durationLabel = ev ? eventDurationLabel(ev) : null;
+  const ctaHref = ev && signupPhase === 'open' ? `/events?event=${encodeURIComponent(ev.id)}#event-${ev.id}` : '/events';
+  const ctaLabel =
+    ev && signupPhase === 'open'
+      ? (ev.cta?.label?.trim() || 'Sign up now')
+      : (ev?.cta?.label?.trim() || 'View Kado Events');
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -290,35 +337,41 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                       </motion.div>
                     );
                   })()}
-                  <div className="flex flex-wrap justify-center sm:justify-end gap-x-2 gap-y-2 sm:gap-4 bg-black/60 backdrop-blur-2xl border border-white/20 px-3 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5 rounded-xl sm:rounded-[2rem] shadow-2xl w-full sm:w-auto">
-                    {[
-                      { v: countdown.days, l: 'Days', red: true },
-                      { v: countdown.hours, l: 'Hrs' },
-                      { v: countdown.minutes, l: 'Min' },
-                      { v: countdown.seconds, l: 'Sec' },
-                    ].map(({ v, l, red }, i) => (
-                      <motion.div
-                        key={l}
-                        className="flex items-center gap-1.5 sm:gap-2 lg:gap-4"
-                        initial={{ opacity: 0, y: 6 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.05 }}
-                      >
-                        {i > 0 && <span className="text-white/30 font-bold self-start mt-1 hidden sm:inline">:</span>}
-                        <motion.div className="text-center min-w-[2.25rem]">
-                          <span
-                            className={`block font-display font-bold text-lg sm:text-2xl lg:text-4xl leading-none ${red ? 'text-kado-red' : 'text-white'}`}
-                          >
-                            {String(v).padStart(2, '0')}
-                          </span>
-                          <span className="text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest text-[#A09A90] font-bold mt-0.5 sm:mt-1 block">
-                            {l}
-                          </span>
+                  {countdownTarget ? (
+                    <div className="flex flex-wrap justify-center sm:justify-end gap-x-2 gap-y-2 sm:gap-4 bg-black/60 backdrop-blur-2xl border border-white/20 px-3 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5 rounded-xl sm:rounded-[2rem] shadow-2xl w-full sm:w-auto">
+                      {[
+                        { v: countdown.days, l: 'Days', red: true },
+                        { v: countdown.hours, l: 'Hrs' },
+                        { v: countdown.minutes, l: 'Min' },
+                        { v: countdown.seconds, l: 'Sec' },
+                      ].map(({ v, l, red }, i) => (
+                        <motion.div
+                          key={l}
+                          className="flex items-center gap-1.5 sm:gap-2 lg:gap-4"
+                          initial={{ opacity: 0, y: 6 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          {i > 0 && <span className="text-white/30 font-bold self-start mt-1 hidden sm:inline">:</span>}
+                          <motion.div className="text-center min-w-[2.25rem]">
+                            <span
+                              className={`block font-display font-bold text-lg sm:text-2xl lg:text-4xl leading-none ${red ? 'text-kado-red' : 'text-white'}`}
+                            >
+                              {String(v).padStart(2, '0')}
+                            </span>
+                            <span className="text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest text-[#A09A90] font-bold mt-0.5 sm:mt-1 block">
+                              {l}
+                            </span>
+                          </motion.div>
                         </motion.div>
-                      </motion.div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center justify-center rounded-xl sm:rounded-[2rem] border border-emerald-300/40 bg-emerald-500/20 px-4 py-2.5 sm:px-6 text-emerald-100 text-xs sm:text-sm font-black uppercase tracking-widest">
+                      {lifecycle === 'current' ? 'Live now' : 'Details on events page'}
+                    </div>
+                  )}
                 </div>
                 <motion.div
                   className="w-full max-w-3xl mt-auto"
@@ -333,21 +386,17 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                   <p className="text-[#EFE6D5]/90 font-medium text-sm sm:text-lg lg:text-2xl leading-relaxed mb-6 sm:mb-8 line-clamp-6 sm:line-clamp-none">
                     {ev.description}
                   </p>
-                  {ev.cta ? (
-                    <a
-                      href={ev.cta.href}
-                      className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
-                    >
-                      {ev.cta.label} <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
-                    </a>
-                  ) : (
-                    <Link
-                      to="/events"
-                      className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
-                    >
-                      View Kado Events <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
-                    </Link>
+                  {durationLabel && (
+                    <p className="text-xs sm:text-sm text-[#EFE6D5]/80 font-semibold mb-5">
+                      Event duration: {durationLabel}
+                    </p>
                   )}
+                  <Link
+                    to={ctaHref}
+                    className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
+                  >
+                    {ctaLabel} <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
+                  </Link>
                 </motion.div>
               </div>
             </div>

@@ -40,6 +40,7 @@ import StaffLayout from './layouts/StaffLayout';
 import StaffMerchOrders from './pages/staff/StaffMerchOrders';
 import StaffAllOrders from './pages/staff/StaffAllOrders';
 import StaffBoothBookings from './pages/staff/StaffBoothBookings';
+import InternalAccountSettings from './pages/internal/InternalAccountSettings';
 import BaristaBoard from './pages/barista/BaristaBoard';
 import BaristaQueue from './pages/barista/BaristaQueue';
 import BaristaPOS from './pages/barista/BaristaPOS';
@@ -113,6 +114,7 @@ export default function App() {
             <Route path="pos" element={<BaristaPOS />} />
             <Route path="menu" element={<BaristaMenu />} />
             <Route path="stamps" element={<BaristaStamps />} />
+            <Route path="settings" element={<InternalAccountSettings portalLabel="Barista" />} />
           </Route>
         </Route>
 
@@ -122,6 +124,7 @@ export default function App() {
             <Route path="booth-bookings" element={<StaffBoothBookings />} />
             <Route path="merch-orders" element={<StaffMerchOrders />} />
             <Route path="orders" element={<StaffAllOrders />} />
+            <Route path="settings" element={<InternalAccountSettings portalLabel="Staff" />} />
           </Route>
         </Route>
 

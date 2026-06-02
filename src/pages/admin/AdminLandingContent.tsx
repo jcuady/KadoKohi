@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useLandingContentStore, useLandingDraftContent } from '../../store/landingContentStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
 import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
+import { useMenuStore } from '../../store/menuStore';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const TRUSTED_BRAND_SLOTS = 5;
@@ -27,6 +28,16 @@ export default function AdminLandingContent() {
   const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
+  const categories = useMenuStore((s) => s.categories);
+  const allProducts = useMenuStore((s) => s.products);
+  const products = useMemo(() => {
+    const catById = new Map(categories.map((c) => [c.id, c.name.toLowerCase()]));
+    return allProducts.filter(
+      (p) =>
+        p.visible &&
+        (!p.categoryId || !catById.get(p.categoryId)?.includes('merch')),
+    );
+  }, [allProducts, categories]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -203,6 +214,48 @@ export default function AdminLandingContent() {
               value={content.featured.menuCtaLabel}
               onChange={(v) => updateFeatured({ menuCtaLabel: v })}
             />
+            <Field
+              label="Shop CTA label"
+              value={content.featured.shopCtaLabel}
+              onChange={(v) => updateFeatured({ shopCtaLabel: v })}
+            />
+            <Field
+              label="Shop CTA path"
+              value={content.featured.shopCtaPath}
+              onChange={(v) => updateFeatured({ shopCtaPath: v })}
+            />
+          </div>
+          <p className="text-xs dash-muted mt-4 mb-2">
+            Pick three coffee products to showcase. These are pulled live from Menu products.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            {([0, 1, 2] as const).map((slot) => (
+              <div key={`product-${slot}`}>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Card {slot + 1} product
+                </label>
+                <select
+                  value={content.featured.productIds[slot] ?? ''}
+                  onChange={(e) => {
+                    const next: [string, string, string] = [...content.featured.productIds] as [
+                      string,
+                      string,
+                      string,
+                    ];
+                    next[slot] = e.target.value;
+                    updateFeatured({ productIds: next });
+                  }}
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+                >
+                  <option value="">Auto-select best available</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} - ₱{p.basePrice}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
           <p className="text-xs dash-muted mt-4 mb-2">
             Image overrides for the three product cards (names/prices from Menu). Leave blank to use each product image.

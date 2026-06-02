@@ -10,8 +10,10 @@ import {
   ExternalLink,
   Sun,
   Moon,
+  Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
 import NotificationToggle from '../components/NotificationToggle';
 import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
@@ -22,6 +24,7 @@ const nav = [
   { to: '/barista/pos', label: 'POS', icon: ShoppingCart },
   { to: '/barista/menu', label: 'Menu', icon: Coffee },
   { to: '/barista/stamps', label: 'Stamps', icon: Stamp },
+  { to: '/barista/settings', label: 'Settings', icon: Settings },
 ];
 
 function sidebarFooterBtnClass() {
@@ -35,6 +38,10 @@ function sidebarFooterBtnClass() {
 
 export default function BaristaLayout() {
   const user = useAuthStore((s) => s.user);
+  const branches = useBranchStore((s) => s.branches);
+  const branchLabel = user?.branchId
+    ? branches.find((b) => b.id === user.branchId)?.name
+    : null;
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { isDark, toggle } = useDashTheme();
@@ -47,7 +54,7 @@ export default function BaristaLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login', { replace: true });
+    navigate('/management-portal', { replace: true });
   };
 
   return (
@@ -74,6 +81,11 @@ export default function BaristaLayout() {
             <p className="truncate text-[10px] font-semibold" style={{ color: 'var(--color-dash-text-muted)' }}>
               {user?.name}
             </p>
+            {branchLabel && (
+              <p className="truncate text-[9px]" style={{ color: 'var(--color-dash-text-muted)' }}>
+                {branchLabel}
+              </p>
+            )}
           </div>
         </div>
 
@@ -136,6 +148,11 @@ export default function BaristaLayout() {
       </aside>
 
       <div className="ml-[4.5rem] flex min-h-screen min-w-0 flex-1 flex-col md:ml-52">
+        {user?.role === 'barista' && !user.branchId && (
+          <div className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900 md:mx-6">
+            This barista account has no branch assigned. Ask an administrator to set your branch under Admin → Users.
+          </div>
+        )}
         <Outlet />
       </div>
     </div>

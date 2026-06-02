@@ -37,7 +37,7 @@ export const authRepo = {
     if (error) throw error;
     return data;
   },
-  async signUp(email: string, password: string, name: string) {
+  async signUp(email: string, password: string, name: string, phone: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
     if (signUpInFlight) return signUpInFlight;
 
@@ -45,7 +45,7 @@ export const authRepo = {
       await clearLocalAuthBeforeSignup();
 
       const { data: fnData, error: fnError } = await supabase.functions.invoke('kk-customer-signup', {
-        body: { email, password, name },
+        body: { email, password, name, phone },
       });
       if (fnError) throw fnError;
       parseEdgePayload(fnData);

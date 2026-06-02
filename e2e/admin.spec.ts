@@ -49,6 +49,9 @@ test('add-user modal opens, validates, and cancels cleanly', async ({ page }) =>
   await page.locator('select').first().selectOption('barista');
   await expect(page.getByText(/branch/i).first()).toBeVisible();
 
+  await page.locator('select').first().selectOption('staff');
+  await expect(page.getByText(/branch/i).first()).toBeVisible();
+
   await page.getByRole('button', { name: /cancel/i }).click();
   await expect(page.getByRole('heading', { name: /new user/i })).toHaveCount(0);
 });

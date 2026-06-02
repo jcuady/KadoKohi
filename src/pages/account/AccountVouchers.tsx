@@ -5,6 +5,8 @@ import { Gift, Star, Copy, Check, Sparkles, Coffee, ShoppingBag } from 'lucide-r
 import { useAuthStore } from '../../store/authStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useVoucherStore } from '../../store/voucherStore';
+import { useBranchStore } from '../../store/branchStore';
+import { formatVoucherScopeLabel } from '../../lib/branchScope';
 import type { LoyaltyReward, LoyaltyRewardType } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { useCheckoutStore } from '../../store/checkoutStore';
@@ -38,6 +40,8 @@ export default function AccountVouchers() {
   const setSelectedVoucherId = useCheckoutStore((s) => s.setSelectedVoucherId);
   const openCart = useCartStore((s) => s.openCart);
   const user = useAuthStore((s) => s.user);
+  const branches = useBranchStore((s) => s.branches);
+  const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
   const stamps = user?.loyaltyStamps ?? 0;
   const config = useLoyaltyStore((s) => s.config);
   const claimReward = useVoucherStore((s) => s.claimReward);
@@ -71,15 +75,19 @@ export default function AccountVouchers() {
     return locked.reduce((a, b) => (a.stampsRequired <= b.stampsRequired ? a : b));
   }, [rewards, stamps]);
 
-  const handleClaim = (reward: LoyaltyReward) => {
+  const handleClaim = async (reward: LoyaltyReward) => {
     setClaimMsg(null);
     if (!user?.id) return;
-    const res = claimReward(user.id, reward.id);
-    if ('voucher' in res) {
-      setClaimMsg({ type: 'ok', text: `Voucher ${res.voucher.code} unlocked! Use it in your cart at checkout.` });
-    } else {
+    const res = await claimReward(user.id, reward.id);
+    if (res.ok === false) {
       setClaimMsg({ type: 'err', text: res.error });
+      return;
     }
+    const scope = formatVoucherScopeLabel(res.voucher.branchId, branchName);
+    setClaimMsg({
+      type: 'ok',
+      text: `Voucher ${res.voucher.code} unlocked (${scope})! Pick the same branch at checkout to use it.`,
+    });
   };
 
   const useInCart = (voucherId: string) => {
@@ -186,6 +194,9 @@ export default function AccountVouchers() {
                   <p className="text-xs text-kado-dark/55 mt-1 leading-relaxed">{reward.description}</p>
                 )}
                 <p className="text-[11px] text-kado-dark/45 mt-2 leading-relaxed">{rewardHint(reward.type, reward.value)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-kado-dark/45 mt-2">
+                  Valid at: {formatVoucherScopeLabel(reward.branchId, branchName)}
+                </p>
                 <div className="mt-4 pt-4 border-t border-kado-dark/8 flex items-center justify-between gap-3">
                   <span className={`text-xs font-bold ${canClaim ? 'text-emerald-700' : 'text-kado-dark/40'}`}>
                     {canClaim ? 'Ready to claim' : `${reward.stampsRequired - stamps} more stamps`}
@@ -222,6 +233,8 @@ export default function AccountVouchers() {
                   <p className="text-[10px] font-black uppercase tracking-widest text-kado-red mb-1">{v.rewardNameSnapshot}</p>
                   <p className="font-mono font-bold text-lg text-kado-dark tracking-wide">{v.code}</p>
                   <p className="text-xs text-kado-dark/50 mt-1">
+                    {formatVoucherScopeLabel(v.branchId, branchName)}
+                    {' · '}
                     Expires {v.expiresAt ? new Date(v.expiresAt).toLocaleDateString('en-PH') : '—'}
                   </p>
                 </div>

@@ -1,106 +1,75 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { LoyaltyVoucher } from '../types/domain';
-import { newId } from '../lib/id';
-import { useLoyaltyStore } from './loyaltyStore';
 import { useAuthStore } from './authStore';
-
-function voucherCode(): string {
-  return `KK-VCH-${Math.floor(1000 + Math.random() * 9000)}`;
-}
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
-}
+import { loyaltyRepo } from '../lib/supabase/repositories/loyalty';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 export interface VoucherStore {
   vouchers: LoyaltyVoucher[];
+  loading: boolean;
+  hydrateForCustomer: (customerId: string) => Promise<void>;
   claimReward: (
     customerId: string,
     rewardId: string,
-  ) => { ok: true; voucher: LoyaltyVoucher } | { ok: false; error: string };
+  ) => Promise<{ ok: true; voucher: LoyaltyVoucher } | { ok: false; error: string }>;
   redeemVoucher: (voucherId: string, orderId: string) => void;
-  activeVouchersForCustomer: (customerId: string) => LoyaltyVoucher[];
-  seed: () => void;
+  activeVouchersForCustomer: (customerId: string, branchId?: string) => LoyaltyVoucher[];
 }
 
-export const useVoucherStore = create<VoucherStore>()(
-  persist(
-    (set, get) => ({
-      vouchers: [],
+export const useVoucherStore = create<VoucherStore>()((set, get) => ({
+  vouchers: [],
+  loading: false,
 
-      claimReward: (customerId, rewardId) => {
-        const reward = useLoyaltyStore.getState().config.rewards.find((r) => r.id === rewardId && r.active);
-        if (!reward) return { ok: false, error: 'That reward is not available.' };
+  hydrateForCustomer: async (customerId) => {
+    set({ loading: true });
+    try {
+      const vouchers = await loyaltyRepo.fetchVouchersForCustomer(customerId);
+      set({ vouchers });
+    } catch {
+      set({ vouchers: [] });
+    } finally {
+      set({ loading: false });
+    }
+  },
 
-        const session = useAuthStore.getState().user;
-        if (!session || session.role !== 'customer' || session.id !== customerId) {
-          return { ok: false, error: 'Sign in as the same customer to claim rewards.' };
-        }
+  claimReward: async (customerId, rewardId) => {
+    const session = useAuthStore.getState().user;
+    if (!session || session.role !== 'customer' || session.id !== customerId) {
+      return { ok: false, error: 'Sign in as the same customer to claim rewards.' };
+    }
 
-        const stamps = session.loyaltyStamps ?? 0;
-        if (stamps < reward.stampsRequired) {
-          return {
-            ok: false,
-            error: `You need ${reward.stampsRequired} stamps (${stamps} now). Keep ordering drinks!`,
-          };
-        }
+    try {
+      const voucher = await loyaltyRepo.claimReward(rewardId);
+      const profile = await orderingRepo.fetchUserById(customerId);
+      if (profile) {
+        useAuthStore.setState({ user: { ...session, loyaltyStamps: profile.loyaltyStamps } });
+      }
+      set({ vouchers: [voucher, ...get().vouchers.filter((v) => v.id !== voucher.id)] });
+      return { ok: true, voucher };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not claim reward.';
+      return { ok: false, error: message };
+    }
+  },
 
-        useAuthStore.getState().spendLoyaltyStamps(reward.stampsRequired);
+  redeemVoucher: (voucherId, orderId) => {
+    const now = new Date().toISOString();
+    set({
+      vouchers: get().vouchers.map((v) =>
+        v.id === voucherId && v.status === 'active'
+          ? { ...v, status: 'redeemed' as const, redeemedAt: now, redeemedOrderId: orderId }
+          : v,
+      ),
+    });
+  },
 
-        const now = new Date().toISOString();
-        const voucher: LoyaltyVoucher = {
-          id: newId(),
-          code: voucherCode(),
-          customerId,
-          rewardId: reward.id,
-          rewardNameSnapshot: reward.name,
-          rewardType: reward.type,
-          rewardValue: reward.value,
-          stampsSpent: reward.stampsRequired,
-          status: 'active',
-          createdAt: now,
-          expiresAt: addDays(now, 90),
-        };
-
-        set({ vouchers: [voucher, ...get().vouchers] });
-        return { ok: true, voucher };
-      },
-
-      redeemVoucher: (voucherId, orderId) => {
-        const now = new Date().toISOString();
-        set({
-          vouchers: get().vouchers.map((v) =>
-            v.id === voucherId && v.status === 'active'
-              ? { ...v, status: 'redeemed' as const, redeemedAt: now, redeemedOrderId: orderId }
-              : v,
-          ),
-        });
-      },
-
-      activeVouchersForCustomer: (customerId) => {
-        const t = Date.now();
-        return get().vouchers.filter((v) => {
-          if (v.customerId !== customerId || v.status !== 'active') return false;
-          if (v.expiresAt && new Date(v.expiresAt).getTime() < t) return false;
-          return true;
-        });
-      },
-
-      seed: () => set({ vouchers: [] }),
-    }),
-    {
-      name: 'kado-loyalty-vouchers-v1',
-      merge: (persisted, current) => {
-        const p = persisted as Partial<VoucherStore> | undefined;
-        return {
-          ...current,
-          ...p,
-          vouchers: Array.isArray(p?.vouchers) ? p!.vouchers! : [],
-        };
-      },
-    },
-  ),
-);
+  activeVouchersForCustomer: (customerId, branchId) => {
+    const t = Date.now();
+    return get().vouchers.filter((v) => {
+      if (v.customerId !== customerId || v.status !== 'active') return false;
+      if (v.expiresAt && new Date(v.expiresAt).getTime() < t) return false;
+      if (branchId && v.branchId && v.branchId !== branchId) return false;
+      return true;
+    });
+  },
+}));

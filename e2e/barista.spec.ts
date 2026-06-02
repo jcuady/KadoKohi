@@ -6,7 +6,14 @@ import { internalLogin, trackPageErrors } from './helpers';
  * render/runtime crashes. Does not mutate orders.
  */
 
-const BARISTA_ROUTES = ['/barista', '/barista/queue', '/barista/pos', '/barista/menu', '/barista/stamps'];
+const BARISTA_ROUTES = [
+  '/barista',
+  '/barista/queue',
+  '/barista/pos',
+  '/barista/menu',
+  '/barista/stamps',
+  '/barista/settings',
+];
 
 test('barista can sign in via the internal portal', async ({ page }) => {
   const errors = trackPageErrors(page);
@@ -24,6 +31,16 @@ test('every barista route renders without uncaught errors', async ({ page }) => 
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 15000 });
   }
   expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
+});
+
+test('barista can open account settings and change-password form', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await internalLogin(page, 'barista');
+  await page.goto('/barista/settings');
+  await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
+  await expect(page.locator('#internal-new-password')).toBeVisible();
+  await expect(page.getByRole('button', { name: /change password/i })).toBeVisible();
+  expect(errors()).toEqual([]);
 });
 
 test('barista kiosk display renders', async ({ page }) => {

@@ -40,6 +40,35 @@ export function signupCountdownTarget(evt: Event, phase: EventSignupPhase): stri
   return undefined;
 }
 
+/** Homepage priority: current first, otherwise nearest upcoming. */
+export function pickCurrentOrUpcoming(events: Event[], now = Date.now()): Event | undefined {
+  const visible = events.filter((e) => e.visible);
+  const current = visible
+    .filter((e) => getEventLifecyclePhase(e, now) === 'current')
+    .sort((a, b) => {
+      const aEnd = a.endsAt ? new Date(a.endsAt).getTime() : Number.POSITIVE_INFINITY;
+      const bEnd = b.endsAt ? new Date(b.endsAt).getTime() : Number.POSITIVE_INFINITY;
+      return aEnd - bEnd;
+    })[0];
+  if (current) return current;
+  return visible
+    .filter((e) => getEventLifecyclePhase(e, now) === 'upcoming')
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
+}
+
+export function eventDurationLabel(evt: Event): string | null {
+  if (!evt.endsAt) return null;
+  const start = new Date(evt.startsAt).getTime();
+  const end = new Date(evt.endsAt).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const totalMinutes = Math.round((end - start) / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours > 0 && mins > 0) return `${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${mins}m`;
+}
+
 /** Admin helper: set sign-up close to N days before event start. */
 export function signupClosesBeforeEventStart(startsAtIso: string, daysBefore: number): string {
   const start = new Date(startsAtIso);

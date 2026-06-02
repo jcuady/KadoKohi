@@ -75,8 +75,8 @@ export default function CartDrawer() {
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);
 
   const activeVouchers = useMemo(
-    () => (user?.id ? activeVouchersForCustomer(user.id) : []),
-    [activeVouchersForCustomer, user?.id],
+    () => (user?.id ? activeVouchersForCustomer(user.id, branchId) : []),
+    [activeVouchersForCustomer, user?.id, branchId],
   );
 
   const selectedVoucher = useMemo(
@@ -500,6 +500,7 @@ export default function CartDrawer() {
                         {activeVouchers.map((v) => (
                           <option key={v.id} value={v.id}>
                             {v.code} — {v.rewardNameSnapshot}
+                            {v.branchId ? ` (${selectedBranch?.name ?? 'branch only'})` : ''}
                           </option>
                         ))}
                       </select>

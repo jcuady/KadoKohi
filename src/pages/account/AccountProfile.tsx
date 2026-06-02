@@ -6,6 +6,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import NotificationToggle from '../../components/NotificationToggle';
+import { requirePhilippinePhone } from '../../lib/validation';
+import { normalizePhilippinePhone, philippinePhoneLocalPart } from '../../lib/phonePhilippines';
+import PhilippinePhoneField from '../../components/PhilippinePhoneField';
 import {
   User,
   Mail,
@@ -28,6 +31,9 @@ export default function AccountProfile() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [phoneLocal, setPhoneLocal] = useState(() =>
+    user?.phone ? philippinePhoneLocalPart(user.phone) : '',
+  );
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
@@ -36,15 +42,15 @@ export default function AccountProfile() {
 
   if (!user) return null;
 
-  const handleSave = (e: FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    // Persist to the profile row and reflect immediately in the session user.
-    // Email is intentionally not editable here — it is the Supabase login
-    // credential and changing it requires a verified auth email-change flow.
-    updateUser(user.id, { name: trimmedName });
-    useAuthStore.setState({ user: { ...user, name: trimmedName } });
+    const phoneErr = requirePhilippinePhone(phoneLocal);
+    if (phoneErr) return;
+    const phone = normalizePhilippinePhone(phoneLocal);
+    await updateUser(user.id, { name: trimmedName, phone });
+    useAuthStore.setState({ user: { ...user, name: trimmedName, phone } });
     setEditing(false);
   };
 
@@ -75,7 +81,13 @@ export default function AccountProfile() {
 
   const profileFields = [
     { icon: User, label: 'Full Name', value: user.name, editable: true },
-    { icon: Mail, label: 'Email Address', value: user.email, editable: true },
+    { icon: Mail, label: 'Email Address', value: user.email, editable: false },
+    {
+      icon: Smartphone,
+      label: 'Mobile number',
+      value: user.phone ?? 'Not set',
+      editable: false,
+    },
     { icon: Shield, label: 'Account Role', value: user.role.charAt(0).toUpperCase() + user.role.slice(1), editable: false },
     { icon: MapPin, label: 'Preferred Branch', value: user.branchId ?? 'Not set', editable: false },
     { icon: Calendar, label: 'Member Since', value: new Date(user.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }), editable: false },
@@ -182,7 +194,12 @@ export default function AccountProfile() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => { setEditing(false); setName(user.name); setEmail(user.email); }}
+                  onClick={() => {
+                    setEditing(false);
+                    setName(user.name);
+                    setEmail(user.email);
+                    setPhoneLocal(user.phone ? philippinePhoneLocalPart(user.phone) : '');
+                  }}
                   className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-kado-dark/40 hover:text-kado-dark transition-colors"
                 >
                   <X className="w-3 h-3" /> Cancel
@@ -211,9 +228,16 @@ export default function AccountProfile() {
                     className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-kado-dark/5 text-sm font-bold text-kado-dark/50 cursor-not-allowed focus:outline-none"
                   />
                   <p className="text-[10px] text-kado-dark/35 font-medium mt-1.5">
-                    Email is your sign-in credential and can't be changed here.
+                    Email is your sign-in credential and can&apos;t be changed here.
                   </p>
                 </div>
+                <PhilippinePhoneField
+                  id="profile-phone"
+                  value={phoneLocal}
+                  onChange={setPhoneLocal}
+                  hint="Used for order updates and future SMS notifications."
+                  className="[&_label]:text-kado-dark/40"
+                />
                 <button
                   type="submit"
                   className="flex items-center gap-2 bg-kado-dark text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors"

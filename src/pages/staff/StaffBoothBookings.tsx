@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { BoothBookingStatus } from '../../types/domain';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useAuthStore } from '../../store/authStore';
+import { useBranchStore } from '../../store/branchStore';
 import {
   ALL_BOOTH_BOOKING_STATUSES,
   BOOTH_BOOKING_STATUS_LABELS,
@@ -23,24 +24,32 @@ function timeAgo(iso: string): string {
 
 export default function StaffBoothBookings() {
   const user = useAuthStore((s) => s.user);
-  const bookingsForStaff = useBoothBookingStore((s) => s.bookingsForStaff);
+  const bookingsForBranch = useBoothBookingStore((s) => s.bookingsForBranch);
   const allBookings = useBoothBookingStore((s) => s.bookings);
+  const branches = useBranchStore((s) => s.branches);
 
   const [statusFilter, setStatusFilter] = useState<BoothBookingStatus | 'all'>('all');
   const [manageId, setManageId] = useState<string | null>(null);
 
+  const branchLabel = user?.branchId
+    ? branches.find((b) => b.id === user.branchId)?.name ?? user.branchId
+    : null;
+
   const list = useMemo(() => {
-    let items = user?.id ? bookingsForStaff(user.id) : allBookings;
+    let items = user?.branchId ? bookingsForBranch(user.branchId) : allBookings;
     if (statusFilter !== 'all') items = items.filter((b) => b.status === statusFilter);
     return items;
-  }, [user, bookingsForStaff, allBookings, statusFilter]);
+  }, [user?.branchId, bookingsForBranch, allBookings, statusFilter]);
 
   const manageBooking = manageId ? allBookings.find((b) => b.id === manageId) ?? null : null;
 
   return (
     <div className="max-w-6xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booth Bookings</h1>
-      <p className="dash-muted mb-6">Review requests, send quotes, and update booking status.</p>
+      <p className="dash-muted mb-6">
+        Review requests, send quotes, and update booking status
+        {branchLabel ? ` · ${branchLabel}` : ''}.
+      </p>
 
       <div className="flex flex-wrap gap-3 mb-6">
         <select

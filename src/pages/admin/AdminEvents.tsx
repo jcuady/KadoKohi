@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Event, EventRegistration } from '../../types/domain';
 import { useEventStore } from '../../store/eventStore';
 import { useBranchStore } from '../../store/branchStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
-import { eventImages, signupClosesBeforeEventStart } from '../../lib/eventTiming';
+import { eventDurationLabel, eventImages, signupClosesBeforeEventStart } from '../../lib/eventTiming';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users } from 'lucide-react';
 
@@ -62,14 +62,22 @@ export default function AdminEvents() {
   const [imageError, setImageError] = useState('');
   const [registrationsEventId, setRegistrationsEventId] = useState<string | null>(null);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [allRegistrations, setAllRegistrations] = useState<EventRegistration[]>([]);
+  const [registrationQuery, setRegistrationQuery] = useState('');
+  const [registrationEventFilter, setRegistrationEventFilter] = useState<string>('all');
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
 
   const loadCounts = () => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
   };
 
+  const loadAllRegistrations = () => {
+    void orderingRepo.fetchAllEventRegistrations().then(setAllRegistrations).catch(() => {});
+  };
+
   useEffect(() => {
     loadCounts();
+    loadAllRegistrations();
   }, [events.length]);
 
   const startAdd = () => {
@@ -143,6 +151,14 @@ export default function AdminEvents() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.startsAt) return;
+    if (form.images.length === 0) {
+      setImageError('Add at least one event image.');
+      return;
+    }
+    if (form.endsAt && new Date(form.endsAt).getTime() <= new Date(form.startsAt).getTime()) {
+      setImageError('End time must be after start time.');
+      return;
+    }
     if (form.signupEnabled && !form.signupClosesAt) {
       setImageError('Set a sign-up close date/time or use the duration preset.');
       return;
@@ -173,6 +189,7 @@ export default function AdminEvents() {
       addEvent(payload);
     }
     loadCounts();
+    loadAllRegistrations();
     cancel();
   };
 
@@ -185,6 +202,19 @@ export default function AdminEvents() {
       setRegistrations([]);
     }
   };
+
+  const filteredRegistrations = useMemo(() => {
+    const q = registrationQuery.trim().toLowerCase();
+    return allRegistrations.filter((r) => {
+      if (registrationEventFilter !== 'all' && r.eventId !== registrationEventFilter) return false;
+      if (!q) return true;
+      return (
+        r.contactName.toLowerCase().includes(q) ||
+        r.contactEmail.toLowerCase().includes(q) ||
+        r.contactPhone.toLowerCase().includes(q)
+      );
+    });
+  }, [allRegistrations, registrationEventFilter, registrationQuery]);
 
   return (
     <div className="dash-page max-w-4xl">
@@ -238,13 +268,16 @@ export default function AdminEvents() {
                     ? ` · Sign-up until ${new Date(evt.signupClosesAt).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}`
                     : ''}
                 </p>
+                {eventDurationLabel(evt) && (
+                  <p className="text-[10px] dash-muted mt-1">Duration: {eventDurationLabel(evt)}</p>
+                )}
                 {evt.signupEnabled && (
                   <button
                     type="button"
                     onClick={() => void openRegistrations(evt.id)}
                     className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
                   >
-                    <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''}
+                    <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''} (view list)
                   </button>
                 )}
               </div>
@@ -258,6 +291,52 @@ export default function AdminEvents() {
           );
         })}
       </ul>
+
+      <section className="rounded-2xl dash-card border p-5 mb-8">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="font-display font-bold text-xl dash-heading">Registration forms</h2>
+          <span className="text-xs dash-muted font-bold uppercase tracking-wider">
+            {filteredRegistrations.length} result{filteredRegistrations.length === 1 ? '' : 's'}
+          </span>
+        </div>
+        <div className="grid md:grid-cols-3 gap-3 mb-4">
+          <input
+            value={registrationQuery}
+            onChange={(e) => setRegistrationQuery(e.target.value)}
+            placeholder="Search name, email, phone"
+            className="md:col-span-2 rounded-xl dash-input border px-4 py-2.5 text-sm"
+          />
+          <select
+            value={registrationEventFilter}
+            onChange={(e) => setRegistrationEventFilter(e.target.value)}
+            className="rounded-xl dash-input border px-4 py-2.5 text-sm"
+          >
+            <option value="all">All events</option>
+            {events.map((evt) => (
+              <option key={evt.id} value={evt.id}>{evt.title}</option>
+            ))}
+          </select>
+        </div>
+        {filteredRegistrations.length === 0 ? (
+          <p className="text-sm dash-muted">No registrations found for the selected filters.</p>
+        ) : (
+          <ul className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+            {filteredRegistrations.map((r) => (
+              <li key={r.id} className="rounded-xl border dash-border p-3 text-sm">
+                <p className="font-bold dash-heading">{r.contactName}</p>
+                <p className="dash-muted text-xs">{r.contactEmail}</p>
+                <p className="dash-muted text-xs">{r.contactPhone}</p>
+                <p className="text-[10px] dash-muted mt-1">
+                  Event: {events.find((e) => e.id === r.eventId)?.title ?? r.eventId}
+                </p>
+                <p className="text-[10px] dash-muted mt-0.5">
+                  Submitted: {new Date(r.createdAt).toLocaleString('en-PH')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -364,6 +443,19 @@ export default function AdminEvents() {
                   />
                 </div>
               </div>
+              {form.startsAt && form.endsAt && (
+                <p className="text-[10px] dash-muted">
+                  Duration preview:{' '}
+                  {eventDurationLabel({
+                    id: 'preview',
+                    title: 'preview',
+                    description: '',
+                    startsAt: new Date(form.startsAt).toISOString(),
+                    endsAt: new Date(form.endsAt).toISOString(),
+                    visible: true,
+                  })}
+                </p>
+              )}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Branch</label>

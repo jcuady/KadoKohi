@@ -5,17 +5,7 @@ import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useCartToggle } from '../hooks/useCartToggle';
-
-const navLinks = [
-  { label: 'Home', path: '/' },
-  { label: 'Coffee', path: '/menu' },
-  { label: 'Merch', path: '/merch' },
-  { label: 'Events Bookings', path: '/book/booth' },
-  { label: 'Branches', path: '/branches' },
-  { label: 'Kado Events', path: '/events' },
-  { label: 'About Us', path: '/about' },
-  { label: 'Contact Us', path: '/contact' },
-];
+import { PUBLIC_SITE_NAV } from '../config/siteNav';
 
 function useAuthLink(): { label: string; path: string; icon: typeof User } {
   const user = useAuthStore((s) => s.user);
@@ -63,7 +53,7 @@ export default function Navbar() {
 
         {/* Desktop nav pill */}
         <div className="hidden lg:flex items-center gap-1 bg-kado-offwhite/80 backdrop-blur-md px-2 py-1.5 xl:px-3 xl:py-2 rounded-full border border-kado-dark/10 shadow-sm">
-          {navLinks.map((link) => (
+          {PUBLIC_SITE_NAV.map((link) => (
             <Link
               key={link.path}
               to={link.path}
@@ -143,7 +133,7 @@ export default function Navbar() {
               transition={{ duration: 0.18 }}
               className="absolute top-full left-0 right-0 bg-kado-cream/97 backdrop-blur-lg border-b border-kado-dark/10 p-5 flex flex-col gap-1 lg:hidden shadow-lg z-10"
             >
-              {navLinks.map((link) => (
+              {PUBLIC_SITE_NAV.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}

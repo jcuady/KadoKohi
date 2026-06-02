@@ -211,9 +211,9 @@ export const api = {
     list: () => useVoucherStore.getState().vouchers,
     claim: useVoucherStore.getState().claimReward,
     redeem: useVoucherStore.getState().redeemVoucher,
-    activeForCustomer: (customerId: string) =>
-      useVoucherStore.getState().activeVouchersForCustomer(customerId),
-    seed: useVoucherStore.getState().seed,
+    activeForCustomer: (customerId: string, branchId?: string) =>
+      useVoucherStore.getState().activeVouchersForCustomer(customerId, branchId),
+    hydrateForCustomer: useVoucherStore.getState().hydrateForCustomer,
   },
 
   /* ───── Landing Content (fixed layout; text/images only) ───── */
@@ -253,8 +253,8 @@ export const api = {
     useUserStore.getState().seed();
     useSettingsStore.getState().seed();
     useMerchStore.getState().seed();
-    useLoyaltyStore.getState().seed();
-    useVoucherStore.getState().seed();
+    void useLoyaltyStore.getState().hydrateFromRemote();
+    useVoucherStore.setState({ vouchers: [] });
     useBoothCatalogStore.getState().seed();
     useBoothShowcaseStore.getState().seed();
     useBookingEstimateStore.getState().seed();

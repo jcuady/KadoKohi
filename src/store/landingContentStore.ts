@@ -20,6 +20,9 @@ export interface FeaturedCopy {
   subtitleDesktop: string;
   subtitleMobile: string;
   menuCtaLabel: string;
+  shopCtaLabel: string;
+  shopCtaPath: string;
+  productIds: [string, string, string];
   cardImageOverrides: [string, string, string];
 }
 
@@ -258,11 +261,14 @@ export const SEED_CONTENT: LandingContentState = {
     secondaryCtaPath: '/merch',
   },
   featured: {
-    badge: 'Signatures',
-    title: 'Signature Sips.',
-    subtitleDesktop: "Explore our community's highest-rated daily rituals. Hand-crafted, every single time.",
-    subtitleMobile: 'Community favourites — hand-crafted, every single time.',
+    badge: 'Best Coffees',
+    title: 'Coffee Worth Coming Back For.',
+    subtitleDesktop: 'Top-performing coffee picks from your live menu - crafted to hook first-timers and regulars.',
+    subtitleMobile: 'Best coffee picks from our live menu.',
     menuCtaLabel: 'View Full Menu',
+    shopCtaLabel: 'View Shop',
+    shopCtaPath: '/menu',
+    productIds: ['', '', ''],
     cardImageOverrides: ['', '', ''],
   },
   events: {
@@ -323,6 +329,11 @@ export const SEED_CONTENT: LandingContentState = {
 };
 
 function clampCardOverrides(tuple: [string, string, string] | undefined): [string, string, string] {
+  if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return ['', '', ''];
+  return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
+}
+
+function clampFeaturedProducts(tuple: [string, string, string] | undefined): [string, string, string] {
   if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return ['', '', ''];
   return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
 }
@@ -394,6 +405,9 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
     featured: {
       ...SEED_CONTENT.featured,
       ...raw.featured,
+      productIds: clampFeaturedProducts(
+        raw.featured?.productIds as [string, string, string] | undefined,
+      ),
       cardImageOverrides: clampCardOverrides(
         raw.featured?.cardImageOverrides as [string, string, string] | undefined,
       ),
@@ -515,6 +529,10 @@ export const useLandingContentStore = create<LandingContentStore>()(
           featured: {
             ...d.featured,
             ...patch,
+            productIds:
+              patch.productIds !== undefined
+                ? clampFeaturedProducts(patch.productIds as [string, string, string])
+                : d.featured.productIds,
             cardImageOverrides:
               patch.cardImageOverrides !== undefined
                 ? clampCardOverrides(patch.cardImageOverrides as [string, string, string])

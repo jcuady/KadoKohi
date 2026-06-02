@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, Pencil, Trash2, Gift, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
+import { useBranchStore } from '../../store/branchStore';
 import type { LoyaltyReward, LoyaltyRewardType } from '../../types/domain';
 import { newId } from '../../lib/id';
+import { formatVoucherScopeLabel } from '../../lib/branchScope';
 
 const REWARD_TYPE_LABELS: Record<LoyaltyRewardType, string> = {
   free_drink: 'Free Drink',
@@ -27,9 +29,12 @@ const EMPTY_FORM: Omit<LoyaltyReward, 'id'> = {
   type: 'free_drink',
   value: undefined,
   active: true,
+  branchId: '',
 };
 
 export default function AdminLoyalty() {
+  const branches = useBranchStore((s) => s.branches);
+  const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
   const config = useLoyaltyStore((s) => s.config);
   const addReward = useLoyaltyStore((s) => s.addReward);
   const updateReward = useLoyaltyStore((s) => s.updateReward);
@@ -58,16 +63,21 @@ export default function AdminLoyalty() {
       type: reward.type,
       value: reward.value,
       active: reward.active,
+      branchId: reward.branchId ?? '',
     });
     setShowModal(true);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...form,
+      branchId: form.branchId?.trim() ? form.branchId : undefined,
+    };
     if (editingId) {
-      updateReward(editingId, form);
+      await updateReward(editingId, payload);
     } else {
-      addReward(form);
+      await addReward(payload);
     }
     setShowModal(false);
   };
@@ -137,9 +147,12 @@ export default function AdminLoyalty() {
                   {reward.description && (
                     <p className="dash-muted text-sm mb-1">{reward.description}</p>
                   )}
-                  <div className="flex items-center gap-3 text-xs dash-muted">
+                  <div className="flex items-center gap-3 text-xs dash-muted flex-wrap">
                     <span>{REWARD_TYPE_LABELS[reward.type]}</span>
                     {reward.value !== undefined && <span>Value: {reward.value}</span>}
+                    <span className="rounded-full bg-kado-dark/5 px-2 py-0.5 font-semibold">
+                      {formatVoucherScopeLabel(reward.branchId, branchName)}
+                    </span>
                   </div>
                 </div>
 
@@ -282,6 +295,25 @@ export default function AdminLoyalty() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
+                Valid at branch
+              </label>
+              <select
+                value={form.branchId ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              >
+                <option value="">All branches (universal)</option>
+                {branches.filter((b) => b.status === 'active').map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] dash-muted mt-1">
+                Vouchers claimed from this reward only work at the selected branch, or everywhere if universal.
+              </p>
             </div>
 
             {showValue && (

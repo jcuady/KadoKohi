@@ -21,12 +21,24 @@ export async function customerLogin(page: Page): Promise<void> {
   await page.waitForURL(/\/account/, { timeout: 30000 });
 }
 
-/** Sign in via the internal portal for admin or barista. */
-export async function internalLogin(page: Page, role: 'admin' | 'barista'): Promise<void> {
+type InternalRole = 'admin' | 'barista' | 'staff';
+
+/** Sign in via the internal portal for admin, barista, or staff. */
+export async function internalLogin(
+  page: Page,
+  role: InternalRole,
+  creds?: { email: string; password: string },
+): Promise<void> {
+  const login =
+    creds ??
+    (role === 'admin' || role === 'barista' ? CREDS[role] : undefined);
+  if (!login) {
+    throw new Error(`No credentials configured for internal role: ${role}`);
+  }
   await page.goto('/management-portal');
   await page.getByRole('button', { name: new RegExp(`^${role}$`, 'i'), exact: false }).first().click();
-  await page.locator('input#email').fill(CREDS[role].email);
-  await page.locator('input#password').fill(CREDS[role].password);
+  await page.locator('input#email').fill(login.email);
+  await page.locator('input#password').fill(login.password);
   await page.getByRole('button', { name: /sign in —/i }).click();
   await page.waitForURL(new RegExp(`/${role}`), { timeout: 30000 });
 }

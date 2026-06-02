@@ -150,6 +150,8 @@ export interface User {
   email: string;
   name: string;
   role: Role;
+  /** E.164 Philippine mobile (+639XXXXXXXXX) — SMS-ready */
+  phone?: string;
   branchId?: string;
   loyaltyStamps?: number;
   createdAt: string;
@@ -296,6 +298,8 @@ export interface LoyaltyReward {
   type: LoyaltyRewardType;
   value?: number;
   active: boolean;
+  /** NULL/undefined = redeemable at any branch. */
+  branchId?: string | null;
 }
 
 export interface LoyaltyConfig {
@@ -315,6 +319,8 @@ export interface LoyaltyVoucher {
   rewardType: LoyaltyRewardType;
   rewardValue?: number;
   stampsSpent: number;
+  /** Copied from reward at claim; NULL = all branches. */
+  branchId?: string | null;
   status: LoyaltyVoucherStatus;
   createdAt: string;
   redeemedAt?: string;

@@ -4,6 +4,8 @@ import {
   TrendingUp, Users, Gift, Check, AlertCircle, Copy,
 } from 'lucide-react';
 import { usePromoStore } from '../../store/promoStore';
+import { useBranchStore } from '../../store/branchStore';
+import { formatVoucherScopeLabel } from '../../lib/branchScope';
 import type { PromoCode, PromoCodeType } from '../../types/domain';
 import { newId } from '../../lib/id';
 import { formatPhp } from '../../lib/money';
@@ -66,6 +68,8 @@ const EMPTY_FORM = {
 type FormState = typeof EMPTY_FORM;
 
 export default function AdminVouchers() {
+  const branches = useBranchStore((s) => s.branches);
+  const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
   const { codes, loading, fetchAll, createCode, updateCode, toggleCode, removeCode } = usePromoStore();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -263,6 +267,9 @@ export default function AdminVouchers() {
                       <span className="text-xs dash-muted">
                         {code.uses} used{code.maxUses != null ? ` / ${code.maxUses} max` : ''}
                       </span>
+                      <span className="text-xs font-semibold text-kado-dark/70">
+                        {formatVoucherScopeLabel(code.branchId, branchName)}
+                      </span>
                       {code.expiresAt && (
                         <span className="text-xs dash-muted">
                           Expires {new Date(code.expiresAt).toLocaleDateString('en-PH')}
@@ -435,6 +442,22 @@ export default function AdminVouchers() {
                 onChange={(e) => f('perCustomer', Number(e.target.value))}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
+                Valid at branch
+              </label>
+              <select
+                value={form.branchId}
+                onChange={(e) => f('branchId', e.target.value)}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              >
+                <option value="">All branches (universal)</option>
+                {branches.filter((b) => b.status === 'active').map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

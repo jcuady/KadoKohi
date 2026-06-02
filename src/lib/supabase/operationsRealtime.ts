@@ -12,6 +12,7 @@ import { useMerchStore } from '../../store/merchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
+import { useLoyaltyStore } from '../../store/loyaltyStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -28,6 +29,7 @@ const OPS_TABLES = [
   'kk_merch_products',
   'kk_events',
   'kk_booth_bookings',
+  'kk_loyalty_rewards',
 ] as const;
 
 type OpsTable = (typeof OPS_TABLES)[number];
@@ -56,6 +58,7 @@ const refresh = {
   events: debounce(() => void useEventStore.getState().hydrateFromRemote(), 300),
   bookings: debounce(() => void useBoothBookingStore.getState().hydrateFromRemote(), 300),
   landing: debounce(() => void useLandingContentStore.getState().hydrateFromRemote(), 300),
+  loyalty: debounce(() => void useLoyaltyStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: OpsTable) {
@@ -95,6 +98,9 @@ function onTableChange(table: OpsTable) {
       break;
     case 'kk_booth_bookings':
       refresh.bookings();
+      break;
+    case 'kk_loyalty_rewards':
+      refresh.loyalty();
       break;
     default:
       break;

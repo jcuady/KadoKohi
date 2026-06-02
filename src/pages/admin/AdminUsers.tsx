@@ -1,19 +1,19 @@
 import { useState, useMemo, type FormEvent } from 'react';
 import type { Role } from '../../types/domain';
 import { useUserStore } from '../../store/userStore';
-import { hasAllBranchAccess, isSuperAdmin } from '../../lib/roles';
+import { hasAllBranchAccess, isInternalRole, matchesUserSearch } from '../../lib/roles';
 import { useBranchStore } from '../../store/branchStore';
-import { Plus, Pencil, Trash2, Shield, AlertCircle, KeyRound, Stamp } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, AlertCircle, KeyRound, Stamp, Search, Filter } from 'lucide-react';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { useAuthStore } from '../../store/authStore';
-import ComingSoonBadge from '../../components/admin/ComingSoonBadge';
 
-/** Roles admins can provision via the edge function. Staff creation is deferred. */
-const CREATABLE_ROLES: Role[] = ['admin', 'barista', 'customer'];
-const ALL_DISPLAY_ROLES: Role[] = ['admin', 'barista', 'customer', 'staff'];
+const CREATABLE_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
+const ALL_DISPLAY_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
+
+type RoleFilter = 'team' | Role | 'all';
 
 type FormData = { name: string; email: string; role: Role; branchId: string };
-const emptyForm: FormData = { name: '', email: '', role: 'customer', branchId: '' };
+const emptyForm: FormData = { name: '', email: '', role: 'barista', branchId: '' };
 
 export default function AdminUsers() {
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -24,6 +24,10 @@ export default function AdminUsers() {
   const hydrateUsers = useUserStore((s) => s.hydrateFromRemote);
   const adjustLoyaltyStamps = useUserStore((s) => s.adjustLoyaltyStamps);
   const branches = useBranchStore((s) => s.branches);
+
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('team');
+  const [branchFilter, setBranchFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
   const [stampUserId, setStampUserId] = useState<string | null>(null);
   const [stampDelta, setStampDelta] = useState(1);
@@ -43,6 +47,39 @@ export default function AdminUsers() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
+  const branchName = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
+
+  const teamCount = useMemo(
+    () => users.filter((u) => isInternalRole(u.role)).length,
+    [users],
+  );
+
+  const filteredUsers = useMemo(() => {
+    const q = search.trim();
+    let list = users;
+
+    if (q) {
+      list = list.filter((u) => matchesUserSearch(u, q));
+    } else if (roleFilter === 'team') {
+      list = list.filter((u) => isInternalRole(u.role));
+    } else if (roleFilter !== 'all') {
+      list = list.filter((u) => u.role === roleFilter);
+    }
+
+    if (branchFilter !== 'all') {
+      list = list.filter((u) => u.branchId === branchFilter);
+    }
+
+    return [...list].sort((a, b) => {
+      const rank = (r: Role) =>
+        r === 'admin' ? 0 : r === 'barista' ? 1 : r === 'staff' ? 2 : 3;
+      const d = rank(a.role) - rank(b.role);
+      if (d !== 0) return d;
+      return a.name.localeCompare(b.name);
+    });
+  }, [users, roleFilter, branchFilter, search]);
 
   const handleDelete = async (id: string) => {
     setDeleteError('');
@@ -66,8 +103,6 @@ export default function AdminUsers() {
       setDeletingId(null);
     }
   };
-
-  const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -94,14 +129,6 @@ export default function AdminUsers() {
     setFormError('');
     if (!form.name.trim() || !form.email.trim()) return;
 
-    if (form.role === 'staff') {
-      const wasStaff = editingId ? users.find((u) => u.id === editingId)?.role === 'staff' : false;
-      if (!wasStaff) {
-        setFormError('Staff accounts are coming soon. Use barista for counter operations, or edit an existing staff profile.');
-        return;
-      }
-    }
-
     const needsBranch = form.role === 'barista' || form.role === 'staff';
     if (needsBranch && !form.branchId) {
       setFormError('A branch is required for barista / staff accounts.');
@@ -117,12 +144,13 @@ export default function AdminUsers() {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       role: form.role,
-      branchId: form.role === 'admin' ? undefined : (needsBranch ? form.branchId : undefined),
+      branchId: form.role === 'admin' || form.role === 'customer' ? undefined : form.branchId,
     };
     setSaving(true);
     try {
       if (editingId) {
-        updateUser(editingId, payload);
+        await updateUser(editingId, payload);
+        await hydrateUsers();
       } else {
         if (password.trim().length < 8) {
           setFormError('Password must be at least 8 characters.');
@@ -172,19 +200,72 @@ export default function AdminUsers() {
     }
   };
 
+  const rolePills: { id: RoleFilter; label: string }[] = [
+    { id: 'team', label: 'Team' },
+    { id: 'admin', label: 'Admin' },
+    { id: 'barista', label: 'Barista' },
+    { id: 'staff', label: 'Staff' },
+    { id: 'customer', label: 'Customers' },
+    { id: 'all', label: 'All' },
+  ];
+
   return (
     <div className="dash-page max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Users</h1>
-          <p className="dash-muted text-sm mt-1">{users.length} user(s) — manage roles and branch assignments.</p>
-          <p className="dash-muted text-[11px] mt-1.5">
-            Create admin, barista, or customer accounts. Staff provisioning is coming soon — existing staff profiles can still be edited.
+          <p className="dash-muted text-sm mt-1">
+            {teamCount} team member(s) — admin, barista, and staff. Customers are hidden until you search or filter.
           </p>
         </div>
-        <button type="button" onClick={startAdd} className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1">
+        <button
+          type="button"
+          onClick={startAdd}
+          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1"
+        >
           <Plus className="w-4 h-4" /> Add user
         </button>
+      </div>
+
+      <div className="rounded-2xl dash-card border dash-border p-4 mb-5 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dash-muted" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name or email (includes customers)…"
+            className="w-full rounded-xl dash-input pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 dash-muted shrink-0" />
+          {rolePills.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setRoleFilter(id)}
+              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border transition-colors ${
+                roleFilter === id ? 'bg-kado-red text-white border-kado-red' : 'dash-border dash-muted hover:bg-kado-cream'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">Branch</span>
+          <select
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="rounded-xl dash-input border px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+          >
+            <option value="all">All branches</option>
+            {activeBranches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {deleteError && (
@@ -194,57 +275,74 @@ export default function AdminUsers() {
         </div>
       )}
 
-      <ul className="space-y-2">
-        {users.map((u) => (
-          <li key={u.id} className="rounded-xl dash-card border px-5 py-4 flex items-center gap-4">
-            <Shield className="w-5 h-5 text-kado-red shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm dash-heading">{u.name}</span>
-                <span className="text-[9px] font-bold uppercase tracking-widest dash-card-alt dash-muted px-2 py-0.5 rounded-full dash-border border">{u.role}</span>
-                {hasAllBranchAccess(u) && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest bg-kado-red/10 text-kado-red px-2 py-0.5 rounded-full border border-kado-red/20">
-                    {isSuperAdmin(u) ? 'Super admin' : 'All branches'}
-                  </span>
-                )}
+      {filteredUsers.length === 0 ? (
+        <div className="rounded-xl dash-card border px-5 py-10 text-center text-sm dash-muted">
+          {search.trim()
+            ? 'No users match your search.'
+            : roleFilter === 'customer'
+              ? 'No customer accounts found. Customers usually sign up on the site.'
+              : 'No team members match these filters.'}
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {filteredUsers.map((u) => (
+            <li key={u.id} className="rounded-xl dash-card border px-5 py-4 flex items-center gap-4">
+              <Shield className="w-5 h-5 text-kado-red shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm dash-heading">{u.name}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest dash-card-alt dash-muted px-2 py-0.5 rounded-full dash-border border">{u.role}</span>
+                  {hasAllBranchAccess(u) && (
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-kado-red/10 text-kado-red px-2 py-0.5 rounded-full border border-kado-red/20">
+                      All branches
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] dash-muted">
+                  {u.email}
+                  {u.branchId && u.role !== 'admin'
+                    ? ` · ${branchName(u.branchId)}`
+                    : hasAllBranchAccess(u)
+                      ? ' · All branches'
+                      : ''}
+                </p>
               </div>
-              <p className="text-[10px] dash-muted">{u.email}{u.branchId && u.role !== 'admin' ? ` · ${branches.find((b) => b.id === u.branchId)?.name ?? u.branchId}` : hasAllBranchAccess(u) ? ' · All branches' : ''}</p>
-            </div>
-            {u.role === 'customer' && (
+              {u.role === 'customer' && (
+                <button
+                  type="button"
+                  onClick={() => { setStampUserId(u.id); setStampDelta(1); setStampReason(''); }}
+                  className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 text-[10px] font-bold"
+                  title="Manage Kado Circle stamps"
+                >
+                  <Stamp className="w-3.5 h-3.5" /> {u.loyaltyStamps ?? 0}
+                </button>
+              )}
+              <button type="button" onClick={() => startEdit(u)} className="dash-muted hover:text-kado-red p-1"><Pencil className="w-4 h-4" /></button>
+              <button type="button" onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetError(''); }} className="dash-muted hover:text-kado-red p-1" title="Reset password">
+                <KeyRound className="w-4 h-4" />
+              </button>
               <button
                 type="button"
-                onClick={() => { setStampUserId(u.id); setStampDelta(1); setStampReason(''); }}
-                className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 text-[10px] font-bold"
-                title="Manage Kado Circle stamps"
+                onClick={() => void handleDelete(u.id)}
+                onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
+                disabled={u.id === currentUserId || deletingId === u.id}
+                className={`p-1 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+                  confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'
+                }`}
+                title={
+                  u.id === currentUserId
+                    ? 'Cannot delete your own account'
+                    : confirmDeleteId === u.id
+                      ? 'Click again to confirm delete'
+                      : 'Delete user (removes login and profile)'
+                }
               >
-                <Stamp className="w-3.5 h-3.5" /> {u.loyaltyStamps ?? 0}
+                <Trash2 className="w-4 h-4" />
               </button>
-            )}
-            <button type="button" onClick={() => startEdit(u)} className="dash-muted hover:text-kado-red p-1"><Pencil className="w-4 h-4" /></button>
-            <button type="button" onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetError(''); }} className="dash-muted hover:text-kado-red p-1" title="Reset password">
-              <KeyRound className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleDelete(u.id)}
-              onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
-              disabled={u.id === currentUserId || deletingId === u.id}
-              className={`p-1 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'
-              }`}
-              title={
-                u.id === currentUserId
-                  ? 'Cannot delete your own account'
-                  : confirmDeleteId === u.id
-                    ? 'Click again to confirm delete'
-                    : 'Delete user (removes login and profile)'
-              }
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -278,24 +376,23 @@ export default function AdminUsers() {
                   value={form.role}
                   onChange={(e) => {
                     const role = e.target.value as Role;
-                    setForm((f) => ({ ...f, role, branchId: role === 'admin' ? '' : f.branchId }));
+                    setForm((f) => ({
+                      ...f,
+                      role,
+                      branchId: role === 'admin' || role === 'customer' ? '' : f.branchId,
+                    }));
                   }}
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 >
-                  {(editingId && form.role === 'staff' ? ALL_DISPLAY_ROLES : CREATABLE_ROLES).map((r) => (
+                  {(editingId ? ALL_DISPLAY_ROLES : CREATABLE_ROLES).map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
-                  {!editingId && <option disabled value="staff">Staff — coming soon</option>}
                 </select>
                 {form.role === 'admin' && (
-                  <p className="text-[10px] dash-muted mt-1">Admin accounts have super-admin access to every branch — no branch assignment.</p>
+                  <p className="text-[10px] dash-muted mt-1">Admin accounts have access to every branch — no branch assignment.</p>
                 )}
-                {!editingId && (
-                  <ComingSoonBadge
-                    title="Staff accounts"
-                    description="Merch orders, booth bookings, and the staff portal are being finalized. Barista accounts cover counter and order operations today."
-                    className="mt-3"
-                  />
+                {form.role === 'customer' && (
+                  <p className="text-[10px] dash-muted mt-1">Customer accounts are for online ordering and Kado Circle — not shown in the default team list.</p>
                 )}
               </div>
               {(form.role === 'barista' || form.role === 'staff') && (
@@ -312,7 +409,9 @@ export default function AdminUsers() {
                     <option value="">— select branch —</option>
                     {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
-                  <p className="text-[10px] dash-muted mt-1">{form.role === 'staff' ? 'Staff' : 'Barista'} will only see orders for this branch.</p>
+                  <p className="text-[10px] dash-muted mt-1">
+                    {form.role === 'staff' ? 'Staff' : 'Barista'} only sees orders and bookings for this branch.
+                  </p>
                 </div>
               )}
               {formError && (

@@ -8,8 +8,10 @@ import {
   Sun,
   Moon,
   ExternalLink,
+  Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
 import NotificationToggle from '../components/NotificationToggle';
 import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
@@ -21,6 +23,7 @@ const nav = [
   { to: '/staff/booth-bookings', label: 'Booth Bookings', icon: CalendarClock },
   { to: '/staff/merch-orders', label: 'Merch Orders', icon: Package },
   { to: '/staff/orders', label: 'All Orders', icon: ClipboardList },
+  { to: '/staff/settings', label: 'Settings', icon: Settings },
 ];
 
 function sidebarFooterBtnClass() {
@@ -34,6 +37,10 @@ function sidebarFooterBtnClass() {
 
 export default function StaffLayout() {
   const user = useAuthStore((s) => s.user);
+  const branches = useBranchStore((s) => s.branches);
+  const branchLabel = user?.branchId
+    ? branches.find((b) => b.id === user.branchId)?.name
+    : null;
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { isDark, toggle } = useDashTheme();
@@ -46,7 +53,7 @@ export default function StaffLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login', { replace: true });
+    navigate('/management-portal', { replace: true });
   };
 
   return (
@@ -73,7 +80,7 @@ export default function StaffLayout() {
                 {user?.name}
               </p>
               <p className="truncate text-[10px] leading-tight" style={{ color: 'var(--color-dash-text-muted)' }}>
-                {user?.email}
+                {branchLabel ? `${branchLabel} · ` : ''}{user?.email}
               </p>
             </div>
           </div>
@@ -131,6 +138,11 @@ export default function StaffLayout() {
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Staff · Dashboard</span>
         </header>
         <div className="flex-1 overflow-auto p-6 md:p-8">
+          {user?.role === 'staff' && !user.branchId && (
+            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900">
+              This staff account has no branch assigned. Ask an administrator to set your branch under Admin → Users.
+            </div>
+          )}
           <Outlet />
         </div>
       </div>

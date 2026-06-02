@@ -249,6 +249,7 @@ function mapUser(row: any): User {
     name: row.name,
     role,
     branchId: role === 'admin' ? undefined : (row.branch_id ?? undefined),
+    phone: (row.phone as string | null) ?? undefined,
     loyaltyStamps: row.loyalty_stamps ?? undefined,
     createdAt: row.created_at,
   };
@@ -447,6 +448,15 @@ export const orderingRepo = {
       .from('kk_event_registrations')
       .select('*')
       .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapEventRegistration);
+  },
+  async fetchAllEventRegistrations(): Promise<EventRegistration[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('kk_event_registrations')
+      .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []).map(mapEventRegistration);
@@ -682,6 +692,7 @@ export const orderingRepo = {
       name: u.name,
       role: u.role,
       branch_id: profileBranchId(u),
+      phone: u.role === 'customer' ? (u.phone ?? null) : null,
       loyalty_stamps: u.role === 'customer' ? (u.loyaltyStamps ?? 0) : 0,
     });
     if (error) throw error;

@@ -1,67 +1,65 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { LoyaltyConfig, LoyaltyReward } from '../types/domain';
 import { SEED_LOYALTY_CONFIG } from '../data/seed';
 import { newId } from '../lib/id';
+import { loyaltyRepo } from '../lib/supabase/repositories/loyalty';
 
 export interface LoyaltyStore {
   config: LoyaltyConfig;
-  addReward: (reward: Omit<LoyaltyReward, 'id'>) => void;
-  updateReward: (id: string, patch: Partial<LoyaltyReward>) => void;
-  removeReward: (id: string) => void;
-  toggleReward: (id: string) => void;
-  seed: () => void;
+  loading: boolean;
+  hydrateFromRemote: () => Promise<void>;
+  addReward: (reward: Omit<LoyaltyReward, 'id'>) => Promise<void>;
+  updateReward: (id: string, patch: Partial<LoyaltyReward>) => Promise<void>;
+  removeReward: (id: string) => Promise<void>;
+  toggleReward: (id: string) => Promise<void>;
 }
 
-function normalizeConfig(raw: unknown): LoyaltyConfig {
-  const cfg = raw as LoyaltyConfig | undefined;
-  if (cfg?.rewards?.length) return { rewards: cfg.rewards };
-  return SEED_LOYALTY_CONFIG;
-}
+export const useLoyaltyStore = create<LoyaltyStore>()((set, get) => ({
+  config: SEED_LOYALTY_CONFIG,
+  loading: false,
 
-export const useLoyaltyStore = create<LoyaltyStore>()(
-  persist(
-    (set, get) => ({
-      config: SEED_LOYALTY_CONFIG,
+  hydrateFromRemote: async () => {
+    set({ loading: true });
+    try {
+      const rewards = await loyaltyRepo.fetchRewards();
+      if (rewards.length > 0) {
+        set({ config: { rewards } });
+      }
+    } catch {
+      // keep defaults
+    } finally {
+      set({ loading: false });
+    }
+  },
 
-      addReward: (input) => {
-        const reward: LoyaltyReward = { ...input, id: newId() };
-        set((s) => ({ config: { ...s.config, rewards: [...s.config.rewards, reward] } }));
+  addReward: async (input) => {
+    const reward: LoyaltyReward = { ...input, id: newId() };
+    await loyaltyRepo.upsertReward(reward);
+    set((s) => ({ config: { rewards: [...s.config.rewards, reward] } }));
+  },
+
+  updateReward: async (id, patch) => {
+    const existing = get().config.rewards.find((r) => r.id === id);
+    if (!existing) return;
+    const updated = { ...existing, ...patch };
+    await loyaltyRepo.upsertReward(updated);
+    set((s) => ({
+      config: {
+        rewards: s.config.rewards.map((r) => (r.id === id ? updated : r)),
       },
+    }));
+  },
 
-      updateReward: (id, patch) =>
-        set((s) => ({
-          config: {
-            ...s.config,
-            rewards: s.config.rewards.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-          },
-        })),
+  removeReward: async (id) => {
+    await loyaltyRepo.removeReward(id);
+    set((s) => ({
+      config: { rewards: s.config.rewards.filter((r) => r.id !== id) },
+    }));
+  },
 
-      removeReward: (id) =>
-        set((s) => ({
-          config: { ...s.config, rewards: s.config.rewards.filter((r) => r.id !== id) },
-        })),
-
-      toggleReward: (id) =>
-        set((s) => ({
-          config: {
-            ...s.config,
-            rewards: s.config.rewards.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
-          },
-        })),
-
-      seed: () => set({ config: SEED_LOYALTY_CONFIG }),
-    }),
-    {
-      name: 'kado-loyalty-v1',
-      merge: (persisted, current) => {
-        const p = persisted as Partial<LoyaltyStore> | undefined;
-        return {
-          ...current,
-          ...p,
-          config: normalizeConfig(p?.config),
-        };
-      },
-    },
-  ),
-);
+  toggleReward: async (id) => {
+    const existing = get().config.rewards.find((r) => r.id === id);
+    if (!existing) return;
+    await get().updateReward(id, { active: !existing.active });
+  },
+}));

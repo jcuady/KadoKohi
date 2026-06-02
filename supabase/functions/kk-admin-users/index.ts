@@ -99,6 +99,25 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+    const allowedRoles = ["admin", "barista", "staff", "customer"] as const;
+    if (!allowedRoles.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid role" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if ((role === "barista" || role === "staff") && !branchId) {
+      return new Response(
+        JSON.stringify({ error: "Branch is required for barista and staff accounts" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (role === "customer" && branchId) {
+      return new Response(
+        JSON.stringify({ error: "Customer accounts cannot be assigned to a branch here" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
     const { data: newUser, error: createError } =
       await adminClient.auth.admin.createUser({
         email,

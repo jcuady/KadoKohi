@@ -1,40 +1,13 @@
 import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  LayoutDashboard,
-  ClipboardList,
-  CalendarHeart,
-  Gift,
-  User,
-  LogOut,
-  ShoppingBag,
-  Menu,
-  X,
-  ChevronRight,
-  Home,
-} from 'lucide-react';
+import { LogOut, ShoppingBag, Menu, X, ChevronRight, Home } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useCartToggle } from '../hooks/useCartToggle';
 import CartDrawer from '../components/CartDrawer';
-
-const accountNav = [
-  { to: '/account', label: 'Dashboard', end: true, icon: LayoutDashboard },
-  { to: '/account/orders', label: 'My Orders', icon: ClipboardList },
-  { to: '/account/booth', label: 'Events Bookings', icon: CalendarHeart },
-  { to: '/account/vouchers', label: 'Vouchers', icon: Gift },
-  { to: '/account/profile', label: 'Profile', icon: User },
-];
-
-const siteLinks = [
-  { label: 'Home', path: '/' },
-  { label: 'All Coffee', path: '/menu' },
-  { label: 'Branches', path: '/branches' },
-  { label: 'Kado Events', path: '/events' },
-  { label: 'About Us', path: '/about' },
-  { label: 'Contact Us', path: '/contact' },
-];
+import { PUBLIC_SITE_NAV } from '../config/siteNav';
+import { ACCOUNT_NAV } from '../config/accountNav';
 
 export default function CustomerLayout() {
   const user = useAuthStore((s) => s.user);
@@ -52,16 +25,26 @@ export default function CustomerLayout() {
     navigate('/');
   };
 
-  const currentPage = accountNav.find((n) =>
+  const currentPage = ACCOUNT_NAV.find((n) =>
     n.end ? location.pathname === n.to : location.pathname.startsWith(n.to),
   );
 
+  const accountNavLinkClass = (isActive: boolean) =>
+    `flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
+      isActive
+        ? 'bg-kado-dark text-white shadow-lg shadow-kado-dark/10'
+        : 'bg-white border border-kado-dark/10 text-kado-dark/60 hover:border-kado-red/30 hover:text-kado-red hover:shadow-sm'
+    }`;
+
+  const mobileAccountLinkClass = (isActive: boolean) =>
+    `text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 ${
+      isActive ? 'bg-kado-dark text-white' : 'text-kado-dark/70 hover:text-kado-red'
+    }`;
+
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col selection:bg-kado-red selection:text-white">
-      {/* ─── TOP NAVBAR (same aesthetic as homepage) ─── */}
       <nav className="sticky top-0 z-[100] w-full border-b border-kado-dark/10 bg-kado-cream/88 backdrop-blur-xl supports-[backdrop-filter]:bg-kado-cream/75 shadow-[0_1px_0_rgba(25,25,25,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-3.5 flex items-center justify-between gap-4 relative min-h-[3.5rem]">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group shrink-0 pr-2 overflow-visible py-0.5">
             <div className="w-9 h-9 md:w-10 md:h-10 shrink-0 bg-kado-red text-kado-cream flex items-center justify-center font-display font-bold text-lg rounded-sm group-hover:scale-[1.03] transition-transform duration-300">
               角
@@ -76,9 +59,8 @@ export default function CustomerLayout() {
             </span>
           </Link>
 
-          {/* Desktop site links */}
           <div className="hidden lg:flex items-center gap-1 bg-kado-offwhite/80 backdrop-blur-md px-2 py-1.5 rounded-full border border-kado-dark/10 shadow-sm">
-            {siteLinks.map((link) => (
+            {PUBLIC_SITE_NAV.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -89,7 +71,6 @@ export default function CustomerLayout() {
             ))}
           </div>
 
-          {/* Right actions */}
           <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
@@ -129,17 +110,16 @@ export default function CustomerLayout() {
               <LogOut className="w-3.5 h-3.5" /> Sign out
             </button>
 
-            {/* Mobile hamburger */}
             <button
               className="lg:hidden text-kado-dark hover:text-kado-red transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
 
-          {/* Mobile dropdown */}
           <AnimatePresence>
             {mobileOpen && (
               <motion.div
@@ -148,35 +128,41 @@ export default function CustomerLayout() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
-                className="absolute top-full left-0 right-0 bg-kado-cream/97 backdrop-blur-lg border-b border-kado-dark/10 p-5 flex flex-col gap-1 lg:hidden shadow-lg z-10"
+                className="absolute top-full left-0 right-0 bg-kado-cream/97 backdrop-blur-lg border-b border-kado-dark/10 p-5 flex flex-col gap-1 lg:hidden shadow-lg z-10 max-h-[min(70vh,520px)] overflow-y-auto"
               >
-                {siteLinks.map((link) => (
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/40 px-4 pb-1">
+                  Site
+                </p>
+                {PUBLIC_SITE_NAV.map((link) => (
                   <Link
                     key={link.path}
                     to={link.path}
                     onClick={() => setMobileOpen(false)}
-                    className="text-sm font-medium py-2.5 px-4 rounded-xl text-kado-dark/80 hover:bg-kado-dark/5 hover:text-kado-red"
+                    className={`text-sm font-medium py-2.5 px-4 rounded-xl ${
+                      location.pathname === link.path
+                        ? 'bg-kado-dark text-white'
+                        : 'text-kado-dark/80 hover:bg-kado-dark/5 hover:text-kado-red'
+                    }`}
                   >
                     {link.label}
                   </Link>
                 ))}
-                <div className="my-1 border-t border-kado-dark/10" />
-                {accountNav.map(({ to, label, icon: Icon }) => (
+                <div className="my-2 border-t border-kado-dark/10" />
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/40 px-4 pb-1">
+                  My account
+                </p>
+                {ACCOUNT_NAV.map(({ to, label, end, icon: Icon }) => (
                   <NavLink
                     key={to}
                     to={to}
-                    end
+                    end={end}
                     onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      `text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 ${
-                        isActive ? 'bg-kado-dark text-white' : 'text-kado-dark/70 hover:text-kado-red'
-                      }`
-                    }
+                    className={({ isActive }) => mobileAccountLinkClass(isActive)}
                   >
                     <Icon className="w-4 h-4" /> {label}
                   </NavLink>
                 ))}
-                <div className="my-1 border-t border-kado-dark/10" />
+                <div className="my-2 border-t border-kado-dark/10" />
                 <button
                   type="button"
                   onClick={() => { setMobileOpen(false); handleLogout(); }}
@@ -190,10 +176,8 @@ export default function CustomerLayout() {
         </div>
       </nav>
 
-      {/* ─── BREADCRUMB + ACCOUNT SUB-NAV ─── */}
       <div className="border-b border-kado-dark/5 bg-[#FAF7F2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Breadcrumb */}
           <div className="flex items-center gap-1.5 pt-5 pb-3 text-[10px] font-bold uppercase tracking-widest text-kado-dark/40">
             <Link to="/" className="hover:text-kado-red transition-colors flex items-center gap-1">
               <Home className="w-3 h-3" /> Home
@@ -208,21 +192,10 @@ export default function CustomerLayout() {
             )}
           </div>
 
-          {/* Account nav tabs */}
-          <nav className="flex gap-1.5 pb-4 overflow-x-auto scrollbar-none">
-            {accountNav.map(({ to, label, end, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
-                    isActive
-                      ? 'bg-kado-dark text-white shadow-lg shadow-kado-dark/10'
-                      : 'bg-white border border-kado-dark/10 text-kado-dark/60 hover:border-kado-red/30 hover:text-kado-red hover:shadow-sm'
-                  }`
-                }
-              >
+          {/* Desktop account tabs — mobile uses hamburger (same ACCOUNT_NAV items) */}
+          <nav className="hidden lg:flex gap-1.5 pb-4 overflow-x-auto scrollbar-none">
+            {ACCOUNT_NAV.map(({ to, label, end, icon: Icon }) => (
+              <NavLink key={to} to={to} end={end} className={({ isActive }) => accountNavLinkClass(isActive)}>
                 <Icon className="w-4 h-4" />
                 {label}
               </NavLink>
@@ -231,14 +204,12 @@ export default function CustomerLayout() {
         </div>
       </div>
 
-      {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
           <Outlet />
         </div>
       </main>
 
-      {/* ─── FOOTER ─── */}
       <footer className="mt-auto border-t border-kado-dark/5 bg-kado-dark text-white">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">

@@ -5,7 +5,9 @@ import { useBranchStore } from '../store/branchStore';
 import EventImageGallery from '../components/events/EventImageGallery';
 import EventSignupCountdown from '../components/events/EventSignupCountdown';
 import EventSignupModal from '../components/events/EventSignupModal';
+import { useSearchParams } from 'react-router-dom';
 import {
+  eventDurationLabel,
   eventImages,
   getEventLifecyclePhase,
   getEventSignupPhase,
@@ -43,6 +45,7 @@ export default function Events() {
   const [tab, setTab] = useState<Tab>('upcoming');
   const [signupEvent, setSignupEvent] = useState<Event | null>(null);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
@@ -64,6 +67,28 @@ export default function Events() {
     const phase: EventLifecyclePhase = tab;
     return visible.filter((e) => getEventLifecyclePhase(e) === phase);
   }, [visible, tab]);
+
+  useEffect(() => {
+    if (visible.some((e) => getEventLifecyclePhase(e) === 'current')) {
+      setTab('current');
+    } else {
+      setTab('upcoming');
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    const eventId = searchParams.get('event');
+    if (!eventId || visible.length === 0) return;
+    const evt = visible.find((e) => e.id === eventId);
+    if (!evt) return;
+    const signupPhase = getEventSignupPhase(evt, regCounts[evt.id] ?? 0);
+    if (signupPhase === 'open') {
+      setSignupEvent(evt);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('event');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, visible, regCounts]);
 
   const branches = useBranchStore((s) => s.branches);
   const branchName = (id?: string | null) => branches.find((b) => b.id === id)?.name ?? 'All branches';
@@ -150,12 +175,13 @@ const EventCard: FC<EventCardProps> = ({
   const countdownTarget = signupCountdownTarget(evt, signupPhase);
   const countdownLabel =
     signupPhase === 'not_yet_open' ? 'Sign-ups open in' : signupPhase === 'open' ? 'Sign up until' : '';
+  const durationLabel = eventDurationLabel(evt);
 
   const showSignup = evt.signupEnabled;
   const showExternalCta = !showSignup && evt.cta;
 
   return (
-    <article className="rounded-[1.5rem] border border-kado-dark/10 bg-white overflow-hidden hover:shadow-[0_20px_40px_rgba(158,24,29,0.08)] hover:-translate-y-1 hover:border-kado-red/30 transition-all duration-400 group">
+    <article id={`event-${evt.id}`} className="rounded-[1.5rem] border border-kado-dark/10 bg-white overflow-hidden hover:shadow-[0_20px_40px_rgba(158,24,29,0.08)] hover:-translate-y-1 hover:border-kado-red/30 transition-all duration-400 group">
       {images.length > 0 && (
         <div className="relative">
           <EventImageGallery images={images} alt={evt.title} />
@@ -193,6 +219,12 @@ const EventCard: FC<EventCardProps> = ({
             <Calendar className="w-4 h-4 text-kado-red" />
             {formatDate(evt.startsAt)}
           </span>
+          {durationLabel && (
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-kado-red" />
+              Duration: {durationLabel}
+            </span>
+          )}
           <span className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-kado-red" />
             {branchLabel}

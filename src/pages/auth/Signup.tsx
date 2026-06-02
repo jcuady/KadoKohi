@@ -2,7 +2,9 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
-import { clampText, isValidEmail } from '../../lib/validation';
+import { clampText, isValidEmail, requirePhilippinePhone } from '../../lib/validation';
+import { normalizePhilippinePhone } from '../../lib/phonePhilippines';
+import PhilippinePhoneField from '../../components/PhilippinePhoneField';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 import {
@@ -30,6 +32,7 @@ export default function Signup() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState(prefilledEmail);
+  const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -48,8 +51,13 @@ export default function Signup() {
       return;
     }
 
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!name.trim() || !email.trim() || !phoneLocal.trim() || !password.trim()) {
       setError('Please fill in all fields.');
+      return;
+    }
+    const phoneErr = requirePhilippinePhone(phoneLocal);
+    if (phoneErr) {
+      setError(phoneErr);
       return;
     }
     if (!isValidEmail(email)) {
@@ -76,6 +84,7 @@ export default function Signup() {
       const { needsEmailConfirmation } = await signUp(
         clampText(name, 80),
         email.trim().toLowerCase(),
+        normalizePhilippinePhone(phoneLocal),
         password,
       );
       if (needsEmailConfirmation) {
@@ -262,6 +271,14 @@ export default function Signup() {
                   placeholder="you@email.com"
                 />
               </div>
+              <PhilippinePhoneField
+                id="signup-phone"
+                value={phoneLocal}
+                onChange={(v) => {
+                  setPhoneLocal(v);
+                  setError('');
+                }}
+              />
               <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3 gap-3">
                 <div className="min-w-0">
                   <label htmlFor="signup-password" className="block text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/55 mb-1">

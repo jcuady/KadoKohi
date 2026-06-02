@@ -16,16 +16,15 @@ import {
   startOperationsRealtime,
   stopOperationsRealtime,
 } from '../lib/supabase/operationsRealtime';
+import { isInternalRole } from '../lib/roles';
+import { useLoyaltyStore } from './loyaltyStore';
+import { useVoucherStore } from './voucherStore';
 
 function normalizeProfile(profile: User): User {
   if (profile.role === 'admin') {
     return { ...profile, branchId: undefined, loyaltyStamps: undefined };
   }
   return profile;
-}
-
-function isInternalRole(role: User['role']): boolean {
-  return role === 'admin' || role === 'barista' || role === 'staff';
 }
 
 async function resolveSessionProfile(
@@ -43,12 +42,22 @@ async function resolveSessionProfile(
     useUserStore.getState().updateUser(ensured.id, ensured);
     return normalizeProfile(ensured);
   } catch {
+    const metaRole = sessionUser.user_metadata?.role;
+    const role =
+      metaRole === 'admin' || metaRole === 'barista' || metaRole === 'staff' || metaRole === 'customer'
+        ? metaRole
+        : 'customer';
+    const metaBranch =
+      typeof sessionUser.user_metadata?.branch_id === 'string'
+        ? sessionUser.user_metadata.branch_id
+        : undefined;
     return normalizeProfile({
       id: sessionUser.id,
       email: sessionUser.email ?? '',
-      name: metaName ?? 'Customer',
-      role: 'customer',
-      loyaltyStamps: 0,
+      name: metaName ?? 'User',
+      role,
+      branchId: role === 'admin' || role === 'customer' ? undefined : metaBranch,
+      loyaltyStamps: role === 'customer' ? 0 : undefined,
       createdAt: new Date().toISOString(),
     } as User);
   }
@@ -63,6 +72,10 @@ function syncOperationalSession(profile: User): void {
   }
   // Customers: refresh their own orders (no full ops channel).
   void useOrderStore.getState().hydrateFromRemote();
+  void useLoyaltyStore.getState().hydrateFromRemote();
+  if (profile.role === 'customer') {
+    void useVoucherStore.getState().hydrateForCustomer(profile.id);
+  }
 }
 
 export interface AuthStore {
@@ -70,7 +83,7 @@ export interface AuthStore {
   loading: boolean;
   initFromSupabase: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  signUp: (name: string, email: string, phone: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => Promise<void>;
   /** Earn loyalty stamps (customers only). */
   addLoyaltyStamps: (delta: number) => void;
@@ -123,10 +136,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           resumeAuthListener();
         }
       },
-      signUp: async (name, email, password) => {
+      signUp: async (name, email, phone, password) => {
         pauseAuthListener();
         try {
-          const res = await authRepo.signUp(email, password, name);
+          const res = await authRepo.signUp(email, password, name, phone);
           const sessionUser = res.user;
           if (!sessionUser) throw new Error('Sign up failed. Please try again.');
           if (sessionUser.identities && sessionUser.identities.length === 0) {

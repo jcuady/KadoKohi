@@ -14,6 +14,7 @@ import { useMerchStore } from './store/merchStore';
 import { useEventStore } from './store/eventStore';
 import { useBoothBookingStore } from './store/boothBookingStore';
 import { useLandingContentStore } from './store/landingContentStore';
+import { useLoyaltyStore } from './store/loyaltyStore';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
 import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
@@ -31,6 +32,7 @@ function Bootstrap() {
   const hydrateEvents = useEventStore((s) => s.hydrateFromRemote);
   const hydrateBookings = useBoothBookingStore((s) => s.hydrateFromRemote);
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
+  const hydrateLoyalty = useLoyaltyStore((s) => s.hydrateFromRemote);
 
   useEffect(() => {
     void recoverStaleAuthSession().then(() => initAuth());
@@ -44,6 +46,7 @@ function Bootstrap() {
     void hydrateEvents();
     void hydrateBookings();
     void hydrateLanding();
+    void hydrateLoyalty();
 
     // Keep auth state in sync with Supabase session events (token refresh,
     // sign-out from another tab, OAuth callback, email confirmation, etc.).

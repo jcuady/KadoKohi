@@ -16,6 +16,14 @@ function json(body: Record<string, unknown>, status = 200) {
   });
 }
 
+function normalizePhilippinePhone(input: string): string | null {
+  let digits = input.replace(/\D/g, "");
+  if (digits.startsWith("63")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  const e164 = "+63" + digits.slice(0, 10);
+  return /^\+639\d{9}$/.test(e164) ? e164 : null;
+}
+
 /** Generous in-memory limit per edge instance (not strict — stops accidental spam only). */
 const recentByIp = new Map<string, number[]>();
 const WINDOW_MS = 60 * 60 * 1000;
@@ -57,9 +65,10 @@ Deno.serve(async (req: Request) => {
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const name = String(body.name ?? "").trim();
+    const phone = normalizePhilippinePhone(String(body.phone ?? ""));
 
-    if (!email || !password || !name) {
-      return json({ error: "Missing required fields" }, 400);
+    if (!email || !password || !name || !phone) {
+      return json({ error: "Missing or invalid required fields" }, 400);
     }
     if (password.length < 8) {
       return json({ error: "Password must be at least 8 characters" }, 400);
@@ -77,7 +86,7 @@ Deno.serve(async (req: Request) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { name, role: "customer" },
+      user_metadata: { name, role: "customer", phone },
     });
 
     if (createError) {
@@ -102,6 +111,7 @@ Deno.serve(async (req: Request) => {
       name,
       role: "customer",
       branch_id: null,
+      phone,
       loyalty_stamps: 0,
     });
 

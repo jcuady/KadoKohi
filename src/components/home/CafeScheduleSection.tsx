@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useBranchStore } from '../../store/branchStore';
 import type { ScheduleCopy } from '../../store/landingContentStore';
+import { useSettingsStore } from '../../store/settingsStore';
 
 const DAY_LABELS: Record<string, string> = {
   mon: 'Monday',
@@ -28,6 +29,7 @@ interface Props {
 
 export default function CafeScheduleSection({ copy }: Props) {
   const branches = useBranchStore((s) => s.branches);
+  const settings = useSettingsStore((s) => s.settings);
 
   const activeBranch = useMemo(
     () => branches.find((branch) => branch.status === 'active') ?? branches[0],
@@ -39,14 +41,18 @@ export default function CafeScheduleSection({ copy }: Props) {
     const byDay = new Map<string, { open: string; close: string }>(
       activeBranch.hours.map((item) => [item.day, { open: item.open, close: item.close }]),
     );
+    const defaultHours = `${toDisplayTime(settings.defaultOpenTime)} - ${toDisplayTime(settings.defaultCloseTime)}`;
     return DAY_ORDER.map((day) => {
       const row = byDay.get(day);
       return {
         dayLabel: DAY_LABELS[day],
-        hours: row ? `${toDisplayTime(row.open)} - ${toDisplayTime(row.close)}` : 'Closed',
+        hours:
+          row && row.open && row.close
+            ? `${toDisplayTime(row.open)} - ${toDisplayTime(row.close)}`
+            : defaultHours,
       };
     });
-  }, [activeBranch]);
+  }, [activeBranch, settings.defaultOpenTime, settings.defaultCloseTime]);
 
   if (!activeBranch) return null;
 
