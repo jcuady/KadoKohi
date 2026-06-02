@@ -38,18 +38,33 @@ export const useTableStore = create<TableStore>()((set, get) => ({
       tables: SEED_TABLES,
       hydrated: false,
       hydrateFromRemote: async () => {
-        try {
-          const tables = (await orderingRepo.fetchTables()).map((t) => {
+        const normalizeAll = (rows: Table[]) =>
+          rows.map((t) => {
             const normalized = normalizeTableQrPayload(t);
             if (normalized.qrPayload !== t.qrPayload) {
               void orderingRepo.upsertTable(normalized);
             }
             return normalized;
           });
-          set({ tables, hydrated: true });
+
+        try {
+          let tables = normalizeAll(await orderingRepo.fetchTables());
+          if (tables.length === 0) {
+            await orderingRepo.ensureDefaultTables().catch(() => undefined);
+            tables = normalizeAll(await orderingRepo.fetchTables());
+          }
+          if (tables.length === 0) {
+            for (const seed of SEED_TABLES) {
+              await orderingRepo.upsertTable(normalizeTableQrPayload(seed)).catch(() => undefined);
+            }
+            tables = normalizeAll(await orderingRepo.fetchTables());
+          }
+          set({
+            tables: tables.length > 0 ? tables : SEED_TABLES.map(normalizeTableQrPayload),
+            hydrated: true,
+          });
         } catch {
-          // Keep seed fallback when remote fetch fails but still mark as resolved.
-          set({ hydrated: true });
+          set({ tables: SEED_TABLES.map(normalizeTableQrPayload), hydrated: true });
         }
       },
 
@@ -97,7 +112,11 @@ export const useTableStore = create<TableStore>()((set, get) => ({
 
       tablesForBranch: (branchId) => get().tables.filter((t) => t.branchId === branchId),
 
-      getByCode: (code) => get().tables.find((t) => t.code === code),
+      getByCode: (code) => {
+        const needle = code.trim().toLowerCase();
+        if (!needle) return undefined;
+        return get().tables.find((t) => t.code.trim().toLowerCase() === needle);
+      },
 
       seed: () => set({ tables: SEED_TABLES }),
 }));

@@ -310,6 +310,13 @@ export const orderingRepo = {
       products: Number(row.products ?? 0),
     };
   },
+  async ensureDefaultTables(): Promise<{ tables: number }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_ensure_default_tables');
+    if (error) throw error;
+    const row = (data ?? {}) as { tables?: number };
+    return { tables: Number(row.tables ?? 0) };
+  },
   async upsertCategory(c: MenuCategory) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_menu_categories').upsert({

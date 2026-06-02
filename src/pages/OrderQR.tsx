@@ -12,6 +12,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
 import { clampText, formatOrderError } from '../lib/validation';
+import { cartLinesMatchMenu, ensureOrderReadiness } from '../lib/orderReadiness';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
@@ -50,6 +51,7 @@ export default function OrderQR() {
   const branches = useBranchStore((s) => s.branches);
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
+  const menuReady = useMenuStore((s) => s.remoteLoaded);
   const productsByCategory = useMenuStore((s) => s.productsByCategory);
   const createOrder = useOrderStore((s) => s.createOrder);
 
@@ -82,6 +84,10 @@ export default function OrderQR() {
   useEffect(() => {
     startGuestPageRealtime();
     return () => stopGuestPageRealtime();
+  }, []);
+
+  useEffect(() => {
+    void ensureOrderReadiness();
   }, []);
 
   useEffect(() => {
@@ -128,6 +134,8 @@ export default function OrderQR() {
     return { lines, subtotal, modifiers, tax, total };
   }, [cart, products, taxRate]);
 
+  const cartStale = cart.length > 0 && !cartLinesMatchMenu(cart, cartTotals.lines);
+
   const addLine = (payload: QrCartPayload) => {
     setCart((prev) => {
       const match = prev.find(
@@ -156,9 +164,14 @@ export default function OrderQR() {
 
   const placeOrder = async () => {
     if (!table || cartTotals.lines.length === 0 || submitting) return;
+    if (cartStale) {
+      setOrderError('Some items are out of date. Remove them from your cart and add drinks again.');
+      return;
+    }
     setOrderError('');
     setSubmitting(true);
     try {
+      await ensureOrderReadiness();
       const order = await createOrder({
         channel: 'dine-in',
         branchId: table.branchId,
@@ -193,7 +206,7 @@ export default function OrderQR() {
     setTrackedOrderId(null);
   };
 
-  if (!tablesHydrated) {
+  if (!tablesHydrated || !menuReady) {
     return (
       <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
@@ -466,7 +479,7 @@ export default function OrderQR() {
               <button
                 type="button"
                 onClick={placeOrder}
-                disabled={cart.length === 0 || submitting}
+                disabled={cart.length === 0 || submitting || cartStale}
                 className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
               >
                 {submitting ? 'Sending…' : 'Place dine-in order'}

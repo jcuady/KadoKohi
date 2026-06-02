@@ -27,6 +27,8 @@ import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp } from '../lib/money';
 import { computeVoucherDiscount, computeCartTotalsWithDiscount } from '../lib/voucherDiscount';
 import { newId } from '../lib/id';
+import { formatOrderError } from '../lib/validation';
+import { ensureOrderReadiness } from '../lib/orderReadiness';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
@@ -161,6 +163,7 @@ export default function CartDrawer() {
     const channel = hasCoffee ? 'online' : 'merch';
 
     try {
+      await ensureOrderReadiness();
       const order = await createOrder({
         channel,
         branchId,
@@ -187,8 +190,8 @@ export default function CartDrawer() {
       clearAll();
       closeCart();
       navigate(`/account/orders?placed=${order.id}`);
-    } catch {
-      setCheckoutError('Could not place your order. Please check your connection and try again.');
+    } catch (err) {
+      setCheckoutError(formatOrderError(err));
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import {
   notifyBaristasProofSubmitted,
 } from '../lib/notify';
 import { broadcastGuestOrderUpdate } from '../lib/supabase/guestOrderTracking';
+import { ensureOrderReadiness, isOrderCatalogError } from '../lib/orderReadiness';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -79,11 +80,22 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         });
         set({ orders: [o, ...get().orders] });
         let persisted = o;
+        const place = () => orderingRepo.placeOrder(o, { promoCode: input.promoCode });
         try {
-          persisted = normalizeOrder(await orderingRepo.placeOrder(o, { promoCode: input.promoCode }));
+          persisted = normalizeOrder(await place());
         } catch (err) {
-          set({ orders: get().orders.filter((row) => row.id !== o.id) });
-          throw err;
+          if (isOrderCatalogError(err)) {
+            await ensureOrderReadiness();
+            try {
+              persisted = normalizeOrder(await place());
+            } catch (retryErr) {
+              set({ orders: get().orders.filter((row) => row.id !== o.id) });
+              throw retryErr;
+            }
+          } else {
+            set({ orders: get().orders.filter((row) => row.id !== o.id) });
+            throw err;
+          }
         }
         set({
           orders: get().orders.map((row) => (row.id === o.id ? persisted : row)),

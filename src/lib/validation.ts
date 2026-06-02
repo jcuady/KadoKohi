@@ -49,7 +49,15 @@ export function formatOrderError(err: unknown): string {
       : '';
   if (!msg) return 'Could not place your order. Please check your connection and try again.';
   if (/guest name/i.test(msg)) return msg;
-  if (/product.*not available/i.test(msg)) return 'An item in your cart is no longer available. Refresh and try again.';
+  if (/product is not available at this branch/i.test(msg)) {
+    return 'An item is not sold at this branch. Remove it from your cart and try again.';
+  }
+  if (/product.*not available/i.test(msg)) {
+    return 'Menu is still syncing. Wait a moment, refresh the page, and try again.';
+  }
+  if (/table is invalid/i.test(msg)) {
+    return 'This table QR is not active. Ask staff for a current table code.';
+  }
   if (/branch is not active/i.test(msg)) return 'This location is not accepting orders right now.';
   if (/promo/i.test(msg)) return msg;
   if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
