@@ -41,10 +41,13 @@ const RHYTHM = {
   innerPadRatio: 0.09,
   gap: 0.038,
   bandHeight: 0.095,
-  logoHeightTable: 0.078,
+  /** Dine-in wordmark — keep compact so QR + footer fit in 1:1. */
+  logoHeightTable: 0.062,
   logoHeightTakeout: 0.065,
   borderInset: 0.01,
   ruleInset: 0.1,
+  /** Max dine-in title size (fraction of card width). */
+  titleMaxTable: 0.072,
 } as const;
 
 function assetUrl(path: string): string {
@@ -237,12 +240,15 @@ function drawThinRule(
   ctx.stroke();
 }
 
-/** Editorial table line — title with flanking rules (dine-in hero). */
+/**
+ * Dine-in table line — title with flanking rules.
+ * @param baseline Text baseline (alphabetic). Returns y below the title block.
+ */
 function drawFlankingTitle(
   ctx: CanvasRenderingContext2D,
   text: string,
   m: PanelMetrics,
-  y: number,
+  baseline: number,
   fontSize: number,
   width: number,
 ): number {
@@ -250,7 +256,7 @@ function drawFlankingTitle(
   ctx.font = `800 ${fontSize}px ${FONT_HEADLINE}`;
   const textW = ctx.measureText(upper).width;
   const ruleGap = fontSize * 0.42;
-  const ruleY = y - fontSize * 0.38;
+  const ruleY = baseline - fontSize * 0.72;
   const contentRight = m.contentX + m.contentW;
   const ruleStart = m.contentX + m.contentW * RHYTHM.ruleInset;
   const ruleEnd = contentRight - m.contentW * RHYTHM.ruleInset;
@@ -265,8 +271,44 @@ function drawFlankingTitle(
     drawThinRule(ctx, rightRuleStart, ruleEnd, ruleY, width);
   }
 
-  drawCenteredText(ctx, upper, m.cx, y, fontSize, BRAND.dark, '800', FONT_HEADLINE);
-  return fontSize;
+  drawCenteredText(ctx, upper, m.cx, baseline, fontSize, BRAND.dark, '800', FONT_HEADLINE);
+  return baseline + fontSize * 0.14;
+}
+
+function measureScanPillHeight(width: number): number {
+  const fontSize = Math.round(width * 0.027);
+  return fontSize + width * 0.02 * 2;
+}
+
+/** Reserve bottom stack for dine-in: scan URL (above) + pill (anchored to panel bottom). */
+function measureTableFooterTop(panelBottom: number, width: number, innerPad: number): number {
+  const urlSize = Math.round(width * 0.016);
+  const pillH = measureScanPillHeight(width);
+  const stack = innerPad * 0.38 + pillH + width * 0.026 + urlSize + width * 0.018;
+  return panelBottom - stack;
+}
+
+/** Bottom-anchored dine-in footer — avoids clipping the CTA on square cards. */
+function drawTableFooter(
+  ctx: CanvasRenderingContext2D,
+  m: PanelMetrics,
+  scanUrl: string,
+  panelBottom: number,
+  width: number,
+): void {
+  const urlSize = Math.round(width * 0.016);
+  const pillH = measureScanPillHeight(width);
+  const bottomPad = m.innerPad * 0.38;
+
+  const pillY = panelBottom - bottomPad - pillH;
+  drawScanPill(ctx, m.cx, pillY, 'SCAN TO ORDER', width);
+
+  const urlBaseline = pillY - width * 0.024;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `500 ${urlSize}px ${FONT_MONO}`;
+  ctx.fillStyle = `${BRAND.muted}90`;
+  ctx.fillText(scanUrlForDisplay(scanUrl), m.cx, urlBaseline);
 }
 
 function drawQrBlock(
@@ -359,7 +401,8 @@ function normalizeInput(input: BrandedQrCardInput): BrandedQrCardInput {
 }
 
 /**
- * Square dine-in tent — mirrors takeout chrome: band, wordmark, flanked table title, QR, CTA.
+ * Square dine-in tent (1:1) — band, wordmark, flanked table title, QR, bottom-anchored CTA.
+ * Footer is measured first so the pill and URL never clip; title/subtitle use explicit baselines.
  */
 function renderTableSquareCard(
   ctx: CanvasRenderingContext2D,
@@ -370,25 +413,29 @@ function renderTableSquareCard(
   const m = measurePanel(size, size);
   drawCardChrome(ctx, size, size, m);
 
+  const panelBottom = m.panelY + m.panelH - m.innerPad;
+  const footerTop = measureTableFooterTop(panelBottom, size, m.innerPad);
+
   const bandH = drawTopBand(ctx, m, 'DINE IN', size);
-  let y = m.panelY + bandH + m.gap;
+  let y = m.panelY + bandH + m.gap * 0.92;
 
   const logoH = size * RHYTHM.logoHeightTable;
   const logoDrawn = drawContainedImage(ctx, assets.wordmark, m.contentX, y, m.contentW, logoH);
-  y += logoDrawn + m.gap;
+  y += logoDrawn + m.gap * 0.92;
 
   const titleUpper = data.title.toUpperCase();
   const titleSize = fitFontSize(
     ctx,
     titleUpper,
     m.contentW * 0.88,
-    Math.round(size * 0.088),
-    Math.round(size * 0.048),
+    Math.round(size * RHYTHM.titleMaxTable),
+    Math.round(size * 0.044),
     '800',
     FONT_HEADLINE,
   );
-  const titleH = drawFlankingTitle(ctx, titleUpper, m, y + titleSize, titleSize, size);
-  y += titleH + m.gap * 0.55;
+  const titleBaseline = y + titleSize;
+  y = drawFlankingTitle(ctx, titleUpper, m, titleBaseline, titleSize, size);
+  y += m.gap * 0.95;
 
   if (data.subtitle) {
     const subUpper = data.subtitle.toUpperCase();
@@ -396,30 +443,26 @@ function renderTableSquareCard(
       ctx,
       subUpper,
       m.contentW * 0.92,
-      Math.round(size * 0.03),
-      Math.round(size * 0.02),
+      Math.round(size * 0.028),
+      Math.round(size * 0.019),
       '600',
       FONT_BODY,
     );
-    drawCenteredText(ctx, subUpper, m.cx, y, subSize, BRAND.muted, '600', FONT_BODY, subSize * 0.18);
-    y += subSize + m.gap * 0.85;
+    const subBaseline = y + subSize;
+    drawCenteredText(ctx, subUpper, m.cx, subBaseline, subSize, BRAND.muted, '600', FONT_BODY, subSize * 0.14);
+    y = subBaseline + m.gap * 0.8;
   }
 
   drawThinRule(ctx, m.contentX + m.contentW * RHYTHM.ruleInset, m.contentX + m.contentW * (1 - RHYTHM.ruleInset), y, size);
-  y += m.gap;
+  y += m.gap * 0.95;
 
-  const footerReserve = size * 0.155;
-  const panelBottom = m.panelY + m.panelH - m.innerPad;
-  const availableForQr = panelBottom - footerReserve - y;
-  const qrSize = Math.min(m.contentW * 0.76, Math.max(availableForQr, m.contentW * 0.52));
+  const qrGap = m.gap * 0.85;
+  const availableForQr = footerTop - y - qrGap;
+  const qrSize = Math.min(m.contentW * 0.72, Math.max(availableForQr, m.contentW * 0.44));
   const qrX = m.contentX + (m.contentW - qrSize) / 2;
   drawQrBlock(ctx, assets.qr, assets.mark, qrX, y, qrSize, size * 0.022);
-  y += qrSize + m.gap * 0.9;
 
-  const pillH = drawScanPill(ctx, m.cx, y, 'SCAN TO ORDER', size);
-  y += pillH + m.gap * 0.65;
-
-  drawCardFooter(ctx, m, data, y, size);
+  drawTableFooter(ctx, m, data.scanUrl, panelBottom, size);
 }
 
 /** Portrait takeout stand — same chrome and rhythm as dine-in. */

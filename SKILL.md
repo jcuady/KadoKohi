@@ -110,3 +110,15 @@ Apply the four checks above first; use this section for repo-specific facts.
 
 - Migrations under `supabase/migrations/`; apply with `npx supabase db push --include-all`.
 - Customer sign-up rate limits: `kk-customer-signup` edge function (not raw Auth `/signup`).
+
+### Branded QR cards (dine-in & takeout)
+
+- **Source of truth:** `src/lib/brandedQrCard.ts` + `src/lib/brandTokens.ts` (see `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md`).
+- **Takeout:** portrait `1000×1500` — red `TAKEOUT` band, wordmark, branch, QR, pill, tagline + URL footer.
+- **Dine-in:** strict **square** `1200×1200` — red `DINE IN` band, wordmark, flanked table title, table code, QR, then **bottom-anchored** URL + `SCAN TO ORDER` pill (no flowing tagline on square layout).
+- **Layout rules (do not regress):**
+  - Table title + code use **separate baselines** with `gap` between them — never `y += titleSize` twice (that caused `TABLE 1` / code overlap).
+  - Dine-in footer is **measured from panel bottom** via `measureTableFooterTop` / `drawTableFooter` so the pill is never clipped.
+  - QR size is `min(contentWidth × 0.72, space above footer)` — shrink QR before overlapping text.
+  - Scan URLs always go through `getQrScanOrigin()` / `canonicalScanUrl()` → `https://www.kadokohi.com`.
+- **Admin:** `AdminTables.tsx` passes `title` = table label, `subtitle` = table code (e.g. `MRK-T01`), `layout: 'table' | 'takeout'`.
