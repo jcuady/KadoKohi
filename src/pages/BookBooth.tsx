@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { CalendarHeart, Users, Clock3, BadgeCheck, ArrowDown } from 'lucide-react';
 import BookingSteps from '../components/booking/BookingSteps';
-import BookingWizard from '../components/booking/BookingWizard';
+import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useBookingEstimateStore } from '../store/bookingEstimateStore';
 import { formatPhp } from '../lib/money';
@@ -10,6 +10,7 @@ import { formatPhp } from '../lib/money';
 export default function BookBooth() {
   const estimates = useBookingEstimateStore((s) => s.estimates);
   const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
+  const [wizardStage, setWizardStage] = useState<BookingWizardStage>('gate');
   const showcaseMedia = useMemo(
     () =>
       [...showcaseMediaRaw]
@@ -145,41 +146,43 @@ export default function BookBooth() {
 
       <BookingSteps />
 
-      <BookingWizard />
+      <BookingWizard onStageChange={setWizardStage} />
 
-      <section className="py-12 px-6">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-3">Sample Estimates</p>
-          <h2 className="font-display text-3xl md:text-4xl font-black text-kado-dark mb-6">Budget Guidance</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {[...estimates]
-              .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-              .slice(0, 4)
-              .map((estimate) => (
-                <article key={estimate.id} className="rounded-2xl bg-white border border-kado-dark/10 p-5">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <p className="font-display text-xl font-bold text-kado-dark">{estimate.shortCode}</p>
-                    <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full bg-kado-red/10 text-kado-red">
-                      {estimate.status}
-                    </span>
-                  </div>
-                  <div className="space-y-1.5 mb-3">
-                    {estimate.lineItems.map((line) => (
-                      <div key={line.id} className="flex justify-between text-sm text-kado-dark/70">
-                        <span>{line.labelSnapshot}</span>
-                        <span>{formatPhp(line.lineTotal)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="border-t border-kado-dark/10 pt-2 flex justify-between font-bold text-kado-dark">
-                    <span>Total</span>
-                    <span className="text-kado-red">{formatPhp(estimate.total)}</span>
-                  </div>
-                </article>
-              ))}
+      {wizardStage === 'form' && (
+        <section className="py-12 px-6">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-3">Sample Estimates</p>
+            <h2 className="font-display text-3xl md:text-4xl font-black text-kado-dark mb-6">Budget Guidance</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {[...estimates]
+                .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+                .slice(0, 4)
+                .map((estimate) => (
+                  <article key={estimate.id} className="rounded-2xl bg-white border border-kado-dark/10 p-5">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="font-display text-xl font-bold text-kado-dark">{estimate.shortCode}</p>
+                      <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full bg-kado-red/10 text-kado-red">
+                        {estimate.status}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 mb-3">
+                      {estimate.lineItems.map((line) => (
+                        <div key={line.id} className="flex justify-between text-sm text-kado-dark/70">
+                          <span>{line.labelSnapshot}</span>
+                          <span>{formatPhp(line.lineTotal)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-kado-dark/10 pt-2 flex justify-between font-bold text-kado-dark">
+                      <span>Total</span>
+                      <span className="text-kado-red">{formatPhp(estimate.total)}</span>
+                    </div>
+                  </article>
+                ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

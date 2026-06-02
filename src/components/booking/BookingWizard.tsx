@@ -20,8 +20,13 @@ const OCCASIONS: { id: BoothBookingOccasion; label: string }[] = [
 ];
 
 const STEPS = ['Package', 'Details', 'Schedule', 'Review'] as const;
+export type BookingWizardStage = 'gate' | 'form' | 'submitted';
 
-export default function BookingWizard() {
+interface BookingWizardProps {
+  onStageChange?: (stage: BookingWizardStage) => void;
+}
+
+export default function BookingWizard({ onStageChange }: BookingWizardProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isCustomer = user?.role === 'customer';
@@ -57,6 +62,18 @@ export default function BookingWizard() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submittedCode, setSubmittedCode] = useState('');
+
+  useEffect(() => {
+    if (!isCustomer) {
+      onStageChange?.('gate');
+      return;
+    }
+    if (submittedCode) {
+      onStageChange?.('submitted');
+      return;
+    }
+    onStageChange?.('form');
+  }, [isCustomer, submittedCode, onStageChange]);
 
   const selectedPackage = pkgList.find((pkg) => pkg.id === selectedPackageId);
 

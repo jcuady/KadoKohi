@@ -1,5 +1,5 @@
-/** Production site (Vercel). Used for QR payloads when not running in a browser. */
-export const PRODUCTION_SITE_URL = 'https://kado-kohi.vercel.app';
+/** Production site (Vercel custom domain). Used for QR payloads when not running in a browser. */
+export const PRODUCTION_SITE_URL = 'https://www.kadokohi.com';
 
 /** Canonical origin for shareable links and QR encoding. */
 export function getSiteOrigin(): string {

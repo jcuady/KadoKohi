@@ -54,10 +54,12 @@ import AccountBoothBookings from './pages/account/AccountBoothBookings';
 import AccountVouchers from './pages/account/AccountVouchers';
 import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
+import RouteSeo from './components/RouteSeo';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <RouteSeo />
       <Routes>
         {/* Standalone utility pages */}
         <Route path="/help/install" element={<HelpInstall />} />

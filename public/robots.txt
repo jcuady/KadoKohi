@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Private/internal areas
+Disallow: /admin
+Disallow: /barista
+Disallow: /staff
+Disallow: /account
+Disallow: /auth
+Disallow: /management-portal
+Disallow: /order/qr
+Disallow: /help/install
+
+Sitemap: https://www.kadokohi.com/sitemap.xml
