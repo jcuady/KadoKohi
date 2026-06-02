@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type DragEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react';
 import type {
   MenuCategory,
   Product,
@@ -42,6 +42,8 @@ const emptyProductForm: ProductFormData = {
 export default function AdminMenu() {
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
+  const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
+  const dataSource = useMenuStore((s) => s.dataSource);
   const addCategory = useMenuStore((s) => s.addCategory);
   const updateCategory = useMenuStore((s) => s.updateCategory);
   const removeCategory = useMenuStore((s) => s.removeCategory);
@@ -53,6 +55,18 @@ export default function AdminMenu() {
 
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+
+  useEffect(() => {
+    void useMenuStore.getState().hydrateFromRemote();
+  }, []);
+
+  useEffect(() => {
+    if (!remoteLoaded || expandedCat) return;
+    const first = sortedCategories[0]?.id;
+    if (first) setExpandedCat(first);
+  }, [remoteLoaded, sortedCategories, expandedCat]);
+
   type DragState =
     | null
     | { kind: 'cat'; from: number }
@@ -60,8 +74,6 @@ export default function AdminMenu() {
   const [drag, setDrag] = useState<DragState>(null);
 
   const onDragEnd = () => setDrag(null);
-
-  const [expandedCat, setExpandedCat] = useState<string | null>(sortedCategories[0]?.id ?? null);
   const [newCatName, setNewCatName] = useState('');
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
@@ -252,11 +264,24 @@ export default function AdminMenu() {
     cancelForm();
   };
 
+  if (!remoteLoaded) {
+    return (
+      <div className="max-w-4xl dash-page">
+        <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
+        <p className="dash-muted text-sm">Loading menu from database…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
-      <p className="dash-muted mb-6">
+      <p className="dash-muted mb-2">
         {categories.length} categories ({activeCategoryCount} visible) · {products.length} products
+        {dataSource === 'remote' ? ' · synced from Supabase' : ' · offline catalog fallback'}
+      </p>
+      <p className="text-[10px] dash-muted mb-6">
+        KADO MENU V2 — edit here or on the public Menu page after changes save to the database.
       </p>
 
       {/* Add category */}

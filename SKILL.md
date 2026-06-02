@@ -118,6 +118,8 @@ Apply the four checks above first; use this section for repo-specific facts.
 - **Milk modifiers:** `Milk` +0, `Oat` +40 (`MENU_MILK_OPTIONS`). No milk on AmeriKADO, Yuzu AmeriKado, Yuzu sodas.
 - **Temperature:** `both` = hot + iced; `iced` = iced only (KADO Latte, Yuzu AmeriKado, Nori Salted Cream, Matcha Strawberry Oat, Salted Cream Hojicha, Yuzu sodas). Tag `iced-only` for UI hints.
 - **Images:** `image` is null until assets are uploaded in Admin → Menu.
+- **Admin Menu Manager** loads only coffee categories (`cat_classics` … `cat_yuzu`), not `cat_hidden_merch`. Legacy dummy rows are removed by migration `0022_cleanup_legacy_menu.sql`.
+- **menuStore** starts empty until `hydrateFromRemote()`; always reads Supabase on Vercel when env vars are set.
 
 ### Branded QR cards (dine-in & takeout)
 

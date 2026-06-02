@@ -100,3 +100,28 @@ export const MENU_PRODUCTS: Product[] = [
 export const ICED_ONLY_PRODUCT_IDS = new Set(
   MENU_PRODUCTS.filter((p) => p.temperature === 'iced').map((p) => p.id),
 );
+
+/** Coffee menu category IDs (KADO MENU V2). Excludes merch mirror category. */
+export const COFFEE_MENU_CATEGORY_IDS = [
+  'cat_classics',
+  'cat_signatures',
+  'cat_matcha',
+  'cat_yuzu',
+] as const;
+
+export const MERCH_MIRROR_CATEGORY_ID = 'cat_hidden_merch';
+
+export function isCoffeeMenuCategory(categoryId: string): boolean {
+  return (COFFEE_MENU_CATEGORY_IDS as readonly string[]).includes(categoryId);
+}
+
+export function filterCoffeeMenu(categories: MenuCategory[], products: Product[]) {
+  const coffeeCategories = categories
+    .filter((c) => isCoffeeMenuCategory(c.id))
+    .sort((a, b) => a.order - b.order);
+  const catIds = new Set(coffeeCategories.map((c) => c.id));
+  const coffeeProducts = products
+    .filter((p) => p.categoryId && catIds.has(p.categoryId))
+    .sort((a, b) => a.order - b.order);
+  return { categories: coffeeCategories, products: coffeeProducts };
+}

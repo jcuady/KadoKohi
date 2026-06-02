@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import type { MenuCategory, Product } from '../types/domain';
-import { SEED_CATEGORIES, SEED_PRODUCTS } from '../data/seed';
+import {
+  MENU_CATEGORIES,
+  MENU_PRODUCTS,
+  filterCoffeeMenu,
+} from '../data/menuCatalog';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -29,36 +33,42 @@ export interface MenuStore {
   seed: () => void;
 }
 
+function applyMenuSnapshot(
+  categories: MenuCategory[],
+  products: Product[],
+  dataSource: MenuDataSource,
+) {
+  const coffee = filterCoffeeMenu(categories, products);
+  return {
+    categories: coffee.categories,
+    products: coffee.products,
+    dataSource,
+    remoteLoaded: true,
+  };
+}
+
 export const useMenuStore = create<MenuStore>()((set, get) => ({
-      categories: SEED_CATEGORIES,
-      products: SEED_PRODUCTS,
+      categories: [],
+      products: [],
       remoteLoaded: false,
       dataSource: 'seed',
       hydrateFromRemote: async () => {
         if (!supabase) {
-          set({ remoteLoaded: true });
+          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed'));
           return;
         }
         try {
           const remote = await orderingRepo.fetchMenu();
-          set({
-            categories: remote.categories,
-            products: remote.products,
-            dataSource: 'remote',
-            remoteLoaded: true,
-          });
+          set(applyMenuSnapshot(remote.categories, remote.products, 'remote'));
         } catch {
-          set({
-            categories: [],
-            products: [],
-            dataSource: 'remote',
-            remoteLoaded: true,
-          });
+          set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed'));
         }
       },
 
-      setCategories: (categories) => set({ categories }),
-      setProducts: (products) => set({ products }),
+      setCategories: (categories) =>
+        set(applyMenuSnapshot(categories, get().products, get().dataSource)),
+      setProducts: (products) =>
+        set(applyMenuSnapshot(get().categories, products, get().dataSource)),
 
       addCategory: (name, order) => {
         const t = new Date().toISOString();
@@ -84,11 +94,13 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           }),
         }),
 
-      removeCategory: (id) =>
+      removeCategory: (id) => {
         set({
           categories: get().categories.filter((c) => c.id !== id),
           products: get().products.filter((p) => p.categoryId !== id),
-        }),
+        });
+        void orderingRepo.deleteCategory(id);
+      },
 
       addProduct: (input) => {
         const t = new Date().toISOString();
@@ -124,7 +136,10 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           }),
         }),
 
-      removeProduct: (id) => set({ products: get().products.filter((pr) => pr.id !== id) }),
+      removeProduct: (id) => {
+        set({ products: get().products.filter((pr) => pr.id !== id) });
+        void orderingRepo.deleteProduct(id);
+      },
 
       productsByCategory: (categoryId) =>
         get()
@@ -136,7 +151,9 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         if (fromIndex < 0 || fromIndex >= sorted.length || toIndex < 0 || toIndex >= sorted.length) return;
         const [removed] = sorted.splice(fromIndex, 1);
         sorted.splice(toIndex, 0, removed);
-        set({ categories: sorted.map((c, i) => ({ ...c, order: i })) });
+        const next = sorted.map((c, i) => ({ ...c, order: i }));
+        set({ categories: next });
+        for (const c of next) void orderingRepo.upsertCategory(c);
       },
 
       reorderProductsInCategory: (categoryId, fromIndex, toIndex) => {
@@ -146,12 +163,12 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         inCat.splice(toIndex, 0, removed);
         const orderMap = new Map(inCat.map((p, i) => [p.id, i]));
         const t = new Date().toISOString();
-        set({
-          products: get().products.map((p) =>
-            orderMap.has(p.id) ? { ...p, order: orderMap.get(p.id)!, updatedAt: t } : p,
-          ),
-        });
+        const next = get().products.map((p) =>
+          orderMap.has(p.id) ? { ...p, order: orderMap.get(p.id)!, updatedAt: t } : p,
+        );
+        set({ products: next });
+        for (const p of next.filter((row) => orderMap.has(row.id))) void orderingRepo.upsertProduct(p);
       },
 
-      seed: () => set({ categories: SEED_CATEGORIES, products: SEED_PRODUCTS }),
+      seed: () => set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed')),
 }));

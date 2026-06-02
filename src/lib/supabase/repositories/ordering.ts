@@ -310,6 +310,17 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
+  async deleteCategory(id: string) {
+    if (!supabase) return;
+    await supabase.from('kk_products').delete().eq('category_id', id);
+    const { error } = await supabase.from('kk_menu_categories').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async deleteProduct(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_products').delete().eq('id', id);
+    if (error) throw error;
+  },
   async upsertProduct(p: Product) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_products').upsert({
