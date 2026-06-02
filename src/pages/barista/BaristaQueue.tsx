@@ -5,18 +5,12 @@ import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
-import { Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronRight, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
+import OrderPlacedAt from '../../components/OrderPlacedAt';
+import { compareOrdersNewestFirst } from '../../lib/orderTime';
 
 const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos', 'merch'] as const;
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h`;
-}
 
 export default function BaristaQueue() {
   const user = useAuthStore((s) => s.user);
@@ -35,7 +29,7 @@ export default function BaristaQueue() {
   }, [orders, user]);
 
   const sorted = useMemo(
-    () => [...visible].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    () => [...visible].sort(compareOrdersNewestFirst),
     [visible],
   );
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
@@ -100,8 +94,8 @@ export default function BaristaQueue() {
                 {o.guestName && (
                   <span className="text-[10px] dash-muted">{o.guestName}</span>
                 )}
-                <span className="flex items-center gap-1 text-[10px] dash-muted ml-auto shrink-0">
-                  <Clock className="w-3 h-3" /> {timeAgo(o.createdAt)}
+                <span className="ml-auto shrink-0">
+                  <OrderPlacedAt createdAt={o.createdAt} />
                 </span>
                 <span className="w-full sm:w-auto sm:ml-auto font-display font-bold text-kado-red text-sm">{formatPhp(o.total)}</span>
                 <p className="w-full text-xs dash-muted truncate">

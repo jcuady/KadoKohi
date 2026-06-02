@@ -7,16 +7,8 @@ import { formatPhp } from '../../lib/money';
 import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS, nextStatusInFlow } from '../../lib/orderStatus';
 import type { Order } from '../../types/domain';
 import { AlertCircle } from 'lucide-react';
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
+import OrderPlacedAt from '../../components/OrderPlacedAt';
+import { compareOrdersNewestFirst } from '../../lib/orderTime';
 
 export default function StaffMerchOrders() {
   const orders = useOrderStore((s) => s.orders);
@@ -36,7 +28,7 @@ export default function StaffMerchOrders() {
     let list = orders.filter((o) => o.channel === 'merch');
     if (user?.branchId) list = list.filter((o) => o.branchId === user.branchId);
     if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
-    return list;
+    return [...list].sort(compareOrdersNewestFirst);
   }, [orders, user?.branchId, statusFilter]);
 
   const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
@@ -80,7 +72,6 @@ export default function StaffMerchOrders() {
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
                       <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
-                      <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>
                     </div>
                     <p className="text-sm dash-muted">
                       {o.items.map((i) => {
@@ -91,6 +82,7 @@ export default function StaffMerchOrders() {
                     {o.guestName && <p className="text-xs dash-muted mt-1">Customer: {o.guestName}</p>}
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
+                    <OrderPlacedAt createdAt={o.createdAt} updatedAt={o.updatedAt} showDb />
                     <div className="text-right">
                       <p className="font-display font-bold text-kado-red text-lg">{formatPhp(o.total)}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wider dash-muted">

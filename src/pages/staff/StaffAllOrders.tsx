@@ -6,18 +6,10 @@ import { useAuthStore } from '../../store/authStore';
 import { formatPhp } from '../../lib/money';
 import { ALL_ORDER_STATUSES, ORDER_STATUS_BADGE, ORDER_STATUS_LABELS } from '../../lib/orderStatus';
 import OrderTableBadge from '../../components/OrderTableBadge';
+import OrderPlacedAt from '../../components/OrderPlacedAt';
+import { compareOrdersNewestFirst } from '../../lib/orderTime';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 export default function StaffAllOrders() {
   const orders = useOrderStore((s) => s.orders);
@@ -37,7 +29,7 @@ export default function StaffAllOrders() {
     if (user?.branchId) list = list.filter((o) => o.branchId === user.branchId);
     if (channelFilter !== 'all') list = list.filter((o) => o.channel === channelFilter);
     if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
-    return list;
+    return [...list].sort(compareOrdersNewestFirst);
   }, [orders, user?.branchId, channelFilter, statusFilter]);
 
   return (
@@ -93,14 +85,15 @@ export default function StaffAllOrders() {
                       {ORDER_STATUS_LABELS[o.status]}
                     </span>
                     <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
-                    <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>
                   </div>
                   <p className="text-sm dash-muted">
                     {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
                   </p>
                   {o.guestName && <p className="text-xs dash-muted mt-1">Customer: {o.guestName}</p>}
                 </div>
-                <div className="text-right shrink-0">
+                <div className="flex items-center gap-4 shrink-0">
+                  <OrderPlacedAt createdAt={o.createdAt} updatedAt={o.updatedAt} showDb />
+                  <div className="text-right">
                   <p className="font-display font-bold text-kado-red text-lg">{formatPhp(o.total)}</p>
                   {(o.tax ?? 0) > 0 && (
                     <p className="text-[10px] dash-muted">incl. tax {formatPhp(o.tax!)}</p>
@@ -108,6 +101,7 @@ export default function StaffAllOrders() {
                   <p className="text-[10px] font-bold uppercase tracking-wider dash-muted">
                     {o.items.length} item{o.items.length !== 1 ? 's' : ''}
                   </p>
+                  </div>
                 </div>
               </div>
             </li>

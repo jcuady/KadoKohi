@@ -9,10 +9,14 @@ function isLocalDevHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local');
 }
 
-/** kadokohi.com and www.kadokohi.com both resolve to the live site on Vercel. */
+/** Custom domains and the Vercel production hostname for this project. */
 function isKadokohiProductionHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
-  return host === 'kadokohi.com' || host === 'www.kadokohi.com';
+  return (
+    host === 'kadokohi.com' ||
+    host === 'www.kadokohi.com' ||
+    host === 'kado-kohi.vercel.app'
+  );
 }
 
 /** Normalize env/browser origins to the canonical www production URL for QR encoding. */

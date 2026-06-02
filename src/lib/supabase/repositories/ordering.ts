@@ -651,6 +651,9 @@ export const orderingRepo = {
     if (patch.paymentProofUploadedAt !== undefined) dbPatch.payment_proof_uploaded_at = patch.paymentProofUploadedAt ?? null;
     if (patch.loyaltyStampsAwarded !== undefined) dbPatch.loyalty_stamps_awarded = patch.loyaltyStampsAwarded ?? null;
     if (patch.staffId !== undefined) dbPatch.staff_id = patch.staffId ?? null;
+    if (Object.keys(dbPatch).length > 0) {
+      dbPatch.updated_at = new Date().toISOString();
+    }
     const { error } = await supabase.from('kk_orders').update(dbPatch).eq('id', id);
     if (error) throw error;
   },

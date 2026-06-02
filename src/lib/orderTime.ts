@@ -30,3 +30,19 @@ export function formatOrderTimestamp(iso: string): { clock: string; relative: st
 export function compareOrdersNewestFirst(a: { createdAt: string }, b: { createdAt: string }): number {
   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 }
+
+/** Full locale label aligned with Supabase `created_at` / `updated_at` in Table Editor. */
+export function formatOrderDbLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  });
+}

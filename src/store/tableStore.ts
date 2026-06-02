@@ -1,14 +1,23 @@
 import { create } from 'zustand';
 import type { Table } from '../types/domain';
 import { newId } from '../lib/id';
-import { buildTableCode, tableQrPath } from '../lib/qr';
+import { buildTableCode, tableQrUrl } from '../lib/qr';
+import { PRODUCTION_SITE_URL } from '../lib/siteUrl';
+
+function normalizeTableQrPayload(t: Table): Table {
+  if (t.qrPayload.startsWith('http://') || t.qrPayload.startsWith('https://')) return t;
+  if (t.qrPayload.startsWith('/order/')) {
+    return { ...t, qrPayload: `${PRODUCTION_SITE_URL}${t.qrPayload}` };
+  }
+  return { ...t, qrPayload: tableQrUrl(t.code) };
+}
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
 const SEED_TABLES: Table[] = [
-  { id: 'tbl_mrk_01', branchId: 'branch_marikina', code: 'mrk-t01', label: 'Table 1', qrPayload: '/order/qr/mrk-t01', active: true },
-  { id: 'tbl_mrk_02', branchId: 'branch_marikina', code: 'mrk-t02', label: 'Table 2', qrPayload: '/order/qr/mrk-t02', active: true },
-  { id: 'tbl_mrk_03', branchId: 'branch_marikina', code: 'mrk-t03', label: 'Table 3', qrPayload: '/order/qr/mrk-t03', active: true },
-  { id: 'tbl_mrk_04', branchId: 'branch_marikina', code: 'mrk-t04', label: 'Table 4', qrPayload: '/order/qr/mrk-t04', active: true },
+  { id: 'tbl_mrk_01', branchId: 'branch_marikina', code: 'mrk-t01', label: 'Table 1', qrPayload: 'https://www.kadokohi.com/order/qr/mrk-t01', active: true },
+  { id: 'tbl_mrk_02', branchId: 'branch_marikina', code: 'mrk-t02', label: 'Table 2', qrPayload: 'https://www.kadokohi.com/order/qr/mrk-t02', active: true },
+  { id: 'tbl_mrk_03', branchId: 'branch_marikina', code: 'mrk-t03', label: 'Table 3', qrPayload: 'https://www.kadokohi.com/order/qr/mrk-t03', active: true },
+  { id: 'tbl_mrk_04', branchId: 'branch_marikina', code: 'mrk-t04', label: 'Table 4', qrPayload: 'https://www.kadokohi.com/order/qr/mrk-t04', active: true },
 ];
 
 export interface TableStore {
@@ -30,7 +39,13 @@ export const useTableStore = create<TableStore>()((set, get) => ({
       hydrated: false,
       hydrateFromRemote: async () => {
         try {
-          const tables = await orderingRepo.fetchTables();
+          const tables = (await orderingRepo.fetchTables()).map((t) => {
+            const normalized = normalizeTableQrPayload(t);
+            if (normalized.qrPayload !== t.qrPayload) {
+              void orderingRepo.upsertTable(normalized);
+            }
+            return normalized;
+          });
           set({ tables, hydrated: true });
         } catch {
           // Keep seed fallback when remote fetch fails but still mark as resolved.
@@ -47,7 +62,7 @@ export const useTableStore = create<TableStore>()((set, get) => ({
           branchId,
           code,
           label: label.trim() || `Table ${tableNum}`,
-          qrPayload: tableQrPath(code),
+          qrPayload: tableQrUrl(code),
           active: true,
         };
         set({ tables: [...get().tables, t] });

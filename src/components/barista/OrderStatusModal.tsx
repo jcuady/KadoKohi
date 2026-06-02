@@ -13,6 +13,7 @@ import {
 } from '../../lib/orderStatus';
 import OrderPaymentProofPreview from '../admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../OrderTableBadge';
+import { formatOrderDbLabel } from '../../lib/orderTime';
 
 type Props = {
   order: Order | null;
@@ -47,6 +48,12 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
           <p className="text-xs text-kado-dark/60 mt-1 flex flex-wrap items-center gap-2">
             <span>{order.shortCode} · {order.items.length} item(s)</span>
             <OrderTableBadge order={order} />
+          </p>
+          <p className="text-[10px] text-kado-dark/50 mt-1 font-mono">
+            Placed {formatOrderDbLabel(order.createdAt)}
+            {order.updatedAt !== order.createdAt && (
+              <> · Updated {formatOrderDbLabel(order.updatedAt)}</>
+            )}
           </p>
         </div>
 

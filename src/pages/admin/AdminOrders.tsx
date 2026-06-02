@@ -17,6 +17,8 @@ import {
   kanbanColumnForOrder,
   nextStatusInFlow,
 } from '../../lib/orderStatus';
+import { compareOrdersNewestFirst } from '../../lib/orderTime';
+import OrderPlacedAt from '../../components/OrderPlacedAt';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
 
@@ -29,16 +31,6 @@ const KANBAN_STYLE: Record<string, { icon: typeof Clock; color: string; bgCard: 
   completed: { icon: CheckSquare, color: 'text-gray-400', bgCard: 'border-gray-500/30' },
   cancelled: { icon: XCircle, color: 'text-red-400', bgCard: 'border-red-500/30' },
 };
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 export default function AdminOrders() {
   const orders = useOrderStore((s) => s.orders);
@@ -63,7 +55,7 @@ export default function AdminOrders() {
     if (channelFilter !== 'all') list = list.filter((o) => o.channel === channelFilter);
     if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
     if (branchFilter !== 'all') list = list.filter((o) => o.branchId === branchFilter);
-    return list;
+    return [...list].sort(compareOrdersNewestFirst);
   }, [orders, channelFilter, statusFilter, branchFilter]);
 
   const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
@@ -87,7 +79,10 @@ export default function AdminOrders() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-1">Orders</h1>
-          <p className="dash-muted">All channels — filter by channel, status, or branch.</p>
+          <p className="dash-muted">
+            All channels — filter by channel, status, or branch. Newest first; timestamps match Supabase{' '}
+            <code className="text-[10px]">created_at</code>.
+          </p>
         </div>
         <div className="flex bg-white/50 dark:bg-black/50 backdrop-blur-md p-1 rounded-xl border dash-border shrink-0 self-start">
           <button
@@ -186,7 +181,6 @@ export default function AdminOrders() {
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
                       <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
-                      <span className="text-xs dash-muted">{timeAgo(o.createdAt)}</span>
                     </div>
                     <p className="text-sm dash-muted">
                       {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
@@ -203,6 +197,7 @@ export default function AdminOrders() {
                     <OrderPaymentProofPreview order={o} />
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
+                    <OrderPlacedAt createdAt={o.createdAt} updatedAt={o.updatedAt} showDb />
                     <div className="text-right">
                       <p className="font-display font-bold text-kado-red text-lg">{formatPhp(o.total)}</p>
                       {(o.tax ?? 0) > 0 && (
@@ -242,7 +237,9 @@ export default function AdminOrders() {
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pb-4 snap-x">
           <div className="flex gap-4 h-full min-h-[500px] w-max snap-start">
             {KANBAN_COLUMNS.map((col) => {
-              const colOrders = filtered.filter((o) => kanbanColumnForOrder(o) === col.id);
+              const colOrders = filtered
+                .filter((o) => kanbanColumnForOrder(o) === col.id)
+                .sort(compareOrdersNewestFirst);
               const style = KANBAN_STYLE[col.id] ?? KANBAN_STYLE.accepted;
               const Icon = style.icon;
               
@@ -268,9 +265,9 @@ export default function AdminOrders() {
                           onClick={() => setEditingOrder(o)}
                           className={`w-full text-left rounded-xl border dash-card ${style.bgCard} p-4 transition-colors hover:border-kado-red/30`}
                         >
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-start justify-between gap-2 mb-1">
                             <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
-                            <span className="text-[10px] dash-muted">{timeAgo(o.createdAt).replace(' ago', '')}</span>
+                            <OrderPlacedAt createdAt={o.createdAt} showDb />
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 mb-2">
                             <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">

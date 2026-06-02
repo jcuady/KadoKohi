@@ -14,7 +14,7 @@ import {
 } from './brandTokens';
 import { ensureBrandFontsLoaded } from './canvasFonts';
 import { blobToDataUrl, printImageDataUrl } from './qrPrint';
-import { canonicalScanUrl, scanUrlForDisplay } from './siteUrl';
+import { canonicalScanUrl, getSiteOrigin, scanUrlForDisplay } from './siteUrl';
 import { qrImageUrl } from './qr';
 
 export type QrCardLayout = 'table' | 'takeout';
@@ -34,8 +34,7 @@ type CardAssets = {
 };
 
 function assetUrl(path: string): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.kadokohi.com';
-  return `${origin}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${getSiteOrigin()}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 async function loadQrImage(scanUrl: string, size: number): Promise<HTMLImageElement> {
