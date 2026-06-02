@@ -38,6 +38,7 @@ function product(
     tags: opts?.tags,
     customFields: [],
     visible: true,
+    inStock: true,
     order,
     createdAt: now(),
     updatedAt: now(),

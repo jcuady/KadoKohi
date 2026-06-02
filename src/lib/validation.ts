@@ -53,6 +53,9 @@ export function formatOrderError(err: unknown): string {
     return 'An item is not sold at this branch. Remove it from your cart and try again.';
   }
   if (/menu is still syncing/i.test(msg)) return msg;
+  if (/out of stock/i.test(msg)) {
+    return 'An item in your cart is out of stock. Remove it and choose another drink.';
+  }
   if (/product.*not available/i.test(msg)) {
     return 'Menu is still syncing. Tap Try again in your cart, or refresh the page.';
   }

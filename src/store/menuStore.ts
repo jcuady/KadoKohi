@@ -27,6 +27,7 @@ export interface MenuStore {
   removeCategory: (id: string) => void;
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
   updateProduct: (id: string, patch: Partial<Product>) => void;
+  setProductInStock: (id: string, inStock: boolean) => Promise<void>;
   removeProduct: (id: string) => void;
   productsByCategory: (categoryId: string) => Product[];
   reorderCategories: (fromIndex: number, toIndex: number) => void;
@@ -183,6 +184,7 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           tags: input.tags,
           customFields: input.customFields ?? [],
           visible: input.visible ?? true,
+          inStock: input.inStock !== false,
           order: input.order ?? get().products.filter((x) => x.categoryId === input.categoryId).length,
           createdAt: t,
           updatedAt: t,
@@ -210,6 +212,29 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
             hydrateError: 'Could not update product in database.',
           });
         });
+      },
+
+      setProductInStock: async (id, inStock) => {
+        const prev = get().products.find((p) => p.id === id);
+        if (!prev) throw new Error('Product not found');
+        const updated = { ...prev, inStock, updatedAt: new Date().toISOString() };
+        set({
+          products: get().products.map((pr) => (pr.id === id ? updated : pr)),
+          hydrateError: null,
+        });
+        try {
+          await orderingRepo.setProductInStock(id, inStock);
+        } catch (err) {
+          try {
+            await orderingRepo.upsertProduct(updated);
+          } catch {
+            set({
+              products: get().products.map((pr) => (pr.id === id ? prev : pr)),
+              hydrateError: 'Could not update stock in database.',
+            });
+            throw err;
+          }
+        }
       },
 
       removeProduct: (id) => {

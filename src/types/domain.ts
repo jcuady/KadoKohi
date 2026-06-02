@@ -70,6 +70,8 @@ export interface Product {
   tags?: string[];
   customFields?: ProductCustomField[];
   visible: boolean;
+  /** Manual availability — false = shown on menu but not orderable. */
+  inStock?: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;

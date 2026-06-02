@@ -10,6 +10,7 @@ import { useBranchStore } from '../store/branchStore';
 import { formatPhp } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
+import { isProductInStock } from '../lib/productStock';
 import { newId } from '../lib/id';
 import { clampText, formatOrderError } from '../lib/validation';
 import {
@@ -348,15 +349,21 @@ export default function OrderQR() {
             {list.map((p, i) => {
               const image = getProductImageUrl(p);
               const tag = p.tags?.[0];
+              const inStock = isProductInStock(p);
               return (
                 <motion.button
                   key={p.id}
                   type="button"
+                  disabled={!inStock}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.03, 0.2) }}
-                  onClick={() => setSelectedProduct(p)}
-                  className="text-left bg-white border border-kado-dark/8 rounded-2xl overflow-hidden hover:border-kado-red/25 hover:shadow-md transition-all touch-manipulation flex flex-col h-full"
+                  onClick={() => inStock && setSelectedProduct(p)}
+                  className={`text-left bg-white border border-kado-dark/8 rounded-2xl overflow-hidden transition-all touch-manipulation flex flex-col h-full ${
+                    inStock
+                      ? 'hover:border-kado-red/25 hover:shadow-md'
+                      : 'opacity-55 cursor-not-allowed'
+                  }`}
                 >
                   <div className="relative aspect-[4/3] bg-kado-dark/5 shrink-0">
                     <img
@@ -366,10 +373,16 @@ export default function OrderQR() {
                       loading="lazy"
                       referrerPolicy="no-referrer"
                     />
-                    {tag && (
-                      <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-kado-dark/85 text-white px-1.5 py-0.5 rounded-full">
-                        {tag}
+                    {!inStock ? (
+                      <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-amber-600 text-white px-1.5 py-0.5 rounded-full">
+                        Out of stock
                       </span>
+                    ) : (
+                      tag && (
+                        <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-kado-dark/85 text-white px-1.5 py-0.5 rounded-full">
+                          {tag}
+                        </span>
+                      )
                     )}
                   </div>
                   <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-w-0">

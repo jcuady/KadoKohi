@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
 import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp } from '../lib/money';
+import { isProductInStock } from '../lib/productStock';
 
 const FALLBACK_BY_CATEGORY: Record<string, string> = {
   cat_classics:
@@ -46,7 +47,9 @@ export default function ProductDetailDrawer({
   const orderHours = useOnlineOrderHours();
   const isCustomer = user?.role === 'customer';
   const canOrderAuth = !requireAuthToOrder || isCustomer;
-  const canPlaceOrder = canOrderAuth && orderHours.isOpen;
+  const coffeeInStock =
+    product && !isMerchProduct(product) ? isProductInStock(product as Product) : true;
+  const canPlaceOrder = canOrderAuth && orderHours.isOpen && coffeeInStock;
 
   const [selectedMilkId, setSelectedMilkId] = useState<string>('');
   const [selectedTemp, setSelectedTemp] = useState<'hot' | 'iced'>('hot');
@@ -344,6 +347,12 @@ export default function ProductDetailDrawer({
                       )}
                     </motion.button>
                   </>
+                ) : !coffeeInStock && canOrderAuth && orderHours.isOpen ? (
+                  <div className="flex-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-center">
+                    <p className="text-sm font-medium text-amber-900 leading-relaxed">
+                      This drink is out of stock right now. Check back later or ask our baristas.
+                    </p>
+                  </div>
                 ) : !canOrderAuth ? (
                   <div className="flex-1 flex flex-col gap-3 text-center sm:text-left">
                     <p className="text-sm font-medium text-kado-dark/70 leading-relaxed">

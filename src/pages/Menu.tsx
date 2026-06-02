@@ -7,6 +7,7 @@ import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import type { Product } from '../types/domain';
 import { getMenuProductImageUrl } from '../lib/menuCatalog';
+import { isProductInStock } from '../lib/productStock';
 
 function categoryIcon(categoryId: string): React.ReactNode {
   if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
@@ -139,6 +140,7 @@ export default function Menu() {
               {paginatedItems.map((product, i) => {
                 const image = getMenuProductImageUrl(product);
                 const tag = product.tags?.[0];
+                const inStock = isProductInStock(product);
                 const desc =
                   product.description ??
                   (product.temperature === 'iced'
@@ -151,11 +153,16 @@ export default function Menu() {
                   <motion.button
                     key={product.id}
                     type="button"
+                    disabled={!inStock}
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, ease: 'easeOut' }}
-                    onClick={() => setSelectedProduct(product)}
-                    className="group text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red flex flex-col h-full"
+                    onClick={() => inStock && setSelectedProduct(product)}
+                    className={`group text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden transition-all duration-300 focus:outline-none flex flex-col h-full ${
+                      inStock
+                        ? 'hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 focus-visible:ring-2 focus-visible:ring-kado-red'
+                        : 'opacity-60 cursor-not-allowed border-kado-dark/5'
+                    }`}
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
@@ -167,10 +174,16 @@ export default function Menu() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                      {tag && (
-                        <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
-                          {tag}
+                      {!inStock ? (
+                        <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-amber-600 text-white px-2 py-0.5 rounded-full shadow">
+                          Out of stock
                         </span>
+                      ) : (
+                        tag && (
+                          <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
+                            {tag}
+                          </span>
+                        )
                       )}
 
                       {/* Quick-add hint on hover */}

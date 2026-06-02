@@ -13,6 +13,8 @@ import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { clampText } from '../../lib/validation';
 import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check, X } from 'lucide-react';
+import MenuProductStockButton from '../../components/menu/MenuProductStockButton';
+import { isProductInStock } from '../../lib/productStock';
 
 type ProductFormData = {
   name: string;
@@ -495,6 +497,11 @@ export default function AdminMenu() {
                               Hidden
                             </span>
                           )}
+                          {!isProductInStock(p) && (
+                            <span className="text-[9px] uppercase tracking-widest font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                              Out of stock
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs dash-muted mt-0.5 flex gap-2">
                           <span>{formatPhp(p.basePrice)}</span>
@@ -505,6 +512,7 @@ export default function AdminMenu() {
                           {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
                         </div>
                       </div>
+                      <MenuProductStockButton product={p} />
                       <button
                         type="button"
                         onClick={() => startEditProduct(p)}

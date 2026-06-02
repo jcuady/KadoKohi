@@ -18,6 +18,8 @@ MIGRATIONS = [
     "0025_qr_payment_guest_proof.sql",
     "0026_gcash_qr_storage_and_settings.sql",
     "0027_guest_proof_size_and_storage.sql",
+    "0028_product_in_stock.sql",
+    "0028b_place_order_in_stock.sql",
 ]
 
 

@@ -4,6 +4,7 @@ import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
 import type { Product } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { getProductDescription, getProductImageUrl } from '../../lib/productImage';
+import { isProductInStock } from '../../lib/productStock';
 
 export type QrCartPayload = {
   productId: string;
@@ -43,11 +44,13 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
 
   if (!product) return null;
 
+  const inStock = isProductInStock(product);
   const image = getProductImageUrl(product);
   const showTemp = product.temperature === 'both';
   const showMilk = (product.milks?.length ?? 0) > 0;
 
   const handleAdd = () => {
+    if (!inStock) return;
     const milk = product.milks?.find((m) => m.id === milkId);
     onAdd({
       productId: product.id,
@@ -187,13 +190,19 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             </div>
 
             <div className="shrink-0 p-4 border-t border-kado-dark/10 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#FAF7F2]">
+              {!inStock && (
+                <p className="text-xs text-amber-800 font-medium text-center mb-3">
+                  This drink is out of stock right now. Ask staff when it is available again.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleAdd}
-                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors touch-manipulation"
+                disabled={!inStock}
+                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors touch-manipulation disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ShoppingBag className="w-4 h-4" />
-                {ctaLabel} — {formatPhp(unitPrice * qty)}
+                {inStock ? `${ctaLabel} — ${formatPhp(unitPrice * qty)}` : 'Out of stock'}
               </button>
             </div>
           </motion.div>

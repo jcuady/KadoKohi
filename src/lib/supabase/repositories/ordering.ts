@@ -78,6 +78,7 @@ function mapProduct(row: any): Product {
     tags: row.tags ?? [],
     customFields: row.custom_fields ?? [],
     visible: row.visible,
+    inStock: row.in_stock !== false,
     order: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -382,7 +383,16 @@ export const orderingRepo = {
       tags: p.tags ?? [],
       custom_fields: p.customFields ?? [],
       visible: p.visible,
+      in_stock: p.inStock !== false,
       sort_order: p.order,
+    });
+    if (error) throw error;
+  },
+  async setProductInStock(productId: string, inStock: boolean): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_set_product_in_stock', {
+      p_product_id: productId,
+      p_in_stock: inStock,
     });
     if (error) throw error;
   },

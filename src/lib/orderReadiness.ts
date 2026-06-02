@@ -45,7 +45,8 @@ export async function assertProductsOrderable(productIds: string[]): Promise<voi
       .from('kk_products')
       .select('id')
       .in('id', unique)
-      .eq('visible', true);
+      .eq('visible', true)
+      .eq('in_stock', true);
     if (error) throw error;
     return (data ?? []).length === unique.length;
   };
