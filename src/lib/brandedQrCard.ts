@@ -1,5 +1,6 @@
 /**
- * Print-ready Kado Kohi QR cards — table (square) and takeout (portrait).
+ * Print-ready Kado Kohi QR cards — dine-in (square) and takeout (portrait).
+ * Paired layouts share chrome, typography, and spacing rhythm.
  * @see BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md
  */
 import {
@@ -32,6 +33,19 @@ type CardAssets = {
   mark: HTMLImageElement;
   qr: HTMLImageElement;
 };
+
+/** Shared layout rhythm (fractions of card width). */
+const RHYTHM = {
+  bleed: 0.04,
+  panelRadius: 0.032,
+  innerPadRatio: 0.09,
+  gap: 0.038,
+  bandHeight: 0.095,
+  logoHeightTable: 0.078,
+  logoHeightTakeout: 0.065,
+  borderInset: 0.01,
+  ruleInset: 0.1,
+} as const;
 
 function assetUrl(path: string): string {
   return `${getSiteOrigin()}${path.startsWith('/') ? path : `/${path}`}`;
@@ -131,13 +145,128 @@ function drawCenteredText(
   return size;
 }
 
-function drawThinRule(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, width: number): void {
-  ctx.strokeStyle = `${BRAND.red}40`;
-  ctx.lineWidth = Math.max(1, width * 0.0015);
+type PanelMetrics = {
+  cx: number;
+  panelX: number;
+  panelY: number;
+  panelW: number;
+  panelH: number;
+  contentX: number;
+  contentW: number;
+  innerPad: number;
+  gap: number;
+};
+
+function measurePanel(width: number, height: number): PanelMetrics {
+  const bleedX = width * RHYTHM.bleed;
+  const bleedY = height * RHYTHM.bleed;
+  const panelX = bleedX;
+  const panelY = bleedY;
+  const panelW = width - bleedX * 2;
+  const panelH = height - bleedY * 2;
+  const innerPad = panelW * RHYTHM.innerPadRatio;
+  return {
+    cx: width / 2,
+    panelX,
+    panelY,
+    panelW,
+    panelH,
+    contentX: panelX + innerPad,
+    contentW: panelW - innerPad * 2,
+    innerPad,
+    gap: width * RHYTHM.gap,
+  };
+}
+
+/** Cream field + off-white panel + inset red frame (shared by dine-in & takeout). */
+function drawCardChrome(ctx: CanvasRenderingContext2D, width: number, height: number, m: PanelMetrics): void {
+  ctx.fillStyle = BRAND.cream;
+  ctx.fillRect(0, 0, width, height);
+
+  const r = width * RHYTHM.panelRadius;
+  ctx.fillStyle = BRAND.offwhite;
+  roundRect(ctx, m.panelX, m.panelY, m.panelW, m.panelH, r);
+  ctx.fill();
+
+  const inset = width * RHYTHM.borderInset;
+  ctx.strokeStyle = BRAND.red;
+  ctx.lineWidth = Math.max(2, width * 0.0026);
+  roundRect(ctx, m.panelX + inset, m.panelY + inset, m.panelW - inset * 2, m.panelH - inset * 2, r * 0.92);
+  ctx.stroke();
+}
+
+/** Red header band — "DINE IN" or "TAKEOUT". */
+function drawTopBand(
+  ctx: CanvasRenderingContext2D,
+  m: PanelMetrics,
+  label: string,
+  width: number,
+): number {
+  const bandH = width * RHYTHM.bandHeight;
+  const r = width * RHYTHM.panelRadius;
+
+  ctx.fillStyle = BRAND.red;
+  roundRect(ctx, m.panelX, m.panelY, m.panelW, bandH, r);
+  ctx.fill();
+  ctx.fillRect(m.panelX, m.panelY + bandH * 0.48, m.panelW, bandH * 0.52);
+
+  const bandLabel = Math.round(width * 0.036);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${bandLabel}px ${FONT_HEADLINE}`;
+  ctx.fillStyle = BRAND.cream;
+  ctx.letterSpacing = `${bandLabel * 0.22}px`;
+  ctx.fillText(label, m.cx, m.panelY + bandH / 2);
+  ctx.letterSpacing = '0px';
+
+  return bandH;
+}
+
+function drawThinRule(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  x2: number,
+  y: number,
+  width: number,
+): void {
+  ctx.strokeStyle = `${BRAND.red}44`;
+  ctx.lineWidth = Math.max(1, width * 0.0014);
   ctx.beginPath();
   ctx.moveTo(x1, y);
   ctx.lineTo(x2, y);
   ctx.stroke();
+}
+
+/** Editorial table line — title with flanking rules (dine-in hero). */
+function drawFlankingTitle(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  m: PanelMetrics,
+  y: number,
+  fontSize: number,
+  width: number,
+): number {
+  const upper = text.toUpperCase();
+  ctx.font = `800 ${fontSize}px ${FONT_HEADLINE}`;
+  const textW = ctx.measureText(upper).width;
+  const ruleGap = fontSize * 0.42;
+  const ruleY = y - fontSize * 0.38;
+  const contentRight = m.contentX + m.contentW;
+  const ruleStart = m.contentX + m.contentW * RHYTHM.ruleInset;
+  const ruleEnd = contentRight - m.contentW * RHYTHM.ruleInset;
+
+  const leftRuleEnd = m.cx - textW / 2 - ruleGap;
+  const rightRuleStart = m.cx + textW / 2 + ruleGap;
+
+  if (leftRuleEnd > ruleStart + width * 0.02) {
+    drawThinRule(ctx, ruleStart, leftRuleEnd, ruleY, width);
+  }
+  if (rightRuleStart < ruleEnd - width * 0.02) {
+    drawThinRule(ctx, rightRuleStart, ruleEnd, ruleY, width);
+  }
+
+  drawCenteredText(ctx, upper, m.cx, y, fontSize, BRAND.dark, '800', FONT_HEADLINE);
+  return fontSize;
 }
 
 function drawQrBlock(
@@ -153,20 +282,20 @@ function drawQrBlock(
   roundRect(ctx, x, y, size, size, cornerRadius);
   ctx.fill();
 
-  ctx.strokeStyle = `${BRAND.red}28`;
-  ctx.lineWidth = Math.max(1, size * 0.003);
+  ctx.strokeStyle = `${BRAND.red}30`;
+  ctx.lineWidth = Math.max(1, size * 0.0032);
   roundRect(ctx, x, y, size, size, cornerRadius);
   ctx.stroke();
 
-  const inset = size * 0.072;
+  const inset = size * 0.07;
   ctx.drawImage(qrImg, x + inset, y + inset, size - inset * 2, size - inset * 2);
 
-  const markSize = size * 0.16;
+  const markSize = size * 0.155;
   const markX = x + (size - markSize) / 2;
   const markY = y + (size - markSize) / 2;
-  const pad = markSize * 0.14;
+  const pad = markSize * 0.16;
   ctx.fillStyle = '#FFFFFF';
-  roundRect(ctx, markX - pad, markY - pad, markSize + pad * 2, markSize + pad * 2, pad * 0.9);
+  roundRect(ctx, markX - pad, markY - pad, markSize + pad * 2, markSize + pad * 2, pad * 0.85);
   ctx.fill();
   drawContainedImage(ctx, mark, markX, markY, markSize, markSize);
 }
@@ -175,8 +304,8 @@ function drawScanPill(ctx: CanvasRenderingContext2D, cx: number, y: number, labe
   const fontSize = Math.round(width * 0.028);
   ctx.font = `700 ${fontSize}px ${FONT_HEADLINE}`;
   const textW = ctx.measureText(label).width;
-  const padX = width * 0.045;
-  const padY = width * 0.018;
+  const padX = width * 0.048;
+  const padY = width * 0.02;
   const pillW = textW + padX * 2;
   const pillH = fontSize + padY * 2;
   const pillX = cx - pillW / 2;
@@ -189,9 +318,29 @@ function drawScanPill(ctx: CanvasRenderingContext2D, cx: number, y: number, labe
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `700 ${fontSize}px ${FONT_HEADLINE}`;
+  ctx.letterSpacing = `${fontSize * 0.12}px`;
   ctx.fillText(label, cx, y + pillH / 2);
+  ctx.letterSpacing = '0px';
 
   return pillH;
+}
+
+function drawCardFooter(
+  ctx: CanvasRenderingContext2D,
+  m: PanelMetrics,
+  data: BrandedQrCardInput,
+  y: number,
+  width: number,
+): void {
+  const tagSize = Math.round(width * 0.022);
+  drawCenteredText(ctx, data.tagline!.toUpperCase(), m.cx, y, tagSize, BRAND.muted, '500', FONT_BODY);
+
+  const urlSize = Math.round(width * 0.017);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `500 ${urlSize}px ${FONT_MONO}`;
+  ctx.fillStyle = `${BRAND.muted}88`;
+  ctx.fillText(scanUrlForDisplay(data.scanUrl), m.cx, m.panelY + m.panelH - m.innerPad * 0.5);
 }
 
 function normalizeInput(input: BrandedQrCardInput): BrandedQrCardInput {
@@ -205,75 +354,75 @@ function normalizeInput(input: BrandedQrCardInput): BrandedQrCardInput {
     subtitle: input.subtitle?.trim(),
     tagline:
       input.tagline ??
-      (layout === 'takeout' ? 'Order from your phone' : 'Order from your phone'),
+      (layout === 'takeout' ? 'Takeout · Order from your phone' : 'Dine-in · Order from your phone'),
   };
 }
 
-/** Square table tent — minimal, print-safe spacing. */
+/**
+ * Square dine-in tent — mirrors takeout chrome: band, wordmark, flanked table title, QR, CTA.
+ */
 function renderTableSquareCard(
   ctx: CanvasRenderingContext2D,
   size: number,
   data: BrandedQrCardInput,
   assets: CardAssets,
 ): void {
-  const cx = size / 2;
-  const bleed = size * 0.035;
-  const panel = size - bleed * 2;
-  const panelX = bleed;
-  const panelY = bleed;
-  const innerPad = panel * 0.09;
-  const contentW = panel - innerPad * 2;
-  const contentX = panelX + innerPad;
-  const gap = size * 0.038;
+  const m = measurePanel(size, size);
+  drawCardChrome(ctx, size, size, m);
 
-  ctx.fillStyle = BRAND.cream;
-  ctx.fillRect(0, 0, size, size);
+  const bandH = drawTopBand(ctx, m, 'DINE IN', size);
+  let y = m.panelY + bandH + m.gap;
 
-  ctx.fillStyle = BRAND.offwhite;
-  roundRect(ctx, panelX, panelY, panel, panel, size * 0.028);
-  ctx.fill();
-
-  ctx.strokeStyle = BRAND.red;
-  ctx.lineWidth = Math.max(2, size * 0.0028);
-  roundRect(ctx, panelX + size * 0.008, panelY + size * 0.008, panel - size * 0.016, panel - size * 0.016, size * 0.024);
-  ctx.stroke();
-
-  let y = panelY + innerPad;
-
-  const markBox = size * 0.11;
-  const markDrawn = drawContainedImage(ctx, assets.mark, contentX, y, contentW, markBox);
-  y += markDrawn + gap * 0.65;
-
-  const brandSize = Math.round(size * 0.034);
-  drawCenteredText(ctx, 'KADO KŌHĪ', cx, y, brandSize, BRAND.red, '800', FONT_HEADLINE, brandSize * 0.14);
-  y += brandSize + gap;
-
-  drawThinRule(ctx, contentX + contentW * 0.12, contentX + contentW * 0.88, y, size);
-  y += gap;
+  const logoH = size * RHYTHM.logoHeightTable;
+  const logoDrawn = drawContainedImage(ctx, assets.wordmark, m.contentX, y, m.contentW, logoH);
+  y += logoDrawn + m.gap;
 
   const titleUpper = data.title.toUpperCase();
-  const titleSize = fitFontSize(ctx, titleUpper, contentW * 0.92, Math.round(size * 0.072), Math.round(size * 0.04), '800', FONT_HEADLINE);
-  drawCenteredText(ctx, titleUpper, cx, y, titleSize, BRAND.dark, '800', FONT_HEADLINE);
-  y += titleSize * 1.05 + gap * 0.5;
+  const titleSize = fitFontSize(
+    ctx,
+    titleUpper,
+    m.contentW * 0.88,
+    Math.round(size * 0.088),
+    Math.round(size * 0.048),
+    '800',
+    FONT_HEADLINE,
+  );
+  const titleH = drawFlankingTitle(ctx, titleUpper, m, y + titleSize, titleSize, size);
+  y += titleH + m.gap * 0.55;
 
   if (data.subtitle) {
     const subUpper = data.subtitle.toUpperCase();
-    const subSize = fitFontSize(ctx, subUpper, contentW * 0.95, Math.round(size * 0.026), Math.round(size * 0.018), '600', FONT_BODY);
-    drawCenteredText(ctx, subUpper, cx, y, subSize, BRAND.muted, '600', FONT_BODY);
-    y += subSize + gap;
+    const subSize = fitFontSize(
+      ctx,
+      subUpper,
+      m.contentW * 0.92,
+      Math.round(size * 0.03),
+      Math.round(size * 0.02),
+      '600',
+      FONT_BODY,
+    );
+    drawCenteredText(ctx, subUpper, m.cx, y, subSize, BRAND.muted, '600', FONT_BODY, subSize * 0.18);
+    y += subSize + m.gap * 0.85;
   }
 
-  const footerReserve = size * 0.12;
-  const availableForQr = panelY + panel - innerPad - footerReserve - y - gap;
-  const qrSize = Math.min(contentW * 0.7, Math.max(availableForQr, contentW * 0.48));
-  const qrX = contentX + (contentW - qrSize) / 2;
-  drawQrBlock(ctx, assets.qr, assets.mark, qrX, y, qrSize, size * 0.02);
-  y += qrSize + gap * 0.75;
+  drawThinRule(ctx, m.contentX + m.contentW * RHYTHM.ruleInset, m.contentX + m.contentW * (1 - RHYTHM.ruleInset), y, size);
+  y += m.gap;
 
-  drawScanPill(ctx, cx, y, 'SCAN TO ORDER', size);
+  const footerReserve = size * 0.155;
+  const panelBottom = m.panelY + m.panelH - m.innerPad;
+  const availableForQr = panelBottom - footerReserve - y;
+  const qrSize = Math.min(m.contentW * 0.76, Math.max(availableForQr, m.contentW * 0.52));
+  const qrX = m.contentX + (m.contentW - qrSize) / 2;
+  drawQrBlock(ctx, assets.qr, assets.mark, qrX, y, qrSize, size * 0.022);
+  y += qrSize + m.gap * 0.9;
+
+  const pillH = drawScanPill(ctx, m.cx, y, 'SCAN TO ORDER', size);
+  y += pillH + m.gap * 0.65;
+
+  drawCardFooter(ctx, m, data, y, size);
 }
 
-/** Portrait takeout stand — cashier-friendly hierarchy. */
+/** Portrait takeout stand — same chrome and rhythm as dine-in. */
 function renderTakeoutPortraitCard(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -281,102 +430,56 @@ function renderTakeoutPortraitCard(
   data: BrandedQrCardInput,
   assets: CardAssets,
 ): void {
-  const cx = width / 2;
-  const bleedX = width * 0.04;
-  const bleedY = height * 0.028;
-  const panelW = width - bleedX * 2;
-  const panelH = height - bleedY * 2;
-  const panelX = bleedX;
-  const panelY = bleedY;
-  const innerPad = width * 0.09;
-  const contentW = panelW - innerPad * 2;
-  const contentX = panelX + innerPad;
-  const gap = width * 0.042;
+  const m = measurePanel(width, height);
+  drawCardChrome(ctx, width, height, m);
 
-  ctx.fillStyle = BRAND.cream;
-  ctx.fillRect(0, 0, width, height);
+  const bandH = drawTopBand(ctx, m, 'TAKEOUT', width);
+  let y = m.panelY + bandH + m.gap;
 
-  ctx.fillStyle = BRAND.offwhite;
-  roundRect(ctx, panelX, panelY, panelW, panelH, width * 0.032);
-  ctx.fill();
-
-  ctx.strokeStyle = BRAND.red;
-  ctx.lineWidth = Math.max(2, width * 0.0025);
-  roundRect(
-    ctx,
-    panelX + width * 0.01,
-    panelY + width * 0.01,
-    panelW - width * 0.02,
-    panelH - width * 0.02,
-    width * 0.028,
-  );
-  ctx.stroke();
-
-  const bandH = width * 0.11;
-  ctx.fillStyle = BRAND.red;
-  roundRect(ctx, panelX, panelY, panelW, bandH, width * 0.032);
-  ctx.fill();
-  ctx.fillRect(panelX, panelY + bandH * 0.5, panelW, bandH * 0.5);
-
-  const bandLabel = Math.round(width * 0.036);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `800 ${bandLabel}px ${FONT_HEADLINE}`;
-  ctx.fillStyle = BRAND.cream;
-  ctx.fillText('TAKEOUT', cx, panelY + bandH / 2);
-
-  let y = panelY + bandH + gap;
-
-  const logoH = width * 0.065;
-  const logoDrawn = drawContainedImage(ctx, assets.wordmark, contentX, y, contentW, logoH);
-  y += logoDrawn + gap;
+  const logoH = width * RHYTHM.logoHeightTakeout;
+  const logoDrawn = drawContainedImage(ctx, assets.wordmark, m.contentX, y, m.contentW, logoH);
+  y += logoDrawn + m.gap;
 
   const branchSize = fitFontSize(
     ctx,
     data.title,
-    contentW * 0.92,
-    Math.round(width * 0.048),
+    m.contentW * 0.92,
+    Math.round(width * 0.05),
     Math.round(width * 0.032),
     '800',
     FONT_HEADLINE,
   );
-  drawCenteredText(ctx, data.title, cx, y, branchSize, BRAND.dark, '800', FONT_HEADLINE);
-  y += branchSize + gap * 0.55;
+  drawCenteredText(ctx, data.title, m.cx, y, branchSize, BRAND.dark, '800', FONT_HEADLINE);
+  y += branchSize + m.gap * 0.55;
 
   if (data.subtitle) {
     const subSize = fitFontSize(
       ctx,
       data.subtitle.toUpperCase(),
-      contentW * 0.95,
+      m.contentW * 0.95,
       Math.round(width * 0.024),
       Math.round(width * 0.017),
       '600',
       FONT_BODY,
     );
-    drawCenteredText(ctx, data.subtitle.toUpperCase(), cx, y, subSize, BRAND.muted, '600', FONT_BODY);
-    y += subSize + gap;
+    drawCenteredText(ctx, data.subtitle.toUpperCase(), m.cx, y, subSize, BRAND.muted, '600', FONT_BODY);
+    y += subSize + m.gap;
   }
 
-  drawThinRule(ctx, contentX + contentW * 0.1, contentX + contentW * 0.9, y, width);
-  y += gap;
+  drawThinRule(ctx, m.contentX + m.contentW * RHYTHM.ruleInset, m.contentX + m.contentW * (1 - RHYTHM.ruleInset), y, width);
+  y += m.gap;
 
   const bottomReserve = height * 0.14;
-  const qrMax = Math.min(contentW * 0.78, panelY + panelH - innerPad - bottomReserve - y);
-  const qrSize = Math.max(qrMax, contentW * 0.55);
-  const qrX = contentX + (contentW - qrSize) / 2;
+  const qrMax = Math.min(m.contentW * 0.78, m.panelY + m.panelH - m.innerPad - bottomReserve - y);
+  const qrSize = Math.max(qrMax, m.contentW * 0.55);
+  const qrX = m.contentX + (m.contentW - qrSize) / 2;
   drawQrBlock(ctx, assets.qr, assets.mark, qrX, y, qrSize, width * 0.022);
-  y += qrSize + gap;
+  y += qrSize + m.gap * 0.9;
 
-  const pillH = drawScanPill(ctx, cx, y, 'SCAN TO ORDER', width);
-  y += pillH + gap * 0.7;
+  const pillH = drawScanPill(ctx, m.cx, y, 'SCAN TO ORDER', width);
+  y += pillH + m.gap * 0.65;
 
-  const tagSize = Math.round(width * 0.022);
-  drawCenteredText(ctx, data.tagline!.toUpperCase(), cx, y, tagSize, BRAND.muted, '500', FONT_BODY);
-
-  const urlSize = Math.round(width * 0.017);
-  ctx.font = `500 ${urlSize}px ${FONT_MONO}`;
-  ctx.fillStyle = `${BRAND.muted}99`;
-  ctx.fillText(scanUrlForDisplay(data.scanUrl), cx, panelY + panelH - innerPad * 0.55);
+  drawCardFooter(ctx, m, data, y, width);
 }
 
 function exportDimensions(layout: QrCardLayout): { width: number; height: number } {
@@ -406,7 +509,7 @@ export async function renderBrandedQrCardBlob(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas not supported');
 
-  const qrPixels = data.layout === 'table' ? 768 : 840;
+  const qrPixels = data.layout === 'table' ? 800 : 840;
   const [wordmark, mark, qrImg] = await Promise.all([
     loadImage(assetUrl(LOGO.wordmark)),
     loadImage(assetUrl(LOGO.hybridMark)),

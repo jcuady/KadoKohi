@@ -46,7 +46,7 @@ export default function AdminTables() {
       scanUrl: tableQrUrl(created.code),
       downloadFilename: `kado-table-${created.code}`,
       subtitle: created.code,
-      tagline: 'Order from your phone',
+      tagline: 'Dine-in · Order from your phone',
       layout: 'table',
     });
   };
@@ -169,7 +169,7 @@ export default function AdminTables() {
                       scanUrl: fullUrl,
                       downloadFilename: `kado-table-${t.code}`,
                       subtitle: t.code.toUpperCase(),
-                      tagline: 'Order from your phone',
+                      tagline: 'Dine-in · Order from your phone',
                       layout: 'table',
                     })
                   }
@@ -181,7 +181,7 @@ export default function AdminTables() {
                     title={t.label}
                     scanUrl={fullUrl}
                     subtitle={t.code.toUpperCase()}
-                    tagline="Order from your phone"
+                    tagline="Dine-in · Order from your phone"
                     className="w-full"
                   />
                   <span className="mt-1 block text-center text-[9px] font-bold uppercase tracking-wider text-kado-red">
@@ -240,7 +240,7 @@ export default function AdminTables() {
                         scanUrl: fullUrl,
                         downloadFilename: `kado-table-${t.code}`,
                         subtitle: t.code.toUpperCase(),
-                        tagline: 'Order from your phone',
+                        tagline: 'Dine-in · Order from your phone',
                         layout: 'table',
                       })
                     }
