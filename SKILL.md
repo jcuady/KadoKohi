@@ -111,6 +111,14 @@ Apply the four checks above first; use this section for repo-specific facts.
 - Migrations under `supabase/migrations/`; apply with `npx supabase db push --include-all`.
 - Customer sign-up rate limits: `kk-customer-signup` edge function (not raw Auth `/signup`).
 
+### Coffee menu catalog
+
+- **Source of truth:** `src/data/menuCatalog.ts` (categories + 19 drinks from KADO MENU V2).
+- **DB seed:** `supabase/migrations/0021_menu_v2_catalog.sql` — apply with `npx supabase db push --include-all`.
+- **Milk modifiers:** `Milk` +0, `Oat` +40 (`MENU_MILK_OPTIONS`). No milk on AmeriKADO, Yuzu AmeriKado, Yuzu sodas.
+- **Temperature:** `both` = hot + iced; `iced` = iced only (KADO Latte, Yuzu AmeriKado, Nori Salted Cream, Matcha Strawberry Oat, Salted Cream Hojicha, Yuzu sodas). Tag `iced-only` for UI hints.
+- **Images:** `image` is null until assets are uploaded in Admin → Menu.
+
 ### Branded QR cards (dine-in & takeout)
 
 - **Source of truth:** `src/lib/brandedQrCard.ts` + `src/lib/brandTokens.ts` (see `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md`).
