@@ -1,4 +1,5 @@
 import { BRAND } from './brandTokens';
+import type { QrCardLayout } from './brandedQrCard';
 
 function escapeHtml(text: string): string {
   return text
@@ -20,8 +21,13 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-function buildPrintDocument(dataUrl: string, title: string): string {
+function buildPrintDocument(dataUrl: string, title: string, layout: QrCardLayout = 'table'): string {
   const safeTitle = escapeHtml(title);
+  const isSquare = layout === 'table';
+  const maxWidth = isSquare ? '90mm' : '72mm';
+  const printHint = isSquare
+    ? 'Kado Kohi · Square table tent · Cut and place on table edge'
+    : 'Kado Kohi · Takeout stand · Place near cashier';
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -51,17 +57,17 @@ function buildPrintDocument(dataUrl: string, title: string): string {
       }
       img#print-card {
         width: 100%;
-        max-width: 92mm;
+        max-width: ${maxWidth};
         height: auto;
         display: block;
-        border-radius: 4mm;
+        border-radius: ${isSquare ? '2mm' : '3mm'};
       }
       .print-hint {
         font-family: "M PLUS 1", system-ui, sans-serif;
         font-size: 9pt;
         color: ${BRAND.muted};
         text-align: center;
-        max-width: 92mm;
+        max-width: ${maxWidth};
       }
       @media print {
         html, body { background: ${BRAND.offwhite}; }
@@ -74,7 +80,7 @@ function buildPrintDocument(dataUrl: string, title: string): string {
   <body>
     <div class="sheet">
       <img id="print-card" src="${dataUrl}" alt="Kado Kohi — ${safeTitle}" />
-      <p class="print-hint">Kado Kohi · Cut along card edge · Place on table</p>
+      <p class="print-hint">${printHint}</p>
     </div>
   </body>
 </html>`;
@@ -155,8 +161,12 @@ export async function printHtmlDocumentInWindow(html: string): Promise<void> {
   }, 60_000);
 }
 
-export async function printImageDataUrl(dataUrl: string, title: string): Promise<void> {
-  const html = buildPrintDocument(dataUrl, title);
+export async function printImageDataUrl(
+  dataUrl: string,
+  title: string,
+  layout: QrCardLayout = 'table',
+): Promise<void> {
+  const html = buildPrintDocument(dataUrl, title, layout);
   try {
     await printHtmlDocument(html);
   } catch {

@@ -34,7 +34,7 @@ export function qrImageUrl(payload: string, size = 200): string {
 /** @deprecated Use downloadBrandedQrCard from brandedQrCard.ts for print-ready assets. */
 export async function downloadQrPng(scanUrl: string, filename: string, size = 512): Promise<void> {
   const { downloadBrandedQrCard } = await import('./brandedQrCard');
-  await downloadBrandedQrCard({ title: 'Kado Kohi', scanUrl }, filename);
+  await downloadBrandedQrCard({ layout: 'table', title: 'Kado Kohi', scanUrl }, filename);
 }
 
 /** Short human-readable code derived from the branch slug + table label, e.g. 'mrk-t03'. */

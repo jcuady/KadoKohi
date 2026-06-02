@@ -20,5 +20,12 @@ export const LOGO = {
   hybridMark: '/logo/Logo2.png',
 } as const;
 
-/** High-res export width — download & print use the same asset. */
-export const QR_CARD_EXPORT_WIDTH = 1400;
+/** Square table tent — print at table edge (1:1). */
+export const QR_TABLE_EXPORT_SIZE = 1200;
+
+/** Portrait takeout stand — near cashier (~2:3). */
+export const QR_TAKEOUT_EXPORT_WIDTH = 1000;
+export const QR_TAKEOUT_EXPORT_HEIGHT = 1500;
+
+/** @deprecated Use QR_TABLE_EXPORT_SIZE */
+export const QR_CARD_EXPORT_WIDTH = QR_TABLE_EXPORT_SIZE;

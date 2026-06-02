@@ -3,10 +3,17 @@ import type { MenuCategory, Product } from '../types/domain';
 import { SEED_CATEGORIES, SEED_PRODUCTS } from '../data/seed';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { supabase } from '../lib/supabase/client';
+
+export type MenuDataSource = 'seed' | 'remote';
 
 export interface MenuStore {
   categories: MenuCategory[];
   products: Product[];
+  /** True after the first remote hydrate attempt finishes. */
+  remoteLoaded: boolean;
+  /** `remote` when menu rows were loaded from Supabase (`kk_*` tables). */
+  dataSource: MenuDataSource;
   hydrateFromRemote: () => Promise<void>;
   setCategories: (c: MenuCategory[]) => void;
   setProducts: (p: Product[]) => void;
@@ -25,15 +32,28 @@ export interface MenuStore {
 export const useMenuStore = create<MenuStore>()((set, get) => ({
       categories: SEED_CATEGORIES,
       products: SEED_PRODUCTS,
+      remoteLoaded: false,
+      dataSource: 'seed',
       hydrateFromRemote: async () => {
+        if (!supabase) {
+          set({ remoteLoaded: true });
+          return;
+        }
         try {
           const remote = await orderingRepo.fetchMenu();
           set({
             categories: remote.categories,
             products: remote.products,
+            dataSource: 'remote',
+            remoteLoaded: true,
           });
         } catch {
-          // Keep seed fallback when remote fetch fails.
+          set({
+            categories: [],
+            products: [],
+            dataSource: 'remote',
+            remoteLoaded: true,
+          });
         }
       },
 

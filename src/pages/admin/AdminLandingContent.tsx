@@ -5,6 +5,7 @@ import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
 import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
 import { useMenuStore } from '../../store/menuStore';
+import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const TRUSTED_BRAND_SLOTS = 5;
@@ -30,14 +31,11 @@ export default function AdminLandingContent() {
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
   const categories = useMenuStore((s) => s.categories);
   const allProducts = useMenuStore((s) => s.products);
+  const menuDataSource = useMenuStore((s) => s.dataSource);
   const products = useMemo(() => {
-    const catById = new Map(categories.map((c) => [c.id, c.name.toLowerCase()]));
-    return allProducts.filter(
-      (p) =>
-        p.visible &&
-        (!p.categoryId || !catById.get(p.categoryId)?.includes('merch')),
-    );
-  }, [allProducts, categories]);
+    if (menuDataSource !== 'remote') return [];
+    return listVisibleCoffeeProducts(allProducts, categories);
+  }, [allProducts, categories, menuDataSource]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -257,39 +255,10 @@ export default function AdminLandingContent() {
               </div>
             ))}
           </div>
-          <p className="text-xs dash-muted mt-4 mb-2">
-            Image overrides for the three product cards (names/prices from Menu). Leave blank to use each product image.
+          <p className="text-xs dash-muted mt-2">
+            Card photos always use each product&apos;s image from Admin → Menu (same as the public /menu page). Update
+            product images there if a card looks wrong.
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
-            {([0, 1, 2] as const).map((slot) => (
-              <div key={slot}>
-                <ImageUrlField
-                  label={`Card ${slot + 1} image`}
-                  value={content.featured.cardImageOverrides[slot]}
-                  onChange={(v) => {
-                    const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
-                      string,
-                      string,
-                      string,
-                    ];
-                    next[slot] = v;
-                    updateFeatured({ cardImageOverrides: next });
-                  }}
-                  onPickFile={(files) =>
-                    onPickImage((dataUrl) => {
-                      const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
-                        string,
-                        string,
-                        string,
-                      ];
-                      next[slot] = dataUrl;
-                      updateFeatured({ cardImageOverrides: next });
-                    }, files)
-                  }
-                />
-              </div>
-            ))}
-          </div>
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">

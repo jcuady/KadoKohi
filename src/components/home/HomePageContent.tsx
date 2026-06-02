@@ -25,6 +25,11 @@ import type { Product } from '../../types/domain';
 import type { FeaturedCopy, EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import { formatPhp } from '../../lib/money';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import {
+  getMenuProductImageUrl,
+  listVisibleCoffeeProducts,
+  pickFeaturedCoffeeProducts,
+} from '../../lib/menuCatalog';
 
 type Props = {
   landing: LandingContentState;
@@ -68,43 +73,35 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
   );
 }
 
-const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=400&auto=format&fit=crop',
-];
-
 function BestCoffeesSection({ copy }: { copy: FeaturedCopy }) {
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
+  const menuDataSource = useMenuStore((s) => s.dataSource);
+  const menuRemoteLoaded = useMenuStore((s) => s.remoteLoaded);
+  const hydrateMenu = useMenuStore((s) => s.hydrateFromRemote);
   const user = useAuthStore((s) => s.user);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (!menuRemoteLoaded) void hydrateMenu();
+  }, [menuRemoteLoaded, hydrateMenu]);
 
   const categoryById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name])),
     [categories],
   );
 
-  const visibleCoffeeProducts = useMemo(
-    () =>
-      products.filter(
-        (p) =>
-          p.visible &&
-          p.categoryId &&
-          !categoryById.get(p.categoryId)?.toLowerCase().includes('merch'),
-      ),
-    [products, categoryById],
+  const liveMenuCatalog = useMemo(() => {
+    if (menuDataSource !== 'remote') return [];
+    return listVisibleCoffeeProducts(products, categories);
+  }, [menuDataSource, products, categories]);
+
+  const showcaseDrinks = useMemo(
+    () => pickFeaturedCoffeeProducts(copy.productIds, liveMenuCatalog, 3),
+    [copy.productIds, liveMenuCatalog],
   );
 
-  const showcaseDrinks = useMemo(() => {
-    const byId = new Map(visibleCoffeeProducts.map((p) => [p.id, p]));
-    const picked = copy.productIds
-      .map((id) => byId.get(id))
-      .filter((p): p is Product => Boolean(p));
-    if (picked.length >= 3) return picked.slice(0, 3);
-    const fallback = visibleCoffeeProducts.filter((p) => !picked.some((x) => x.id === p.id));
-    return [...picked, ...fallback].slice(0, 3);
-  }, [copy.productIds, visibleCoffeeProducts]);
+  const menuReady = menuRemoteLoaded && menuDataSource === 'remote';
 
   return (
     <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
@@ -152,12 +149,25 @@ function BestCoffeesSection({ copy }: { copy: FeaturedCopy }) {
             </div>
           </motion.div>
 
+          {!menuReady ? (
+            <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+              {[0, 1, 2].map((slot) => (
+                <div
+                  key={slot}
+                  className="rounded-xl md:rounded-[1.25rem] border border-kado-dark/10 bg-white/70 aspect-[4/5] animate-pulse"
+                  aria-hidden
+                />
+              ))}
+            </div>
+          ) : showcaseDrinks.length === 0 ? (
+            <p className="text-sm text-kado-dark/60 font-medium py-6">
+              No coffee items are available on the menu yet. Add products in Admin → Menu, then select them here in
+              Homepage content.
+            </p>
+          ) : (
           <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-4 md:gap-6 w-full pb-6 pt-1 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
           {showcaseDrinks.map((drink, i) => {
-            const image =
-              copy.cardImageOverrides[i]?.trim() ||
-              drink.image ||
-              FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
+            const image = getMenuProductImageUrl(drink);
             const desc =
               drink.description ??
               (drink.temperature === 'iced'
@@ -220,6 +230,7 @@ function BestCoffeesSection({ copy }: { copy: FeaturedCopy }) {
             );
           })}
           </div>
+          )}
         </div>
       </motion.div>
 

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
+import { compareOrdersNewestFirst, formatOrderTimestamp } from '../../lib/orderTime';
 import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
 import { Clock, ChefHat, CheckCircle2, Wallet, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
@@ -26,14 +27,6 @@ const COLUMNS: BoardColumn[] = [
   { id: 'preparing', label: ORDER_STATUS_LABELS.preparing, icon: ChefHat, color: 'text-orange-400', bgCard: 'border-orange-500/30' },
   { id: 'ready', label: ORDER_STATUS_LABELS.ready, icon: CheckCircle2, color: 'text-green-400', bgCard: 'border-green-500/30' },
 ];
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h`;
-}
 
 export default function BaristaBoard() {
   const user = useAuthStore((s) => s.user);
@@ -81,14 +74,16 @@ export default function BaristaBoard() {
             {user?.role === 'admin'
               ? 'All branches · all channels'
               : `Branch: ${user?.branchId ? branchLabel(user.branchId) : '—'}`}
-            {' · '}Payment and order status are updated separately.
+            {' · '}Newest orders appear at the top of each column.
           </p>
         </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
         {COLUMNS.map((col) => {
-          const colOrders = visible.filter((o) => kioskColumnKey(o) === col.id);
+          const colOrders = visible
+            .filter((o) => kioskColumnKey(o) === col.id)
+            .sort(compareOrdersNewestFirst);
           const Icon = col.icon;
           return (
             <div key={col.id} className="flex flex-col min-h-0">
@@ -105,16 +100,23 @@ export default function BaristaBoard() {
                     Empty
                   </div>
                 ) : (
-                  colOrders.map((o) => (
+                  colOrders.map((o) => {
+                    const placed = formatOrderTimestamp(o.createdAt);
+                    return (
                     <button
                       key={o.id}
                       type="button"
                       onClick={() => setEditingOrder(o)}
                       className={`w-full text-left rounded-xl border dash-card ${col.bgCard} p-4 transition-colors`}
                     >
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-start justify-between gap-2 mb-1">
                         <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
-                        <span className="text-[10px] dash-muted">{timeAgo(o.createdAt)}</span>
+                        <div className="text-right shrink-0">
+                          <span className="block text-[10px] font-semibold dash-heading tabular-nums leading-tight">
+                            {placed.clock}
+                          </span>
+                          <span className="block text-[9px] dash-muted leading-tight">{placed.relative}</span>
+                        </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mb-2">
                         <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
@@ -145,7 +147,8 @@ export default function BaristaBoard() {
                         <span className="font-display font-bold text-kado-red text-sm">{formatPhp(o.total)}</span>
                       </div>
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

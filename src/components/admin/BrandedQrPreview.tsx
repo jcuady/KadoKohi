@@ -7,9 +7,10 @@ type Props = BrandedQrCardInput & {
 };
 
 /** Live branded QR card preview (falls back to plain QR while loading). */
-export default function BrandedQrPreview({ className = '', ...input }: Props) {
+export default function BrandedQrPreview({ className = '', layout = 'table', ...input }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const cardInput: BrandedQrCardInput = { layout, ...input };
 
   useEffect(() => {
     let revoked: string | null = null;
@@ -17,7 +18,7 @@ export default function BrandedQrPreview({ className = '', ...input }: Props) {
     setFailed(false);
     setPreviewUrl(null);
 
-    void createBrandedQrPreviewUrl(input)
+    void createBrandedQrPreviewUrl(cardInput)
       .then((url) => {
         if (cancelled) {
           URL.revokeObjectURL(url);
@@ -37,17 +38,18 @@ export default function BrandedQrPreview({ className = '', ...input }: Props) {
       cancelled = true;
       if (revoked) URL.revokeObjectURL(revoked);
     };
-  }, [input.title, input.subtitle, input.scanUrl, input.tagline]);
+  }, [layout, input.title, input.subtitle, input.scanUrl, input.tagline]);
 
-  const fallback = qrImageUrl(input.scanUrl, 280);
+  const fallback = qrImageUrl(input.scanUrl, layout === 'takeout' ? 240 : 280);
+  const aspectClass = layout === 'takeout' ? 'aspect-[2/3]' : 'aspect-square';
 
   return (
     <img
       src={previewUrl ?? fallback}
       alt={`Branded QR for ${input.title}`}
-      className={`${className} ${!previewUrl && !failed ? 'opacity-60 animate-pulse' : ''}`}
-      width={320}
-      height={440}
+      className={`${className} ${aspectClass} w-full object-contain ${
+        !previewUrl && !failed ? 'opacity-60 animate-pulse' : ''
+      }`}
     />
   );
 }

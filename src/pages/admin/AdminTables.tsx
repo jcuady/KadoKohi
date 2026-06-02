@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Trash2, QrCode, ToggleLeft, ToggleRight, Pencil, Check, X, Download } from 'lucide-react';
-import { tableQrUrl, takeoutQrUrl, qrImageUrl } from '../../lib/qr';
+import { tableQrUrl, takeoutQrUrl } from '../../lib/qr';
+import type { QrCardLayout } from '../../lib/brandedQrCard';
 import { getQrScanOrigin } from '../../lib/siteUrl';
+import BrandedQrPreview from '../../components/admin/BrandedQrPreview';
 import QrDownloadModal from '../../components/admin/QrDownloadModal';
 
 type QrModalState = {
@@ -12,6 +14,7 @@ type QrModalState = {
   downloadFilename: string;
   subtitle?: string;
   tagline?: string;
+  layout: QrCardLayout;
 };
 
 export default function AdminTables() {
@@ -41,9 +44,10 @@ export default function AdminTables() {
     setQrModal({
       title: created.label,
       scanUrl: tableQrUrl(created.code),
-      downloadFilename: `kado-qr-${created.code}`,
+      downloadFilename: `kado-table-${created.code}`,
       subtitle: created.code,
-      tagline: 'Dine-in menu · Order from your phone',
+      tagline: 'Order from your phone',
+      layout: 'table',
     });
   };
 
@@ -85,21 +89,23 @@ export default function AdminTables() {
               type="button"
               onClick={() =>
                 setQrModal({
-                  title: `${branch.name} — Takeout`,
+                  title: branch.name,
                   scanUrl: takeoutUrl,
                   downloadFilename: `kado-takeout-${branch.slug}`,
-                  subtitle: 'Branch takeout menu',
-                  tagline: 'Takeout menu · Order from your phone',
+                  subtitle: 'Takeout ordering',
+                  tagline: 'Takeout · Order from your phone',
+                  layout: 'takeout',
                 })
               }
-              className="shrink-0 rounded-xl dash-border border dash-card-alt p-2 hover:border-kado-red/40 transition-colors"
+              className="shrink-0 rounded-xl dash-border border dash-card-alt p-2 hover:border-kado-red/40 transition-colors w-[120px]"
             >
-              <img
-                src={qrImageUrl(takeoutUrl, 180)}
-                alt="Takeout QR"
-                className="w-[164px] h-[164px] object-contain"
-                width={164}
-                height={164}
+              <BrandedQrPreview
+                layout="takeout"
+                title={branch.name}
+                scanUrl={takeoutUrl}
+                subtitle="Takeout ordering"
+                tagline="Takeout · Order from your phone"
+                className="w-full"
               />
             </button>
             <div className="flex-1 min-w-0">
@@ -112,11 +118,12 @@ export default function AdminTables() {
                 type="button"
                 onClick={() =>
                   setQrModal({
-                    title: `${branch.name} — Takeout`,
+                    title: branch.name,
                     scanUrl: takeoutUrl,
                     downloadFilename: `kado-takeout-${branch.slug}`,
-                    subtitle: 'Branch takeout menu',
-                    tagline: 'Takeout menu · Order from your phone',
+                    subtitle: 'Takeout ordering',
+                    tagline: 'Takeout · Order from your phone',
+                    layout: 'takeout',
                   })
                 }
                 className="inline-flex items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red"
@@ -160,20 +167,22 @@ export default function AdminTables() {
                     setQrModal({
                       title: t.label,
                       scanUrl: fullUrl,
-                      downloadFilename: `kado-qr-${t.code}`,
-                      subtitle: `${t.code.toUpperCase()} · ${(branch?.name ?? 'Kado Kohi').toUpperCase()}`,
-                      tagline: 'Dine-in menu · Order from your phone',
+                      downloadFilename: `kado-table-${t.code}`,
+                      subtitle: t.code.toUpperCase(),
+                      tagline: 'Order from your phone',
+                      layout: 'table',
                     })
                   }
-                  className="shrink-0 rounded-lg dash-border border dash-card-alt p-1.5 hover:border-kado-red/40 transition-colors text-left"
+                  className="shrink-0 rounded-lg dash-border border dash-card-alt p-1.5 hover:border-kado-red/40 transition-colors text-left w-[112px]"
                   title="View & download QR"
                 >
-                  <img
-                    src={qrImageUrl(fullUrl, 140)}
-                    alt={`QR ${t.label}`}
-                    className="w-[128px] h-[128px] object-contain"
-                    width={128}
-                    height={128}
+                  <BrandedQrPreview
+                    layout="table"
+                    title={t.label}
+                    scanUrl={fullUrl}
+                    subtitle={t.code.toUpperCase()}
+                    tagline="Order from your phone"
+                    className="w-full"
                   />
                   <span className="mt-1 block text-center text-[9px] font-bold uppercase tracking-wider text-kado-red">
                     Tap for QR
@@ -229,9 +238,10 @@ export default function AdminTables() {
                       setQrModal({
                         title: t.label,
                         scanUrl: fullUrl,
-                        downloadFilename: `kado-qr-${t.code}`,
-                        subtitle: t.code,
-                        tagline: 'Dine-in menu · Order from your phone',
+                        downloadFilename: `kado-table-${t.code}`,
+                        subtitle: t.code.toUpperCase(),
+                        tagline: 'Order from your phone',
+                        layout: 'table',
                       })
                     }
                     className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline w-fit"
@@ -273,6 +283,7 @@ export default function AdminTables() {
         downloadFilename={qrModal?.downloadFilename ?? 'kado-qr'}
         subtitle={qrModal?.subtitle}
         tagline={qrModal?.tagline}
+        layout={qrModal?.layout ?? 'table'}
       />
     </div>
   );

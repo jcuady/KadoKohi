@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, Copy, ExternalLink, Check, Printer } from 'lucide-react';
-import { downloadBrandedQrCard, printBrandedQrCard } from '../../lib/brandedQrCard';
+import {
+  downloadBrandedQrCard,
+  printBrandedQrCard,
+  type QrCardLayout,
+} from '../../lib/brandedQrCard';
 import { canonicalScanUrl } from '../../lib/siteUrl';
 import BrandedQrPreview from './BrandedQrPreview';
 
@@ -10,9 +14,10 @@ type Props = {
   onClose: () => void;
   title: string;
   scanUrl: string;
-  subtitle?: string;
   downloadFilename: string;
+  subtitle?: string;
   tagline?: string;
+  layout?: QrCardLayout;
 };
 
 export default function QrDownloadModal({
@@ -22,7 +27,8 @@ export default function QrDownloadModal({
   scanUrl,
   subtitle,
   downloadFilename,
-  tagline = 'Dine-in menu · Order from your phone',
+  tagline,
+  layout = 'table',
 }: Props) {
   const [downloading, setDownloading] = useState(false);
   const [printing, setPrinting] = useState(false);
@@ -30,7 +36,9 @@ export default function QrDownloadModal({
   const [error, setError] = useState<string | null>(null);
 
   const productionUrl = canonicalScanUrl(scanUrl);
-  const cardInput = { title, scanUrl: productionUrl, subtitle, tagline };
+  const cardInput = { layout, title, scanUrl: productionUrl, subtitle, tagline };
+  const isTakeout = layout === 'takeout';
+  const previewMaxW = isTakeout ? 'max-w-[220px]' : 'max-w-[280px]';
 
   const handleDownload = async () => {
     setError(null);
@@ -87,6 +95,9 @@ export default function QrDownloadModal({
               <div className="min-w-0 pr-4">
                 <h2 className="font-display font-bold text-lg dash-heading truncate">{title}</h2>
                 {subtitle && <p className="text-xs dash-muted mt-0.5">{subtitle}</p>}
+                <p className="text-[10px] font-bold uppercase tracking-wider text-kado-red mt-1">
+                  {isTakeout ? 'Portrait · Cashier stand' : 'Square · Table edge'}
+                </p>
               </div>
               <button type="button" onClick={onClose} className="p-2 dash-muted hover:text-kado-red" aria-label="Close">
                 <X className="w-5 h-5" />
@@ -94,17 +105,16 @@ export default function QrDownloadModal({
             </div>
 
             <div className="px-5 py-6 flex flex-col items-center text-center overflow-y-auto">
-              <div className="rounded-2xl border dash-border shadow-md overflow-hidden mb-4 bg-kado-offwhite w-full max-w-[280px]">
-                {open && (
-                  <BrandedQrPreview
-                    {...cardInput}
-                    className="w-full h-auto block"
-                  />
-                )}
+              <div
+                className={`rounded-2xl border dash-border shadow-md overflow-hidden mb-4 bg-kado-offwhite w-full ${previewMaxW} mx-auto`}
+              >
+                {open && <BrandedQrPreview {...cardInput} className="w-full h-auto block" />}
               </div>
               <p className="text-[10px] dash-muted break-all max-w-full mb-2 font-mono">{productionUrl}</p>
               <p className="text-xs dash-muted mb-4 leading-relaxed">
-                Download or print the branded table card (Kado cream, red, official logo). Scans open your live menu.
+                {isTakeout
+                  ? 'Portrait takeout card with Kado branding — print and display near the cashier.'
+                  : 'Square table tent with Kado branding — print and place on the table edge for dine-in ordering.'}
               </p>
 
               {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
@@ -126,7 +136,7 @@ export default function QrDownloadModal({
                   className="w-full min-h-[44px] rounded-xl bg-kado-dark text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-red disabled:opacity-50"
                 >
                   <Printer className="w-4 h-4" />
-                  {printing ? 'Preparing print…' : 'Print table card'}
+                  {printing ? 'Preparing print…' : isTakeout ? 'Print takeout stand' : 'Print table tent'}
                 </button>
                 <button
                   type="button"

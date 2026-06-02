@@ -6,20 +6,7 @@ import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import type { Product } from '../types/domain';
-
-const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
-  cat_classics:
-    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400&auto=format&fit=crop',
-  cat_signatures:
-    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=400&auto=format&fit=crop',
-  cat_matcha:
-    'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=400&auto=format&fit=crop',
-  cat_yuzu:
-    'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400&auto=format&fit=crop',
-};
-
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=400&auto=format&fit=crop';
+import { getMenuProductImageUrl } from '../lib/menuCatalog';
 
 function categoryIcon(categoryId: string): React.ReactNode {
   if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
@@ -150,8 +137,7 @@ export default function Menu() {
               className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5"
             >
               {paginatedItems.map((product, i) => {
-                const image =
-                  product.image ?? FALLBACK_IMAGE_BY_CATEGORY[product.categoryId] ?? DEFAULT_IMAGE;
+                const image = getMenuProductImageUrl(product);
                 const tag = product.tags?.[0];
                 const desc =
                   product.description ??
