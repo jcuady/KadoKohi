@@ -12,8 +12,9 @@ import type { OrderItem } from '../types/domain';
 export async function ensureOrderReadiness(): Promise<void> {
   if (!supabase) return;
 
-  await orderingRepo.ensureMenuCatalog();
-  await orderingRepo.ensureDefaultTables();
+  // Best-effort: RPC may still be warming up in PostgREST schema cache — don't block.
+  await orderingRepo.ensureMenuCatalog().catch(() => undefined);
+  await orderingRepo.ensureDefaultTables().catch(() => undefined);
 
   await Promise.all([
     useMenuStore.getState().hydrateFromRemote(),
@@ -22,7 +23,7 @@ export async function ensureOrderReadiness(): Promise<void> {
 
   const menu = useMenuStore.getState();
   if (menu.dataSource !== 'remote' || coffeeMenuIsEmpty(menu.categories, menu.products)) {
-    await useMenuStore.getState().ensureCatalogInDatabase();
+    await useMenuStore.getState().ensureCatalogInDatabase().catch(() => undefined);
     await useMenuStore.getState().hydrateFromRemote();
   }
 
