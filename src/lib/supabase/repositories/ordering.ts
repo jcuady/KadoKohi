@@ -766,14 +766,38 @@ export const orderingRepo = {
     return mapSettings(data);
   },
   async upsertSettings(settings: AppSettings) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({
       id: true,
       tax_rate: settings.taxRate ?? 0,
-      gcash_qr_image: settings.gcashQrImage || null,
+      gcash_qr_image: settings.gcashQrImage?.trim() || null,
       order_hours: siteConfigFromSettings(settings),
+      updated_at: new Date().toISOString(),
     });
     if (error) throw error;
+  },
+  /** Upload shop GCash QR to public storage; returns HTTPS URL saved in kk_app_settings.gcash_qr_image. */
+  async uploadGcashShopQr(file: File): Promise<string> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please choose an image file (PNG, JPG, WebP, etc.).');
+    }
+    if (file.size > 2_097_152) {
+      throw new Error('Image must be 2 MB or smaller.');
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+    const safeExt = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'].includes(ext) ? ext : 'png';
+    const path = `shop-gcash-qr.${safeExt}`;
+    const { error } = await supabase.storage.from('kado-gcash-qr').upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'image/png',
+      cacheControl: '3600',
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from('kado-gcash-qr').getPublicUrl(path);
+    const url = data.publicUrl;
+    if (!url) throw new Error('Could not get public URL for GCash QR.');
+    return url;
   },
   /** Shared landing-page CMS content (admin-published, publicly readable). */
   async fetchLandingContent(): Promise<unknown | null> {

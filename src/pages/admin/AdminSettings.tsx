@@ -1,7 +1,7 @@
 import { type FormEvent, useRef, useState } from 'react';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import { authRepo } from '../../lib/supabase/repositories/auth';
+import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
@@ -15,6 +15,9 @@ export default function AdminSettings() {
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [gcashSaving, setGcashSaving] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetPhrase, setResetPhrase] = useState('');
@@ -28,8 +31,14 @@ export default function AdminSettings() {
   };
 
   const patch = (partial: Parameters<typeof updateSettings>[0]) => {
-    updateSettings(partial);
-    flashSaved();
+    setSaveError(null);
+    setSettingsSaving(true);
+    void updateSettings(partial)
+      .then(() => flashSaved())
+      .catch((err) => {
+        setSaveError(err instanceof Error ? err.message : 'Could not save settings to the database.');
+      })
+      .finally(() => setSettingsSaving(false));
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -39,12 +48,18 @@ export default function AdminSettings() {
   const handleGcashQr = async (file: File | undefined) => {
     if (!file) return;
     setUploadError(null);
-    const res = await readImageDataUrl(file);
-    if (res.ok === false) {
-      setUploadError(res.error);
-      return;
+    setSaveError(null);
+    setGcashSaving(true);
+    try {
+      const publicUrl = await orderingRepo.uploadGcashShopQr(file);
+      await updateSettings({ gcashQrImage: publicUrl });
+      flashSaved();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not save GCash QR.';
+      setUploadError(message);
+    } finally {
+      setGcashSaving(false);
     }
-    patch({ gcashQrImage: res.dataUrl });
   };
 
   const handleResetAllData = async (e: FormEvent) => {
@@ -90,11 +105,18 @@ export default function AdminSettings() {
             Global shop configuration — synced to Supabase for all devices and customer-facing pages.
           </p>
         </div>
-        {savedFlash && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider shrink-0">
-            <Check className="w-3.5 h-3.5" /> Saved
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {settingsSaving && !gcashSaving && (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider dash-muted">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…
+            </span>
+          )}
+          {savedFlash && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider">
+              <Check className="w-3.5 h-3.5" /> Saved to database
+            </span>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -158,7 +180,8 @@ export default function AdminSettings() {
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">GCash QR</h2>
           <p className="text-xs dash-muted">
-            Shown to customers after checkout and on My Orders. Upload your shop GCash QR (PNG/JPG).
+            Shown on QR dine-in/takeout, online cart, and My Orders. Uploads to Supabase Storage and saves the
+            public URL in <code className="text-[10px]">kk_app_settings.gcash_qr_image</code>.
           </p>
           <input
             ref={fileRef}
@@ -180,15 +203,17 @@ export default function AdminSettings() {
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <button
                   type="button"
+                  disabled={gcashSaving}
                   onClick={() => fileRef.current?.click()}
-                  className="w-full sm:w-auto min-h-[44px] rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 touch-manipulation"
+                  className="w-full sm:w-auto min-h-[44px] rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 touch-manipulation disabled:opacity-50"
                 >
-                  Replace image
+                  {gcashSaving ? 'Uploading…' : 'Replace image'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => patch({ gcashQrImage: '' })}
-                  className="w-full sm:w-auto min-h-[44px] rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation"
+                  disabled={gcashSaving}
+                  onClick={() => void updateSettings({ gcashQrImage: '' }).then(() => flashSaved()).catch((err) => setUploadError(err instanceof Error ? err.message : 'Could not remove GCash QR.'))}
+                  className="w-full sm:w-auto min-h-[44px] rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation disabled:opacity-50"
                 >
                   Remove
                 </button>
@@ -197,13 +222,15 @@ export default function AdminSettings() {
           ) : (
             <button
               type="button"
+              disabled={gcashSaving}
               onClick={() => fileRef.current?.click()}
-              className="w-full rounded-xl border-2 border-dashed dash-border py-10 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 hover:text-kado-red transition-colors"
+              className="w-full rounded-xl border-2 border-dashed dash-border py-10 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 hover:text-kado-red transition-colors disabled:opacity-50"
             >
-              Upload GCash QR image
+              {gcashSaving ? 'Uploading to Supabase…' : 'Upload GCash QR image'}
             </button>
           )}
           {uploadError && <p className="text-xs text-red-600 font-medium">{uploadError}</p>}
+          {saveError && <p className="text-xs text-red-600 font-medium">{saveError}</p>}
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
@@ -430,7 +457,10 @@ export default function AdminSettings() {
           )}
         </div>
 
-        <p className="text-xs dash-muted">Changes save automatically to the database when you edit a field.</p>
+        <p className="text-xs dash-muted">
+          Changes save to Supabase when you edit a field. GCash QR uploads to the <strong>kado-gcash-qr</strong>{' '}
+          storage bucket (public read) and the URL is stored on the settings row.
+        </p>
       </form>
     </div>
   );

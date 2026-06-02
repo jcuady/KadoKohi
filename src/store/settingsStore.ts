@@ -10,7 +10,7 @@ export interface AppSettings {
   brandMode: DashTheme;
   shopName: string;
   currency: string;
-  /** GCash QR image for customer payments (URL or data URL). */
+  /** GCash QR image URL (Supabase Storage public URL or legacy data URL). */
   gcashQrImage: string;
   /** Phone number for booth booking inquiries (click-to-call). */
   boothContactPhone: string;
@@ -50,13 +50,13 @@ const DEFAULTS: AppSettings = {
 export interface SettingsStore {
   settings: AppSettings;
   hydrateFromRemote: () => Promise<void>;
-  updateSettings: (patch: Partial<AppSettings>) => void;
-  toggleDashTheme: () => void;
+  updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  toggleDashTheme: () => Promise<void>;
   seed: () => void;
 }
 
 /** App settings from Supabase; no localStorage cache (GCash QR etc. must stay current). */
-export const useSettingsStore = create<SettingsStore>()((set) => ({
+export const useSettingsStore = create<SettingsStore>()((set, get) => ({
       settings: DEFAULTS,
       hydrateFromRemote: async () => {
         try {
@@ -67,20 +67,18 @@ export const useSettingsStore = create<SettingsStore>()((set) => ({
           // Keep defaults when remote fetch fails.
         }
       },
-      updateSettings: (patch) =>
-        set((s) => {
-          const settings = { ...s.settings, ...patch };
-          void orderingRepo.upsertSettings(settings);
-          return { settings };
-        }),
-      toggleDashTheme: () =>
-        set((s) => {
-          const settings = {
-            ...s.settings,
-            brandMode: (s.settings.brandMode === 'light' ? 'dark' : 'light') as DashTheme,
-          };
-          void orderingRepo.upsertSettings(settings);
-          return { settings };
-        }),
+      updateSettings: async (patch) => {
+        const settings = { ...get().settings, ...patch };
+        await orderingRepo.upsertSettings(settings);
+        set({ settings });
+      },
+      toggleDashTheme: async () => {
+        const settings = {
+          ...get().settings,
+          brandMode: (get().settings.brandMode === 'light' ? 'dark' : 'light') as DashTheme,
+        };
+        await orderingRepo.upsertSettings(settings);
+        set({ settings });
+      },
       seed: () => set({ settings: DEFAULTS }),
 }));

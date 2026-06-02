@@ -110,6 +110,7 @@ Apply the four checks above first; use this section for repo-specific facts.
 
 - Migrations under `supabase/migrations/`; apply with `npx supabase db push --include-all`.
 - Customer sign-up rate limits: `kk-customer-signup` edge function (not raw Auth `/signup`).
+- **GCash QR (Admin → Settings):** Upload goes to public bucket `kado-gcash-qr` (`shop-gcash-qr.*`); the HTTPS URL is saved on `kk_app_settings.gcash_qr_image` (readable by all customers on QR/cart flows). Requires admin session for upload; errors surface in Settings UI.
 
 ### Coffee menu catalog
 
