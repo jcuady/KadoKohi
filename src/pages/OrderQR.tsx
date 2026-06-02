@@ -1,47 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import type { OrderItem, Product, PaymentMethod } from '../types/domain';
+import type { Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useTableStore } from '../store/tableStore';
 import { useBranchStore } from '../store/branchStore';
-import { formatPhp, computeOrderTotals } from '../lib/money';
+import { formatPhp } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
 import { getProductDescription, getProductImageUrl } from '../lib/productImage';
 import { newId } from '../lib/id';
 import { clampText, formatOrderError } from '../lib/validation';
-import { cartLinesMatchMenu, ensureOrderReadiness } from '../lib/orderReadiness';
+import {
+  assertTableForOrder,
+  cartLinesMatchMenu,
+  ensureOrderReadiness,
+  isOrderCatalogReady,
+} from '../lib/orderReadiness';
+import { buildQrCartTotals, type QrCartLine } from '../lib/qrOrderCart';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
-import QrPaymentSelector from '../components/qr/QrPaymentSelector';
+import QrStickyCart from '../components/qr/QrStickyCart';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
-import {
-  ShoppingBag,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-  Plus,
-  Trash2,
-  QrCode,
-} from 'lucide-react';
-
-type CartLine = QrCartPayload & { key: string };
-
-function resolveUnit(product: Product, milkId?: string): { unit: number; milkLabel?: string } {
-  let unit = product.basePrice;
-  let milkLabel: string | undefined;
-  if (milkId && product.milks?.length) {
-    const m = product.milks.find((x) => x.id === milkId);
-    if (m) {
-      unit += m.priceDelta;
-      milkLabel = m.label;
-    }
-  }
-  return { unit, milkLabel };
-}
+import { QrCode } from 'lucide-react';
 
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
@@ -53,8 +36,12 @@ export default function OrderQR() {
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
   const menuReady = useMenuStore((s) => s.remoteLoaded);
+  const menuDataSource = useMenuStore((s) => s.dataSource);
+  const hydrateError = useMenuStore((s) => s.hydrateError);
   const productsByCategory = useMenuStore((s) => s.productsByCategory);
   const createOrder = useOrderStore((s) => s.createOrder);
+
+  const catalogOrderable = isOrderCatalogReady();
 
   const branchName = useMemo(
     () => branches.find((b) => b.id === table?.branchId)?.name ?? 'Kado Kohi',
@@ -69,15 +56,15 @@ export default function OrderQR() {
   const sessionKey = `qr.${code ?? 'unknown'}`;
 
   const [activeCat, setActiveCat] = useState('');
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const [cart, setCart] = useState<QrCartLine[]>([]);
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
 
-  // Restore an in-progress order for this browser session (per-table).
   useEffect(() => {
     const ref = getTrackedOrder(sessionKey);
     if (ref) setTrackedOrderId(ref.orderId);
@@ -88,9 +75,21 @@ export default function OrderQR() {
     return () => stopGuestPageRealtime();
   }, []);
 
-  useEffect(() => {
-    void ensureOrderReadiness();
+  const runSync = useCallback(async () => {
+    setSyncing(true);
+    setOrderError('');
+    try {
+      await ensureOrderReadiness();
+    } catch (err) {
+      setOrderError(formatOrderError(err));
+    } finally {
+      setSyncing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void runSync();
+  }, [runSync]);
 
   useEffect(() => {
     if (!sortedCategories.length) return;
@@ -105,37 +104,10 @@ export default function OrderQR() {
   );
 
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
-
-  const cartTotals = useMemo(() => {
-    let subtotal = 0;
-    let modifiers = 0;
-    const lines: OrderItem[] = [];
-
-    for (const line of cart) {
-      const p = products.find((x) => x.id === line.productId);
-      if (!p) continue;
-      const { unit, milkLabel } = resolveUnit(p, line.milkId);
-      const lineTotal = unit * line.qty;
-      subtotal += p.basePrice * line.qty;
-      modifiers += (unit - p.basePrice) * line.qty;
-      lines.push({
-        id: newId(),
-        productId: p.id,
-        productNameSnapshot: p.name,
-        itemType: 'coffee',
-        milkId: line.milkId,
-        milkLabelSnapshot: milkLabel ?? line.milkLabel,
-        temperature: line.temperature,
-        unitPrice: unit,
-        qty: line.qty,
-        lineTotal,
-      });
-    }
-
-    const { tax, total } = computeOrderTotals(subtotal, modifiers, taxRate);
-    return { lines, subtotal, modifiers, tax, total };
-  }, [cart, products, taxRate]);
-
+  const cartTotals = useMemo(
+    () => buildQrCartTotals(cart, products, taxRate),
+    [cart, products, taxRate],
+  );
   const cartStale = cart.length > 0 && !cartLinesMatchMenu(cart, cartTotals.lines);
 
   const addLine = (payload: QrCartPayload) => {
@@ -165,32 +137,57 @@ export default function OrderQR() {
   };
 
   const placeOrder = async () => {
-    if (!table || cartTotals.lines.length === 0 || submitting) return;
+    const tableRow = useTableStore.getState().getByCode(code ?? '') ?? table;
+    if (!tableRow || cartTotals.lines.length === 0 || submitting) return;
+    if (!cartExpanded) {
+      setCartExpanded(true);
+      return;
+    }
     if (cartStale) {
       setOrderError('Some items are out of date. Remove them from your cart and add drinks again.');
+      return;
+    }
+    if (!catalogOrderable) {
+      setOrderError(
+        hydrateError ??
+          'Menu is still syncing. Tap Try again below, or refresh the page.',
+      );
       return;
     }
     setOrderError('');
     setSubmitting(true);
     try {
       await ensureOrderReadiness();
+      if (!isOrderCatalogReady()) {
+        throw new Error('Menu is still syncing. Tap Try again below.');
+      }
+      const refreshedTable = useTableStore.getState().getByCode(code ?? '') ?? tableRow;
+      await assertTableForOrder(refreshedTable.id, refreshedTable.branchId);
+      const freshTotals = buildQrCartTotals(
+        cart,
+        useMenuStore.getState().products,
+        taxRate,
+      );
+      if (freshTotals.lines.length === 0) {
+        throw new Error('Your cart is empty or items are unavailable.');
+      }
       const order = await createOrder({
         channel: 'dine-in',
-        branchId: table.branchId,
-        tableId: table.id,
+        branchId: refreshedTable.branchId,
+        tableId: refreshedTable.id,
         customerId: user?.id,
-        guestName: user?.name ? clampText(user.name, 80) : table.label,
+        guestName: user?.name ? clampText(user.name, 80) : refreshedTable.label,
         paymentMethod,
-        items: cartTotals.lines,
-        subtotal: cartTotals.subtotal,
-        modifiersTotal: cartTotals.modifiers,
-        tax: cartTotals.tax,
-        total: cartTotals.total,
+        items: freshTotals.lines,
+        subtotal: freshTotals.subtotal,
+        modifiersTotal: freshTotals.modifiers,
+        tax: freshTotals.tax,
+        total: freshTotals.total,
       });
       setTrackedOrder(sessionKey, {
         orderId: order.id,
         shortCode: order.shortCode,
-        label: table.label,
+        label: refreshedTable.label,
         placedAt: order.createdAt,
       });
       setTrackedOrderId(order.id);
@@ -207,6 +204,13 @@ export default function OrderQR() {
     clearTrackedOrder(sessionKey);
     setTrackedOrderId(null);
   };
+
+  const mainPaddingBottom =
+    cartExpanded && cart.length > 0
+      ? 'pb-[min(52vh,440px)]'
+      : cart.length > 0
+        ? 'pb-40'
+        : 'pb-28';
 
   if (!tablesHydrated || !menuReady) {
     return (
@@ -261,9 +265,13 @@ export default function OrderQR() {
     );
   }
 
+  const placeLabel =
+    paymentMethod === 'gcash-qr'
+      ? 'Place order · pay with GCash'
+      : 'Place order · pay cash at counter';
+
   return (
     <div className="min-h-[100dvh] bg-[#FAF7F2] font-sans flex flex-col">
-      {/* Header */}
       <header className="shrink-0 sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-kado-dark/8">
         <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5">
           <div className="flex items-center gap-3">
@@ -280,15 +288,37 @@ export default function OrderQR() {
               <p className="text-[11px] text-kado-dark/45 truncate">{branchName}</p>
             </div>
             {cartCount > 0 && (
-              <span className="shrink-0 min-w-[2rem] h-8 px-2 rounded-full bg-kado-red text-white text-xs font-black flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setCartExpanded(true)}
+                className="shrink-0 min-w-[2rem] h-8 px-2 rounded-full bg-kado-red text-white text-xs font-black flex items-center justify-center touch-manipulation"
+                aria-label="View cart"
+              >
                 {cartCount > 99 ? '99+' : cartCount}
-              </span>
+              </button>
             )}
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="max-w-3xl mx-auto px-4 pb-3 overflow-x-auto scrollbar-none -mx-0">
+        {!catalogOrderable && menuDataSource === 'seed' && (
+          <div className="max-w-3xl mx-auto px-4 pb-3">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+              <p className="text-xs text-amber-900 flex-1">
+                {hydrateError ?? 'Connecting menu to the shop…'}
+              </p>
+              <button
+                type="button"
+                onClick={() => void runSync()}
+                disabled={syncing}
+                className="shrink-0 min-h-[40px] rounded-lg bg-white border border-amber-300 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-900 touch-manipulation disabled:opacity-50"
+              >
+                {syncing ? 'Syncing…' : 'Retry sync'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="max-w-3xl mx-auto px-4 pb-3 overflow-x-auto scrollbar-none">
           <div className="flex gap-2 w-max min-w-full sm:min-w-0 sm:flex-wrap sm:w-auto pb-0.5">
             {sortedCategories.map((c) => (
               <button
@@ -308,8 +338,7 @@ export default function OrderQR() {
         </div>
       </header>
 
-      {/* Menu grid */}
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-4 sm:py-6 pb-36 sm:pb-40">
+      <main className={`flex-1 max-w-3xl mx-auto w-full px-4 py-4 sm:py-6 ${mainPaddingBottom}`}>
         {list.length === 0 ? (
           <p className="text-center text-sm text-kado-dark/50 py-16">
             No items in this category right now. Check another tab or ask staff.
@@ -363,136 +392,33 @@ export default function OrderQR() {
         )}
       </main>
 
-      {/* Sticky cart */}
-      <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
-        <div className="pointer-events-auto max-w-3xl mx-auto px-3 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="rounded-2xl border border-kado-dark/10 bg-white shadow-[0_-8px_32px_rgba(25,25,25,0.12)] overflow-hidden">
-            <button
-              type="button"
-              onClick={() => cart.length > 0 && setCartExpanded((v) => !v)}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left touch-manipulation"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <ShoppingBag className="w-5 h-5 text-kado-red shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-display font-bold text-sm text-kado-dark">
-                    {cartCount === 0 ? 'Your table cart' : `${cartCount} item${cartCount !== 1 ? 's' : ''}`}
-                  </p>
-                  <p className="text-[10px] text-kado-dark/45 truncate">
-                    {cartCount === 0 ? 'Tap a drink to add' : formatPhp(cartTotals.total)}
-                  </p>
-                </div>
-              </div>
-              {cart.length > 0 &&
-                (cartExpanded ? (
-                  <ChevronDown className="w-5 h-5 text-kado-dark/40 shrink-0" />
-                ) : (
-                  <ChevronUp className="w-5 h-5 text-kado-dark/40 shrink-0" />
-                ))}
-            </button>
-
-            {cartExpanded && cart.length > 0 && (
-              <div className="border-t border-kado-dark/8 px-4 py-3 max-h-[40dvh] overflow-y-auto">
-                <ul className="space-y-2">
-                  {cart.map((line) => {
-                    const p = products.find((x) => x.id === line.productId);
-                    if (!p) return null;
-                    const { unit } = resolveUnit(p, line.milkId);
-                    return (
-                      <li
-                        key={line.key}
-                        className="flex gap-2 items-center rounded-xl bg-[#FAF7F2] border border-kado-dark/5 p-2"
-                      >
-                        <img
-                          src={getProductImageUrl(p)}
-                          alt=""
-                          className="w-12 h-12 rounded-lg object-cover shrink-0"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-kado-dark truncate">{p.name}</p>
-                          <p className="text-[10px] text-kado-dark/45 truncate">
-                            {[line.milkLabel, line.temperature].filter(Boolean).join(' · ')}
-                          </p>
-                          <p className="text-xs font-bold text-kado-red mt-0.5">{formatPhp(unit * line.qty)}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))}
-                            className="p-1 text-kado-dark/35 hover:text-red-500"
-                            aria-label="Remove"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                          <div className="flex items-center gap-1 bg-white rounded-full border border-kado-dark/10 px-1">
-                            <button
-                              type="button"
-                              onClick={() => updateLineQty(line.key, line.qty - 1)}
-                              className="w-7 h-7 flex items-center justify-center"
-                              aria-label="Less"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-[10px] font-bold w-4 text-center">{line.qty}</span>
-                            <button
-                              type="button"
-                              onClick={() => updateLineQty(line.key, line.qty + 1)}
-                              className="w-7 h-7 flex items-center justify-center"
-                              aria-label="More"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <div className="mt-3 pt-3 border-t border-kado-dark/8 space-y-1 text-[11px] text-kado-dark/55">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatPhp(cartTotals.subtotal)}</span>
-                  </div>
-                  {cartTotals.modifiers > 0 && (
-                    <div className="flex justify-between">
-                      <span>Modifiers</span>
-                      <span>+{formatPhp(cartTotals.modifiers)}</span>
-                    </div>
-                  )}
-                  {cartTotals.tax > 0 && (
-                    <div className="flex justify-between">
-                      <span>Tax ({taxRate}%)</span>
-                      <span>{formatPhp(cartTotals.tax)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-kado-dark text-sm pt-1">
-                    <span>Total</span>
-                    <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <QrPaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
-                </div>
-              </div>
-            )}
-
-            <div className="border-t border-kado-dark/8 p-3 sm:p-4">
-              {orderError && (
-                <p className="mb-2 text-xs text-red-600 font-medium">{orderError}</p>
-              )}
-              <button
-                type="button"
-                onClick={placeOrder}
-                disabled={cart.length === 0 || submitting || cartStale}
-                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
-              >
-                {submitting ? 'Sending…' : paymentMethod === 'gcash-qr' ? 'Place order · pay with GCash' : 'Place order · pay cash at counter'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QrStickyCart
+        cart={cart}
+        cartExpanded={cartExpanded}
+        onCartExpandedChange={setCartExpanded}
+        cartCount={cartCount}
+        cartTotals={cartTotals}
+        products={products}
+        taxRate={taxRate}
+        paymentMethod={paymentMethod}
+        onPaymentMethodChange={setPaymentMethod}
+        onUpdateQty={updateLineQty}
+        onRemoveLine={(key) => setCart((c) => c.filter((x) => x.key !== key))}
+        orderError={orderError || null}
+        onRetrySync={() => void runSync()}
+        submitting={submitting || syncing}
+        onPlaceOrder={() => void placeOrder()}
+        placeDisabled={
+          cart.length === 0 ||
+          submitting ||
+          syncing ||
+          cartStale ||
+          !catalogOrderable ||
+          (cartExpanded && cartTotals.lines.length === 0)
+        }
+        placeButtonLabel={placeLabel}
+        emptyCartTitle="Your table cart"
+      />
 
       <QrProductSheet
         product={selectedProduct}

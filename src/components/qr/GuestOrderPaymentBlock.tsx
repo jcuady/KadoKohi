@@ -141,7 +141,7 @@ export default function GuestOrderPaymentBlock({
             type="button"
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
-            className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-kado-red text-kado-cream py-3.5 px-4 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-50 transition-colors touch-manipulation"
+            className="w-full min-h-[52px] flex items-center justify-center gap-2 rounded-xl bg-kado-red text-kado-cream py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-50 transition-colors touch-manipulation active:scale-[0.99]"
           >
             <ImageIcon className="w-4 h-4 shrink-0" />
             {uploading

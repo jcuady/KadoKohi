@@ -1,23 +1,62 @@
-import type { OrderItem } from '../types/domain';
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
 import { useMenuStore } from '../store/menuStore';
 import { useTableStore } from '../store/tableStore';
 import { useCartStore } from '../store/cartStore';
 import { useMerchStore } from '../store/merchStore';
+import { coffeeMenuIsEmpty } from './menuCatalogSync';
+import { qrCartIsStale } from './qrOrderCart';
+import type { OrderItem } from '../types/domain';
 
 /** Sync menu + dine-in tables in Supabase, then refresh client stores. */
 export async function ensureOrderReadiness(): Promise<void> {
   if (!supabase) return;
-  await Promise.all([
-    orderingRepo.ensureMenuCatalog().catch(() => undefined),
-    orderingRepo.ensureDefaultTables().catch(() => undefined),
-  ]);
+
+  await orderingRepo.ensureMenuCatalog();
+  await orderingRepo.ensureDefaultTables();
+
   await Promise.all([
     useMenuStore.getState().hydrateFromRemote(),
     useTableStore.getState().hydrateFromRemote(),
   ]);
+
+  const menu = useMenuStore.getState();
+  if (menu.dataSource !== 'remote' || coffeeMenuIsEmpty(menu.categories, menu.products)) {
+    await useMenuStore.getState().ensureCatalogInDatabase();
+    await useMenuStore.getState().hydrateFromRemote();
+  }
+
   pruneStaleCartLines();
+}
+
+export function isOrderCatalogReady(): boolean {
+  const menu = useMenuStore.getState();
+  return menu.remoteLoaded && menu.dataSource === 'remote' && menu.products.length > 0;
+}
+
+/** Confirm product ids exist in Supabase before placing an order. */
+export async function assertProductsOrderable(productIds: string[]): Promise<void> {
+  if (!supabase || productIds.length === 0) return;
+  const unique = [...new Set(productIds)];
+
+  const check = async () => {
+    const { data, error } = await supabase!
+      .from('kk_products')
+      .select('id')
+      .in('id', unique)
+      .eq('visible', true);
+    if (error) throw error;
+    return (data ?? []).length === unique.length;
+  };
+
+  if (await check()) return;
+
+  await orderingRepo.ensureMenuCatalog();
+  await useMenuStore.getState().hydrateFromRemote();
+
+  if (!(await check())) {
+    throw new Error('Menu is still syncing. Pull down to refresh or tap Try again below.');
+  }
 }
 
 export function pruneStaleCartLines(): void {
@@ -31,6 +70,39 @@ export function pruneStaleCartLines(): void {
   });
 }
 
+export function cartLinesMatchMenu(
+  cart: { productId: string }[],
+  lines: OrderItem[],
+): boolean {
+  return !qrCartIsStale(cart, lines);
+}
+
+/** Dine-in table must exist in Supabase before kk_place_order. */
+export async function assertTableForOrder(tableId: string, branchId: string): Promise<void> {
+  if (!supabase) return;
+
+  const check = async () => {
+    const { data, error } = await supabase!
+      .from('kk_tables')
+      .select('id')
+      .eq('id', tableId)
+      .eq('branch_id', branchId)
+      .eq('active', true)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean(data?.id);
+  };
+
+  if (await check()) return;
+
+  await orderingRepo.ensureDefaultTables();
+  await useTableStore.getState().hydrateFromRemote();
+
+  if (!(await check())) {
+    throw new Error('This table QR is not active. Ask staff for a current table code.');
+  }
+}
+
 export function isOrderCatalogError(err: unknown): boolean {
   const msg =
     err && typeof err === 'object' && 'message' in err
@@ -39,15 +111,7 @@ export function isOrderCatalogError(err: unknown): boolean {
   return (
     /product.*not available/i.test(msg) ||
     /table is invalid/i.test(msg) ||
-    /branch is not active/i.test(msg)
+    /branch is not active/i.test(msg) ||
+    /menu is still syncing/i.test(msg)
   );
-}
-
-/** True when every cart line resolved to a priced order item. */
-export function cartLinesMatchMenu<T extends { productId: string }>(
-  cart: T[],
-  lines: OrderItem[],
-): boolean {
-  if (cart.length === 0) return lines.length === 0;
-  return lines.length === cart.length && lines.length > 0;
 }

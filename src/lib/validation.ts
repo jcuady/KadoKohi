@@ -52,8 +52,9 @@ export function formatOrderError(err: unknown): string {
   if (/product is not available at this branch/i.test(msg)) {
     return 'An item is not sold at this branch. Remove it from your cart and try again.';
   }
+  if (/menu is still syncing/i.test(msg)) return msg;
   if (/product.*not available/i.test(msg)) {
-    return 'Menu is still syncing. Wait a moment, refresh the page, and try again.';
+    return 'Menu is still syncing. Tap Try again in your cart, or refresh the page.';
   }
   if (/table is invalid/i.test(msg)) {
     return 'This table QR is not active. Ask staff for a current table code.';

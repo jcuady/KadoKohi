@@ -11,7 +11,11 @@ import {
   notifyBaristasProofSubmitted,
 } from '../lib/notify';
 import { broadcastGuestOrderUpdate } from '../lib/supabase/guestOrderTracking';
-import { ensureOrderReadiness, isOrderCatalogError } from '../lib/orderReadiness';
+import {
+  assertProductsOrderable,
+  ensureOrderReadiness,
+  isOrderCatalogError,
+} from '../lib/orderReadiness';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -80,7 +84,11 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         });
         set({ orders: [o, ...get().orders] });
         let persisted = o;
-        const place = () => orderingRepo.placeOrder(o, { promoCode: input.promoCode });
+        const place = async () => {
+          await ensureOrderReadiness();
+          await assertProductsOrderable(o.items.map((line) => line.productId));
+          return orderingRepo.placeOrder(o, { promoCode: input.promoCode });
+        };
         try {
           persisted = normalizeOrder(await place());
         } catch (err) {
