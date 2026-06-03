@@ -26,6 +26,7 @@ import QrStickyCart from '../components/qr/QrStickyCart';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import { QrCode } from 'lucide-react';
+import { qrPillClass } from '../lib/qrGuestTheme';
 
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
@@ -272,8 +273,8 @@ export default function OrderQR() {
       : 'Place order · pay cash at counter';
 
   return (
-    <div className="min-h-[100dvh] bg-[#FAF7F2] font-sans flex flex-col">
-      <header className="shrink-0 sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-kado-dark/8">
+    <div className="qr-root min-h-[100dvh] bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
+      <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)]">
         <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-lg shrink-0">
@@ -283,10 +284,10 @@ export default function OrderQR() {
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
                 Dine-in · {table.label}
               </p>
-              <h1 className="font-display text-lg sm:text-xl font-black text-kado-dark truncate">
+              <h1 className="font-display text-lg sm:text-xl font-black text-[var(--qr-text)] truncate">
                 Order from your table
               </h1>
-              <p className="text-[11px] text-kado-dark/45 truncate">{branchName}</p>
+              <p className="text-[11px] text-[var(--qr-text-subtle)] truncate">{branchName}</p>
             </div>
             {cartCount > 0 && (
               <button
@@ -326,11 +327,7 @@ export default function OrderQR() {
                 key={c.id}
                 type="button"
                 onClick={() => setActiveCat(c.id)}
-                className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors touch-manipulation ${
-                  activeCat === c.id
-                    ? 'bg-kado-dark text-kado-cream border-kado-dark'
-                    : 'bg-white text-kado-dark/60 border-kado-dark/10 hover:border-kado-red/30'
-                }`}
+                className={qrPillClass(activeCat === c.id)}
               >
                 {c.name}
               </button>
