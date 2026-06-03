@@ -77,7 +77,11 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setStatus('error');
+      setStatusDetail('Enter a valid email address to request access.');
+      return;
+    }
 
     setSubmitting(true);
     setStatus('idle');
@@ -94,7 +98,9 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
 
     if (result.via === 'mailto') {
       window.location.href = result.mailto;
+      setStatus('sent');
       setStatusDetail('Opening your email app to complete the request…');
+      setEmail('');
       return;
     }
 
@@ -157,11 +163,11 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             </form>
             {status === 'sent' ? (
               <p className="text-kado-cream/80 text-xs mt-3 text-center lg:text-left font-medium">
-                Thanks — we received your request. Check your inbox for a reply from Kado Kohi, or{' '}
+                Thanks — your request was sent. Our team will follow up by email, or you can{' '}
                 <Link to="/auth/signup" className="text-kado-red hover:underline">
                   create an account
-                </Link>
-                .
+                </Link>{' '}
+                now.
               </p>
             ) : status === 'error' ? (
               <p className="text-red-300 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
