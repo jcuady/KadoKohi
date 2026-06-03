@@ -4,9 +4,10 @@ import { MapPin, Clock, Phone, Mail, Send } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import {
   CONTACT_PURPOSES,
-  buildContactMailto,
+  KADO_INBOUND_EMAIL,
   type ContactPurpose,
 } from '../lib/contactEmail';
+import { sendInboundEmail } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
 import { cn } from '../lib/utils';
 
@@ -19,23 +20,46 @@ export default function Contact() {
   const showSocial = hasSocialLinks(contact);
   const [purpose, setPurpose] = useState<ContactPurpose>('collaboration');
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const inboundEmail = contact.contactEmail?.trim() || KADO_INBOUND_EMAIL;
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const mailto = buildContactMailto({
-      to: contact.contactEmail,
+    setSubmitting(true);
+    setFeedback('idle');
+    setFeedbackMessage('');
+
+    const result = await sendInboundEmail({
+      kind: 'contact',
       purpose,
       name: formData.name,
-      fromEmail: formData.email,
+      email: formData.email,
       message: formData.message,
     });
-    window.location.href = mailto;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 5000);
+
+    setSubmitting(false);
+
+    if (result.ok === false) {
+      setFeedback('error');
+      setFeedbackMessage(result.message);
+      return;
+    }
+
+    if (result.via === 'mailto') {
+      window.location.href = result.mailto;
+      setFeedbackMessage('Opening your email app…');
+      return;
+    }
+
+    setFeedback('sent');
+    setFormData({ name: '', email: '', message: '' });
+    setFeedbackMessage(`Message sent to ${inboundEmail}. We'll reply soon.`);
   };
 
-  const mailHref = `mailto:${contact.contactEmail}`;
+  const mailHref = `mailto:${inboundEmail}`;
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
@@ -48,9 +72,9 @@ export default function Contact() {
             We'd Love to Hear From You
           </h1>
           <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Choose why you're reaching out — we'll open your email app with a formatted message to{' '}
+            Choose why you're reaching out — your message goes to{' '}
             <a href={mailHref} className="text-kado-red font-bold hover:underline">
-              {contact.contactEmail}
+              {inboundEmail}
             </a>
             .
           </p>
@@ -66,7 +90,7 @@ export default function Contact() {
             >
               <div>
                 <h3 className="font-display font-black text-2xl text-kado-dark">Get in touch</h3>
-                <p className="text-sm text-kado-dark/55 mt-1">Select a purpose, then send via your email app.</p>
+                <p className="text-sm text-kado-dark/55 mt-1">Select a purpose and send — we deliver to {inboundEmail}.</p>
               </div>
 
               <fieldset className="space-y-3">
@@ -152,27 +176,33 @@ export default function Contact() {
 
               <button
                 type="submit"
-                className="group w-full bg-kado-red text-white py-4 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#8A1519] shadow-lg shadow-kado-red/20 transition-all"
+                disabled={submitting}
+                className="group w-full bg-kado-red text-white py-4 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#8A1519] shadow-lg shadow-kado-red/20 transition-all disabled:opacity-60"
               >
                 <Send className="w-4 h-4" />
-                Send via Email
+                {submitting ? 'Sending…' : 'Send message'}
               </button>
 
               <p className="text-center text-[11px] text-kado-dark/45 leading-relaxed">
-                Opens your mail app to{' '}
+                Delivered to{' '}
                 <a href={mailHref} className="font-bold text-kado-red hover:underline">
-                  {contact.contactEmail}
-                </a>{' '}
-                with subject and body pre-filled for your selected purpose.
+                  {inboundEmail}
+                </a>
+                . If email delivery is unavailable, your mail app opens with a pre-filled message.
               </p>
 
-              {submitted && (
+              {feedback !== 'idle' && (
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center text-[11px] font-bold uppercase tracking-widest text-kado-dark bg-kado-cream border border-kado-dark/10 py-3 rounded-xl"
+                  className={cn(
+                    'text-center text-[11px] font-bold uppercase tracking-widest py-3 rounded-xl border',
+                    feedback === 'sent'
+                      ? 'text-kado-dark bg-kado-cream border-kado-dark/10'
+                      : 'text-red-800 bg-red-50 border-red-200',
+                  )}
                 >
-                  Opening your email app…
+                  {feedbackMessage}
                 </motion.p>
               )}
             </form>

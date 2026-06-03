@@ -1,3 +1,8 @@
+import { LEGAL_CONTACT_EMAIL } from '../content/customerLegal';
+
+/** Inbound address for contact form and Kado Circle requests. */
+export const KADO_INBOUND_EMAIL = LEGAL_CONTACT_EMAIL;
+
 export type ContactPurpose = 'collaboration' | 'book_us' | 'business' | 'partnership';
 
 export interface ContactPurposeOption {
@@ -55,6 +60,19 @@ export function buildContactMailto(params: {
     'Sent via kado-kohi.com/contact',
   ].join('\n');
 
-  const to = params.to.trim();
+  const to = (params.to.trim() || KADO_INBOUND_EMAIL);
   return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+export function buildKadoCircleMailto(params: { email: string }): string {
+  const subject = '[Kado Kohi] Kado Circle — Request access';
+  const body = [
+    'Kado Circle access request (homepage)',
+    '',
+    `Email: ${params.email.trim()}`,
+    '',
+    '---',
+    'Sent via kado-kohi.com (Kado Circle)',
+  ].join('\n');
+  return `mailto:${KADO_INBOUND_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

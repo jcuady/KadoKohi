@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Mail } from 'lucide-react';
+import { sendInboundEmail } from '../../lib/sendInboundEmail';
 import { HorizontalMarquee } from './marquee';
 import type { BrandMarqueeItem, KadoCircleCopy } from '../../store/landingContentStore';
 
@@ -28,8 +29,10 @@ type KadoCircleCTAProps = {
  * Brand: `kado-dark`, `kado-red`, `kado-cream` / white text (see `index.css` @theme).
  */
 export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [statusDetail, setStatusDetail] = useState('');
   const marqueeRef = useRef<HTMLDivElement>(null);
 
   const sponsors = copy?.sponsors?.length ? copy.sponsors : KADO_CIRCLE_SPONSORS;
@@ -71,11 +74,32 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
     };
   }, []);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
-    navigate('/auth/signup', { state: { email: trimmed } });
+
+    setSubmitting(true);
+    setStatus('idle');
+    setStatusDetail('');
+
+    const result = await sendInboundEmail({ kind: 'kado_circle', email: trimmed });
+    setSubmitting(false);
+
+    if (result.ok === false) {
+      setStatus('error');
+      setStatusDetail(result.message);
+      return;
+    }
+
+    if (result.via === 'mailto') {
+      window.location.href = result.mailto;
+      setStatusDetail('Opening your email app to complete the request…');
+      return;
+    }
+
+    setStatus('sent');
+    setEmail('');
   };
 
   return (
@@ -124,12 +148,30 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
               />
               <button
                 type="submit"
-                className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-[#7d1115] transition-colors flex items-center justify-center gap-2 active:opacity-95"
+                disabled={submitting}
+                className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-[#7d1115] transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
               >
-                {copy?.submitLabel ?? 'Request access'} <ArrowRight className="w-4 h-4" aria-hidden />
+                {submitting ? 'Sending…' : (copy?.submitLabel ?? 'Request access')}{' '}
+                {!submitting ? <ArrowRight className="w-4 h-4" aria-hidden /> : null}
               </button>
             </form>
-            <p className="text-white/35 text-xs mt-3 text-center lg:text-left">{copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}</p>
+            {status === 'sent' ? (
+              <p className="text-kado-cream/80 text-xs mt-3 text-center lg:text-left font-medium">
+                Thanks — we received your request. Check your inbox for a reply from Kado Kohi, or{' '}
+                <Link to="/auth/signup" className="text-kado-red hover:underline">
+                  create an account
+                </Link>
+                .
+              </p>
+            ) : status === 'error' ? (
+              <p className="text-red-300 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
+            ) : statusDetail ? (
+              <p className="text-white/45 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
+            ) : (
+              <p className="text-white/35 text-xs mt-3 text-center lg:text-left">
+                {copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}
+              </p>
+            )}
           </div>
         </div>
 

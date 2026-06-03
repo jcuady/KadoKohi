@@ -1,3 +1,7 @@
 # Public customer sign-up uses service role server-side (avoids Auth /signup 429 limits).
 [functions.kk-customer-signup]
 verify_jwt = false
+
+# Public contact + Kado Circle email capture (rate-limited; uses Resend when configured).
+[functions.kk-send-contact]
+verify_jwt = false
