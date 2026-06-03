@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Package, CreditCard, Store } from 'lucide-react';
+import { Package } from 'lucide-react';
 import type { MerchProduct } from '../types/domain';
 import { useMerchStore } from '../store/merchStore';
 import { formatPhp } from '../lib/money';
@@ -93,17 +93,7 @@ export default function Merch() {
           </div>
         </section>
 
-        <section className="px-6 md:px-8 lg:px-16">
-          <div className="max-w-6xl mx-auto">
-            <div className="rounded-2xl border border-kado-dark/10 bg-[#FAF7F2] px-4 py-3 text-xs text-kado-dark/65 grid sm:grid-cols-3 gap-2">
-              <p className="flex items-center gap-1.5 font-semibold"><Package className="w-3.5 h-3.5 text-kado-red" /> Online merch order</p>
-              <p className="flex items-center gap-1.5 font-semibold"><CreditCard className="w-3.5 h-3.5 text-kado-red" /> GCash proof in account</p>
-              <p className="flex items-center gap-1.5 font-semibold"><Store className="w-3.5 h-3.5 text-kado-red" /> Claim at branch pickup</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="px-6 md:px-8 lg:px-16 pb-5 pt-6 sticky top-14 md:top-[3.75rem] z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
+        <section className="px-6 md:px-8 lg:px-16 pb-5 pt-4 md:pt-6 sticky top-14 md:top-[3.75rem] z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-nowrap md:flex-wrap items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
               {sortedCategories.map((cat) => (

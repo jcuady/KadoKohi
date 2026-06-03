@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
 import { Separator } from "./separator"
-import { Quote, Star } from "lucide-react"
+import { ExternalLink, Quote, Star } from "lucide-react"
+import type { GoogleReviewsListing } from "../../content/kadoGoogleReviews"
 import { motion, useAnimation, useInView } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "../../lib/utils"
@@ -28,7 +29,12 @@ export interface AnimatedTestimonialsProps {
   autoRotateInterval?: number
   trustedCompanies?: TrustedBrandItem[]
   trustedCompaniesTitle?: string
+  googleListing?: GoogleReviewsListing
   className?: string
+}
+
+function formatReviewText(text: string) {
+  return text.replace(/\s+/g, " ").replace(/…+/g, "…").trim()
 }
 
 export function AnimatedTestimonials({
@@ -39,6 +45,7 @@ export function AnimatedTestimonials({
   autoRotateInterval = 6000,
   trustedCompanies = [],
   trustedCompaniesTitle = "Uses trusted brands worldwide",
+  googleListing,
   className,
 }: AnimatedTestimonialsProps) {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -112,6 +119,30 @@ export function AnimatedTestimonials({
                 {subtitle}
               </p>
 
+              {googleListing ? (
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-kado-dark/5 px-3 py-1.5 text-sm font-semibold text-kado-dark">
+                    <Star className="h-4 w-4 fill-kado-red text-kado-red" />
+                    <span>
+                      {googleListing.rating} on Google
+                      <span className="font-normal text-kado-dark/55">
+                        {" "}
+                        · {googleListing.reviewCount} reviews
+                      </span>
+                    </span>
+                  </div>
+                  <a
+                    href={googleListing.reviewsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-kado-red hover:underline"
+                  >
+                    Read on Google
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  </a>
+                </div>
+              ) : null}
+
               {/* Navigation dots */}
               <div className="flex items-center gap-2.5 pt-4">
                 {testimonials.map((_, index) => (
@@ -172,7 +203,7 @@ export function AnimatedTestimonials({
                   <div className="relative mb-6 flex-1">
                     <Quote className="absolute -top-1 -left-1 h-7 w-7 text-kado-red/15 rotate-180" />
                     <p className="relative z-10 text-kado-dark text-base leading-relaxed font-medium">
-                      "{testimonial.content}"
+                      &ldquo;{formatReviewText(testimonial.content)}&rdquo;
                     </p>
                   </div>
 
@@ -181,13 +212,23 @@ export function AnimatedTestimonials({
                   {/* Author */}
                   <div className="flex items-center gap-3">
                     <Avatar className="h-11 w-11 border border-kado-dark/10">
-                      <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                      <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                      {testimonial.avatar?.trim() ? (
+                        <AvatarImage
+                          src={testimonial.avatar}
+                          alt={testimonial.name}
+                          referrerPolicy="no-referrer"
+                          className="object-cover"
+                        />
+                      ) : null}
+                      <AvatarFallback delayMs={testimonial.avatar?.trim() ? 600 : 0}>
+                        {testimonial.name.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-semibold text-kado-dark text-sm">{testimonial.name}</p>
                       <p className="text-xs text-kado-dark/50">
-                        {testimonial.role} · {testimonial.company}
+                        {testimonial.role}
+                        {testimonial.company ? ` · ${testimonial.company}` : ""}
                       </p>
                     </div>
                   </div>

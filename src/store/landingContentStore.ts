@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
+import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -153,48 +154,7 @@ interface LandingContentStore {
   seed: () => void;
 }
 
-const SEED_TESTIMONIALS: StoredTestimonial[] = [
-  {
-    id: 1,
-    name: 'Rina Santos',
-    role: 'Regular',
-    company: 'Marikina',
-    content:
-      "The oat latte here is unreal. Oatside milk makes such a difference — perfectly steamed, not too sweet, and the ambiance just pulls you in. I'm here every weekend without fail.",
-    rating: 5,
-    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-  },
-  {
-    id: 2,
-    name: 'Marco Dela Cruz',
-    role: 'Freelancer',
-    company: 'Pasig',
-    content:
-      'Best work-from-cafe spot in the area. The music is always right, the matcha (Aiya grade A!) is excellent, and the staff actually know your order by your third visit.',
-    rating: 5,
-    avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
-  },
-  {
-    id: 3,
-    name: 'Jess Buenaventura',
-    role: 'Creative',
-    company: 'QC',
-    content:
-      "I love that they're intentional about what goes into their drinks — Emborg dairy, quality matcha. You taste the difference. The night vibe on weekends is also *chef's kiss*.",
-    rating: 5,
-    avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
-  },
-  {
-    id: 4,
-    name: 'Luis Tomas',
-    role: 'Student',
-    company: 'Marikina',
-    content:
-      "Kado is my corner. No pretension, just good coffee, good music, and people who feel like community. It's rare to find a place this intentional about craft and vibe.",
-    rating: 5,
-    avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-  },
-];
+const SEED_TESTIMONIALS: StoredTestimonial[] = googleReviewsToTestimonials();
 
 const SEED_TRUSTED_BRANDS: BrandMarqueeItem[] = [
   { label: 'Oatside', imageUrl: '' },
@@ -280,9 +240,10 @@ export const SEED_CONTENT: LandingContentState = {
     noEventBrowseLabel: 'View Kado Events →',
   },
   testimonials: {
-    badge: 'Customers',
+    badge: 'Google Reviews',
     title: 'Loved by our community',
-    subtitle: "Don't just take our word for it. Here's what regulars have to say about their Kado Kohi experience.",
+    subtitle:
+      'Rated 4.9 on Google Maps from 22 reviews. Here’s what guests are saying about Kado Kohi in Marikina.',
     trustedTitle: 'Uses trusted brands like',
   },
   testimonialItems: SEED_TESTIMONIALS,
@@ -356,6 +317,8 @@ function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
 function clampTestimonials(items: StoredTestimonial[] | undefined): StoredTestimonial[] {
   const seed = SEED_CONTENT.testimonialItems;
   if (!Array.isArray(items) || items.length === 0) return seed;
+  // Drop legacy placeholder testimonials (pre–Google Reviews integration).
+  if (items.some((t) => t.avatar?.includes('randomuser.me'))) return seed;
   return seed.map((seedItem, i) => ({
     ...seedItem,
     ...(items[i] ?? {}),

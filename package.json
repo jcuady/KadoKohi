@@ -14,7 +14,8 @@
     "lint": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "screenshots:hero": "node scripts/snapshot-hero.mjs"
+    "screenshots:hero": "node scripts/snapshot-hero.mjs",
+    "sync:google-reviews": "node scripts/sync-google-reviews.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

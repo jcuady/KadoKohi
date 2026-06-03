@@ -22,6 +22,7 @@ import {
 import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
+import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
 import type { FeaturedCopy, EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import { formatPhp } from '../../lib/money';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
@@ -66,6 +67,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         trustedCompaniesTitle={landing.testimonials.trustedTitle}
         trustedCompanies={landing.trustedBrands}
         testimonials={landing.testimonialItems}
+        googleListing={KADO_GOOGLE_LISTING}
       />
       <BranchesStrip copy={landing.branchesStrip} />
       <KadoCircleCTA copy={landing.kadoCircle} />
