@@ -6,7 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp, computeOrderTotals } from '../lib/money';
-import { clampText, requireGuestName } from '../lib/validation';
+import { clampText, formatOrderError, requireGuestName } from '../lib/validation';
+import { isProductInStock } from '../lib/productStock';
 import { useSettingsStore } from '../store/settingsStore';
 import { newId } from '../lib/id';
 import { ShoppingBag, Check } from 'lucide-react';
@@ -50,6 +51,7 @@ export default function Order() {
   const list = productsByCategory(activeCat || sortedCategories[0]?.id || '');
 
   const addToCart = (product: Product) => {
+    if (!isProductInStock(product)) return;
     const defaultMilk = product.milks?.[0]?.id;
     const temp: 'hot' | 'iced' = product.temperature === 'iced' ? 'iced' : 'hot';
     setCart((c) => [...c, { key: newId(), productId: product.id, qty: 1, milkId: defaultMilk, temperature: temp }]);
@@ -97,16 +99,20 @@ export default function Order() {
       branchId,
       customerId: user?.id,
       guestName: user ? undefined : clampText(guestName, 80),
-      status: 'pending',
+      paymentMethod: 'gcash-qr',
       items: cartTotals.lines,
       subtotal: cartTotals.subtotal,
       modifiersTotal: cartTotals.modifiers,
       tax: cartTotals.tax,
       total: cartTotals.total,
-    }).then(() => {
-      setCart([]);
-      setPlaced(true);
-    });
+    })
+      .then(() => {
+        setCart([]);
+        setPlaced(true);
+      })
+      .catch((err) => {
+        setGuestOrderError(formatOrderError(err));
+      });
   };
 
   if (placed) {
@@ -166,22 +172,37 @@ export default function Order() {
                   ))}
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {list.map((p) => (
+                  {list.map((p) => {
+                    const inStock = isProductInStock(p);
+                    return (
                     <button
                       key={p.id}
                       type="button"
+                      disabled={!inStock}
                       onClick={() => addToCart(p)}
-                      className="text-left rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-5 hover:border-kado-red/40 hover:shadow-lg transition-all group"
+                      className={`text-left rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-5 transition-all group ${
+                        inStock
+                          ? 'hover:border-kado-red/40 hover:shadow-lg'
+                          : 'opacity-55 cursor-not-allowed'
+                      }`}
                     >
                       <div className="flex justify-between gap-2 items-start">
-                        <span className="font-display font-bold text-kado-dark group-hover:text-kado-red transition-colors">{p.name}</span>
+                        <span className="font-display font-bold text-kado-dark group-hover:text-kado-red transition-colors">
+                          {p.name}
+                          {!inStock && (
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-amber-700 mt-0.5">
+                              Out of stock
+                            </span>
+                          )}
+                        </span>
                         <span className="font-display font-bold text-kado-red shrink-0">{formatPhp(p.basePrice)}</span>
                       </div>
                       {p.tags?.length ? (
                         <span className="text-[9px] font-bold uppercase tracking-widest text-kado-dark/40 mt-1 inline-block">{p.tags.join(' · ')}</span>
                       ) : null}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
