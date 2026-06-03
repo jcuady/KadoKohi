@@ -4,10 +4,9 @@ import type { Order, OrderChannel, PaymentMethod } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { isGcashOrder } from '../../lib/orderStatus';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
-import { prepareGuestPaymentProof } from '../../lib/compressPaymentProof';
+import { prepareGuestPaymentProof, GUEST_PROOF_MAX_DATA_URL_CHARS } from '../../lib/compressPaymentProof';
 import { formatOrderError } from '../../lib/validation';
-import { useAuthStore } from '../../store/authStore';
-import { useOrderStore } from '../../store/orderStore';
+import { usePaymentProofDisplayUrl } from '../../hooks/usePaymentProofDisplayUrl';
 import { notifyBaristasProofSubmitted } from '../../lib/notify';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 
@@ -39,18 +38,40 @@ export default function GuestOrderPaymentBlock({
   onProofSubmitted,
   onViewQr,
 }: Props) {
-  const user = useAuthStore((s) => s.user);
-  const updateOrderPaymentProof = useOrderStore((s) => s.updateOrderPaymentProof);
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [localProof, setLocalProof] = useState<string | null>(proofPreview ?? null);
+  const proofRef = localProof ?? proofPreview;
+  const { url: proofDisplayUrl } = usePaymentProofDisplayUrl(proofRef);
 
   const orderLike: Pick<Order, 'paymentMethod'> = { paymentMethod };
   if (!isGcashOrder(orderLike)) return null;
 
   const needsProof = paymentStatus === 'unpaid' || paymentStatus === 'proof_submitted';
-  const displayProof = localProof ?? proofPreview;
+  const notifyStaff = () => {
+    void broadcastGuestOrderUpdate(orderId, {
+      status: 'pending',
+      paymentStatus: 'proof_submitted',
+      updatedAt: new Date().toISOString(),
+      shortCode,
+    });
+    notifyBaristasProofSubmitted({
+      id: orderId,
+      shortCode,
+      channel,
+      branchId: '',
+      status: 'pending',
+      paymentStatus: 'proof_submitted',
+      items: [],
+      subtotal: total,
+      modifiersTotal: 0,
+      tax: 0,
+      total,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  };
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -61,40 +82,20 @@ export default function GuestOrderPaymentBlock({
     setError(null);
     setUploading(true);
     try {
-      if (user?.id) {
-        const signedUrl = await orderingRepo.uploadPaymentProof(orderId, file);
-        updateOrderPaymentProof(orderId, signedUrl);
-        setLocalProof(signedUrl);
-      } else {
-        const prepared = await prepareGuestPaymentProof(file);
-        if (prepared.ok === false) {
-          setError(prepared.error);
-          return;
-        }
-        await orderingRepo.submitGuestPaymentProof(orderId, prepared.dataUrl);
-        setLocalProof(prepared.dataUrl);
-        void broadcastGuestOrderUpdate(orderId, {
-          status: 'pending',
-          paymentStatus: 'proof_submitted',
-          updatedAt: new Date().toISOString(),
-          shortCode,
-        });
-        notifyBaristasProofSubmitted({
-          id: orderId,
-          shortCode,
-          channel,
-          branchId: '',
-          status: 'pending',
-          paymentStatus: 'proof_submitted',
-          items: [],
-          subtotal: total,
-          modifiersTotal: 0,
-          tax: 0,
-          total,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+      const prepared = await prepareGuestPaymentProof(file);
+      if (prepared.ok === false) {
+        setError(prepared.error);
+        return;
       }
+
+      let proofToStore = prepared.dataUrl;
+      if (prepared.dataUrl.length > GUEST_PROOF_MAX_DATA_URL_CHARS) {
+        proofToStore = await orderingRepo.uploadGuestPaymentProof(orderId, file);
+      }
+
+      await orderingRepo.submitGuestPaymentProof(orderId, proofToStore);
+      setLocalProof(proofToStore);
+      notifyStaff();
       onProofSubmitted?.();
     } catch (err) {
       setError(formatOrderError(err));
@@ -112,8 +113,13 @@ export default function GuestOrderPaymentBlock({
           <QrCode className="w-4 h-4 shrink-0" />
           View QR
         </button>
-        {displayProof && (
-          <a href={displayProof} target="_blank" rel="noopener noreferrer" className={actionBtn}>
+        {(proofDisplayUrl || (proofRef && proofRef.startsWith('data:image/'))) && (
+          <a
+            href={proofDisplayUrl ?? proofRef ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={actionBtn}
+          >
             <ExternalLink className="w-4 h-4 shrink-0" />
             Open proof
           </a>
@@ -147,17 +153,17 @@ export default function GuestOrderPaymentBlock({
             <ImageIcon className="w-4 h-4 shrink-0" />
             {uploading
               ? 'Uploading…'
-              : displayProof
+              : proofRef
                 ? 'Replace screenshot'
                 : 'Upload GCash screenshot'}
           </button>
         </>
       )}
 
-      {displayProof && (
+      {proofRef && (proofDisplayUrl || proofRef.startsWith('data:image/')) && (
         <div className="flex flex-col sm:flex-row items-start gap-3">
           <img
-            src={displayProof}
+            src={proofDisplayUrl ?? proofRef}
             alt="Payment proof"
             className="w-full sm:w-20 h-auto sm:h-20 max-h-48 sm:max-h-none rounded-lg object-cover border border-kado-dark/10 shrink-0"
           />

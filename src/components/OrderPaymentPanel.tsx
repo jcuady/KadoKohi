@@ -4,11 +4,13 @@ import type { Order } from '../types/domain';
 import { formatPhp } from '../lib/money';
 import { isGcashOrder } from '../lib/orderStatus';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { usePaymentProofDisplayUrl } from '../hooks/usePaymentProofDisplayUrl';
+import { formatOrderError } from '../lib/validation';
 
 type Props = {
   order: Order;
   onViewQr: () => void;
-  onUploadProof: (dataUrl: string) => void;
+  onUploadProof: (proofRef: string) => void;
 };
 
 const actionBtn =
@@ -21,6 +23,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const { url: proofUrl } = usePaymentProofDisplayUrl(order.paymentProofImage);
 
   if (!isGcashOrder(order)) return null;
 
@@ -35,10 +38,10 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
     setError(null);
     setUploading(true);
     try {
-      const signedUrl = await orderingRepo.uploadPaymentProof(order.id, file);
-      onUploadProof(signedUrl);
-    } catch {
-      setError('Upload failed. Please try again.');
+      const proofRef = await orderingRepo.uploadPaymentProof(order.id, file);
+      onUploadProof(proofRef);
+    } catch (err) {
+      setError(formatOrderError(err));
     } finally {
       setUploading(false);
     }
@@ -53,13 +56,8 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
           <QrCode className="w-4 h-4 shrink-0" />
           View QR
         </button>
-        {order.paymentProofImage && (
-          <a
-            href={order.paymentProofImage}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={actionBtn}
-          >
+        {proofUrl && (
+          <a href={proofUrl} target="_blank" rel="noopener noreferrer" className={actionBtn}>
             <ExternalLink className="w-4 h-4 shrink-0" />
             Open proof
           </a>
@@ -101,10 +99,10 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
         </>
       )}
 
-      {order.paymentProofImage && (
+      {order.paymentProofImage && proofUrl && (
         <div className="flex flex-col sm:flex-row items-start gap-3">
           <img
-            src={order.paymentProofImage}
+            src={proofUrl}
             alt="Payment proof"
             className="w-full sm:w-20 h-auto sm:h-20 max-h-48 sm:max-h-none rounded-lg object-cover border border-kado-dark/10 shrink-0"
           />

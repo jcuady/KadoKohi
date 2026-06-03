@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { clampText, isValidEmail, requirePhilippinePhone } from '../../lib/validation';
 import { normalizePhilippinePhone } from '../../lib/phonePhilippines';
 import PhilippinePhoneField from '../../components/PhilippinePhoneField';
+import SignupTermsConsent from '../../components/auth/SignupTermsConsent';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 import {
@@ -35,6 +36,7 @@ export default function Signup() {
   const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -76,6 +78,11 @@ export default function Signup() {
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setError('Please read and accept the Terms of Service and Privacy Policy to create an account.');
       return;
     }
 
@@ -182,8 +189,8 @@ export default function Signup() {
         </p>
       </aside>
 
-      {/* Form column — desktop: centered in viewport without outer scroll */}
-      <main className="flex-1 flex flex-col items-center justify-center min-h-0 min-w-0 px-5 sm:px-8 py-10 lg:py-4 lg:overflow-hidden bg-gradient-to-b from-kado-offwhite via-[#FAF7F2] to-kado-cream/40">
+      {/* Form column — scrollable on mobile; centered on desktop */}
+      <main className="flex-1 flex flex-col items-center justify-start lg:justify-center min-h-0 min-w-0 px-4 sm:px-8 py-8 sm:py-10 lg:py-4 lg:overflow-hidden bg-gradient-to-b from-kado-offwhite via-[#FAF7F2] to-kado-cream/40 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -191,7 +198,7 @@ export default function Signup() {
           className="w-full max-w-[440px] lg:min-h-0 lg:max-h-full lg:flex lg:flex-col lg:justify-center"
         >
           {/* Mobile brand strip */}
-          <div className="lg:hidden flex flex-col items-center text-center mb-10">
+          <div className="lg:hidden flex flex-col items-center text-center mb-8 sm:mb-10">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 bg-kado-red text-kado-cream flex items-center justify-center font-display font-bold text-xl rounded-sm">
                 角
@@ -324,9 +331,17 @@ export default function Signup() {
                 <span>Minimum 8 characters. You can change your password anytime in your profile.</span>
               </p>
 
+              <SignupTermsConsent
+                checked={acceptedTerms}
+                onChange={(v) => {
+                  setAcceptedTerms(v);
+                  setError('');
+                }}
+              />
+
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !acceptedTerms}
                 className="w-full rounded-xl lg:rounded-2xl bg-kado-red text-kado-cream py-3 lg:py-2.5 font-bold uppercase tracking-[0.15em] text-[11px] hover:bg-kado-dark transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-md shadow-kado-red/15"
               >
                 {submitting ? (
@@ -344,6 +359,15 @@ export default function Signup() {
               Already on Kado Kohi?{' '}
               <Link to="/auth/login" className="font-bold text-kado-red hover:underline underline-offset-2">
                 Sign in
+              </Link>
+            </p>
+            <p className="mt-3 text-center text-[10px] text-kado-dark/40 leading-relaxed px-1">
+              <Link to="/legal/terms" className="hover:text-kado-red transition-colors">
+                Terms
+              </Link>
+              {' · '}
+              <Link to="/legal/privacy" className="hover:text-kado-red transition-colors">
+                Privacy
               </Link>
             </p>
           </div>

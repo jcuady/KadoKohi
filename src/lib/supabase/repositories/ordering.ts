@@ -32,6 +32,14 @@ export type TrackedOrderStatus = {
   updatedAt: string;
 };
 import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
+import { prepareGuestPaymentProof } from '../../compressPaymentProof';
+import {
+  PAYMENT_PROOF_BUCKET,
+  customerProofObjectPath,
+  dataUrlToBlob,
+  formatProofStorageRef,
+  guestProofObjectPath,
+} from '../../paymentProofStorage';
 import { supabase } from '../client';
 import { authRepo } from './auth';
 import { profileBranchId } from '../../roles';
@@ -733,21 +741,56 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_orders').update(dbPatch).eq('id', id);
     if (error) throw error;
   },
+  /**
+   * Upload customer GCash proof to private storage. Returns a stable proof-storage: ref
+   * (not a signed URL — those expire and cause 404s in admin/barista previews).
+   */
   async uploadPaymentProof(orderId: string, file: File): Promise<string> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const session = await authRepo.session();
     const userId = session?.user?.id;
     if (!userId) throw new Error('Sign in required for payment proof upload.');
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const path = `${userId}/${orderId}-${Date.now()}.${ext}`;
-    const upload = await supabase.storage.from('kado-payment-proofs').upload(path, file, {
+
+    const prepared = await prepareGuestPaymentProof(file);
+    if (prepared.ok === false) throw new Error(prepared.error);
+
+    const path = customerProofObjectPath(userId, orderId);
+    const blob = dataUrlToBlob(prepared.dataUrl);
+    const upload = await supabase.storage.from(PAYMENT_PROOF_BUCKET).upload(path, blob, {
       upsert: true,
-      contentType: file.type || 'image/jpeg',
+      contentType: 'image/jpeg',
     });
     if (upload.error) throw upload.error;
-    const signed = await supabase.storage.from('kado-payment-proofs').createSignedUrl(path, 60 * 60 * 24 * 14);
-    if (signed.error) throw signed.error;
-    return signed.data.signedUrl;
+
+    const { data: meta, error: metaErr } = await supabase.storage.from(PAYMENT_PROOF_BUCKET).info(path);
+    if (metaErr || !meta) {
+      throw new Error('Proof upload could not be verified. Please try again.');
+    }
+
+    return formatProofStorageRef(path);
+  },
+
+  /** Anonymous guest proof via storage (fallback when data URL would be too large for RPC). */
+  async uploadGuestPaymentProof(orderId: string, file: File): Promise<string> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+
+    const prepared = await prepareGuestPaymentProof(file);
+    if (prepared.ok === false) throw new Error(prepared.error);
+
+    const path = guestProofObjectPath(orderId);
+    const blob = dataUrlToBlob(prepared.dataUrl);
+    const upload = await supabase.storage.from(PAYMENT_PROOF_BUCKET).upload(path, blob, {
+      upsert: true,
+      contentType: 'image/jpeg',
+    });
+    if (upload.error) throw upload.error;
+
+    const { data: meta, error: metaErr } = await supabase.storage.from(PAYMENT_PROOF_BUCKET).info(path);
+    if (metaErr || !meta) {
+      throw new Error('Proof upload could not be verified. Please try again.');
+    }
+
+    return formatProofStorageRef(path);
   },
   async ensureMyProfile(name?: string): Promise<User> {
     if (!supabase) throw new Error('Supabase is not configured.');

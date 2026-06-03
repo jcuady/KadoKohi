@@ -78,6 +78,22 @@ const PUBLIC_META: Array<{ path: string; meta: RouteMeta }> = [
         'Get in touch with Kado Kohi for store concerns, collaborations, and event inquiries.',
     },
   },
+  {
+    path: '/legal/terms',
+    meta: {
+      title: 'Terms of Service | Kado Kohi',
+      description:
+        'Terms for Kado Kohi customer accounts, online ordering, GCash payment, Kado Circle loyalty, and events.',
+    },
+  },
+  {
+    path: '/legal/privacy',
+    meta: {
+      title: 'Privacy Policy | Kado Kohi',
+      description:
+        'How Kado Kohi collects and protects your personal information when you order, earn stamps, or book with us.',
+    },
+  },
 ];
 
 const PUBLIC_BREADCRUMBS: Array<{ path: string; name: string }> = [

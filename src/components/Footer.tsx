@@ -76,9 +76,18 @@ export default function Footer() {
       </div>
 
       <div className="bg-kado-red text-kado-cream py-4">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-medium">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium">
           <span>© 2026 Kado Kohi. All rights reserved.</span>
-          <span>Specialty Coffee · Marikina City</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <Link to="/legal/terms" className="hover:text-kado-cream/90 underline-offset-2 hover:underline">
+              Terms of Service
+            </Link>
+            <Link to="/legal/privacy" className="hover:text-kado-cream/90 underline-offset-2 hover:underline">
+              Privacy Policy
+            </Link>
+            <span className="hidden sm:inline text-kado-cream/60">·</span>
+            <span>Specialty Coffee · Marikina City</span>
+          </div>
         </div>
       </div>
     </footer>

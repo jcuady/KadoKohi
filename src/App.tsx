@@ -30,6 +30,8 @@ import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
 import Merch from './pages/Merch';
 import BookBooth from './pages/BookBooth';
+import TermsOfService from './pages/legal/TermsOfService';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import AdminMerch from './pages/admin/AdminMerch';
 import AdminLoyalty from './pages/admin/AdminLoyalty';
 import AdminBoothBookings from './pages/admin/AdminBoothBookings';
@@ -78,6 +80,8 @@ export default function App() {
           <Route path="/order" element={<Order />} />
           <Route path="/merch" element={<Merch />} />
           <Route path="/book/booth" element={<BookBooth />} />
+          <Route path="/legal/terms" element={<TermsOfService />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
