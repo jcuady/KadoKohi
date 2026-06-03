@@ -9,7 +9,7 @@ const cors = {
 const INBOUND_EMAIL = Deno.env.get("KADO_INBOUND_EMAIL") ?? "kadocoffeeph@gmail.com";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const RESEND_FROM =
-  Deno.env.get("RESEND_FROM_EMAIL") ?? "Kado Kohi <onboarding@resend.dev>";
+  Deno.env.get("RESEND_FROM_EMAIL") ?? "Kado Kohi <hello@kadokohi.com>";
 
 const recentByIp = new Map<string, number[]>();
 const WINDOW_MS = 60 * 60 * 1000;
