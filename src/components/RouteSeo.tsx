@@ -3,8 +3,10 @@ import { matchPath, useLocation } from 'react-router-dom';
 import {
   SEO_BREADCRUMBS,
   SEO_PUBLIC_ROUTES,
+  SEO_BRAND,
   buildFaqPageJsonLd,
   buildLocalBusinessJsonLd,
+  buildOrganizationJsonLd,
   buildWebSiteJsonLd,
   type SeoRouteMeta,
 } from '../content/seo';
@@ -82,8 +84,8 @@ function resolveMeta(pathname: string): SeoRouteMeta & { noindex?: boolean } {
   if (isNoindex) {
     return {
       path: pathname,
-      title: 'Kado Kohi',
-      description: 'Kado Kohi internal page.',
+      title: SEO_BRAND.siteName,
+      description: `${SEO_BRAND.siteName} internal page.`,
       noindex: true,
     };
   }
@@ -123,7 +125,7 @@ export default function RouteSeo() {
     upsertMetaByProperty('og:description', meta.description);
     upsertMetaByProperty('og:type', 'website');
     upsertMetaByProperty('og:url', canonical);
-    upsertMetaByProperty('og:site_name', 'Kado Kohi');
+    upsertMetaByProperty('og:site_name', SEO_BRAND.siteName);
     upsertMetaByProperty('og:locale', 'en_PH');
     upsertMetaByProperty('og:image', `${origin}${DEFAULT_OG_IMAGE}`);
 
@@ -135,6 +137,7 @@ export default function RouteSeo() {
     upsertCanonical(canonical);
 
     upsertJsonLd('localbusiness', buildLocalBusinessJsonLd(origin));
+    upsertJsonLd('organization', buildOrganizationJsonLd(origin));
     upsertJsonLd('website', buildWebSiteJsonLd(origin));
 
     if (pathname === '/') {
