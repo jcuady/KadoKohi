@@ -213,7 +213,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
-    locationBadge: 'Kado Kohi · Marikina',
+    locationBadge: 'Kado Coffee · Marikina',
     imageCredit: 'Images: Kado Kohi Social + InsideMarikina',
     primaryCtaLabel: 'Explore Menu',
     primaryCtaPath: '/menu',
@@ -221,10 +221,11 @@ export const SEED_CONTENT: LandingContentState = {
     secondaryCtaPath: '/merch',
   },
   featured: {
-    badge: 'Best Coffees',
+    badge: 'Best Coffee in Marikina',
     title: 'Coffee Worth Coming Back For.',
-    subtitleDesktop: 'Top-performing coffee picks from your live menu - crafted to hook first-timers and regulars.',
-    subtitleMobile: 'Best coffee picks from our live menu.',
+    subtitleDesktop:
+      'Top specialty coffee picks from our live menu — crafted for first-timers, regulars, and your Marikina tambayan.',
+    subtitleMobile: 'Best specialty coffee picks from our Marikina menu.',
     menuCtaLabel: 'View Full Menu',
     shopCtaLabel: 'View Shop',
     shopCtaPath: '/menu',
@@ -232,9 +233,10 @@ export const SEED_CONTENT: LandingContentState = {
     cardImageOverrides: ['', '', ''],
   },
   events: {
-    badge: 'Next Massive Event',
+    badge: 'Events & Tambayan',
     title: 'More than a Corner.',
-    subtitle: 'Coffee shop by day. Club and hangout by night. The definitive Marikina social experience.',
+    subtitle:
+      'Specialty coffee by day. Tambayan nights, pop-ups, and event coffee — the definitive Marikina hangout.',
     coverImageOverride: '',
     noEventBody: 'No upcoming events right now. Check back soon.',
     noEventBrowseLabel: 'View Kado Events →',
@@ -243,7 +245,7 @@ export const SEED_CONTENT: LandingContentState = {
     badge: 'Google Reviews',
     title: 'Loved by our community',
     subtitle:
-      'Rated 4.9 on Google Maps from 22 reviews. Here’s what guests are saying about Kado Kohi in Marikina.',
+      'Rated 4.9 on Google Maps as Kado Coffee — 22 reviews from guests who love our Marikina specialty coffee tambayan.',
     trustedTitle: 'Uses trusted brands like',
   },
   testimonialItems: SEED_TESTIMONIALS,

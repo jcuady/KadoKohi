@@ -7,6 +7,7 @@ import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
 import HomeHeroSlider from '../ui/home-hero-slider';
+import HomeSeoIntro from './HomeSeoIntro';
 import CafeScheduleSection from './CafeScheduleSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
@@ -56,6 +57,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         </motion.div>
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
+      <HomeSeoIntro />
       <BestCoffeesSection copy={landing.featured} />
       <KadoOrderingCarousel copy={landing.ordering} />
       <CafeScheduleSection copy={landing.schedule} />

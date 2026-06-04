@@ -1,111 +1,19 @@
 import { useEffect, useMemo } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
+import {
+  SEO_BREADCRUMBS,
+  SEO_PUBLIC_ROUTES,
+  buildFaqPageJsonLd,
+  buildLocalBusinessJsonLd,
+  buildWebSiteJsonLd,
+  type SeoRouteMeta,
+} from '../content/seo';
 import { getSiteOrigin } from '../lib/siteUrl';
 import { useEventStore } from '../store/eventStore';
 import { useMenuStore } from '../store/menuStore';
 import { useMerchStore } from '../store/merchStore';
 
-type RouteMeta = {
-  title: string;
-  description: string;
-  noindex?: boolean;
-};
-
 const DEFAULT_OG_IMAGE = '/logo/Logo1.png';
-
-const PUBLIC_META: Array<{ path: string; meta: RouteMeta }> = [
-  {
-    path: '/',
-    meta: {
-      title: 'Kado Kohi — Specialty Coffee in Marikina City',
-      description:
-        'Kado Kohi serves handcrafted specialty coffee, curated food, events, and merch in Marikina City.',
-    },
-  },
-  {
-    path: '/menu',
-    meta: {
-      title: 'Coffee Menu | Kado Kohi',
-      description:
-        'Explore Kado Kohi coffee, non-coffee, food, and seasonal favorites prepared fresh in Marikina.',
-    },
-  },
-  {
-    path: '/merch',
-    meta: {
-      title: 'Merch | Kado Kohi',
-      description:
-        'Shop official Kado Kohi merch for pickup and bring the Kado identity with you.',
-    },
-  },
-  {
-    path: '/events',
-    meta: {
-      title: 'Kado Events | Kado Kohi',
-      description:
-        'Discover upcoming Kado Kohi events and sign up online for the latest happenings.',
-    },
-  },
-  {
-    path: '/book/booth',
-    meta: {
-      title: 'Booth & Event Booking | Kado Kohi',
-      description:
-        'Book Kado Kohi for celebrations and private events. Build your estimate and submit your booking request online.',
-    },
-  },
-  {
-    path: '/branches',
-    meta: {
-      title: 'Branches | Kado Kohi',
-      description:
-        'Find Kado Kohi branches, schedules, and location details in Marikina and nearby areas.',
-    },
-  },
-  {
-    path: '/about',
-    meta: {
-      title: 'About Us | Kado Kohi',
-      description:
-        'Learn the story and vision behind Kado Kohi, a community-first specialty coffee experience.',
-    },
-  },
-  {
-    path: '/contact',
-    meta: {
-      title: 'Contact Us | Kado Kohi',
-      description:
-        'Get in touch with Kado Kohi for store concerns, collaborations, and event inquiries.',
-    },
-  },
-  {
-    path: '/legal/terms',
-    meta: {
-      title: 'Terms of Service | Kado Kohi',
-      description:
-        'Terms for Kado Kohi customer accounts, online ordering, GCash payment, Kado Circle loyalty, and events.',
-    },
-  },
-  {
-    path: '/legal/privacy',
-    meta: {
-      title: 'Privacy Policy | Kado Kohi',
-      description:
-        'How Kado Kohi collects and protects your personal information when you order, earn stamps, or book with us.',
-    },
-  },
-];
-
-const PUBLIC_BREADCRUMBS: Array<{ path: string; name: string }> = [
-  { path: '/', name: 'Home' },
-  { path: '/menu', name: 'Coffee Menu' },
-  { path: '/merch', name: 'Merch' },
-  { path: '/events', name: 'Kado Events' },
-  { path: '/book/booth', name: 'Event Booking' },
-  { path: '/branches', name: 'Branches' },
-  { path: '/about', name: 'About Us' },
-  { path: '/contact', name: 'Contact Us' },
-];
 
 const NOINDEX_PATTERNS = [
   '/admin/*',
@@ -166,24 +74,21 @@ function removeJsonLd(id: string) {
   node?.remove();
 }
 
-function resolveMeta(pathname: string): RouteMeta {
-  const explicit = PUBLIC_META.find(({ path }) => matchPath({ path, end: true }, pathname));
-  if (explicit) return explicit.meta;
+function resolveMeta(pathname: string): SeoRouteMeta & { noindex?: boolean } {
+  const explicit = SEO_PUBLIC_ROUTES.find(({ path }) => matchPath({ path, end: true }, pathname));
+  if (explicit) return explicit;
 
   const isNoindex = NOINDEX_PATTERNS.some((pattern) => matchPath({ path: pattern, end: false }, pathname));
   if (isNoindex) {
     return {
+      path: pathname,
       title: 'Kado Kohi',
       description: 'Kado Kohi internal page.',
       noindex: true,
     };
   }
 
-  return {
-    title: 'Kado Kohi — Specialty Coffee in Marikina City',
-    description:
-      'Kado Kohi serves handcrafted specialty coffee, curated food, events, and merch in Marikina City.',
-  };
+  return SEO_PUBLIC_ROUTES[0];
 }
 
 export default function RouteSeo() {
@@ -205,12 +110,21 @@ export default function RouteSeo() {
     document.title = meta.title;
     upsertMetaByName('description', meta.description);
     upsertMetaByName('robots', meta.noindex ? 'noindex, nofollow' : 'index, follow');
+    if (meta.keywords?.length) {
+      upsertMetaByName('keywords', meta.keywords.join(', '));
+    }
+
+    upsertMetaByName('geo.region', 'PH-00');
+    upsertMetaByName('geo.placename', 'Marikina City');
+    upsertMetaByName('geo.position', '14.6502;121.1024');
+    upsertMetaByName('ICBM', '14.6502, 121.1024');
 
     upsertMetaByProperty('og:title', meta.title);
     upsertMetaByProperty('og:description', meta.description);
     upsertMetaByProperty('og:type', 'website');
     upsertMetaByProperty('og:url', canonical);
     upsertMetaByProperty('og:site_name', 'Kado Kohi');
+    upsertMetaByProperty('og:locale', 'en_PH');
     upsertMetaByProperty('og:image', `${origin}${DEFAULT_OG_IMAGE}`);
 
     upsertMetaByName('twitter:card', 'summary_large_image');
@@ -220,25 +134,16 @@ export default function RouteSeo() {
 
     upsertCanonical(canonical);
 
-    upsertJsonLd('localbusiness', {
-      '@context': 'https://schema.org',
-      '@type': 'CafeOrCoffeeShop',
-      name: 'Kado Kohi',
-      url: origin,
-      image: `${origin}${DEFAULT_OG_IMAGE}`,
-      servesCuisine: ['Coffee', 'Cafe'],
-      areaServed: 'Marikina City',
-      sameAs: ['https://www.kadokohi.com/'],
-    });
+    upsertJsonLd('localbusiness', buildLocalBusinessJsonLd(origin));
+    upsertJsonLd('website', buildWebSiteJsonLd(origin));
 
-    upsertJsonLd('website', {
-      '@context': 'https://schema.org',
-      '@type': 'WebSite',
-      name: 'Kado Kohi',
-      url: origin,
-    });
+    if (pathname === '/') {
+      upsertJsonLd('faq', buildFaqPageJsonLd());
+    } else {
+      removeJsonLd('faq');
+    }
 
-    const currentBreadcrumb = PUBLIC_BREADCRUMBS.find(({ path }) => matchPath({ path, end: true }, pathname));
+    const currentBreadcrumb = SEO_BREADCRUMBS.find(({ path }) => matchPath({ path, end: true }, pathname));
     if (currentBreadcrumb && currentBreadcrumb.path !== '/') {
       upsertJsonLd('breadcrumbs', {
         '@context': 'https://schema.org',
@@ -265,6 +170,7 @@ export default function RouteSeo() {
       upsertJsonLd('events-list', {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
+        name: 'Kado Kohi events',
         itemListElement: upcomingOrCurrent.map((event, idx) => ({
           '@type': 'ListItem',
           position: idx + 1,
@@ -280,7 +186,11 @@ export default function RouteSeo() {
             location: {
               '@type': 'Place',
               name: 'Kado Kohi',
-              address: 'Marikina City, Philippines',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'Marikina City',
+                addressCountry: 'PH',
+              },
             },
             organizer: {
               '@type': 'Organization',
@@ -305,7 +215,7 @@ export default function RouteSeo() {
           item: {
             '@type': 'Product',
             name: product.name,
-            description: product.description || `${product.name} from Kado Kohi.`,
+            description: product.description || `${product.name} from Kado Kohi specialty coffee menu.`,
             image: product.image ? [product.image] : undefined,
             category: categoryNameById.get(product.categoryId) ?? 'Coffee',
             brand: { '@type': 'Brand', name: 'Kado Kohi' },

@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "screenshots:hero": "node scripts/snapshot-hero.mjs",
-    "sync:google-reviews": "node scripts/sync-google-reviews.mjs"
+    "sync:google-reviews": "node scripts/sync-google-reviews.mjs",
+    "generate:sitemap": "node scripts/generate-sitemap.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

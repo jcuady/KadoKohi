@@ -18,9 +18,10 @@ export default defineConfig(() => {
           'icons/apple-touch-icon.png',
         ],
         manifest: {
-          name: 'Kado Kohi',
+          name: 'Kado Kohi — Kado Coffee Marikina',
           short_name: 'KadoKohi',
-          description: 'Kado Kohi ordering and customer portal',
+          description:
+            'Best specialty coffee in Marikina — order online, events, booth booking, and Kado Circle loyalty.',
           theme_color: '#9A1F24',
           background_color: '#FAF7F2',
           display: 'standalone',
