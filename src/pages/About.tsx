@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Heart, Coffee, Users, Award, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 const values = [
   {
@@ -213,6 +214,7 @@ export default function About() {
         </div>
       </section>
 
+      <PageSeoBlurb />
     </div>
   );
 }

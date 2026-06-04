@@ -173,7 +173,7 @@ export default function RouteSeo() {
       upsertJsonLd('events-list', {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
-        name: 'Kado Kohi events',
+        name: 'Kado Coffee events',
         itemListElement: upcomingOrCurrent.map((event, idx) => ({
           '@type': 'ListItem',
           position: idx + 1,
@@ -188,7 +188,7 @@ export default function RouteSeo() {
             image: event.images?.[0] ? [event.images[0]] : undefined,
             location: {
               '@type': 'Place',
-              name: 'Kado Kohi',
+              name: SEO_BRAND.searchName,
               address: {
                 '@type': 'PostalAddress',
                 addressLocality: 'Marikina City',
@@ -197,7 +197,7 @@ export default function RouteSeo() {
             },
             organizer: {
               '@type': 'Organization',
-              name: 'Kado Kohi',
+              name: SEO_BRAND.searchName,
               url: origin,
             },
           },

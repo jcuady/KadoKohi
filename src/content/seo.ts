@@ -1,4 +1,4 @@
-import { KADO_GOOGLE_LISTING } from './kadoGoogleReviews';
+import { KADO_GOOGLE_LISTING, KADO_GOOGLE_REVIEW_ITEMS } from './kadoGoogleReviews';
 
 /**
  * Search-first brand: guests Google "Kado Coffee" more than "Kado Kohi".
@@ -38,9 +38,13 @@ export const SEO_LOCAL_AREAS = [
   'Marikina City',
   'Sta. Elena',
   'Sta Elena',
+  'Santo Niño Marikina',
+  'Parang Marikina',
+  'Concepcion Marikina',
   'J.P. Laurel Marikina',
   'Mt. Everest Street Marikina',
   'Metro Manila',
+  'Eastern Metro Manila',
 ] as const;
 
 export const SEO_LOCATION = {
@@ -61,32 +65,58 @@ export const SEO_LOCATION = {
 export const SEO_KEYWORDS = [
   'kado coffee',
   'kado kohi',
+  'kado kohi marikina',
+  'kado coffee marikina',
   'best coffee in marikina',
   'best coffee marikina',
+  'best cafe marikina',
   'marikina coffee',
+  'marikina city coffee',
   'coffee shop marikina',
+  'coffee shop near me',
+  'coffee near me',
   'coffee near me marikina',
   'marikina coffee near me',
   'cafe near me marikina',
+  'cafe marikina',
   'specialty coffee marikina',
+  'specialty cafe marikina',
   'sta elena coffee',
   'sta elena marikina coffee',
   'coffee sta elena marikina',
+  'coffee shop sta elena',
   'jp laurel coffee marikina',
+  'jp laurel coffee shop',
+  'mt everest coffee marikina',
   'tambayan coffee marikina',
   'tambayan coffee',
+  'hangout cafe marikina',
   'event coffee marikina',
   'event coffee',
   'booth coffee',
   'mobile coffee booth marikina',
   'coffee catering marikina',
+  'wedding coffee booth philippines',
+  'corporate coffee catering',
   'matcha marikina',
+  'matcha latte marikina',
   'kado latte',
   'kado coffee menu',
   'kado coffee location',
   'kado coffee hours',
   'kado coffee sta elena',
+  'kado coffee reviews',
+  'arabica coffee marikina',
+  'order coffee online marikina',
+  'gcash coffee order',
+  'kado circle',
+  'coffee place marikina',
+  'third wave coffee marikina',
+  'mairkina coffee',
 ] as const;
+
+/** Comma-separated meta keywords (capped for HTML meta length). */
+export const SEO_META_KEYWORDS = SEO_KEYWORDS.slice(0, 40).join(', ');
 
 export const SEO_DEFAULT_DESCRIPTION =
   'Kado Coffee on J.P. Laurel, Sta. Elena, Marikina — best specialty coffee near you. Also known as Kado Kohi. Rated 4.9 on Google. Order online, tambayan events, booth coffee for parties.';
@@ -229,7 +259,96 @@ export const SEO_FAQ = [
     answer:
       'Facebook: facebook.com/KadoKohi — Instagram: instagram.com/kadocoffeeph — TikTok: tiktok.com/@kadokohiph. Email: kadocoffeeph@gmail.com.',
   },
+  {
+    question: 'What is on the Kado Coffee menu?',
+    answer:
+      'Signature drinks include the Kado Latte, matcha series, specialty lattes, and seasonal items. View the full Kado Coffee menu online at kadokohi.com/menu with live pricing.',
+  },
+  {
+    question: 'Can I order Kado Coffee online in Marikina?',
+    answer:
+      'Yes. Order from the website with GCash QR checkout during open hours, or visit us on J.P. Laurel, Sta. Elena for walk-in and table QR ordering.',
+  },
+  {
+    question: 'Is Kado Coffee good for studying or tambayan hangouts?',
+    answer:
+      'Guests love our cozy specialty coffee shop vibe — a popular tambayan in Marikina for coffee, conversation, and community events.',
+  },
 ] as const;
+
+export type PageSeoBlurbContent = {
+  heading: string;
+  paragraphs: string[];
+  links?: Array<{ label: string; to?: string; href?: string; external?: boolean }>;
+};
+
+const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
+  '/menu': {
+    heading: 'Kado Coffee menu — specialty drinks in Marikina',
+    paragraphs: [
+      'Browse the Kado Coffee (Kado Kohi) menu for signature lattes, matcha, and best-selling specialty coffee in Marikina. Ideal for guests searching marikina coffee, sta elena coffee, or coffee near me.',
+    ],
+    links: [
+      { label: 'Branches & hours', to: '/branches' },
+      { label: 'Book event coffee booth', to: '/book/booth' },
+    ],
+  },
+  '/events': {
+    heading: 'Kado Coffee events & tambayan nights',
+    paragraphs: [
+      'Kado Coffee hosts community events, tambayan nights, and pop-ups in Marikina City near Sta. Elena — your go-to for event coffee culture and local hangouts.',
+    ],
+    links: [
+      { label: 'Follow on Instagram', href: SEO_SOCIAL.instagram, external: true },
+      { label: 'Contact for collabs', to: '/contact' },
+    ],
+  },
+  '/book/booth': {
+    heading: 'Book Kado Coffee booth & event coffee',
+    paragraphs: [
+      'Hire Kado Coffee for mobile booth coffee at weddings, birthdays, corporate events, and parties in Marikina, Sta. Elena, and Metro Manila. Specialty event coffee with on-site baristas.',
+    ],
+    links: [{ label: 'Contact the team', to: '/contact' }],
+  },
+  '/branches': {
+    heading: 'Kado Coffee location — Marikina coffee near me',
+    paragraphs: [
+      'Find Kado Coffee (Kado Kohi) at J.P. Laurel corner Mt. Everest, Sta. Elena, Marikina City. Directions for marikina coffee near me, sta elena coffee shop, and best coffee in Marikina searches.',
+    ],
+    links: [
+      { label: 'Google Maps', href: KADO_GOOGLE_LISTING.mapsUrl, external: true },
+      { label: 'View menu', to: '/menu' },
+    ],
+  },
+  '/about': {
+    heading: 'About Kado Coffee & Kado Kohi',
+    paragraphs: [
+      'Kado Coffee is Marikina’s specialty coffee tambayan — quality Arabica, matcha, and hospitality on J.P. Laurel. Known online as Kado Kohi, rated 4.9 on Google.',
+    ],
+    links: [{ label: 'Read Google reviews', href: KADO_GOOGLE_LISTING.reviewsUrl, external: true }],
+  },
+  '/contact': {
+    heading: 'Contact Kado Coffee Marikina',
+    paragraphs: [
+      'Reach Kado Coffee for booth bookings, collaborations, event coffee, and general questions. Located in Sta. Elena, Marikina City — kadocoffeeph@gmail.com.',
+    ],
+    links: [
+      { label: 'Book a booth', to: '/book/booth' },
+      { label: 'Facebook', href: SEO_SOCIAL.facebook, external: true },
+    ],
+  },
+  '/merch': {
+    heading: 'Kado Coffee merch — Marikina pickup',
+    paragraphs: [
+      'Shop official Kado Coffee / Kado Kohi merch with branch pickup in Marikina. Pair your visit with the best coffee in Marikina at our Sta. Elena cafe.',
+    ],
+    links: [{ label: 'Visit the cafe', to: '/branches' }],
+  },
+};
+
+export function getPageSeoBlurb(pathname: string): PageSeoBlurbContent | null {
+  return PAGE_SEO_BLURBS[pathname] ?? null;
+}
 
 export function buildSeoSameAs(origin: string): string[] {
   const listing = KADO_GOOGLE_LISTING;
@@ -252,6 +371,14 @@ export function buildLocalBusinessJsonLd(origin: string) {
     priceRange: '₱₱',
     servesCuisine: ['Coffee', 'Specialty Coffee', 'Matcha', 'Cafe'],
     keywords: SEO_KEYWORDS.join(', '),
+    openingHoursSpecification: [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        opens: '07:00',
+        closes: '23:00',
+      },
+    ],
     address: {
       '@type': 'PostalAddress',
       streetAddress: SEO_LOCATION.streetAddress,
@@ -284,6 +411,16 @@ export function buildLocalBusinessJsonLd(origin: string) {
       bestRating: '5',
       worstRating: '1',
     },
+    review: KADO_GOOGLE_REVIEW_ITEMS.slice(0, 5).map((r) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: r.name },
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: String(r.rating),
+        bestRating: '5',
+      },
+      reviewBody: r.content,
+    })),
     sameAs: buildSeoSameAs(origin),
     hasMap: listing.mapsUrl,
     potentialAction: {

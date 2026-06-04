@@ -9,6 +9,7 @@ import {
 } from '../lib/contactEmail';
 import { sendInboundEmail } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { cn } from '../lib/utils';
 
 function hasSocialLinks(s: ReturnType<typeof useSettingsStore.getState>['settings']) {
@@ -279,6 +280,8 @@ export default function Contact() {
           </motion.div>
         </div>
       </section>
+
+      <PageSeoBlurb />
     </div>
   );
 }

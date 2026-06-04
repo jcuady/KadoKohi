@@ -16,6 +16,7 @@ import {
 } from '../lib/eventTiming';
 import type { Event } from '../types/domain';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 type Tab = 'upcoming' | 'current';
 
@@ -101,10 +102,10 @@ export default function Events() {
             What&apos;s happening
           </p>
           <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            Kado Events
+            Kado Coffee Events
           </h1>
           <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Join us for tastings, throwdowns, workshops, and special celebrations at Kado Kohi.
+            Event coffee, tambayan nights, and community gatherings at Kado Coffee (Kado Kohi) in Marikina.
           </p>
 
           <div className="flex justify-center gap-2 mt-8">
@@ -153,6 +154,8 @@ export default function Events() {
       {signupEvent && (
         <EventSignupModal event={signupEvent} onClose={() => setSignupEvent(null)} onSuccess={refreshCounts} />
       )}
+
+      <PageSeoBlurb />
     </div>
   );
 }

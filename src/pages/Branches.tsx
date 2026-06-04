@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
 import { useBranchStore } from '../store/branchStore';
 import SectionHeader from '../components/SectionHeader';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 export default function Branches() {
   const branches = useBranchStore((s) => s.branches);
@@ -14,10 +15,10 @@ export default function Branches() {
             Locations
           </p>
           <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            Branches
+            Kado Coffee — Marikina
           </h1>
           <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Marikina today. Greenhills soon. Every corner is built for the same Kado community.
+            Coffee near me in Marikina &amp; Sta. Elena — J.P. Laurel corner Mt. Everest. Greenhills branch coming soon.
           </p>
         </div>
       </section>
@@ -69,6 +70,8 @@ export default function Branches() {
           ))}
         </div>
       </section>
+
+      <PageSeoBlurb />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import BookingWizard, { type BookingWizardStage } from '../components/booking/Bo
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useBookingEstimateStore } from '../store/bookingEstimateStore';
 import { formatPhp } from '../lib/money';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 export default function BookBooth() {
   const estimates = useBookingEstimateStore((s) => s.estimates);
@@ -183,6 +184,8 @@ export default function BookBooth() {
           </div>
         </section>
       )}
+
+      <PageSeoBlurb />
     </div>
   );
 }

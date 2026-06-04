@@ -8,6 +8,7 @@ import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/Pro
 import type { Product } from '../types/domain';
 import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 function categoryIcon(categoryId: string): React.ReactNode {
   if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
@@ -228,6 +229,8 @@ export default function Menu() {
           </div>
         </section>
       </div>
+
+      <PageSeoBlurb />
 
       {/* Product detail drawer */}
       <ProductDetailDrawer

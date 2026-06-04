@@ -5,6 +5,7 @@ import type { MerchProduct } from '../types/domain';
 import { useMerchStore } from '../store/merchStore';
 import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 
 const DEFAULT_IMAGE =
@@ -169,6 +170,8 @@ export default function Merch() {
           </div>
         </section>
       </div>
+
+      <PageSeoBlurb />
 
       <ProductDetailDrawer
         product={selectedProduct}
