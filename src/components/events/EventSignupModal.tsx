@@ -1,13 +1,18 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { X, LogIn } from 'lucide-react';
 import type { Event } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
-import { isValidEmail } from '../../lib/validation';
-import { requirePhilippinePhone } from '../../lib/validation';
-import { normalizePhilippinePhone } from '../../lib/phonePhilippines';
+import { useEventFormStore } from '../../store/eventFormStore';
+import {
+  DEFAULT_EVENT_SIGNUP_FIELDS,
+  type EventFormAnswers,
+  type EventFormField,
+  validateEventFormAnswers,
+} from '../../lib/eventForms';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { newId } from '../../lib/id';
+import EventSignupFields from './EventSignupFields';
 
 interface Props {
   event: Event;
@@ -18,20 +23,55 @@ interface Props {
 export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
   const user = useAuthStore((s) => s.user);
   const isCustomer = user?.role === 'customer';
+  const forms = useEventFormStore((s) => s.forms);
+  const hydrateForms = useEventFormStore((s) => s.hydrateFromRemote);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneLocal, setPhoneLocal] = useState('');
+  const [fields, setFields] = useState<EventFormField[]>(DEFAULT_EVENT_SIGNUP_FIELDS);
+  const [answers, setAnswers] = useState<EventFormAnswers>({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [loadingForm, setLoadingForm] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      setName((v) => v || user.name || '');
-      setEmail((v) => v || user.email || '');
-    }
-  }, [user]);
+    void hydrateForms();
+  }, [hydrateForms]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoadingForm(true);
+      try {
+        let nextFields = DEFAULT_EVENT_SIGNUP_FIELDS;
+        if (event.signupFormId) {
+          const cached = forms.find((f) => f.id === event.signupFormId);
+          if (cached?.fields.length) {
+            nextFields = cached.fields;
+          } else {
+            const remote = await orderingRepo.fetchEventForm(event.signupFormId);
+            if (remote?.fields.length) nextFields = remote.fields;
+          }
+        }
+        if (!cancelled) {
+          setFields(nextFields);
+          const initial: EventFormAnswers = {};
+          for (const field of nextFields) {
+            if (field.mapsTo === 'contact_name' && user?.name) initial[field.id] = user.name;
+            if (field.mapsTo === 'contact_email' && user?.email) initial[field.id] = user.email;
+          }
+          setAnswers(initial);
+        }
+      } finally {
+        if (!cancelled) setLoadingForm(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [event.signupFormId, forms, user?.email, user?.name]);
+
+  const fieldSummary = useMemo(() => fields.map((f) => f.label).join(', '), [fields]);
 
   if (!isCustomer) {
     return (
@@ -52,32 +92,29 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
     );
   }
 
+  const setAnswer = (fieldId: string, value: string | boolean) => {
+    setAnswers((prev) => ({ ...prev, [fieldId]: value }));
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!name.trim()) {
-      setError('Name is required.');
+    const checked = validateEventFormAnswers(fields, answers);
+    if (checked.ok === false) {
+      setError(checked.error);
       return;
     }
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email address.');
-      return;
-    }
-    const phoneErr = requirePhilippinePhone(phoneLocal);
-    if (phoneErr) {
-      setError(phoneErr);
-      return;
-    }
-    const phone = normalizePhilippinePhone(phoneLocal);
 
     setSubmitting(true);
     try {
       await orderingRepo.registerForEvent({
         id: newId(),
         eventId: event.id,
-        contactName: name.trim(),
-        contactEmail: email.trim(),
-        contactPhone: phone,
+        contactName: checked.contactName,
+        contactEmail: checked.contactEmail,
+        contactPhone: checked.contactPhone,
+        customAnswers: checked.customAnswers,
+        answers,
       });
       setDone(true);
       onSuccess();
@@ -105,31 +142,15 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
             Done
           </button>
         </div>
+      ) : loadingForm ? (
+        <p className="text-sm text-kado-dark/60 py-6 text-center">Loading registration form…</p>
       ) : (
         <form onSubmit={submit} className="space-y-4">
-          <p className="text-sm text-kado-dark/60">Register for {event.title}</p>
-          <Field label="Full name" value={name} onChange={setName} required autoComplete="name" />
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-kado-dark/55 mb-1.5">
-              Phone number
-            </label>
-            <div className="flex rounded-xl border border-kado-dark/15 overflow-hidden bg-white focus-within:ring-2 focus-within:ring-kado-red/25">
-              <span className="px-3 py-2.5 text-sm font-bold text-kado-dark/70 bg-kado-offwhite/80 border-r border-kado-dark/10 shrink-0">
-                +63
-              </span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={phoneLocal}
-                onChange={(e) => setPhoneLocal(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="917 123 4567"
-                className="flex-1 px-3 py-2.5 text-sm text-kado-dark focus:outline-none"
-                required
-                autoComplete="tel-national"
-              />
-            </div>
-          </div>
-          <Field label="Email" type="email" value={email} onChange={setEmail} required autoComplete="email" />
+          <p className="text-sm text-kado-dark/60">
+            Register for {event.title}
+            <span className="block text-[10px] text-kado-dark/45 mt-1">{fieldSummary}</span>
+          </p>
+          <EventSignupFields fields={fields} answers={answers} onChange={setAnswer} />
           {error && (
             <p className="text-sm text-red-600 rounded-lg border border-red-200 bg-red-50 px-3 py-2">{error}</p>
           )}
@@ -158,7 +179,7 @@ function ModalShell({
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/45 px-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-2xl bg-white border border-kado-dark/10 p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl bg-white border border-kado-dark/10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 mb-4">
@@ -169,36 +190,6 @@ function ModalShell({
         </div>
         {children}
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  required,
-  type = 'text',
-  autoComplete,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  type?: string;
-  autoComplete?: string;
-}) {
-  return (
-    <div>
-      <label className="block text-[10px] font-black uppercase tracking-wider text-kado-dark/55 mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        autoComplete={autoComplete}
-        className="w-full rounded-xl border border-kado-dark/15 px-4 py-2.5 text-sm text-kado-dark bg-white focus:outline-none focus:ring-2 focus:ring-kado-red/25"
-      />
     </div>
   );
 }

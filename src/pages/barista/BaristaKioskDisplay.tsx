@@ -1,6 +1,8 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Monitor, Moon, Sun } from 'lucide-react';
+import AdminKioskBranchModal from '../../components/admin/AdminKioskBranchModal';
 import type { Order } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
@@ -69,10 +71,52 @@ export default function BaristaKioskDisplay() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
   const adminPosBranchId = useBranchStore((s) => s.adminPosBranchId);
+  const setAdminPosBranchId = useBranchStore((s) => s.setAdminPosBranchId);
   const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [branchPickerOpen, setBranchPickerOpen] = useState(false);
 
-  const activeBranchId = user?.role === 'barista' ? user.branchId : adminPosBranchId ?? branches[0]?.id;
-  const activeBranchName = branches.find((branch) => branch.id === activeBranchId)?.name ?? 'Kado Kohi';
+  const isAdmin = user?.role === 'admin';
+  const branchParam = searchParams.get('branch');
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
+
+  useEffect(() => {
+    if (!isAdmin || !branchParam) return;
+    if (branches.some((b) => b.id === branchParam)) {
+      setAdminPosBranchId(branchParam);
+    }
+  }, [isAdmin, branchParam, branches, setAdminPosBranchId]);
+
+  const activeBranchId = useMemo(() => {
+    if (user?.role === 'barista') return user.branchId ?? null;
+    if (!isAdmin) return null;
+    if (branchParam) {
+      return branches.some((b) => b.id === branchParam) ? branchParam : null;
+    }
+    if (adminPosBranchId && branches.some((b) => b.id === adminPosBranchId)) {
+      return adminPosBranchId;
+    }
+    return null;
+  }, [user?.role, user?.branchId, isAdmin, branchParam, adminPosBranchId, branches]);
+
+  const needsBranchPick = isAdmin && !activeBranchId;
+
+  useEffect(() => {
+    if (needsBranchPick) setBranchPickerOpen(true);
+  }, [needsBranchPick]);
+
+  const activeBranch = branches.find((branch) => branch.id === activeBranchId);
+  const activeBranchName = activeBranch?.name ?? 'Kado Kohi';
+
+  const confirmBranch = (branchId: string) => {
+    setAdminPosBranchId(branchId);
+    setSearchParams({ branch: branchId }, { replace: true });
+    setBranchPickerOpen(false);
+  };
 
   useEffect(() => {
     if (!user || (user.role !== 'barista' && user.role !== 'admin')) return;
@@ -83,11 +127,21 @@ export default function BaristaKioskDisplay() {
   const filtered = useMemo(
     () =>
       orders
-        .filter((order) => order.branchId === activeBranchId)
+        .filter((order) => (activeBranchId ? order.branchId === activeBranchId : false))
         .filter((order) => kioskColumnKey(order) !== null)
         .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
     [orders, activeBranchId],
   );
+
+  if (needsBranchPick) {
+    return (
+      <AdminKioskBranchModal
+        open={branchPickerOpen}
+        onClose={() => setBranchPickerOpen(false)}
+        onConfirm={confirmBranch}
+      />
+    );
+  }
 
   const requestFullScreen = async () => {
     if (document.fullscreenElement) return;
@@ -155,7 +209,8 @@ export default function BaristaKioskDisplay() {
                 {activeBranchName}
               </h1>
               <p className="mt-0.5 text-xs font-medium" style={{ color: 'var(--kiosk-text-muted)' }}>
-                Live order status — updated automatically
+                {activeBranch?.city ? `${activeBranch.city} · ` : ''}
+                {filtered.length} active order{filtered.length === 1 ? '' : 's'} — live updates
               </p>
             </motion.div>
           </div>
@@ -175,6 +230,20 @@ export default function BaristaKioskDisplay() {
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               {isDark ? 'Light' : 'Dark'}
             </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setBranchPickerOpen(true)}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors hover:opacity-90"
+                style={{
+                  borderColor: 'var(--kiosk-border-strong)',
+                  color: 'var(--kiosk-text)',
+                  background: 'var(--kiosk-surface-muted)',
+                }}
+              >
+                Change branch
+              </button>
+            )}
             <button
               type="button"
               onClick={requestFullScreen}
@@ -269,6 +338,15 @@ export default function BaristaKioskDisplay() {
           Kado Kohi · {isDark ? 'Dark display' : 'Light display'}
         </footer>
       </div>
+
+      {isAdmin && (
+        <AdminKioskBranchModal
+          open={branchPickerOpen && !needsBranchPick}
+          onClose={() => setBranchPickerOpen(false)}
+          onConfirm={confirmBranch}
+          title="Switch kiosk branch"
+        />
+      )}
     </motion.div>
   );
 }

@@ -106,7 +106,7 @@ export default function AdminUsers() {
 
   const startAdd = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, branchId: activeBranches[0]?.id ?? '' });
     setPassword('');
     setFormError('');
     setShowForm(true);

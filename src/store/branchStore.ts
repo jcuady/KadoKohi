@@ -11,9 +11,9 @@ export interface BranchStore {
   adminPosBranchId: string | null;
   hydrateFromRemote: () => Promise<void>;
   setAdminPosBranchId: (id: string | null) => void;
-  addBranch: (input: Omit<Branch, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
-  updateBranch: (id: string, patch: Partial<Branch>) => void;
-  removeBranch: (id: string) => void;
+  addBranch: (input: Omit<Branch, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => Promise<Branch>;
+  updateBranch: (id: string, patch: Partial<Branch>) => Promise<void>;
+  removeBranch: (id: string) => Promise<void>;
   getBranch: (id: string) => Branch | undefined;
   seed: () => void;
 }
@@ -42,7 +42,7 @@ export const useBranchStore = create<BranchStore>()(
 
       setAdminPosBranchId: (id) => set({ adminPosBranchId: id }),
 
-      addBranch: (input) => {
+      addBranch: async (input) => {
         const t = new Date().toISOString();
         const b: Branch = {
           id: input.id ?? newId(),
@@ -58,31 +58,40 @@ export const useBranchStore = create<BranchStore>()(
           createdAt: t,
           updatedAt: t,
         };
+
+        await orderingRepo.upsertBranch(b);
+
+        const tableStore = useTableStore.getState();
+        for (let i = 1; i <= 4; i++) {
+          await tableStore.addTable(b.id, `Table ${i}`, b.slug);
+        }
+
         const next = [...get().branches, b];
         set({
           branches: next,
           adminPosBranchId: get().adminPosBranchId ?? b.id,
         });
-        void orderingRepo.upsertBranch(b);
 
-        // Auto-seed 4 default tables for the new branch
-        const tableStore = useTableStore.getState();
-        for (let i = 1; i <= 4; i++) {
-          tableStore.addTable(b.id, `Table ${i}`, b.slug);
-        }
+        return b;
       },
 
-      updateBranch: (id, patch) =>
+      updateBranch: async (id, patch) => {
+        const updated = get().branches.find((br) => br.id === id);
+        if (!updated) return;
+        const next: Branch = { ...updated, ...patch, updatedAt: new Date().toISOString() };
+        await orderingRepo.upsertBranch(next);
         set({
-          branches: get().branches.map((br) => {
-            if (br.id !== id) return br;
-            const updated = { ...br, ...patch, updatedAt: new Date().toISOString() };
-            void orderingRepo.upsertBranch(updated);
-            return updated;
-          }),
-        }),
+          branches: get().branches.map((br) => (br.id === id ? next : br)),
+        });
+      },
 
-      removeBranch: (id) => {
+      removeBranch: async (id) => {
+        const tableStore = useTableStore.getState();
+        for (const table of tableStore.tables.filter((t) => t.branchId === id)) {
+          await tableStore.removeTable(table.id);
+        }
+        await orderingRepo.deleteBranch(id);
+
         const remaining = get().branches.filter((br) => br.id !== id);
         const nextPos =
           get().adminPosBranchId === id ? remaining[0]?.id ?? null : get().adminPosBranchId;

@@ -10,6 +10,7 @@ import { useAuditStore } from '../../store/auditStore';
 import { usePromoStore } from '../../store/promoStore';
 import { useMerchStore } from '../../store/merchStore';
 import { useEventStore } from '../../store/eventStore';
+import { useEventFormStore } from '../../store/eventFormStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
@@ -28,6 +29,7 @@ const OPS_TABLES = [
   'kk_merch_categories',
   'kk_merch_products',
   'kk_events',
+  'kk_event_forms',
   'kk_booth_bookings',
   'kk_loyalty_rewards',
 ] as const;
@@ -56,6 +58,7 @@ const refresh = {
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
   merch: debounce(() => void useMerchStore.getState().hydrateFromRemote(), 300),
   events: debounce(() => void useEventStore.getState().hydrateFromRemote(), 300),
+  eventForms: debounce(() => void useEventFormStore.getState().hydrateFromRemote(), 300),
   bookings: debounce(() => void useBoothBookingStore.getState().hydrateFromRemote(), 300),
   landing: debounce(() => void useLandingContentStore.getState().hydrateFromRemote(), 300),
   loyalty: debounce(() => void useLoyaltyStore.getState().hydrateFromRemote(), 300),
@@ -96,6 +99,9 @@ function onTableChange(table: OpsTable) {
     case 'kk_events':
       refresh.events();
       break;
+    case 'kk_event_forms':
+      refresh.eventForms();
+      break;
     case 'kk_booth_bookings':
       refresh.bookings();
       break;
@@ -120,6 +126,7 @@ export async function refreshOperationsData(): Promise<void> {
     usePromoStore.getState().fetchAll(),
     useMerchStore.getState().hydrateFromRemote(),
     useEventStore.getState().hydrateFromRemote(),
+    useEventFormStore.getState().hydrateFromRemote(),
     useBoothBookingStore.getState().hydrateFromRemote(),
     useLandingContentStore.getState().hydrateFromRemote(),
   ]);

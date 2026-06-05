@@ -185,6 +185,8 @@ export interface Event {
   signupOpensAt?: string;
   signupClosesAt?: string;
   maxSignups?: number;
+  /** Reusable registration form template (kk_event_forms). */
+  signupFormId?: string | null;
 }
 
 export interface EventRegistration {
@@ -194,6 +196,7 @@ export interface EventRegistration {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  customAnswers?: Record<string, string | boolean | number>;
   createdAt: string;
 }
 

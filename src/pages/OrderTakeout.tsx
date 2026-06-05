@@ -30,10 +30,13 @@ export default function OrderTakeout() {
   const user = useAuthStore((s) => s.user);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const [searchParams] = useSearchParams();
-  const branchSlug = searchParams.get('b') ?? '';
+  const branchSlug = searchParams.get('b')?.trim().toLowerCase() ?? '';
   const branches = useBranchStore((s) => s.branches);
-  const branch =
-    branches.find((b) => b.slug === branchSlug) ?? branches.find((b) => b.status === 'active');
+  const branch = useMemo(() => {
+    const active = branches.filter((b) => b.status === 'active');
+    if (branchSlug) return active.find((b) => b.slug === branchSlug) ?? null;
+    return active[0] ?? null;
+  }, [branches, branchSlug]);
 
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
@@ -232,7 +235,9 @@ export default function OrderTakeout() {
             Branch not found
           </h1>
           <p className="text-kado-dark/60 text-sm mb-6">
-            Could not resolve the branch from this link.
+            {branchSlug
+              ? `No active branch matches “${branchSlug}”. Use the takeout QR from Admin → Tables & QR.`
+              : 'Add ?b=your-branch-slug to the URL or scan a branch takeout QR.'}
           </p>
           <Link to="/" className="text-sm font-bold text-kado-red hover:underline">
             Back to home

@@ -65,6 +65,14 @@ export default function CartDrawer() {
   );
 
   const [branchId, setBranchId] = useState<string>(() => activeBranches[0]?.id ?? '');
+
+  useEffect(() => {
+    if (!activeBranches.length) return;
+    if (!branchId || !activeBranches.some((b) => b.id === branchId)) {
+      setBranchId(activeBranches[0].id);
+    }
+  }, [activeBranches, branchId]);
+
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const paymentMethod: PaymentMethod = 'gcash-qr';

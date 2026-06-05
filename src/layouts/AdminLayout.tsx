@@ -1,5 +1,5 @@
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   MapPin,
@@ -27,6 +27,8 @@ import { useDashTheme } from '../lib/theme';
 import { hasAllBranchAccess } from '../lib/roles';
 import NotificationToggle from '../components/NotificationToggle';
 import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
+import { useBranchStore } from '../store/branchStore';
+import AdminKioskBranchModal from '../components/admin/AdminKioskBranchModal';
 
 const SIDEBAR_W = 'w-56'; /* 14rem — keep in sync with main margin */
 const MAIN_OFFSET = 'ml-56';
@@ -49,8 +51,9 @@ const nav = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
-  { to: '/barista/kiosk', label: 'KIOSK', icon: Monitor },
 ];
+
+const KIOSK_NAV = { label: 'KIOSK', icon: Monitor };
 
 /** Shared footer control — same visual weight; sign-out uses hover danger */
 function sidebarFooterBtnClass() {
@@ -66,7 +69,10 @@ export default function AdminLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark, toggle } = useDashTheme();
+  const setAdminPosBranchId = useBranchStore((s) => s.setAdminPosBranchId);
+  const [kioskBranchOpen, setKioskBranchOpen] = useState(false);
 
   // Ensure live sync is active whenever an admin session is in this shell.
   useEffect(() => {
@@ -135,6 +141,19 @@ export default function AdminLayout() {
               <span className="truncate">{label}</span>
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={() => setKioskBranchOpen(true)}
+            className={[
+              'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+              location.pathname === '/barista/kiosk'
+                ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
+                : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+            ].join(' ')}
+          >
+            <KIOSK_NAV.icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+            <span className="truncate">{KIOSK_NAV.label}</span>
+          </button>
         </nav>
 
         <div
@@ -179,6 +198,16 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </div>
+
+      <AdminKioskBranchModal
+        open={kioskBranchOpen}
+        onClose={() => setKioskBranchOpen(false)}
+        onConfirm={(branchId) => {
+          setAdminPosBranchId(branchId);
+          setKioskBranchOpen(false);
+          navigate(`/barista/kiosk?branch=${encodeURIComponent(branchId)}`);
+        }}
+      />
     </div>
   );
 }

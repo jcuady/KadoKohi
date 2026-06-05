@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type { Branch, BranchStatus } from '../../types/domain';
 import { useBranchStore } from '../../store/branchStore';
 import { MapPin, Pencil, Trash2, Plus, Navigation, ExternalLink, Loader2 } from 'lucide-react';
@@ -26,6 +26,7 @@ function googleMapsUrl(lat: number, lng: number) {
 
 export default function AdminBranches() {
   const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
   const addBranch = useBranchStore((s) => s.addBranch);
   const updateBranch = useBranchStore((s) => s.updateBranch);
   const removeBranch = useBranchStore((s) => s.removeBranch);
@@ -33,6 +34,13 @@ export default function AdminBranches() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveOk, setSaveOk] = useState('');
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
 
   const reset = () => {
     setForm(emptyForm);
@@ -66,37 +74,50 @@ export default function AdminBranches() {
     );
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.slug.trim() || !form.name.trim()) return;
 
     const normalizedSlug = form.slug.trim().toLowerCase().replace(/\s+/g, '-');
+    setSaving(true);
+    setSaveError('');
+    setSaveOk('');
 
-    if (editingId) {
-      updateBranch(editingId, {
-        slug: normalizedSlug,
-        name: form.name.trim(),
-        address: form.address.trim(),
-        city: form.city.trim(),
-        status: form.status,
-        heroImage: form.heroImage.trim() || undefined,
-        lat: form.lat,
-        lng: form.lng,
-      });
-    } else {
-      addBranch({
-        slug: normalizedSlug,
-        name: form.name.trim(),
-        address: form.address.trim(),
-        city: form.city.trim(),
-        status: form.status,
-        hours: [],
-        heroImage: form.heroImage.trim() || undefined,
-        lat: form.lat,
-        lng: form.lng,
-      });
+    try {
+      if (editingId) {
+        await updateBranch(editingId, {
+          slug: normalizedSlug,
+          name: form.name.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          status: form.status,
+          heroImage: form.heroImage.trim() || undefined,
+          lat: form.lat,
+          lng: form.lng,
+        });
+        setSaveOk('Branch updated. Staff, POS, and QR links will use the new details.');
+      } else {
+        const created = await addBranch({
+          slug: normalizedSlug,
+          name: form.name.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          status: form.status,
+          hours: [],
+          heroImage: form.heroImage.trim() || undefined,
+          lat: form.lat,
+          lng: form.lng,
+        });
+        setSaveOk(
+          `"${created.name}" is live — 4 dine-in tables + takeout QR seeded. Assign barista/staff in Users, then open Tables & QR.`,
+        );
+      }
+      reset();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save branch.');
+    } finally {
+      setSaving(false);
     }
-    reset();
   };
 
   const hasCoords = form.lat != null && form.lng != null;
@@ -104,10 +125,12 @@ export default function AdminBranches() {
   return (
     <div className="max-w-5xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Branches</h1>
-      <p className="dash-muted mb-8 max-w-2xl">
-        Add or edit branches — each branch is available in <strong>Admin POS</strong> as a sales location. Barista kiosk
-        stays scoped to one branch (set on login for demo).
+      <p className="dash-muted mb-4 max-w-2xl">
+        Add or edit branches — each active branch appears in the dashboard branch filter, customer checkout, Admin POS,
+        and gets its own dine-in + takeout QR codes. Assign barista/staff to a branch in Users.
       </p>
+      {saveOk ? <p className="text-sm text-emerald-700 font-medium mb-4">{saveOk}</p> : null}
+      {saveError ? <p className="text-sm text-red-600 font-medium mb-4">{saveError}</p> : null}
 
       <div className="grid lg:grid-cols-5 gap-8">
         <form
@@ -237,9 +260,10 @@ export default function AdminBranches() {
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-kado-red text-kado-cream py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#7d1115] transition-colors"
+              disabled={saving}
+              className="flex-1 rounded-xl bg-kado-red text-kado-cream py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#7d1115] transition-colors disabled:opacity-60"
             >
-              {editingId ? 'Save' : 'Create'}
+              {saving ? 'Saving…' : editingId ? 'Save' : 'Create'}
             </button>
             {editingId && (
               <button
@@ -293,7 +317,15 @@ export default function AdminBranches() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`Remove branch "${b.name}"? POS will fall back to another branch.`)) removeBranch(b.id);
+                        if (
+                          confirm(
+                            `Remove branch "${b.name}"? Its tables will be removed. This may fail if orders still reference this branch.`,
+                          )
+                        ) {
+                          void removeBranch(b.id).catch((err) =>
+                            setSaveError(err instanceof Error ? err.message : 'Could not remove branch.'),
+                          );
+                        }
                       }}
                       className="p-2.5 rounded-xl border border-kado-red/20 text-kado-red hover:bg-kado-red/10"
                       aria-label="Delete"

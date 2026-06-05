@@ -5,7 +5,9 @@ import { useBranchStore } from '../../store/branchStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import { eventDurationLabel, eventImages, signupClosesBeforeEventStart } from '../../lib/eventTiming';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
-import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users } from 'lucide-react';
+import { useEventFormStore } from '../../store/eventFormStore';
+import EventFormBuilder from '../../components/admin/EventFormBuilder';
+import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users, FileText } from 'lucide-react';
 
 type EventFormData = {
   title: string;
@@ -22,6 +24,7 @@ type EventFormData = {
   signupClosesAt: string;
   signupDaysBefore: string;
   maxSignups: string;
+  signupFormId: string;
 };
 
 const emptyForm: EventFormData = {
@@ -39,6 +42,7 @@ const emptyForm: EventFormData = {
   signupClosesAt: '',
   signupDaysBefore: '1',
   maxSignups: '',
+  signupFormId: '',
 };
 
 function toLocalDatetime(iso?: string): string {
@@ -55,6 +59,8 @@ export default function AdminEvents() {
   const updateEvent = useEventStore((s) => s.updateEvent);
   const removeEvent = useEventStore((s) => s.removeEvent);
   const branches = useBranchStore((s) => s.branches);
+  const formTemplates = useEventFormStore((s) => s.forms);
+  const hydrateFormTemplates = useEventFormStore((s) => s.hydrateFromRemote);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EventFormData>(emptyForm);
@@ -76,9 +82,10 @@ export default function AdminEvents() {
   };
 
   useEffect(() => {
+    void hydrateFormTemplates();
     loadCounts();
     loadAllRegistrations();
-  }, [events.length]);
+  }, [events.length, hydrateFormTemplates]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -105,6 +112,7 @@ export default function AdminEvents() {
       signupClosesAt: toLocalDatetime(evt.signupClosesAt),
       signupDaysBefore: '1',
       maxSignups: evt.maxSignups != null ? String(evt.maxSignups) : '',
+      signupFormId: evt.signupFormId ?? '',
     });
     setImageError('');
     setShowForm(true);
@@ -180,6 +188,7 @@ export default function AdminEvents() {
         ? new Date(form.signupClosesAt).toISOString()
         : undefined,
       maxSignups: form.maxSignups.trim() ? Math.max(1, Number(form.maxSignups)) : undefined,
+      signupFormId: form.signupFormId.trim() || null,
       cta: form.ctaLabel.trim() ? { label: form.ctaLabel.trim(), href: '/events' } : undefined,
     };
 
@@ -272,13 +281,21 @@ export default function AdminEvents() {
                   <p className="text-[10px] dash-muted mt-1">Duration: {eventDurationLabel(evt)}</p>
                 )}
                 {evt.signupEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => void openRegistrations(evt.id)}
-                    className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
-                  >
-                    <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''} (view list)
-                  </button>
+                  <>
+                    {evt.signupFormId && (
+                      <p className="text-[10px] dash-muted mt-1 inline-flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        Form: {formTemplates.find((f) => f.id === evt.signupFormId)?.name ?? evt.signupFormId}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void openRegistrations(evt.id)}
+                      className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
+                    >
+                      <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''} (view list)
+                    </button>
+                  </>
                 )}
               </div>
               <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1">
@@ -292,9 +309,11 @@ export default function AdminEvents() {
         })}
       </ul>
 
-      <section className="rounded-2xl dash-card border p-5 mb-8">
+      <EventFormBuilder />
+
+      <section className="rounded-2xl dash-card border p-5 mb-8 mt-8">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="font-display font-bold text-xl dash-heading">Registration forms</h2>
+          <h2 className="font-display font-bold text-xl dash-heading">Registration submissions</h2>
           <span className="text-xs dash-muted font-bold uppercase tracking-wider">
             {filteredRegistrations.length} result{filteredRegistrations.length === 1 ? '' : 's'}
           </span>
@@ -326,6 +345,15 @@ export default function AdminEvents() {
                 <p className="font-bold dash-heading">{r.contactName}</p>
                 <p className="dash-muted text-xs">{r.contactEmail}</p>
                 <p className="dash-muted text-xs">{r.contactPhone}</p>
+                {r.customAnswers && Object.keys(r.customAnswers).length > 0 && (
+                  <ul className="mt-2 text-[10px] dash-muted space-y-0.5">
+                    {Object.entries(r.customAnswers).map(([key, val]) => (
+                      <li key={key}>
+                        <span className="font-semibold">{key}:</span> {String(val)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <p className="text-[10px] dash-muted mt-1">
                   Event: {events.find((e) => e.id === r.eventId)?.title ?? r.eventId}
                 </p>
@@ -567,6 +595,11 @@ export default function AdminEvents() {
                         />
                       </div>
                     </div>
+                    <EventFormBuilder
+                      compact
+                      assignedFormId={form.signupFormId || null}
+                      onAssignForm={(id) => setForm((f) => ({ ...f, signupFormId: id ?? '' }))}
+                    />
                   </>
                 )}
               </div>
@@ -630,6 +663,15 @@ export default function AdminEvents() {
                     <p className="font-bold dash-heading">{r.contactName}</p>
                     <p className="dash-muted text-xs">{r.contactEmail}</p>
                     <p className="dash-muted text-xs">{r.contactPhone}</p>
+                    {r.customAnswers && Object.keys(r.customAnswers).length > 0 && (
+                      <ul className="mt-2 text-[10px] dash-muted space-y-0.5">
+                        {Object.entries(r.customAnswers).map(([key, val]) => (
+                          <li key={key}>
+                            <span className="font-semibold">{key}:</span> {String(val)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <p className="text-[10px] dash-muted mt-1">
                       {new Date(r.createdAt).toLocaleString('en-PH')}
                     </p>

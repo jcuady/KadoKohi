@@ -1,3 +1,5 @@
+import type { EventFormTemplate } from '../../eventForms';
+import { parseFormFields } from '../../eventForms';
 import type {
   BoothBooking,
   BoothBookingStatus,
@@ -16,6 +18,38 @@ import type {
   User,
 } from '../../../types/domain';
 import type { AppSettings } from '../../../store/settingsStore';
+
+function pgErrorFields(err: unknown): { message: string; code: string; details: string } {
+  if (err && typeof err === 'object') {
+    const row = err as { message?: string; code?: string; details?: string };
+    return {
+      message: row.message ?? '',
+      code: row.code ?? '',
+      details: row.details ?? '',
+    };
+  }
+  return { message: err instanceof Error ? err.message : String(err ?? ''), code: '', details: '' };
+}
+
+export function formatTableCrudError(err: unknown, action: 'add' | 'update' | 'delete' | 'toggle'): string {
+  const { message, code, details } = pgErrorFields(err);
+  const blob = `${message} ${details} ${code}`;
+  if (/row-level security|permission denied|jwt|not authorized/i.test(blob)) {
+    return 'Admin access is required to manage tables.';
+  }
+  if (code === '23503' || /foreign key|kk_orders_table_id_fkey|violates.*constraint/i.test(blob)) {
+    return action === 'delete'
+      ? 'This table still has linked orders and the database migration is pending. Turn it off instead, or run migration 0030_tables_crud_fix on project idwtlujcdfnnndxmlaco.'
+      : message || details;
+  }
+  if (code === '23505' || /duplicate key|unique/i.test(blob)) {
+    return 'A table with this code already exists. Try again.';
+  }
+  if (/was not deleted|sign in as admin/i.test(blob)) {
+    return blob.trim();
+  }
+  return message || details || `Could not ${action} table.`;
+}
 
 /** Public-safe order status returned by the kk_track_order RPC (guest-readable). */
 export type TrackedOrderStatus = {
@@ -146,6 +180,18 @@ function mapEvent(row: any): Event {
     signupOpensAt: row.signup_opens_at ?? undefined,
     signupClosesAt: row.signup_closes_at ?? undefined,
     maxSignups: row.max_signups != null ? Number(row.max_signups) : undefined,
+    signupFormId: row.signup_form_id ?? null,
+  };
+}
+
+function mapEventForm(row: any): EventFormTemplate {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? '',
+    fields: parseFormFields(row.fields),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -157,6 +203,8 @@ function mapEventRegistration(row: any): EventRegistration {
     contactName: row.contact_name,
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
+    customAnswers:
+      row.custom_answers && typeof row.custom_answers === 'object' ? row.custom_answers : undefined,
     createdAt: row.created_at,
   };
 }
@@ -295,6 +343,11 @@ export const orderingRepo = {
       lat: input.lat ?? null,
       lng: input.lng ?? null,
     });
+    if (error) throw error;
+  },
+  async deleteBranch(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('kk_branches').delete().eq('id', id);
     if (error) throw error;
   },
   async fetchMenu(): Promise<{ categories: MenuCategory[]; products: Product[] }> {
@@ -472,9 +525,24 @@ export const orderingRepo = {
     if (error) throw error;
   },
   async deleteTable(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('kk_tables').delete().eq('id', id);
-    if (error) throw error;
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_admin_delete_table', { p_table_id: id });
+    if (error) {
+      const { data: rows, error: delErr } = await supabase
+        .from('kk_tables')
+        .delete()
+        .eq('id', id)
+        .select('id');
+      if (delErr) throw delErr;
+      if (!rows?.length) {
+        throw new Error('Table was not deleted. Sign in as admin and try again.');
+      }
+      return;
+    }
+    const row = (data ?? {}) as { ok?: boolean };
+    if (!row.ok) {
+      throw new Error('Table was not deleted. Sign in as admin and try again.');
+    }
   },
   async fetchEvents(): Promise<Event[]> {
     if (!supabase) return [];
@@ -501,8 +569,37 @@ export const orderingRepo = {
       signup_opens_at: e.signupOpensAt ? new Date(e.signupOpensAt).toISOString() : null,
       signup_closes_at: e.signupClosesAt ? new Date(e.signupClosesAt).toISOString() : null,
       max_signups: e.maxSignups ?? null,
+      signup_form_id: e.signupFormId ?? null,
       ...(sortOrder !== undefined ? { sort_order: sortOrder } : {}),
     });
+    if (error) throw error;
+  },
+  async fetchEventForms(): Promise<EventFormTemplate[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('kk_event_forms').select('*').order('name');
+    if (error) throw error;
+    return (data ?? []).map(mapEventForm);
+  },
+  async fetchEventForm(id: string): Promise<EventFormTemplate | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('kk_event_forms').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? mapEventForm(data) : null;
+  },
+  async upsertEventForm(form: EventFormTemplate) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_event_forms').upsert({
+      id: form.id,
+      name: form.name,
+      description: form.description ?? '',
+      fields: form.fields,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  },
+  async deleteEventForm(id: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_event_forms').delete().eq('id', id);
     if (error) throw error;
   },
   async fetchEventRegistrationCounts(): Promise<Record<string, number>> {
@@ -541,6 +638,8 @@ export const orderingRepo = {
     contactName: string;
     contactEmail: string;
     contactPhone: string;
+    customAnswers?: Record<string, string | boolean | number>;
+    answers?: Record<string, string | boolean | number>;
   }): Promise<EventRegistration> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase.rpc('kk_register_for_event', {
@@ -550,6 +649,9 @@ export const orderingRepo = {
         contact_name: input.contactName.trim(),
         contact_email: input.contactEmail.trim().toLowerCase(),
         contact_phone: input.contactPhone,
+        answers: input.answers ?? {
+          ...(input.customAnswers ?? {}),
+        },
       },
     });
     if (error) throw error;
@@ -560,6 +662,7 @@ export const orderingRepo = {
       contactName: input.contactName.trim(),
       contactEmail: input.contactEmail.trim().toLowerCase(),
       contactPhone: input.contactPhone,
+      customAnswers: input.customAnswers,
       createdAt: String(row.created_at ?? new Date().toISOString()),
     };
   },

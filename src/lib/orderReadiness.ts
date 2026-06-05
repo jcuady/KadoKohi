@@ -1,5 +1,6 @@
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
+import { useBranchStore } from '../store/branchStore';
 import { useMenuStore } from '../store/menuStore';
 import { useTableStore } from '../store/tableStore';
 import { useCartStore } from '../store/cartStore';
@@ -14,9 +15,9 @@ export async function ensureOrderReadiness(): Promise<void> {
 
   // Best-effort: RPC may still be warming up in PostgREST schema cache — don't block.
   await orderingRepo.ensureMenuCatalog().catch(() => undefined);
-  await orderingRepo.ensureDefaultTables().catch(() => undefined);
 
   await Promise.all([
+    useBranchStore.getState().hydrateFromRemote(),
     useMenuStore.getState().hydrateFromRemote(),
     useTableStore.getState().hydrateFromRemote(),
   ]);
@@ -97,7 +98,6 @@ export async function assertTableForOrder(tableId: string, branchId: string): Pr
 
   if (await check()) return;
 
-  await orderingRepo.ensureDefaultTables();
   await useTableStore.getState().hydrateFromRemote();
 
   if (!(await check())) {

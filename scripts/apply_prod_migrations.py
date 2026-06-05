@@ -20,6 +20,10 @@ MIGRATIONS = [
     "0027_guest_proof_size_and_storage.sql",
     "0028_product_in_stock.sql",
     "0028b_place_order_in_stock.sql",
+    "0029_payment_proof_storage_policies.sql",
+    "0030_tables_crud_fix.sql",
+    "0031_admin_delete_table_rpc.sql",
+    "0032_event_form_maker.sql",
 ]
 
 

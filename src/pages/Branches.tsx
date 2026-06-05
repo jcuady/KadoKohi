@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
 import { useBranchStore } from '../store/branchStore';
@@ -6,6 +7,11 @@ import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 export default function Branches() {
   const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">

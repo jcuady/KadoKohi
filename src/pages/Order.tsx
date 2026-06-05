@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { OrderItem, Product } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
@@ -44,6 +44,13 @@ export default function Order() {
   const [activeCat, setActiveCat] = useState(sortedCategories[0]?.id ?? '');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? '');
+
+  useEffect(() => {
+    if (!activeBranches.length) return;
+    if (!branchId || !activeBranches.some((b) => b.id === branchId)) {
+      setBranchId(activeBranches[0].id);
+    }
+  }, [activeBranches, branchId]);
   const [guestName, setGuestName] = useState('');
   const [guestOrderError, setGuestOrderError] = useState('');
   const [placed, setPlaced] = useState(false);
