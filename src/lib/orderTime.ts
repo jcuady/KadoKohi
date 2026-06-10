@@ -31,6 +31,48 @@ export function compareOrdersNewestFirst(a: { createdAt: string }, b: { createdA
   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 }
 
+export type OrderPeriod = 'all' | 'day' | 'week' | 'month';
+
+function startOfLocalDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+/** Monday-start week in local time. */
+function startOfLocalWeek(d: Date): Date {
+  const x = startOfLocalDay(d);
+  const diff = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - diff);
+  return x;
+}
+
+function startOfLocalMonth(d: Date): Date {
+  const x = startOfLocalDay(d);
+  x.setDate(1);
+  return x;
+}
+
+export function periodRangeStart(period: Exclude<OrderPeriod, 'all'>, now = new Date()): Date {
+  if (period === 'day') return startOfLocalDay(now);
+  if (period === 'week') return startOfLocalWeek(now);
+  return startOfLocalMonth(now);
+}
+
+export function orderInPeriod(createdAt: string, period: OrderPeriod, now = new Date()): boolean {
+  if (period === 'all') return true;
+  const ts = new Date(createdAt).getTime();
+  if (Number.isNaN(ts)) return false;
+  return ts >= periodRangeStart(period, now).getTime();
+}
+
+export const ORDER_PERIOD_LABELS: Record<OrderPeriod, string> = {
+  all: 'All time',
+  day: 'Today',
+  week: 'This week',
+  month: 'This month',
+};
+
 /** Full locale label aligned with Supabase `created_at` / `updated_at` in Table Editor. */
 export function formatOrderDbLabel(iso: string): string {
   const d = new Date(iso);

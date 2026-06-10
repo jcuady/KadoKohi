@@ -3,7 +3,19 @@ import type { Order, OrderChannel, OrderStatus, PaymentStatus } from '../../type
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
-import { List, LayoutGrid, Clock, ChefHat, CheckCircle2, Coffee, CheckSquare, XCircle, ThumbsUp, AlertCircle } from 'lucide-react';
+import {
+  List,
+  LayoutGrid,
+  Clock,
+  ChefHat,
+  CheckCircle2,
+  CheckSquare,
+  XCircle,
+  ThumbsUp,
+  AlertCircle,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
@@ -18,10 +30,16 @@ import {
   kanbanColumnForOrder,
   nextStatusInFlow,
 } from '../../lib/orderStatus';
-import { compareOrdersNewestFirst } from '../../lib/orderTime';
+import {
+  ORDER_PERIOD_LABELS,
+  compareOrdersNewestFirst,
+  orderInPeriod,
+  type OrderPeriod,
+} from '../../lib/orderTime';
 import OrderPlacedAt from '../../components/OrderPlacedAt';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
+const PERIOD_OPTIONS: OrderPeriod[] = ['all', 'day', 'week', 'month'];
 
 const KANBAN_STYLE: Record<string, { icon: typeof Clock; color: string; bgCard: string }> = {
   awaiting_payment: { icon: Clock, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
@@ -37,13 +55,17 @@ export default function AdminOrders() {
   const orders = useOrderStore((s) => s.orders);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
   const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
+  const deleteOrder = useOrderStore((s) => s.deleteOrder);
   const branches = useBranchStore((s) => s.branches);
 
   const [channelFilter, setChannelFilter] = useState<OrderChannel | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [branchFilter, setBranchFilter] = useState<string>('all');
+  const [periodFilter, setPeriodFilter] = useState<OrderPeriod>('day');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [patchError, setPatchError] = useState<string | null>(null);
 
   const branchName = useMemo(() => {
@@ -52,12 +74,17 @@ export default function AdminOrders() {
   }, [branches]);
 
   const filtered = useMemo(() => {
-    let list = orders;
+    let list = orders.filter((o) => orderInPeriod(o.createdAt, periodFilter));
     if (channelFilter !== 'all') list = list.filter((o) => o.channel === channelFilter);
     if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
     if (branchFilter !== 'all') list = list.filter((o) => o.branchId === branchFilter);
     return [...list].sort(compareOrdersNewestFirst);
-  }, [orders, channelFilter, statusFilter, branchFilter]);
+  }, [orders, channelFilter, statusFilter, branchFilter, periodFilter]);
+
+  const periodTotal = useMemo(
+    () => filtered.reduce((sum, o) => sum + o.total, 0),
+    [filtered],
+  );
 
   const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
 
@@ -66,13 +93,33 @@ export default function AdminOrders() {
     setPatchError(null);
     if (patch.status) {
       const err = await updateOrderStatus(editingOrder.id, patch.status);
-      if (err) { setPatchError(err); return; }
+      if (err) {
+        setPatchError(err);
+        return;
+      }
     }
     if (patch.paymentStatus) {
       const payErr = await updatePaymentStatus(editingOrder.id, patch.paymentStatus);
-      if (payErr) { setPatchError(payErr); return; }
+      if (payErr) {
+        setPatchError(payErr);
+        return;
+      }
     }
     setEditingOrder(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    setPatchError(null);
+    const err = await deleteOrder(deleteTarget.id);
+    setDeleteBusy(false);
+    if (err) {
+      setPatchError(err);
+      return;
+    }
+    if (editingOrder?.id === deleteTarget.id) setEditingOrder(null);
+    setDeleteTarget(null);
   };
 
   return (
@@ -81,8 +128,7 @@ export default function AdminOrders() {
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-1">Orders</h1>
           <p className="dash-muted">
-            All channels — filter by channel, status, or branch. Newest first; timestamps match Supabase{' '}
-            <code className="text-[10px]">created_at</code>.
+            Admin — edit or delete any order. Filter by period, channel, status, or branch.
           </p>
         </div>
         <div className="flex bg-white/50 dark:bg-black/50 backdrop-blur-md p-1 rounded-xl border dash-border shrink-0 self-start">
@@ -111,6 +157,28 @@ export default function AdminOrders() {
             <LayoutGrid className="w-5 h-5" />
           </button>
         </div>
+      </div>
+
+      {/* Period (admin) */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {PERIOD_OPTIONS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPeriodFilter(p)}
+            className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+              periodFilter === p
+                ? 'bg-kado-red text-white shadow-sm'
+                : 'dash-card-alt dash-muted border dash-border hover:border-kado-red/30'
+            }`}
+          >
+            {ORDER_PERIOD_LABELS[p]}
+          </button>
+        ))}
+        <span className="ml-1 text-xs font-semibold dash-muted">
+          {filtered.length} order{filtered.length !== 1 ? 's' : ''}
+          {periodFilter !== 'all' ? ` · ${formatPhp(periodTotal)}` : ''}
+        </span>
       </div>
 
       {/* Filters */}
@@ -147,26 +215,21 @@ export default function AdminOrders() {
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
-
-        <span className="text-xs dash-muted font-semibold ml-2">
-          {filtered.length} order{filtered.length !== 1 ? 's' : ''}
-        </span>
       </div>
 
       {/* Main content */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl dash-card border p-12 text-center mt-6">
-          <p className="text-sm dash-muted">No orders match your filters. Try placing one from POS.</p>
+          <p className="text-sm dash-muted">
+            No orders for {ORDER_PERIOD_LABELS[periodFilter].toLowerCase()}. Try another period or place one from POS.
+          </p>
         </div>
       ) : viewMode === 'list' ? (
         <ul className="space-y-3">
           {filtered.map((o) => {
             const next = nextStatus(o);
             return (
-              <li
-                key={o.id}
-                className="rounded-2xl dash-card border p-5"
-              >
+              <li key={o.id} className="rounded-2xl dash-card border p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -211,23 +274,30 @@ export default function AdminOrders() {
                         {o.items.length} item{o.items.length !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5 min-w-[7rem]">
+                      <button
+                        type="button"
+                        onClick={() => setEditingOrder(o)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border dash-border dash-card-alt px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:border-kado-red/30 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(o)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 text-red-600 px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
                       {next && (
                         <button
                           type="button"
                           onClick={async () => { const e = await updateOrderStatus(o.id, next); if (e) setPatchError(e); }}
-                          className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
+                          className="rounded-xl bg-kado-dark text-kado-cream px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
                         >
                           → {ORDER_STATUS_LABELS[next]}
-                        </button>
-                      )}
-                      {o.status !== 'cancelled' && o.status !== 'completed' && (
-                        <button
-                          type="button"
-                          onClick={async () => { const e = await updateOrderStatus(o.id, 'cancelled'); if (e) setPatchError(e); }}
-                          className="rounded-xl border border-red-200 text-red-600 px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors"
-                        >
-                          Cancel
                         </button>
                       )}
                     </div>
@@ -246,7 +316,7 @@ export default function AdminOrders() {
                 .sort(compareOrdersNewestFirst);
               const style = KANBAN_STYLE[col.id] ?? KANBAN_STYLE.accepted;
               const Icon = style.icon;
-              
+
               return (
                 <div key={col.id} className="flex flex-col h-full w-[280px] shrink-0">
                   <div className="flex items-center gap-2 mb-3 px-1 shrink-0">
@@ -320,7 +390,42 @@ export default function AdminOrders() {
         order={editingOrder}
         onClose={() => { setEditingOrder(null); setPatchError(null); }}
         onApply={applyPatch}
+        adminMode
+        allowCancel={false}
+        onDelete={editingOrder ? () => setDeleteTarget(editingOrder) : undefined}
+        deleteBusy={deleteBusy}
       />
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4">
+          <div className="w-full max-w-md rounded-2xl border dash-border dash-card p-6 shadow-2xl">
+            <h3 className="font-display text-xl font-bold dash-heading">Delete order?</h3>
+            <p className="mt-2 text-sm dash-muted">
+              Permanently remove <strong className="dash-heading">{deleteTarget.shortCode}</strong> (
+              {formatPhp(deleteTarget.total)}) and all line items. This cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={() => void confirmDelete()}
+                className="rounded-xl bg-red-600 text-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete order'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {patchError && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
           <AlertCircle className="w-4 h-4 shrink-0" />

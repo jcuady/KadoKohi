@@ -37,6 +37,7 @@ export interface OrderStore {
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
   updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
   updateOrderPaymentProof: (id: string, proofImage: string) => void;
+  deleteOrder: (id: string) => Promise<string | null>;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
   ordersForBarista: (branchId: string) => Order[];
   seed: () => void;
@@ -203,6 +204,31 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
             shortCode: next.shortCode,
           });
         }
+        return null;
+      },
+
+      deleteOrder: async (id) => {
+        const prev = get().orders.find((o) => o.id === id);
+        if (!prev) return 'Order not found.';
+
+        const snapshot = get().orders;
+        set({ orders: snapshot.filter((o) => o.id !== id) });
+
+        try {
+          await orderingRepo.deleteOrder(id);
+        } catch (err) {
+          set({ orders: snapshot });
+          return err instanceof Error ? err.message : 'Failed to delete order.';
+        }
+
+        logAudit({
+          action: 'order.deleted',
+          entityType: 'order',
+          entityId: id,
+          branchId: prev.branchId,
+          summary: `Deleted ${prev.shortCode}`,
+          metadata: { channel: prev.channel, status: prev.status, total: prev.total },
+        });
         return null;
       },
 

@@ -829,6 +829,11 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
+  async deleteOrder(id: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_admin_delete_order', { p_order_id: id });
+    if (error) throw error;
+  },
   async patchOrder(id: string, patch: Partial<Order>) {
     if (!supabase) return;
     const dbPatch: any = {};

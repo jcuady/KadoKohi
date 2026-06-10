@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Order, OrderStatus, PaymentStatus } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import {
@@ -21,9 +21,22 @@ type Props = {
   onClose: () => void;
   onApply: (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => void;
   allowCancel?: boolean;
+  /** Admin: all statuses + payment fields, optional delete. */
+  adminMode?: boolean;
+  onDelete?: () => void;
+  deleteBusy?: boolean;
 };
 
-export default function OrderStatusModal({ order, open, onClose, onApply, allowCancel = true }: Props) {
+export default function OrderStatusModal({
+  order,
+  open,
+  onClose,
+  onApply,
+  allowCancel = true,
+  adminMode = false,
+  onDelete,
+  deleteBusy = false,
+}: Props) {
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | null>(null);
 
@@ -33,6 +46,14 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
   const statusValue = selectedStatus ?? currentStatus ?? fulfillmentFlow[0] ?? 'pending';
   const paymentValue = selectedPaymentStatus ?? currentPaymentStatus ?? 'unpaid';
   const gcash = order ? isGcashOrder(order) : false;
+  const statusOptions = adminMode ? ALL_ORDER_STATUSES : fulfillmentFlow;
+  const showPaymentField = adminMode || gcash;
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedStatus(null);
+    setSelectedPaymentStatus(null);
+  }, [open, order?.id]);
 
   // Prevent completing a GCash order that has not been paid yet.
   const unpaidGcashCompletion =
@@ -44,7 +65,9 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
     <div className="fixed inset-0 z-[120] bg-black/45 p-4 flex items-center justify-center">
       <div className="w-full max-w-lg rounded-[1.75rem] border border-kado-dark/10 bg-white shadow-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-kado-dark/10">
-          <h3 className="font-display text-xl font-bold text-kado-dark">Update order</h3>
+          <h3 className="font-display text-xl font-bold text-kado-dark">
+            {adminMode ? 'Edit order' : 'Update order'}
+          </h3>
           <p className="text-xs text-kado-dark/60 mt-1 flex flex-wrap items-center gap-2">
             <span>{order.shortCode} · {order.items.length} item(s)</span>
             <OrderTableBadge order={order} />
@@ -64,7 +87,7 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
             <OrderPaymentProofPreview order={order} />
           </div>
 
-          {gcash && (
+          {showPaymentField && (
             <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-kado-dark/55 mb-2">
                 Payment status
@@ -92,12 +115,14 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
               onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
               className="w-full rounded-xl border border-kado-dark/15 px-4 py-2.5 text-sm text-kado-dark bg-white focus:outline-none focus:ring-2 focus:ring-kado-red/20"
             >
-              {fulfillmentFlow.map((status) => (
+              {statusOptions.map((status) => (
                 <option key={status} value={status}>
                   {ORDER_STATUS_LABELS[status]}
                 </option>
               ))}
-              <option value="cancelled">{ORDER_STATUS_LABELS.cancelled}</option>
+              {!adminMode && !fulfillmentFlow.includes('cancelled') ? (
+                <option value="cancelled">{ORDER_STATUS_LABELS.cancelled}</option>
+              ) : null}
             </select>
           </div>
 
@@ -117,12 +142,24 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-kado-dark/10 flex items-center justify-between gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl border border-kado-dark/15 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-dark/60">
-            Close
-          </button>
+        <div className="px-6 py-4 border-t border-kado-dark/10 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            {allowCancel && order.status !== 'cancelled' && (
+            <button type="button" onClick={onClose} className="rounded-xl border border-kado-dark/15 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-dark/60">
+              Close
+            </button>
+            {adminMode && onDelete ? (
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={onDelete}
+                className="rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 disabled:opacity-50"
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete'}
+              </button>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            {allowCancel && !adminMode && order.status !== 'cancelled' && (
               <button
                 type="button"
                 onClick={() => onApply({ status: 'cancelled' })}
@@ -133,16 +170,16 @@ export default function OrderStatusModal({ order, open, onClose, onApply, allowC
             )}
             <button
               type="button"
-              disabled={unpaidGcashCompletion}
+              disabled={unpaidGcashCompletion || deleteBusy}
               onClick={() =>
                 onApply({
                   status: statusValue,
-                  ...(gcash ? { paymentStatus: paymentValue } : {}),
+                  ...(showPaymentField ? { paymentStatus: paymentValue } : {}),
                 })
               }
               className="rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Apply
+              Save
             </button>
           </div>
         </div>
