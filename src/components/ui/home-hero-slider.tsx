@@ -53,9 +53,12 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
           <p className="mb-3 text-[10px] sm:text-xs font-bold uppercase tracking-[0.24em] text-kado-cream/85 drop-shadow-md">
             {c?.locationBadge ?? 'Kado Kohi · Marikina'}
           </p>
-          <h1 className="font-display text-[clamp(2.5rem,8vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.015em] text-white drop-shadow-lg">
-            {current.title}
+          <h1 className="font-display text-[clamp(1.75rem,5vw,3.25rem)] font-bold leading-[1.05] tracking-[-0.015em] text-white drop-shadow-lg">
+            Kado Coffee — Best Coffee &amp; Matcha in Marikina
           </h1>
+          <h2 className="mt-3 font-display text-[clamp(1.5rem,4.5vw,3rem)] font-bold leading-[0.98] tracking-[-0.01em] text-kado-cream/95 drop-shadow-md">
+            {current.title}
+          </h2>
           <p className="mt-4 sm:mt-5 max-w-2xl text-sm sm:text-base md:text-lg font-medium leading-relaxed text-kado-cream/90 drop-shadow-md">
             {current.subtitle}
           </p>

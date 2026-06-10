@@ -7,6 +7,7 @@ import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
 import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
+import HomePageSeoSection from '../seo/HomePageSeoSection';
 import FeaturedCoffeesSection from './FeaturedCoffeesSection';
 import CafeScheduleSection from './CafeScheduleSection';
 import { useBranchStore } from '../../store/branchStore';
@@ -63,6 +64,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         googleListing={KADO_GOOGLE_LISTING}
       />
       <BranchesStrip copy={landing.branchesStrip} />
+      <HomePageSeoSection />
       <KadoCircleCTA copy={landing.kadoCircle} />
     </motion.div>
   );

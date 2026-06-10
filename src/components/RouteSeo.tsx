@@ -5,9 +5,12 @@ import {
   SEO_PUBLIC_ROUTES,
   SEO_BRAND,
   buildFaqPageJsonLd,
+  buildHomeMenuItemListJsonLd,
   buildLocalBusinessJsonLd,
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
+  menuProductSeoDescription,
+  sortMenuProductsForSeo,
   type SeoRouteMeta,
 } from '../content/seo';
 import { getSiteOrigin } from '../lib/siteUrl';
@@ -142,8 +145,10 @@ export default function RouteSeo() {
 
     if (pathname === '/') {
       upsertJsonLd('faq', buildFaqPageJsonLd());
+      upsertJsonLd('home-menu', buildHomeMenuItemListJsonLd(origin));
     } else {
       removeJsonLd('faq');
+      removeJsonLd('home-menu');
     }
 
     const currentBreadcrumb = SEO_BREADCRUMBS.find(({ path }) => matchPath({ path, end: true }, pathname));
@@ -209,16 +214,20 @@ export default function RouteSeo() {
 
     if (pathname === '/menu' && visibleMenuProducts.length > 0) {
       const categoryNameById = new Map(menuCategories.map((category) => [category.id, category.name]));
+      const menuForSchema = sortMenuProductsForSeo(visibleMenuProducts).slice(0, 24);
       upsertJsonLd('menu-products', {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
-        itemListElement: visibleMenuProducts.slice(0, 20).map((product, idx) => ({
+        name: 'Kado Coffee menu — matcha, hojicha & oat lattes Marikina',
+        itemListElement: menuForSchema.map((product, idx) => ({
           '@type': 'ListItem',
           position: idx + 1,
           item: {
             '@type': 'Product',
             name: product.name,
-            description: product.description || `${product.name} from Kado Kohi specialty coffee menu.`,
+            description:
+              product.description ||
+              menuProductSeoDescription(product.name, categoryNameById.get(product.categoryId)),
             image: product.image ? [product.image] : undefined,
             category: categoryNameById.get(product.categoryId) ?? 'Coffee',
             brand: { '@type': 'Brand', name: 'Kado Kohi' },

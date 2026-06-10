@@ -99,7 +99,17 @@ export const SEO_KEYWORDS = [
   'wedding coffee booth philippines',
   'corporate coffee catering',
   'matcha marikina',
+  'best matcha marikina',
+  'matcha near me marikina',
   'matcha latte marikina',
+  'matcha oat latte',
+  'matcha oat latte marikina',
+  'hojicha marikina',
+  'hojicha oat latte',
+  'hojicha oat latte marikina',
+  'oat latte marikina',
+  'oat milk latte marikina',
+  'dirty matcha oat latte',
   'kado latte',
   'kado coffee menu',
   'kado coffee location',
@@ -119,7 +129,34 @@ export const SEO_KEYWORDS = [
 export const SEO_META_KEYWORDS = SEO_KEYWORDS.slice(0, 40).join(', ');
 
 export const SEO_DEFAULT_DESCRIPTION =
-  'Kado Coffee (Kado Kohi) — specialty cafe on J.P. Laurel, Sta. Elena, Marikina. One of the top-rated coffee shops near you (4.9★ on Google). Order online, events, booth coffee.';
+  'Kado Coffee (Kado Kohi) — specialty cafe on J.P. Laurel, Sta. Elena, Marikina. Matcha oat latte, hojicha oat latte, KADO Latte & oat lattes. Top-rated coffee near you (4.9★). Order online, events, booth coffee.';
+
+/** Signature drinks for homepage copy & schema (aligned with live menu catalog). */
+export const SEO_SIGNATURE_DRINKS = [
+  { name: 'KADO Latte', category: 'Signatures', keywords: 'signature latte marikina' },
+  { name: 'Matcha Oat Latte', category: 'Matcha & Hojicha', keywords: 'best matcha marikina, matcha oat latte' },
+  { name: 'Dirty Matcha Oat Latte', category: 'Matcha & Hojicha', keywords: 'dirty matcha oat latte marikina' },
+  { name: 'Matcha Strawberry Oat Latte', category: 'Matcha & Hojicha', keywords: 'matcha strawberry oat latte' },
+  { name: 'Hojicha Oat Latte', category: 'Matcha & Hojicha', keywords: 'hojicha oat latte marikina' },
+  { name: 'Salted Cream Hojicha Oat Latte', category: 'Matcha & Hojicha', keywords: 'hojicha marikina' },
+  { name: 'Ube Shio Karamel Latte', category: 'Signatures', keywords: 'ube latte marikina' },
+  { name: 'Yuzu AmeriKado', category: 'Signatures', keywords: 'yuzu coffee marikina' },
+  { name: 'Spanish Latte', category: 'Classics', keywords: 'spanish latte marikina' },
+  { name: 'Yuzu Lime Soda', category: 'Yuzu', keywords: 'yuzu soda marikina' },
+] as const;
+
+export const SEO_HOME_H1 =
+  'Kado Coffee — Best Coffee & Matcha in Marikina';
+
+export const SEO_INTERNAL_LINKS = [
+  { to: '/menu', label: 'Coffee & matcha menu' },
+  { to: '/branches', label: 'Location & hours' },
+  { to: '/events', label: 'Events & tambayan' },
+  { to: '/book/booth', label: 'Book event coffee booth' },
+  { to: '/merch', label: 'Merch' },
+  { to: '/about', label: 'About Kado Kohi' },
+  { to: '/contact', label: 'Contact' },
+] as const;
 
 export type SeoRouteMeta = {
   path: string;
@@ -135,16 +172,16 @@ function routeKeywords(...extra: string[]): string[] {
 export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
   {
     path: '/',
-    title: 'Kado Coffee | Best Coffee in Marikina | Coffee Near Me',
+    title: 'Kado Coffee | Best Coffee & Matcha in Marikina | Coffee Near Me',
     description: SEO_DEFAULT_DESCRIPTION,
-    keywords: routeKeywords(),
+    keywords: routeKeywords('best matcha marikina', 'hojicha oat latte marikina'),
   },
   {
     path: '/menu',
-    title: 'Kado Coffee Menu | Best Coffee in Marikina',
+    title: 'Kado Coffee Menu | Matcha, Hojicha & Oat Lattes Marikina',
     description:
-      'Kado Coffee menu — signature lattes, matcha, and specialty drinks at our Sta. Elena, Marikina cafe (Kado Kohi). Best coffee picks updated from the live menu.',
-    keywords: routeKeywords('kado coffee menu', 'marikina coffee menu'),
+      'Kado Coffee menu — Matcha Oat Latte, Hojicha Oat Latte, KADO Latte, dirty matcha, and oat lattes at Sta. Elena, Marikina (Kado Kohi). Live pricing & best sellers.',
+    keywords: routeKeywords('kado coffee menu', 'matcha oat latte marikina', 'hojicha oat latte'),
   },
   {
     path: '/merch',
@@ -262,7 +299,17 @@ export const SEO_FAQ = [
   {
     question: 'What is on the Kado Coffee menu?',
     answer:
-      'Signature drinks include the Kado Latte, matcha series, specialty lattes, and seasonal items. View the full Kado Coffee menu online at kadokohi.com/menu with live pricing.',
+      'Signature drinks include the KADO Latte, Matcha Oat Latte, Dirty Matcha Oat Latte, Hojicha Oat Latte, Salted Cream Hojicha Oat Latte, Ube Shio Karamel Latte, Yuzu AmeriKado, and classic oat lattes. View the full menu at kadokohi.com/menu with live pricing.',
+  },
+  {
+    question: 'Where can I get the best matcha in Marikina?',
+    answer:
+      'Kado Coffee (Kado Kohi) in Sta. Elena, Marikina serves premium matcha drinks including Matcha Oat Latte, Dirty Matcha Oat Latte, and Matcha Strawberry Oat Latte — popular for guests searching matcha near me in Marikina.',
+  },
+  {
+    question: 'Does Kado Coffee serve hojicha and oat lattes?',
+    answer:
+      'Yes. Try our Hojicha Oat Latte and Salted Cream Hojicha Oat Latte, plus oat-milk options across espresso drinks. Order at our J.P. Laurel cafe or browse kadokohi.com/menu.',
   },
   {
     question: 'Can I order Kado Coffee online in Marikina?',
@@ -283,10 +330,21 @@ export type PageSeoBlurbContent = {
 };
 
 const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
-  '/menu': {
-    heading: 'Kado Coffee menu — specialty drinks in Marikina',
+  '/': {
+    heading: 'Kado Coffee — specialty coffee & matcha in Marikina',
     paragraphs: [
-      'Browse the Kado Coffee (Kado Kohi) menu for signature lattes, matcha, and best-selling specialty coffee in Marikina. Ideal for guests searching marikina coffee, sta elena coffee, or coffee near me.',
+      'Kado Coffee (Kado Kohi) on J.P. Laurel, Sta. Elena is a specialty cafe for matcha oat latte, hojicha oat latte, KADO Latte, and oat lattes — one of the best coffee shops in Marikina for guests searching coffee near me or matcha near me.',
+    ],
+    links: [
+      { label: 'Full menu', to: '/menu' },
+      { label: 'Google Maps', href: KADO_GOOGLE_LISTING.mapsUrl, external: true },
+      { label: 'Book booth', to: '/book/booth' },
+    ],
+  },
+  '/menu': {
+    heading: 'Kado Coffee menu — matcha, hojicha & oat lattes in Marikina',
+    paragraphs: [
+      'Browse the Kado Coffee (Kado Kohi) menu for Matcha Oat Latte, Hojicha Oat Latte, Dirty Matcha Oat Latte, KADO Latte, and classic oat lattes in Sta. Elena, Marikina. Ideal for marikina coffee, best matcha marikina, or coffee near me searches.',
     ],
     links: [
       { label: 'Branches & hours', to: '/branches' },
@@ -463,6 +521,57 @@ export function buildWebSiteJsonLd(origin: string) {
     description: SEO_DEFAULT_DESCRIPTION,
     publisher: { '@id': `${origin}/#organization` },
     inLanguage: 'en-PH',
+  };
+}
+
+export function menuProductSeoDescription(name: string, category?: string): string {
+  const cat = category ? `${category} — ` : '';
+  return `${cat}${name} at Kado Coffee (Kado Kohi), Sta. Elena, Marikina. Specialty coffee, matcha, hojicha & oat lattes. Order online or visit J.P. Laurel.`;
+}
+
+const SEO_MENU_PRIORITY = [
+  'matcha',
+  'hojicha',
+  'oat',
+  'kado',
+  'ube',
+  'yuzu',
+  'latte',
+] as const;
+
+export function sortMenuProductsForSeo<
+  T extends { name: string; sortOrder?: number; categoryId?: string; basePrice?: number; description?: string; image?: string },
+>(products: T[]): T[] {
+  return [...products].sort((a, b) => {
+    const score = (name: string) => {
+      const lower = name.toLowerCase();
+      let s = 0;
+      for (let i = 0; i < SEO_MENU_PRIORITY.length; i++) {
+        if (lower.includes(SEO_MENU_PRIORITY[i])) s += (SEO_MENU_PRIORITY.length - i) * 10;
+      }
+      return s;
+    };
+    const diff = score(b.name) - score(a.name);
+    if (diff !== 0) return diff;
+    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+  });
+}
+
+export function buildHomeMenuItemListJsonLd(origin: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Kado Coffee signature menu — matcha & oat lattes Marikina',
+    itemListElement: SEO_SIGNATURE_DRINKS.map((drink, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      item: {
+        '@type': 'MenuItem',
+        name: drink.name,
+        description: menuProductSeoDescription(drink.name, drink.category),
+        url: `${origin}/menu`,
+      },
+    })),
   };
 }
 

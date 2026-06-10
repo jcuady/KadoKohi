@@ -80,6 +80,8 @@ function Bootstrap() {
 
 registerSW({ immediate: true });
 
+document.getElementById('seo-prerender')?.remove();
+
 const container = document.getElementById('root')!;
 type RootHost = HTMLElement & { __kkReactRoot?: Root };
 const host = container as RootHost;

@@ -131,8 +131,9 @@ export default function AboutSection2() {
             customVariants={textVariants}
             className="mt-4 max-w-3xl font-sans text-[0.95rem] leading-[1.7] text-kado-dark/65 sm:text-base md:text-lg md:leading-relaxed"
           >
-            Searching for <strong className="font-semibold text-kado-dark">Kado Coffee</strong>,{' '}
-            <strong className="font-semibold text-kado-dark">Marikina coffee</strong>, or{' '}
+            Searching for <strong className="font-semibold text-kado-dark">best matcha in Marikina</strong>,{' '}
+            <strong className="font-semibold text-kado-dark">hojicha oat latte</strong>,{' '}
+            <strong className="font-semibold text-kado-dark">Kado Coffee</strong>, or{' '}
             <strong className="font-semibold text-kado-dark">coffee near me</strong> in Sta. Elena?
             We&apos;re rated {rating}★ on Google ({reviewCount} reviews). Browse our{' '}
             <Link to="/menu" className={linkClass}>
