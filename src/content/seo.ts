@@ -131,9 +131,9 @@ export const SEO_META_KEYWORDS = SEO_KEYWORDS.slice(0, 40).join(', ');
 /** Homepage title — under 580px, no repeated words (Seobility). */
 export const SEO_HOME_TITLE = 'Kado Coffee | Best Matcha in Marikina | Near Me';
 
-/** Meta description — under ~1000px / ~155 chars. */
+/** Meta description — under Seobility ~1000px width limit. */
 export const SEO_DEFAULT_DESCRIPTION =
-  'Kado Coffee (Kado Kohi) — specialty cafe in Sta. Elena, Marikina. Matcha oat latte, hojicha & KADO Latte. Rated 4.9★. Order online.';
+  'Kado Kohi in Sta. Elena, Marikina — matcha oat latte, hojicha and KADO Latte. 4.9 stars. Order online.';
 
 export const SEO_HOME_H1 = 'Kado Coffee — Best Matcha in Marikina Near Me';
 
@@ -163,13 +163,14 @@ export const SEO_INTERNAL_LINKS = [
   { to: '/legal/privacy', label: 'Privacy policy' },
 ] as const;
 
-/** Crawlable homepage copy — 250+ words, multiple paragraphs. */
+/** Crawlable homepage copy — 250+ words, multiple paragraphs, fuller sentences. */
 export const SEO_HOME_BODY_PARAGRAPHS = [
-  'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe on J.P. Laurel corner Mt. Everest in Sta. Elena, Marikina City. Guests searching for best matcha in Marikina, matcha near me, or coffee near me in Eastern Metro Manila find us rated 4.9 stars on Google with warm barista service and a cozy tambayan atmosphere.',
-  'Our menu highlights premium matcha and hojicha drinks made with quality ingredients. Try the Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, or Salted Cream Hojicha Oat Latte — popular choices for oat latte lovers in Marikina. Signature espresso drinks include the KADO Latte with torched muscovado, Ube Shio Karamel Latte, and Yuzu AmeriKado.',
-  'Classic lattes such as Spanish Latte, Moka Latte, and Karamel Latte are available hot or iced with regular milk or oat milk. Refreshing yuzu sodas round out the menu for guests who want something bright and citrus-forward after coffee or matcha.',
-  'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours. We host tambayan events and community nights — see our events calendar for upcoming gatherings in Marikina. Book our mobile coffee booth for weddings, birthdays, and corporate functions across Metro Manila.',
-  'Kado Coffee serves Sta. Elena, Santo Niño, Parang, Concepcion, and surrounding Marikina barangays. Follow @kadocoffeeph on Instagram and KadoKohi on Facebook for menu updates, seasonal drinks, and booth availability.',
+  'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe on J.P. Laurel corner Mt. Everest in Sta. Elena, Marikina City, where guests searching for the best matcha in Marikina, matcha near me, or coffee near me in Eastern Metro Manila discover a neighborhood favorite rated 4.9 stars on Google with warm barista service and a cozy tambayan atmosphere.',
+  'Our menu highlights premium matcha and hojicha drinks crafted with quality ingredients, including the Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — each a popular choice for oat latte lovers across Marikina who want café-quality drinks without leaving the city.',
+  'Signature espresso drinks include the KADO Latte with torched muscovado, Ube Shio Karamel Latte, and Yuzu AmeriKado, while classic lattes such as Spanish Latte, Moka Latte, and Karamel Latte are available hot or iced with regular milk or oat milk for every kind of coffee drinker.',
+  'Refreshing yuzu sodas round out the menu for guests who want something bright and citrus-forward after coffee or matcha, and our team keeps the lineup updated with seasonal specials you can follow on social media throughout the year.',
+  'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours, and join tambayan events or community nights listed on our events calendar in Marikina whenever you want a relaxed hangout with great drinks.',
+  'Book our mobile coffee booth for weddings, birthdays, and corporate functions across Metro Manila, or stop by when you are in Sta. Elena, Santo Niño, Parang, Concepcion, and surrounding Marikina barangays — follow @kadocoffeeph on Instagram and KadoKohi on Facebook for menu updates and booth availability.',
 ] as const;
 
 export type SeoRouteMeta = {

@@ -30,7 +30,13 @@ export default function Footer() {
             <h3 className="font-display font-bold text-lg">Quick Links</h3>
             <div className="flex flex-col gap-2">
               <Link to="/menu" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
-                Coffee
+                Coffee &amp; Matcha Menu
+              </Link>
+              <Link to="/branches" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
+                Branches &amp; Hours
+              </Link>
+              <Link to="/merch" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
+                Merch
               </Link>
               <Link to="/book/booth" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 Event Booking

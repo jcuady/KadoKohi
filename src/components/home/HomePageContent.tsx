@@ -49,6 +49,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         </motion.div>
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
+      <HomePageSeoSection />
       <HomeSeoIntro />
       <FeaturedCoffeesSection copy={landing.featured} />
       <KadoOrderingCarousel copy={landing.ordering} />
@@ -64,7 +65,6 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         googleListing={KADO_GOOGLE_LISTING}
       />
       <BranchesStrip copy={landing.branchesStrip} />
-      <HomePageSeoSection />
       <KadoCircleCTA copy={landing.kadoCircle} />
     </motion.div>
   );
