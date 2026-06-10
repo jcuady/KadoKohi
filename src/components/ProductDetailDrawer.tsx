@@ -181,11 +181,11 @@ export default function ProductDetailDrawer({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 32, scale: 0.98 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center z-[151] pointer-events-none"
+            className="fixed inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center z-[151] pointer-events-none px-[max(0px,env(safe-area-inset-left))] pr-[max(0px,env(safe-area-inset-right))]"
           >
-            <div className="pointer-events-auto w-full sm:max-w-lg bg-white sm:rounded-[2rem] rounded-t-[2.5rem] shadow-[0_30px_60px_rgba(158,24,29,0.15)] overflow-hidden max-h-[93dvh] sm:max-h-[88vh] flex flex-col border sm:border-kado-red/10">
+            <div className="pointer-events-auto w-full sm:max-w-lg bg-white sm:rounded-[2rem] rounded-t-[2.5rem] shadow-[0_30px_60px_rgba(158,24,29,0.15)] overflow-hidden max-h-[min(93dvh,640px)] sm:max-h-[88vh] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[96dvh] flex flex-col border sm:border-kado-red/10">
               <div className="relative shrink-0">
-                <div className="aspect-[16/9] overflow-hidden bg-kado-dark/5">
+                <div className="aspect-[16/9] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] overflow-hidden bg-kado-dark/5">
                   <img
                     src={product.image ?? (coffeeProduct ? (FALLBACK_BY_CATEGORY[coffeeProduct.categoryId] ?? DEFAULT_IMAGE) : DEFAULT_IMAGE)}
                     alt={product.name}
@@ -300,7 +300,7 @@ export default function ProductDetailDrawer({
                 ))}
               </div>
 
-              <div className="shrink-0 border-t border-kado-dark/5 px-6 md:px-8 py-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-gray-50/50 backdrop-blur-md">
+              <div className="shrink-0 border-t border-kado-dark/5 px-6 md:px-8 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-gray-50/50 backdrop-blur-md">
                 {canPlaceOrder ? (
                   <>
                     <div className="flex items-center gap-3 bg-white border border-kado-dark/10 shadow-sm rounded-full px-3 py-2.5 shrink-0 self-center sm:self-auto">

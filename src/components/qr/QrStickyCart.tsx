@@ -69,7 +69,7 @@ export default function QrStickyCart({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
-      <div className="pointer-events-auto max-w-3xl mx-auto px-3 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="pointer-events-auto max-w-3xl mx-auto px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pr-4">
         <div className="rounded-2xl border border-kado-dark/10 bg-white shadow-[0_-8px_32px_rgba(25,25,25,0.14)] overflow-hidden">
           {/* Collapsed summary — tap to open cart */}
           <button
@@ -118,7 +118,7 @@ export default function QrStickyCart({
                 </button>
               </div>
 
-              <div className="px-4 pb-3 max-h-[min(42dvh,360px)] overflow-y-auto overscroll-contain">
+              <div className="px-4 pb-3 max-h-[min(42dvh,360px)] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[min(30dvh,200px)] overflow-y-auto overscroll-contain">
                 <ul className="space-y-2">
                   {cart.map((line) => {
                     const p = products.find((x) => x.id === line.productId);

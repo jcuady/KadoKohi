@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { OrderItem, Product } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
@@ -10,7 +10,9 @@ import { clampText, formatOrderError, requireGuestName } from '../lib/validation
 import { isProductInStock } from '../lib/productStock';
 import { useSettingsStore } from '../store/settingsStore';
 import { newId } from '../lib/id';
-import { ShoppingBag, Check } from 'lucide-react';
+import { getProductImageUrl } from '../lib/productImage';
+import { guestOrderMainPadding } from '../lib/guestOrderLayout';
+import { ShoppingBag, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 
 type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
@@ -20,7 +22,10 @@ function resolveUnit(product: Product, milkId?: string): { unit: number; milkLab
   let milkLabel: string | undefined;
   if (milkId && product.milks?.length) {
     const m = product.milks.find((x) => x.id === milkId);
-    if (m) { unit += m.priceDelta; milkLabel = m.label; }
+    if (m) {
+      unit += m.priceDelta;
+      milkLabel = m.label;
+    }
   }
   return { unit, milkLabel };
 }
@@ -44,6 +49,10 @@ export default function Order() {
   const [activeCat, setActiveCat] = useState(sortedCategories[0]?.id ?? '');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? '');
+  const [guestName, setGuestName] = useState('');
+  const [guestOrderError, setGuestOrderError] = useState('');
+  const [placed, setPlaced] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   useEffect(() => {
     if (!activeBranches.length) return;
@@ -51,9 +60,6 @@ export default function Order() {
       setBranchId(activeBranches[0].id);
     }
   }, [activeBranches, branchId]);
-  const [guestName, setGuestName] = useState('');
-  const [guestOrderError, setGuestOrderError] = useState('');
-  const [placed, setPlaced] = useState(false);
 
   const list = productsByCategory(activeCat || sortedCategories[0]?.id || '');
 
@@ -62,6 +68,7 @@ export default function Order() {
     const defaultMilk = product.milks?.[0]?.id;
     const temp: 'hot' | 'iced' = product.temperature === 'iced' ? 'iced' : 'hot';
     setCart((c) => [...c, { key: newId(), productId: product.id, qty: 1, milkId: defaultMilk, temperature: temp }]);
+    setMobileCartOpen(true);
   };
 
   const cartTotals = useMemo(() => {
@@ -97,6 +104,7 @@ export default function Order() {
       const nameErr = requireGuestName(guestName);
       if (nameErr) {
         setGuestOrderError(nameErr);
+        setMobileCartOpen(true);
         return;
       }
     }
@@ -115,32 +123,159 @@ export default function Order() {
     })
       .then(() => {
         setCart([]);
+        setMobileCartOpen(false);
         setPlaced(true);
       })
       .catch((err) => {
         setGuestOrderError(formatOrderError(err));
+        setMobileCartOpen(true);
       });
   };
 
+  const mainPadding = guestOrderMainPadding(mobileCartOpen, cart.length > 0);
+
+  const renderCartBody = (idPrefix: string): ReactNode => (
+    <>
+      {cart.length === 0 ? (
+        <p className="text-sm text-kado-dark/50 mb-4">Tap a product to add it.</p>
+      ) : (
+        <ul className="space-y-3 mb-4 max-h-[min(36dvh,280px)] lg:max-h-60 overflow-y-auto overscroll-contain">
+          {cart.map((line) => {
+            const p = products.find((x) => x.id === line.productId);
+            if (!p) return null;
+            const { unit } = resolveUnit(p, line.milkId);
+            return (
+              <li key={line.key} className="rounded-xl border border-kado-dark/10 bg-white p-3">
+                <div className="flex justify-between gap-2 text-sm font-bold text-kado-dark">
+                  <span className="min-w-0 truncate">{p.name}</span>
+                  <span className="text-kado-red shrink-0">{formatPhp(unit)}</span>
+                </div>
+                {p.milks && p.milks.length > 0 && (
+                  <select
+                    id={`${idPrefix}-milk-${line.key}`}
+                    value={line.milkId ?? ''}
+                    onChange={(e) =>
+                      setCart((c) =>
+                        c.map((x) => (x.key === line.key ? { ...x, milkId: e.target.value || undefined } : x)),
+                      )
+                    }
+                    className="mt-2 w-full min-h-[44px] rounded-lg border border-kado-dark/10 bg-[#FAF7F2] text-sm py-2 px-3 touch-manipulation"
+                  >
+                    {p.milks.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label} {m.priceDelta ? `+${m.priceDelta}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))}
+                  className="mt-2 min-h-[40px] text-[10px] text-kado-red font-bold uppercase tracking-wider touch-manipulation"
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="space-y-3 mb-4">
+        <div>
+          <label htmlFor={`${idPrefix}-branch`} className="block text-[10px] font-bold uppercase tracking-wider text-kado-dark/60 mb-1">
+            Pickup branch
+          </label>
+          <select
+            id={`${idPrefix}-branch`}
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+            className="w-full min-h-[48px] rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-base sm:text-sm touch-manipulation"
+            required
+          >
+            {activeBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {!user && (
+          <div className="space-y-2">
+            <div>
+              <label htmlFor={`${idPrefix}-guest`} className="block text-[10px] font-bold uppercase tracking-wider text-kado-dark/60 mb-1">
+                Your name (guest)
+              </label>
+              <input
+                id={`${idPrefix}-guest`}
+                value={guestName}
+                onChange={(e) => {
+                  setGuestName(e.target.value);
+                  setGuestOrderError('');
+                }}
+                placeholder="e.g. Juan"
+                maxLength={80}
+                className="w-full min-h-[48px] rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-base sm:text-sm touch-manipulation"
+              />
+              {guestOrderError && <p className="mt-1 text-xs text-red-600 font-medium">{guestOrderError}</p>}
+            </div>
+            <p className="text-[10px] text-kado-dark/50">
+              <Link to="/auth/signup" className="font-bold text-kado-red hover:underline">
+                Create a free account
+              </Link>{' '}
+              to track orders &amp; earn loyalty stamps.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-kado-dark/10 pt-4 space-y-1 mb-4">
+        <div className="flex justify-between text-xs text-kado-dark/55">
+          <span>Subtotal</span>
+          <span>{formatPhp(cartTotals.subtotal)}</span>
+        </div>
+        {cartTotals.modifiers > 0 && (
+          <div className="flex justify-between text-xs text-kado-dark/55">
+            <span>Modifiers</span>
+            <span>+{formatPhp(cartTotals.modifiers)}</span>
+          </div>
+        )}
+        {cartTotals.tax > 0 && (
+          <div className="flex justify-between text-xs text-kado-dark/55">
+            <span>Tax ({taxRate}%)</span>
+            <span>{formatPhp(cartTotals.tax)}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-display font-bold text-kado-dark pt-1">
+          <span>Total</span>
+          <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
+        </div>
+      </div>
+    </>
+  );
+
   if (placed) {
     return (
-      <div className="flex flex-col w-full bg-kado-cream font-sans min-h-screen items-center justify-center px-6 py-24 text-center">
+      <div className="guest-order-page flex flex-col w-full bg-kado-cream font-sans items-center justify-center px-[max(1.5rem,env(safe-area-inset-left))] py-16 sm:py-24 text-center pb-safe">
         <div className="w-16 h-16 rounded-full bg-kado-red/10 flex items-center justify-center mb-6">
           <Check className="w-8 h-8 text-kado-red" />
         </div>
-        <h1 className="font-display text-3xl font-bold text-kado-dark mb-2">Order placed!</h1>
-        <p className="text-kado-dark/65 max-w-md mb-8">
-          Your order has been sent. You'll see it appear in your account dashboard and the barista board shortly.
+        <h1 className="font-display text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-kado-dark mb-2">Order placed!</h1>
+        <p className="text-kado-dark/65 max-w-md mb-8 text-sm sm:text-base leading-relaxed">
+          Your order has been sent. You&apos;ll see it appear in your account dashboard and the barista board shortly.
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
           <button
             type="button"
             onClick={() => setPlaced(false)}
-            className="rounded-full bg-kado-dark text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
+            className="min-h-[48px] rounded-full bg-kado-dark text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors touch-manipulation"
           >
             Order again
           </button>
-          <Link to="/account" className="rounded-full border-2 border-kado-dark/15 text-kado-dark px-6 py-3 text-xs font-bold uppercase tracking-wider hover:border-kado-red hover:text-kado-red transition-colors">
+          <Link
+            to="/account"
+            className="min-h-[48px] rounded-full border-2 border-kado-dark/15 text-kado-dark px-6 py-3 text-xs font-bold uppercase tracking-wider hover:border-kado-red hover:text-kado-red transition-colors flex items-center justify-center touch-manipulation"
+          >
             My account
           </Link>
         </div>
@@ -149,26 +284,29 @@ export default function Order() {
   }
 
   return (
-    <div className="flex flex-col w-full bg-kado-cream font-sans min-h-screen">
-      <section className="pt-28 pb-6 px-6">
+    <div className="guest-order-page flex flex-col w-full bg-kado-cream font-sans">
+      <section className="pt-20 sm:pt-24 pb-4 px-[max(1rem,env(safe-area-inset-left))] sm:px-6 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-16 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-2">
         <div className="max-w-6xl mx-auto">
-          <SectionHeader label="Online" title="Place an order" subtitle="Browse the menu, add to cart, and submit your order for pickup." />
+          <SectionHeader
+            label="Online"
+            title="Place an order"
+            subtitle="Browse the menu, add to cart, and submit your order for pickup."
+          />
         </div>
       </section>
 
-      <section className="px-6 pb-24">
-        <div className="max-w-6xl mx-auto">
+      <section className={`px-[max(1rem,env(safe-area-inset-left))] sm:px-6 ${mainPadding} lg:pb-24`}>
+        <div className="max-w-6xl mx-auto min-w-0">
           <form onSubmit={placeOrder}>
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Menu area */}
-              <div className="lg:col-span-2 space-y-5">
-                <div className="flex flex-wrap gap-2">
+            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="lg:col-span-2 space-y-4 min-w-0">
+                <div className="guest-order-category-rail -mx-4 px-4 sm:mx-0 sm:px-0 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
                   {sortedCategories.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setActiveCat(c.id)}
-                      className={`px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                      className={`shrink-0 min-h-[44px] px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all touch-manipulation ${
                         activeCat === c.id
                           ? 'bg-kado-dark text-kado-cream border-kado-dark'
                           : 'bg-kado-offwhite border-kado-dark/10 hover:border-kado-red/40'
@@ -178,150 +316,67 @@ export default function Order() {
                     </button>
                   ))}
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
+
+                <div className="guest-order-product-grid">
                   {list.map((p) => {
                     const inStock = isProductInStock(p);
+                    const image = getProductImageUrl(p);
                     return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      disabled={!inStock}
-                      onClick={() => addToCart(p)}
-                      className={`text-left rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-5 transition-all group ${
-                        inStock
-                          ? 'hover:border-kado-red/40 hover:shadow-lg'
-                          : 'opacity-55 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex justify-between gap-2 items-start">
-                        <span className="font-display font-bold text-kado-dark group-hover:text-kado-red transition-colors">
-                          {p.name}
+                      <button
+                        key={p.id}
+                        type="button"
+                        disabled={!inStock}
+                        onClick={() => addToCart(p)}
+                        className={`text-left rounded-2xl border border-kado-dark/10 bg-kado-offwhite overflow-hidden transition-all group touch-manipulation flex flex-col h-full ${
+                          inStock
+                            ? 'hover:border-kado-red/40 hover:shadow-lg active:scale-[0.99]'
+                            : 'opacity-55 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="relative aspect-[4/3] bg-kado-dark/5 shrink-0">
+                          <img
+                            src={image}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
                           {!inStock && (
-                            <span className="block text-[9px] font-bold uppercase tracking-widest text-amber-700 mt-0.5">
+                            <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-amber-600 text-white px-1.5 py-0.5 rounded-full">
                               Out of stock
                             </span>
                           )}
-                        </span>
-                        <span className="font-display font-bold text-kado-red shrink-0">{formatPhp(p.basePrice)}</span>
-                      </div>
-                      {p.tags?.length ? (
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-kado-dark/40 mt-1 inline-block">{p.tags.join(' · ')}</span>
-                      ) : null}
-                    </button>
+                        </div>
+                        <div className="p-3 sm:p-4 flex flex-col flex-1 min-w-0">
+                          <div className="flex justify-between gap-2 items-start">
+                            <span className="font-display font-bold text-xs sm:text-sm text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
+                              {p.name}
+                            </span>
+                            <span className="font-display font-bold text-kado-red shrink-0 text-xs sm:text-sm">
+                              {formatPhp(p.basePrice)}
+                            </span>
+                          </div>
+                          {p.tags?.length ? (
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-kado-dark/40 mt-1 inline-block line-clamp-1">
+                              {p.tags.join(' · ')}
+                            </span>
+                          ) : null}
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Cart sidebar */}
-              <div className="rounded-[2rem] border border-kado-dark/10 bg-kado-offwhite p-6 h-fit sticky top-24">
+              <div className="hidden lg:block rounded-[2rem] border border-kado-dark/10 bg-kado-offwhite p-6 h-fit sticky top-24">
                 <h2 className="font-display text-lg font-bold text-kado-dark mb-4 flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-kado-red" /> Cart
                 </h2>
-
-                {cart.length === 0 ? (
-                  <p className="text-sm text-kado-dark/50 mb-6">Tap a product to add it.</p>
-                ) : (
-                  <ul className="space-y-3 mb-6 max-h-60 overflow-y-auto">
-                    {cart.map((line) => {
-                      const p = products.find((x) => x.id === line.productId);
-                      if (!p) return null;
-                      const { unit } = resolveUnit(p, line.milkId);
-                      return (
-                        <li key={line.key} className="rounded-xl border border-kado-dark/10 bg-white p-3">
-                          <div className="flex justify-between text-sm font-bold text-kado-dark">
-                            <span>{p.name}</span>
-                            <span className="text-kado-red">{formatPhp(unit)}</span>
-                          </div>
-                          {p.milks && p.milks.length > 0 && (
-                            <select
-                              value={line.milkId ?? ''}
-                              onChange={(e) => setCart((c) => c.map((x) => (x.key === line.key ? { ...x, milkId: e.target.value || undefined } : x)))}
-                              className="w-full mt-1 rounded border border-kado-dark/10 text-xs py-1 px-2"
-                            >
-                              {p.milks.map((m) => (
-                                <option key={m.id} value={m.id}>{m.label} {m.priceDelta ? `+${m.priceDelta}` : ''}</option>
-                              ))}
-                            </select>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setCart((c) => c.filter((x) => x.key !== line.key))}
-                            className="text-[10px] text-kado-red font-bold mt-1"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {/* Branch + guest name */}
-                <div className="space-y-3 mb-4">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-kado-dark/60 mb-1">Pickup branch</label>
-                    <select
-                      value={branchId}
-                      onChange={(e) => setBranchId(e.target.value)}
-                      className="w-full rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-sm"
-                      required
-                    >
-                      {activeBranches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {!user && (
-                    <div className="space-y-2">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-kado-dark/60 mb-1">Your name (guest)</label>
-                        <input
-                          value={guestName}
-                          onChange={(e) => {
-                            setGuestName(e.target.value);
-                            setGuestOrderError('');
-                          }}
-                          placeholder="e.g. Juan"
-                          maxLength={80}
-                          className="w-full rounded-xl border border-kado-dark/15 bg-white px-3 py-2.5 text-sm"
-                        />
-                        {guestOrderError && (
-                          <p className="mt-1 text-xs text-red-600 font-medium">{guestOrderError}</p>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-kado-dark/50">
-                        <Link to="/auth/signup" className="font-bold text-kado-red hover:underline">Create a free account</Link>
-                        {' '}to track orders & earn loyalty stamps.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Totals */}
-                <div className="border-t border-kado-dark/10 pt-4 space-y-1 mb-4">
-                  <div className="flex justify-between text-xs text-kado-dark/55">
-                    <span>Subtotal</span><span>{formatPhp(cartTotals.subtotal)}</span>
-                  </div>
-                  {cartTotals.modifiers > 0 && (
-                    <div className="flex justify-between text-xs text-kado-dark/55">
-                      <span>Modifiers</span><span>+{formatPhp(cartTotals.modifiers)}</span>
-                    </div>
-                  )}
-                  {cartTotals.tax > 0 && (
-                    <div className="flex justify-between text-xs text-kado-dark/55">
-                      <span>Tax ({taxRate}%)</span><span>{formatPhp(cartTotals.tax)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-display font-bold text-kado-dark pt-1">
-                    <span>Total</span><span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
-                  </div>
-                </div>
-
+                {renderCartBody('desktop')}
                 <button
                   type="submit"
                   disabled={cart.length === 0}
-                  className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors"
+                  className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream py-4 text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
                 >
                   Place order
                 </button>
@@ -330,6 +385,64 @@ export default function Order() {
           </form>
         </div>
       </section>
+
+      {/* Mobile / tablet sticky cart */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 pointer-events-none">
+        <form onSubmit={placeOrder} className="pointer-events-auto max-w-3xl mx-auto px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))]">
+          <div className="rounded-2xl border border-kado-dark/10 bg-white shadow-[0_-8px_32px_rgba(25,25,25,0.14)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => cart.length > 0 && setMobileCartOpen((o) => !o)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left touch-manipulation min-h-[56px]"
+              aria-expanded={mobileCartOpen}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <ShoppingBag className="w-5 h-5 text-kado-red shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-sm text-kado-dark">
+                    {cart.length === 0 ? 'Your cart' : `${cart.length} item${cart.length !== 1 ? 's' : ''}`}
+                  </p>
+                  <p className="text-[10px] text-kado-dark/45 truncate">
+                    {cart.length === 0
+                      ? 'Tap a drink to add'
+                      : mobileCartOpen
+                        ? 'Hide cart to browse menu'
+                        : `View cart · ${formatPhp(cartTotals.total)}`}
+                  </p>
+                </div>
+              </div>
+              {cart.length > 0 &&
+                (mobileCartOpen ? (
+                  <ChevronDown className="w-5 h-5 text-kado-dark/40 shrink-0" aria-hidden />
+                ) : (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-kado-dark text-kado-cream px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider">
+                    View cart
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </span>
+                ))}
+            </button>
+
+            {mobileCartOpen && cart.length > 0 && (
+              <div className="border-t border-kado-dark/8 px-4 py-3 max-h-[min(42dvh,360px)] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[min(30dvh,200px)] overflow-y-auto overscroll-contain">
+                {renderCartBody('mobile')}
+              </div>
+            )}
+
+            <div className="border-t border-kado-dark/8 p-3 sm:p-4">
+              {guestOrderError && !user && (
+                <p className="text-xs text-red-600 font-medium mb-2 text-center">{guestOrderError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={cart.length === 0}
+                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
+              >
+                Place order · {formatPhp(cartTotals.total)}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

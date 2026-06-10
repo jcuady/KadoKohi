@@ -25,6 +25,7 @@ import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import { Store } from 'lucide-react';
 import { qrPillClass } from '../lib/qrGuestTheme';
+import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 
 export default function OrderTakeout() {
   const user = useAuthStore((s) => s.user);
@@ -211,12 +212,7 @@ export default function OrderTakeout() {
     setTrackedLabel('');
   };
 
-  const mainPaddingBottom =
-    cartExpanded && cart.length > 0
-      ? 'pb-[min(52vh,440px)]'
-      : cart.length > 0
-        ? 'pb-44'
-        : 'pb-28';
+  const mainPaddingBottom = guestOrderMainPadding(cartExpanded, cart.length > 0);
 
   if (!menuReady) {
     return (
@@ -265,9 +261,9 @@ export default function OrderTakeout() {
       : 'Place order · pay cash at counter';
 
   return (
-    <div className="qr-root min-h-[100dvh] bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
-      <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)]">
-        <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5">
+    <div className="qr-root guest-order-page bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
+      <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)] pt-safe-nav">
+        <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-5 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2.5">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-lg shrink-0">
               角
@@ -312,8 +308,8 @@ export default function OrderTakeout() {
           </div>
         )}
 
-        <div className="max-w-3xl mx-auto px-4 pb-3 overflow-x-auto scrollbar-none">
-          <div className="flex gap-2 w-max min-w-full sm:min-w-0 sm:flex-wrap sm:w-auto pb-0.5">
+        <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 pb-3">
+          <div className="guest-order-category-rail w-full pb-0.5 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
             {sortedCategories.map((c) => (
               <button
                 key={c.id}
@@ -328,7 +324,7 @@ export default function OrderTakeout() {
         </div>
       </header>
 
-      <main className={`flex-1 max-w-3xl mx-auto w-full px-4 py-4 sm:py-6 ${mainPaddingBottom}`}>
+      <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-6 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2 ${mainPaddingBottom}`}>
         <div className="mb-4 rounded-2xl border border-kado-dark/8 bg-white p-4">
           <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/45 mb-2">
             Your name (for pickup)
@@ -350,7 +346,7 @@ export default function OrderTakeout() {
             No items in this category right now. Check another tab or ask staff.
           </p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="guest-order-product-grid">
             {list.map((p, i) => {
               const image = getProductImageUrl(p);
               const tag = p.tags?.[0];

@@ -103,7 +103,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="fixed inset-x-0 bottom-0 z-[181] max-h-[min(92dvh,640px)] flex flex-col rounded-t-[1.75rem] bg-[var(--qr-sheet-bg)] text-[var(--qr-text)] shadow-2xl overflow-hidden"
+            className="fixed inset-x-0 bottom-0 z-[181] max-h-[min(92dvh,640px)] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[min(96dvh,520px)] flex flex-col rounded-t-[1.75rem] bg-[var(--qr-sheet-bg)] text-[var(--qr-text)] shadow-2xl overflow-hidden mx-[max(0px,env(safe-area-inset-left))] mr-[max(0px,env(safe-area-inset-right))]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--qr-border)]">
@@ -119,7 +119,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             </div>
 
             <div className="flex-1 overflow-y-auto overscroll-contain">
-              <div className="aspect-[16/10] sm:aspect-[2/1] bg-[var(--qr-surface)] relative">
+              <div className="aspect-[16/10] sm:aspect-[2/1] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] bg-[var(--qr-surface)] relative shrink-0">
                 <img
                   src={image}
                   alt={product.name}

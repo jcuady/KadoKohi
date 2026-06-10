@@ -58,7 +58,7 @@ export default function Menu() {
   }, [items, safePage]);
 
   return (
-    <div className="relative w-full bg-white font-sans min-h-screen">
+    <div className="customer-menu-page relative w-full bg-white font-sans">
       {/* Full-viewport ribbon: fixed below navbar, does not scroll with content */}
       <div
         className="hidden md:block pointer-events-none fixed left-0 top-16 bottom-0 z-[30] w-28 lg:w-40 bg-kado-red shadow-[10px_0_30px_rgba(158,24,29,0.15)] overflow-hidden"
@@ -73,7 +73,7 @@ export default function Menu() {
 
       <div className="flex min-w-0 flex-col overflow-x-clip md:pl-28 lg:pl-40">
         {/* Mobile Header (Red block) */}
-        <div className="relative overflow-hidden bg-kado-red px-4 pb-7 pt-8 shadow-md sm:px-6 sm:pb-8 sm:pt-10 md:hidden">
+        <div className="relative overflow-hidden bg-kado-red px-4 pb-7 pt-8 shadow-md sm:px-6 sm:pb-8 sm:pt-10 [@media(orientation:landscape)_and_(max-height:30rem)]:px-4 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-4 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-5 md:hidden">
           <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
             <h1 className="font-display font-black text-white text-[8rem] leading-none -mt-4">
               MENU
@@ -82,7 +82,7 @@ export default function Menu() {
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 mb-2 relative z-10">
             Daily Rituals
           </p>
-          <h1 className="relative z-10 mb-2 font-display text-4xl font-black uppercase tracking-tighter text-white sm:text-5xl">
+          <h1 className="relative z-10 mb-2 font-display text-[clamp(1.75rem,8vw,3rem)] font-black uppercase tracking-tighter text-white sm:text-5xl">
             Our Menu
           </h1>
           <p className="relative z-10 max-w-sm text-sm leading-relaxed text-white/80">
@@ -106,9 +106,9 @@ export default function Menu() {
         </section>
 
         {/* Category tabs */}
-        <section className="sticky top-14 z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-5 backdrop-blur-md sm:px-6 md:top-[3.75rem] md:px-8 md:pb-5 md:pt-0 lg:px-16">
+        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-4 backdrop-blur-md sm:px-6 sm:pt-5 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 md:pb-5 md:pt-0 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
           <div className="mx-auto max-w-6xl min-w-0">
-            <div className="scrollbar-hide -mx-4 flex flex-nowrap items-center gap-2.5 overflow-x-auto overscroll-x-contain scroll-smooth px-4 pb-1 scroll-pl-4 scroll-pr-6 touch-pan-x sm:-mx-6 sm:gap-3 sm:px-6 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+            <div className="guest-order-category-rail -mx-4 items-center gap-2.5 px-4 pb-1 scroll-pl-4 scroll-pr-6 sm:-mx-6 sm:gap-3 sm:px-6 md:mx-0 md:px-0 md:pb-0">
               {sortedCategories.map((cat) => (
                 <button
                   key={cat.id}
@@ -136,7 +136,7 @@ export default function Menu() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4"
+              className="grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4"
             >
               {paginatedItems.map((product, i) => {
                 const image = getMenuProductImageUrl(product);
@@ -223,7 +223,7 @@ export default function Menu() {
         </section>
 
         {/* Loyalty card */}
-        <section className="px-6 md:px-8 lg:px-16 pb-24 mt-auto">
+        <section className="px-4 sm:px-6 md:px-8 lg:px-16 pb-[max(6rem,calc(5rem+env(safe-area-inset-bottom)))] mt-auto [@media(orientation:landscape)_and_(max-height:30rem)]:pb-16">
           <div className="max-w-6xl mx-auto border-t border-kado-dark/10 pt-16">
             <LoyaltyCard />
           </div>

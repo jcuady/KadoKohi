@@ -110,7 +110,7 @@ export default function OrderTrackingPanel({
         : <>Your dine-in order for <strong>{contextLabel}</strong> is with the barista.</>;
 
   return (
-    <div className="min-h-[100dvh] bg-[#FAF7F2] flex flex-col items-center px-4 py-10 sm:py-14">
+    <div className="guest-order-page min-h-[100svh] bg-[#FAF7F2] flex flex-col items-center px-[max(1rem,env(safe-area-inset-left))] py-8 sm:py-14 pb-safe [@media(orientation:landscape)_and_(max-height:30rem)]:py-5">
       <div className="w-full max-w-md">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
