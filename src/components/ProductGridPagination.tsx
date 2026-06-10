@@ -45,7 +45,7 @@ export default function ProductGridPagination({
         type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        className="min-w-[2.25rem] h-9 rounded-full border border-kado-dark/10 flex items-center justify-center text-sm text-kado-dark disabled:text-kado-dark/30 disabled:cursor-not-allowed hover:border-kado-dark/25 hover:bg-kado-dark/[0.04] transition-colors"
+        className="flex h-11 min-h-[44px] min-w-[2.75rem] items-center justify-center rounded-full border border-kado-dark/10 text-sm text-kado-dark transition-colors hover:border-kado-dark/25 hover:bg-kado-dark/[0.04] disabled:cursor-not-allowed disabled:text-kado-dark/30 md:h-9 md:min-h-0 md:min-w-[2.25rem]"
         aria-label="Previous page"
       >
         ‹
@@ -64,7 +64,7 @@ export default function ProductGridPagination({
             key={item}
             type="button"
             onClick={() => onPageChange(item)}
-            className={`min-w-[2.25rem] h-9 px-2 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+            className={`flex h-11 min-h-[44px] min-w-[2.75rem] items-center justify-center rounded-full px-2 text-sm font-bold transition-colors md:h-9 md:min-h-0 md:min-w-[2.25rem] ${
               page === item
                 ? 'bg-kado-dark text-white shadow-md'
                 : 'border border-kado-dark/10 text-kado-dark hover:border-kado-dark/30 hover:bg-kado-dark/[0.04]'
@@ -79,7 +79,7 @@ export default function ProductGridPagination({
         type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className="min-w-[2.25rem] h-9 rounded-full border border-kado-dark/10 flex items-center justify-center text-sm text-kado-dark disabled:text-kado-dark/30 disabled:cursor-not-allowed hover:border-kado-dark/25 hover:bg-kado-dark/[0.04] transition-colors"
+        className="flex h-11 min-h-[44px] min-w-[2.75rem] items-center justify-center rounded-full border border-kado-dark/10 text-sm text-kado-dark transition-colors hover:border-kado-dark/25 hover:bg-kado-dark/[0.04] disabled:cursor-not-allowed disabled:text-kado-dark/30 md:h-9 md:min-h-0 md:min-w-[2.25rem]"
         aria-label="Next page"
       >
         ›

@@ -42,7 +42,7 @@ const DEFAULTS: AppSettings = {
   contactHours: 'Mon – Sun: 7 AM – 11 PM',
   mapsEmbedUrl:
     'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890',
-  socialInstagram: 'https://www.instagram.com/kadocoffeeph/',
+  socialInstagram: 'https://www.instagram.com/kadocoffeeph/?hl=en',
   socialFacebook: 'https://www.facebook.com/KadoKohi',
   socialTiktok: 'https://www.tiktok.com/@kadokohiph',
 };

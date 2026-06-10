@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Heart, Coffee, Users, Award, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 const values = [
   {
@@ -73,68 +72,7 @@ export default function About() {
       </section>
 
       {/* ==============================================
-          2. THE "CORNER" NARRATIVE
-          ============================================== */}
-      <section className="py-24 md:py-32 px-6 md:px-12 lg:px-24 w-full bg-white">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-center">
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="lg:col-span-5 order-2 lg:order-1"
-          >
-            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black text-kado-dark mb-8 leading-tight tracking-tighter uppercase">
-              Finding <br/> Your <span className="text-kado-red">Corner.</span>
-            </h2>
-            <div className="space-y-6 text-base md:text-lg text-kado-dark/70 leading-relaxed font-medium">
-              <p>
-                "Kado" (角) translates to "corner" in Japanese. In a world full of noise, rushing, and endless scrolling, we built a physical corner where time deliberately slows down.
-              </p>
-              <p>
-                Tucked away along J.P. Laurel Street, our architecture isn't just about coffee. It's about engineering space for human connection. A place to write your novel, close a deal, or simply stare out the window and breathe.
-              </p>
-              <p className="font-bold text-kado-dark">
-                This isn't just a transaction. This is your personal tambayan.
-              </p>
-            </div>
-          </motion.div>
-
-          <div className="lg:col-span-7 order-1 lg:order-2 relative h-[450px] md:h-[650px] w-full flex justify-end">
-             {/* Main Frame */}
-             <motion.div 
-               initial={{ opacity: 0, scale: 0.95 }}
-               whileInView={{ opacity: 1, scale: 1 }}
-               viewport={{ once: true }}
-               transition={{ duration: 1 }}
-               className="absolute right-0 top-0 w-[90%] md:w-[85%] h-[90%] rounded-[2rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.08)] border-[8px] md:border-[12px] border-white"
-             >
-                <img 
-                  src="/images/hero-interior.png" 
-                  alt="Inside Kado Kohi"
-                  className="w-full h-full object-cover grayscale-[0.2] hover:scale-105 transition-transform duration-[2s] ease-out"
-                />
-             </motion.div>
-             {/* Secondary Overlapping Frame */}
-             <motion.div 
-               initial={{ opacity: 0, x: -50 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.8, delay: 0.3 }}
-               className="absolute left-0 bottom-0 w-48 md:w-64 aspect-square bg-kado-dark rounded-[1.5rem] p-8 text-white flex flex-col justify-center items-start shadow-xl"
-             >
-                <Coffee className="w-8 h-8 text-kado-red mb-4" />
-                <p className="font-display font-black text-4xl md:text-5xl mb-2 leading-none uppercase">Day<br/>One</p>
-                <p className="font-sans font-black text-[10px] md:text-xs uppercase tracking-widest text-white/50">March 2026</p>
-             </motion.div>
-          </div>
-          
-        </div>
-      </section>
-
-      {/* ==============================================
-          3. VALUES (THE "NIGHT" VIBE Hub)
+          2. VALUES (THE "NIGHT" VIBE Hub)
           ============================================== */}
       <section className="py-24 md:py-32 px-6 md:px-12 w-full bg-[#FAF7F2] border-y border-kado-dark/5">
         <div className="max-w-[1200px] mx-auto z-10 relative">
@@ -214,7 +152,6 @@ export default function About() {
         </div>
       </section>
 
-      <PageSeoBlurb />
     </div>
   );
 }

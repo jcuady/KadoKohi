@@ -23,7 +23,7 @@ export const SEO_BRAND = {
 /** Official social profiles — used in schema sameAs and footer/contact. */
 export const SEO_SOCIAL = {
   facebook: 'https://www.facebook.com/KadoKohi',
-  instagram: 'https://www.instagram.com/kadocoffeeph/',
+  instagram: 'https://www.instagram.com/kadocoffeeph/?hl=en',
   tiktok: 'https://www.tiktok.com/@kadokohiph',
 } as const;
 
@@ -119,7 +119,7 @@ export const SEO_KEYWORDS = [
 export const SEO_META_KEYWORDS = SEO_KEYWORDS.slice(0, 40).join(', ');
 
 export const SEO_DEFAULT_DESCRIPTION =
-  'Kado Coffee on J.P. Laurel, Sta. Elena, Marikina — best specialty coffee near you. Also known as Kado Kohi. Rated 4.9 on Google. Order online, tambayan events, booth coffee for parties.';
+  'Kado Coffee (Kado Kohi) — specialty cafe on J.P. Laurel, Sta. Elena, Marikina. One of the top-rated coffee shops near you (4.9★ on Google). Order online, events, booth coffee.';
 
 export type SeoRouteMeta = {
   path: string;

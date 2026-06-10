@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, MapPin, CalendarDays, ArrowUpRight, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ProductDetailDrawer from '../ProductDetailDrawer';
 import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
 import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
+import FeaturedCoffeesSection from './FeaturedCoffeesSection';
 import CafeScheduleSection from './CafeScheduleSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
@@ -20,18 +20,9 @@ import {
   pickCurrentOrUpcoming,
   signupCountdownTarget,
 } from '../../lib/eventTiming';
-import { useMenuStore } from '../../store/menuStore';
-import { useAuthStore } from '../../store/authStore';
-import type { Product } from '../../types/domain';
 import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
-import type { FeaturedCopy, EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
-import { formatPhp } from '../../lib/money';
+import type { EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
-import {
-  getMenuProductImageUrl,
-  listVisibleCoffeeProducts,
-  pickFeaturedCoffeeProducts,
-} from '../../lib/menuCatalog';
 
 type Props = {
   landing: LandingContentState;
@@ -58,7 +49,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
       <HomeSeoIntro />
-      <BestCoffeesSection copy={landing.featured} />
+      <FeaturedCoffeesSection copy={landing.featured} />
       <KadoOrderingCarousel copy={landing.ordering} />
       <CafeScheduleSection copy={landing.schedule} />
       <EventsSection copy={landing.events} />
@@ -74,179 +65,6 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
       <BranchesStrip copy={landing.branchesStrip} />
       <KadoCircleCTA copy={landing.kadoCircle} />
     </motion.div>
-  );
-}
-
-function BestCoffeesSection({ copy }: { copy: FeaturedCopy }) {
-  const products = useMenuStore((s) => s.products);
-  const categories = useMenuStore((s) => s.categories);
-  const menuDataSource = useMenuStore((s) => s.dataSource);
-  const menuRemoteLoaded = useMenuStore((s) => s.remoteLoaded);
-  const hydrateMenu = useMenuStore((s) => s.hydrateFromRemote);
-  const user = useAuthStore((s) => s.user);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  useEffect(() => {
-    if (!menuRemoteLoaded) void hydrateMenu();
-  }, [menuRemoteLoaded, hydrateMenu]);
-
-  const categoryById = useMemo(
-    () => new Map(categories.map((c) => [c.id, c.name])),
-    [categories],
-  );
-
-  const liveMenuCatalog = useMemo(() => {
-    if (menuDataSource !== 'remote') return [];
-    return listVisibleCoffeeProducts(products, categories);
-  }, [menuDataSource, products, categories]);
-
-  const showcaseDrinks = useMemo(
-    () => pickFeaturedCoffeeProducts(copy.productIds, liveMenuCatalog, 3),
-    [copy.productIds, liveMenuCatalog],
-  );
-
-  const menuReady = menuRemoteLoaded && menuDataSource === 'remote';
-
-  return (
-    <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-t border-kado-dark/10">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ duration: 0.5 }}
-        className="max-w-[1400px] mx-auto"
-      >
-        <div className="rounded-[1.75rem] border border-kado-dark/10 bg-gradient-to-br from-white to-kado-cream p-5 sm:p-8 md:p-10 shadow-[0_14px_40px_rgba(25,25,25,0.08)]">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.05 }}
-            className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-5 md:gap-8 mb-8 md:mb-10"
-          >
-            <motion.div initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-              <span className="inline-flex items-center gap-2 rounded-full bg-kado-red/10 border border-kado-red/25 px-3 py-1.5 text-kado-red font-black tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-3">
-                {copy.badge}
-              </span>
-              <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-kado-dark leading-[1.08] md:leading-tight">
-                {copy.title}
-              </h2>
-              <p className="text-kado-dark/70 font-medium max-w-xl text-sm sm:text-base leading-relaxed mt-3 md:mt-4">
-                <span className="hidden md:inline">{copy.subtitleDesktop}</span>
-                <span className="md:hidden">{copy.subtitleMobile}</span>
-              </p>
-            </motion.div>
-
-            <div className="w-full lg:w-auto flex items-center gap-3">
-              <Link
-                to={copy.shopCtaPath || '/menu'}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-kado-red px-5 py-3 text-white text-xs font-black uppercase tracking-[0.14em] hover:bg-kado-dark transition-colors"
-              >
-                {copy.shopCtaLabel || 'View Shop'} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/menu"
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-kado-dark/20 bg-white/80 px-5 py-3 text-kado-dark text-xs font-black uppercase tracking-[0.14em] hover:border-kado-red/35 hover:text-kado-red transition-colors"
-              >
-                {copy.menuCtaLabel}
-              </Link>
-            </div>
-          </motion.div>
-
-          {!menuReady ? (
-            <div className="grid md:grid-cols-3 gap-4 md:gap-6">
-              {[0, 1, 2].map((slot) => (
-                <div
-                  key={slot}
-                  className="rounded-xl md:rounded-[1.25rem] border border-kado-dark/10 bg-white/70 aspect-[4/5] animate-pulse"
-                  aria-hidden
-                />
-              ))}
-            </div>
-          ) : showcaseDrinks.length === 0 ? (
-            <p className="text-sm text-kado-dark/60 font-medium py-6">
-              No coffee items are available on the menu yet. Add products in Admin → Menu, then select them here in
-              Homepage content.
-            </p>
-          ) : (
-          <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-4 md:gap-6 w-full pb-6 pt-1 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
-          {showcaseDrinks.map((drink, i) => {
-            const image = getMenuProductImageUrl(drink);
-            const desc =
-              drink.description ??
-              (drink.temperature === 'iced'
-                ? 'Served iced — crisp and refreshing.'
-                : drink.temperature === 'both'
-                  ? 'Available hot or iced.'
-                  : 'Hand-crafted in-house.');
-
-            return (
-              <motion.button
-                key={drink.id}
-                type="button"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.45, delay: i * 0.08 }}
-                onClick={() => setSelectedProduct(drink)}
-                className="group w-[85vw] sm:w-[45vw] md:w-auto shrink-0 snap-center snap-always text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red flex flex-col h-full"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
-                  <img
-                    src={image}
-                    alt={drink.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
-                    {drink.tags?.[0] ?? 'Best Coffee'}
-                  </span>
-
-                  <div className="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
-                      View details
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 sm:p-4 flex flex-col flex-1">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 mb-1">
-                    {drink.categoryId ? categoryById.get(drink.categoryId) ?? 'Coffee' : 'Coffee'}
-                  </p>
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-display font-black text-sm sm:text-[0.95rem] leading-snug text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
-                      {drink.name}
-                    </h3>
-                    <span className="font-sans font-black text-sm sm:text-base text-kado-dark shrink-0">
-                      {formatPhp(drink.basePrice)}
-                    </span>
-                  </div>
-                  <p className="text-[10px] sm:text-xs font-medium text-kado-dark/60 leading-relaxed line-clamp-2 mt-auto pt-1">
-                    {desc}
-                  </p>
-                  <p className="mt-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 group-hover:text-kado-red transition-colors">
-                    {user?.role === 'customer' ? 'Tap to customize & order' : 'Tap to view — sign in to order'}
-                  </p>
-                </div>
-              </motion.button>
-            );
-          })}
-          </div>
-          )}
-        </div>
-      </motion.div>
-
-      <ProductDetailDrawer
-        product={selectedProduct}
-        categoryName={
-          selectedProduct?.categoryId ? categoryById.get(selectedProduct.categoryId) ?? 'Coffee' : 'Coffee'
-        }
-        onClose={() => setSelectedProduct(null)}
-        requireAuthToOrder
-      />
-    </section>
   );
 }
 

@@ -71,9 +71,9 @@ export default function Menu() {
         </div>
       </div>
 
-      <div className="flex flex-col md:pl-28 lg:pl-40 min-w-0">
+      <div className="flex min-w-0 flex-col overflow-x-clip md:pl-28 lg:pl-40">
         {/* Mobile Header (Red block) */}
-        <div className="md:hidden bg-kado-red pt-10 pb-8 px-6 shadow-md relative overflow-hidden">
+        <div className="relative overflow-hidden bg-kado-red px-4 pb-7 pt-8 shadow-md sm:px-6 sm:pb-8 sm:pt-10 md:hidden">
           <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
             <h1 className="font-display font-black text-white text-[8rem] leading-none -mt-4">
               MENU
@@ -82,10 +82,10 @@ export default function Menu() {
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 mb-2 relative z-10">
             Daily Rituals
           </p>
-          <h1 className="font-display text-5xl font-black text-white mb-2 tracking-tighter uppercase relative z-10">
+          <h1 className="relative z-10 mb-2 font-display text-4xl font-black uppercase tracking-tighter text-white sm:text-5xl">
             Our Menu
           </h1>
-          <p className="text-white/80 text-sm max-w-sm leading-relaxed relative z-10">
+          <p className="relative z-10 max-w-sm text-sm leading-relaxed text-white/80">
             Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
           </p>
         </div>
@@ -106,15 +106,15 @@ export default function Menu() {
         </section>
 
         {/* Category tabs */}
-        <section className="px-6 md:px-8 lg:px-16 pb-5 pt-6 md:pt-0 sticky top-14 md:top-[3.75rem] z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-nowrap md:flex-wrap items-center gap-3 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
+        <section className="sticky top-14 z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-5 backdrop-blur-md sm:px-6 md:top-[3.75rem] md:px-8 md:pb-5 md:pt-0 lg:px-16">
+          <div className="mx-auto max-w-6xl min-w-0">
+            <div className="scrollbar-hide -mx-4 flex flex-nowrap items-center gap-2.5 overflow-x-auto overscroll-x-contain scroll-smooth px-4 pb-1 scroll-pl-4 scroll-pr-6 touch-pan-x sm:-mx-6 sm:gap-3 sm:px-6 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
               {sortedCategories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategoryId(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${
+                  className={`flex min-h-[44px] shrink-0 touch-manipulation items-center gap-2 rounded-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 md:px-5 md:text-[11px] ${
                     activeCategoryId === cat.id
                       ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
                       : 'bg-white border border-kado-dark/15 text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
@@ -129,14 +129,14 @@ export default function Menu() {
         </section>
 
         {/* Product grid */}
-        <section className="px-6 md:px-8 lg:px-16 py-8 md:py-10">
-          <div className="max-w-6xl mx-auto">
+        <section className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16">
+          <div className="mx-auto min-w-0 max-w-6xl">
             <motion.div
               key={`${activeCategoryId}-${safePage}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5"
+              className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4"
             >
               {paginatedItems.map((product, i) => {
                 const image = getMenuProductImageUrl(product);
@@ -159,10 +159,10 @@ export default function Menu() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, ease: 'easeOut' }}
                     onClick={() => inStock && setSelectedProduct(product)}
-                    className={`group text-left bg-white border border-kado-dark/10 rounded-xl md:rounded-[1.25rem] overflow-hidden transition-all duration-300 focus:outline-none flex flex-col h-full ${
+                    className={`group flex h-full touch-manipulation flex-col overflow-hidden rounded-xl border border-kado-dark/10 bg-white text-left transition-all duration-300 focus:outline-none active:scale-[0.99] md:rounded-[1.25rem] ${
                       inStock
-                        ? 'hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] hover:-translate-y-0.5 hover:border-kado-red/30 focus-visible:ring-2 focus-visible:ring-kado-red'
-                        : 'opacity-60 cursor-not-allowed border-kado-dark/5'
+                        ? 'hover:-translate-y-0.5 hover:border-kado-red/30 hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] focus-visible:ring-2 focus-visible:ring-kado-red'
+                        : 'cursor-not-allowed border-kado-dark/5 opacity-60'
                     }`}
                   >
                     {/* Image */}
@@ -196,16 +196,16 @@ export default function Menu() {
                     </div>
 
                     {/* Details */}
-                    <div className="p-3 sm:p-4 flex flex-col flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-display font-black text-sm sm:text-[0.95rem] leading-snug text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
+                    <div className="flex flex-1 flex-col p-2.5 sm:p-4">
+                      <div className="mb-1 flex items-start justify-between gap-1.5 sm:gap-2">
+                        <h3 className="line-clamp-2 font-display text-xs font-black leading-snug text-kado-dark transition-colors group-hover:text-kado-red sm:text-[0.95rem]">
                           {product.name}
                         </h3>
-                        <span className="font-sans font-black text-sm sm:text-base text-kado-dark shrink-0">
+                        <span className="shrink-0 font-sans text-xs font-black text-kado-dark sm:text-base">
                           {formatPhp(product.basePrice)}
                         </span>
                       </div>
-                      <p className="text-[10px] sm:text-xs font-medium text-kado-dark/60 leading-relaxed line-clamp-2 mt-auto pt-1">
+                      <p className="mt-auto line-clamp-2 pt-1 text-[10px] font-medium leading-relaxed text-kado-dark/60 sm:text-xs">
                         {desc}
                       </p>
                     </div>

@@ -1,5 +1,5 @@
 import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import { useEffect } from 'react';
 import App from './App.tsx';
 import './index.css';
@@ -80,7 +80,13 @@ function Bootstrap() {
 
 registerSW({ immediate: true });
 
-createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')!;
+type RootHost = HTMLElement & { __kkReactRoot?: Root };
+const host = container as RootHost;
+const root = host.__kkReactRoot ?? createRoot(container);
+host.__kkReactRoot = root;
+
+root.render(
   <StrictMode>
     <Bootstrap />
   </StrictMode>,

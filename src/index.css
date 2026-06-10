@@ -278,3 +278,12 @@ html {
 .animate-fade-in-up {
   animation: fade-in-up 0.65s ease-out both;
 }
+
+/* Horizontal scroll strips (menu categories, featured drinks) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

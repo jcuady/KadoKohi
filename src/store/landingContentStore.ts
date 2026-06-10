@@ -221,7 +221,7 @@ export const SEED_CONTENT: LandingContentState = {
     secondaryCtaPath: '/merch',
   },
   featured: {
-    badge: 'Best Coffee in Marikina',
+    badge: 'Signature Sips',
     title: 'Coffee Worth Coming Back For.',
     subtitleDesktop:
       'Top specialty coffee picks from our live menu — crafted for first-timers, regulars, and your Marikina tambayan.',
