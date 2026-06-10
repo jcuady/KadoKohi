@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
+  SEO_HOME_BODY_PARAGRAPHS,
   SEO_HOME_H1,
   SEO_INTERNAL_LINKS,
   SEO_SIGNATURE_DRINKS,
@@ -26,8 +27,7 @@ const DRINK_GROUPS = [
 ] as const;
 
 /**
- * Crawlable homepage block: headings, menu keywords, internal + external links.
- * Visible to users and auditors (fixes SPA “0 words / no H1” when JS runs).
+ * Crawlable homepage block: 250+ words, headings, internal + external links.
  */
 export default function HomePageSeoSection() {
   return (
@@ -39,24 +39,32 @@ export default function HomePageSeoSection() {
         <h2 id="home-menu-seo-heading" className="font-display text-xl font-bold text-kado-dark sm:text-2xl">
           {SEO_HOME_H1}
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-kado-dark/70 sm:text-base">
-          Looking for <strong>best matcha in Marikina</strong>, <strong>matcha near me</strong>, or{' '}
-          <strong>hojicha oat latte</strong> in Sta. Elena? Kado Coffee (Kado Kohi) serves premium matcha,
-          roasted hojicha, and <strong>oat lattes</strong> on J.P. Laurel — rated {KADO_GOOGLE_LISTING.rating}★
-          on Google. Explore our{' '}
+
+        {SEO_HOME_BODY_PARAGRAPHS.map((paragraph) => (
+          <p key={paragraph.slice(0, 40)} className="mt-4 text-sm leading-relaxed text-kado-dark/75 sm:text-base">
+            {paragraph}
+          </p>
+        ))}
+
+        <p className="mt-4 text-sm leading-relaxed text-kado-dark/75 sm:text-base">
+          Browse the{' '}
           <Link to="/menu" className="font-semibold text-kado-red underline-offset-2 hover:underline">
-            full menu
-          </Link>{' '}
-          or{' '}
+            full Kado Coffee menu
+          </Link>
+          , check{' '}
+          <Link to="/branches" className="font-semibold text-kado-red underline-offset-2 hover:underline">
+            branch hours and directions
+          </Link>
+          , or{' '}
           <a
             href={KADO_GOOGLE_LISTING.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-kado-red underline-offset-2 hover:underline"
           >
-            get directions on Google Maps
-          </a>
-          .
+            open Google Maps
+          </a>{' '}
+          for coffee near me in Marikina.
         </p>
 
         <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
