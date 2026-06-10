@@ -163,7 +163,7 @@ export const SEO_INTERNAL_LINKS = [
   { to: '/legal/privacy', label: 'Privacy policy' },
 ] as const;
 
-/** Crawlable homepage copy — 250+ words, multiple paragraphs, fuller sentences. */
+/** Full homepage copy for crawlers (index.html prerender + sr-only). */
 export const SEO_HOME_BODY_PARAGRAPHS = [
   'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe on J.P. Laurel corner Mt. Everest in Sta. Elena, Marikina City, where guests searching for the best matcha in Marikina, matcha near me, or coffee near me in Eastern Metro Manila discover a neighborhood favorite rated 4.9 stars on Google with warm barista service and a cozy tambayan atmosphere.',
   'Our menu highlights premium matcha and hojicha drinks crafted with quality ingredients, including the Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — each a popular choice for oat latte lovers across Marikina who want café-quality drinks without leaving the city.',
@@ -171,6 +171,12 @@ export const SEO_HOME_BODY_PARAGRAPHS = [
   'Refreshing yuzu sodas round out the menu for guests who want something bright and citrus-forward after coffee or matcha, and our team keeps the lineup updated with seasonal specials you can follow on social media throughout the year.',
   'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours, and join tambayan events or community nights listed on our events calendar in Marikina whenever you want a relaxed hangout with great drinks.',
   'Book our mobile coffee booth for weddings, birthdays, and corporate functions across Metro Manila, or stop by when you are in Sta. Elena, Santo Niño, Parang, Concepcion, and surrounding Marikina barangays — follow @kadocoffeeph on Instagram and KadoKohi on Facebook for menu updates and booth availability.',
+] as const;
+
+/** Concise copy shown in the UI — keywords live in headings, cards, links, and sr-only block. */
+export const SEO_HOME_BODY_VISIBLE = [
+  'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — best matcha in Marikina, hojicha oat lattes, and signature drinks in a neighborhood tambayan.',
+  'Dine-in, takeout, or order online. Join our events or book the mobile booth for gatherings across Metro Manila.',
 ] as const;
 
 export type SeoRouteMeta = {

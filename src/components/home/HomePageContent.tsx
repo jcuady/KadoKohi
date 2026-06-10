@@ -49,8 +49,8 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         </motion.div>
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
-      <HomePageSeoSection />
       <HomeSeoIntro />
+      <HomePageSeoSection />
       <FeaturedCoffeesSection copy={landing.featured} />
       <KadoOrderingCarousel copy={landing.ordering} />
       <CafeScheduleSection copy={landing.schedule} />

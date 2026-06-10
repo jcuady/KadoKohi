@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram } from 'lucide-react';
+import { ArrowUpRight, Facebook, Instagram } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { TimelineContent } from '@/components/ui/timeline-animation';
 import { SEO_SOCIAL } from '@/content/seo';
@@ -11,173 +11,219 @@ const revealVariants: Variants = {
   visible: (i: number) => ({
     y: 0,
     opacity: 1,
-    transition: { delay: i * 0.1, duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+    filter: 'blur(0px)',
+    transition: { delay: i * 0.22, duration: 0.6 },
   }),
-  hidden: { y: 24, opacity: 0 },
+  hidden: { filter: 'blur(10px)', y: 28, opacity: 0 },
 };
 
-const SOCIAL_LINKS = [
-  { key: 'instagram', href: SEO_SOCIAL.instagram, label: 'Instagram', Icon: Instagram },
-  { key: 'tiktok', href: SEO_SOCIAL.tiktok, label: 'TikTok', Icon: TikTokIcon },
-  { key: 'facebook', href: SEO_SOCIAL.facebook, label: 'Facebook', Icon: Facebook },
+const textVariants: Variants = {
+  visible: (i: number) => ({
+    filter: 'blur(0px)',
+    opacity: 1,
+    transition: { delay: i * 0.14, duration: 0.55 },
+  }),
+  hidden: { filter: 'blur(8px)', opacity: 0 },
+};
+
+const accent = 'text-kado-red';
+
+const STORY_PILLARS = [
+  {
+    title: 'Visit',
+    subtitle: 'Sta. Elena, Marikina',
+    image: '/featuredmarikina/kadom1.jpg',
+    imageAlt: 'Kado Kohi specialty cafe interior in Sta. Elena, Marikina',
+    copy: 'J.P. Laurel corner Mt. Everest — a Japanese-inspired tambayan for coffee near me in Marikina.',
+  },
+  {
+    title: 'Sip',
+    subtitle: 'Matcha · Hojicha · Lattes',
+    image: '/featuredmarikina/kadom2.jpg',
+    imageAlt: 'Specialty matcha and coffee drinks at Kado Coffee Marikina',
+    copy: 'Best matcha in Marikina, hojicha oat latte, and the KADO Latte — honest craft, quality ingredients.',
+  },
+  {
+    title: 'Stay',
+    subtitle: 'Events & booth coffee',
+    image: '/booth-photos/booth-1.jpg',
+    imageAlt: 'Kado Coffee mobile booth and community events in Marikina',
+    copy: 'Tambayan nights, pop-ups, and mobile booth booking for weddings and events in Metro Manila.',
+  },
 ] as const;
 
-const linkClass =
-  'font-display text-xs sm:text-sm font-bold uppercase tracking-[0.18em] text-kado-red underline-offset-4 decoration-kado-red/35 hover:underline';
+const SOCIAL_LINKS = [
+  {
+    key: 'instagram',
+    href: SEO_SOCIAL.instagram,
+    label: 'Kado Coffee on Instagram — @kadocoffeeph',
+    handle: '@kadocoffeeph',
+    Icon: Instagram,
+  },
+  {
+    key: 'tiktok',
+    href: SEO_SOCIAL.tiktok,
+    label: 'Kado Coffee on TikTok — @kadokohiph',
+    handle: '@kadokohiph',
+    Icon: TikTokIcon,
+  },
+  {
+    key: 'facebook',
+    href: SEO_SOCIAL.facebook,
+    label: 'Kado Coffee on Facebook — KadoKohi',
+    handle: 'KadoKohi',
+    Icon: Facebook,
+  },
+] as const;
 
+const linkClass = 'font-semibold text-kado-red underline-offset-4 hover:underline';
+
+/**
+ * Homepage brand story — editorial pillars + crawlable local SEO copy.
+ */
 export default function AboutSection2() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { rating, reviewCount, mapsUrl } = KADO_GOOGLE_LISTING;
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { rating, reviewCount } = KADO_GOOGLE_LISTING;
 
   return (
     <section
       aria-labelledby="home-brand-story-heading"
-      className="border-t border-kado-dark/8 bg-kado-cream px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:px-12 lg:py-28"
-      ref={containerRef}
+      className="customer-menu-page border-t border-kado-dark/6 bg-kado-cream px-[max(1rem,env(safe-area-inset-left))] py-12 sm:px-6 sm:py-16 md:px-12 md:py-20 lg:px-24 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-8"
     >
-      <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 items-start gap-10 md:gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
-          {/* Left: headline + image pair (no overlap on text) */}
-          <div className="min-w-0">
-            <TimelineContent
-              as="p"
-              animationNum={0}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              className="mb-4 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-kado-dark/45"
-            >
-              // No fluff. Just coffee.
-            </TimelineContent>
+      <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]" ref={heroRef}>
+        <TimelineContent
+          as="p"
+          animationNum={0}
+          timelineRef={heroRef}
+          customVariants={textVariants}
+          className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red sm:mb-6"
+        >
+          Our story
+        </TimelineContent>
 
-            <TimelineContent
-              as="h2"
-              id="home-brand-story-heading"
-              animationNum={1}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              className="max-w-[14ch] font-display text-[clamp(2.25rem,7vw,4.5rem)] font-black leading-[0.95] tracking-tighter text-kado-red"
-            >
-              Our Coffee,
-              <br />
-              Our Rules.
-            </TimelineContent>
+        <TimelineContent
+          as="h2"
+          id="home-brand-story-heading"
+          animationNum={1}
+          timelineRef={heroRef}
+          customVariants={revealVariants}
+          className="max-w-4xl font-display text-[clamp(1.5rem,4.5vw,2.75rem)] font-bold leading-[1.16] tracking-tight text-kado-dark [@media(orientation:landscape)_and_(max-height:30rem)]:text-[clamp(1.35rem,4vw,2rem)]"
+        >
+          the story <span className={accent}>behind every</span> sip — where passion meets{' '}
+          <span className={accent}>perfection</span>, shaped by skill, brewed by heart.
+        </TimelineContent>
 
-            <TimelineContent
-              as="div"
-              animationNum={2}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              className="mt-8 flex items-end gap-4 sm:mt-10 sm:gap-6"
-            >
-              <div className="h-36 w-36 shrink-0 overflow-hidden rounded-full border-4 border-kado-cream shadow-lg sm:h-44 sm:w-44 md:h-48 md:w-48">
-                <img
-                  src="/featuredmarikina/kadom1.jpg"
-                  alt="Kado Kohi cafe exterior at night"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div className="mb-2 h-44 w-32 shrink-0 overflow-hidden rounded-[4rem] border-4 border-kado-cream shadow-lg sm:mb-4 sm:h-52 sm:w-36 md:h-56 md:w-40">
-                <img
-                  src="/featuredmarikina/kadom2.jpg"
-                  alt="Guests inside Kado Kohi Marikina"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            </TimelineContent>
-          </div>
+        <TimelineContent
+          as="p"
+          animationNum={2}
+          timelineRef={heroRef}
+          customVariants={textVariants}
+          className="mt-6 max-w-2xl font-sans text-[0.9375rem] leading-[1.75] text-kado-dark/70 sm:mt-8 sm:text-base sm:leading-[1.8]"
+        >
+          <strong className="font-semibold text-kado-dark">Kado Coffee</strong> (Kado Kohi) is one of the best
+          specialty cafes in <strong className="font-semibold text-kado-dark">Marikina</strong>, right here in{' '}
+          <strong className="font-semibold text-kado-dark">Sta. Elena</strong>. Our Coffee, Our Rules — honest
+          craft for guests who want quality, not hype.
+        </TimelineContent>
 
-          {/* Right: editorial copy */}
-          <div className="flex min-w-0 flex-col justify-center lg:pt-4">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
+          {STORY_PILLARS.map((pillar, i) => (
             <TimelineContent
-              as="p"
-              animationNum={3}
-              timelineRef={containerRef}
+              key={pillar.title}
+              as="article"
+              animationNum={3 + i}
+              timelineRef={heroRef}
               customVariants={revealVariants}
-              className="font-sans text-base leading-[1.75] text-kado-dark sm:text-lg md:text-xl md:leading-relaxed"
+              className="group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[260px] lg:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]"
             >
-              We&apos;re not a franchise. We&apos;re not chasing trends. We roast, grind, and brew for
-              people who want real coffee — honest craft from Sta. Elena, Marikina.
-            </TimelineContent>
-
-            <TimelineContent
-              as="p"
-              animationNum={4}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              className="mt-5 max-w-xl font-sans text-sm leading-[1.7] text-kado-dark/65 sm:mt-6 sm:text-base"
-            >
-              Kado Kohi is a Japanese-inspired specialty cafe on J.P. Laurel. For{' '}
-              <strong className="font-semibold text-kado-dark">best matcha in Marikina</strong>,{' '}
-              <strong className="font-semibold text-kado-dark">hojicha oat latte</strong>, or{' '}
-              <strong className="font-semibold text-kado-dark">coffee near me</strong>, we&apos;re rated{' '}
-              {rating}★ on Google ({reviewCount} reviews).{' '}
-              <Link to="/menu" className={linkClass}>
-                Browse the menu
-              </Link>
-              ,{' '}
-              <Link to="/branches" className={linkClass}>
-                see hours
-              </Link>
-              , or{' '}
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                get directions
-              </a>
-              .
-            </TimelineContent>
-
-            <TimelineContent
-              as="div"
-              animationNum={5}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              className="mt-8 flex flex-col gap-4 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6"
-            >
-              <Link
-                to="/menu"
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-kado-red px-6 text-xs font-bold uppercase tracking-[0.16em] text-kado-cream shadow-md shadow-kado-red/20 transition-colors hover:bg-kado-dark sm:w-auto sm:min-w-[11rem]"
-              >
-                Explore menu
-              </Link>
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-kado-dark/15 px-6 text-xs font-bold uppercase tracking-[0.16em] text-kado-dark transition-colors hover:border-kado-red hover:text-kado-red sm:w-auto sm:min-w-[11rem]"
-              >
-                Find us
-              </a>
-            </TimelineContent>
-
-            <TimelineContent
-              as="nav"
-              animationNum={6}
-              timelineRef={containerRef}
-              customVariants={revealVariants}
-              aria-label="Kado Coffee social media"
-              className="mt-10 flex flex-col gap-4 border-t border-kado-dark/10 pt-8 sm:mt-12 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <span className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-kado-dark/40">
-                Follow Kado Coffee
-              </span>
-              <div className="flex gap-3">
-                {SOCIAL_LINKS.map(({ key, href, label, Icon }) => (
-                  <a
-                    key={key}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer me"
-                    aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-kado-dark/12 bg-kado-offwhite text-kado-dark/60 transition-colors hover:border-kado-red hover:bg-kado-red hover:text-kado-cream"
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </a>
-                ))}
+              <img
+                src={pillar.image}
+                alt={pillar.imageAlt}
+                className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
+              <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-kado-cream/60">
+                  {pillar.subtitle}
+                </p>
+                <h3 className="mt-1 font-display text-lg font-bold text-kado-cream sm:text-xl lg:text-2xl">
+                  {pillar.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-kado-cream/80 sm:text-sm">{pillar.copy}</p>
               </div>
             </TimelineContent>
-          </div>
+          ))}
         </div>
+
+        <TimelineContent
+          as="p"
+          animationNum={6}
+          timelineRef={heroRef}
+          customVariants={textVariants}
+          className="mt-8 max-w-2xl font-sans text-sm leading-relaxed text-kado-dark/65 sm:mt-10 sm:text-[0.9375rem] sm:leading-[1.75]"
+        >
+          Rated {rating}★ on Google ({reviewCount} reviews).{' '}
+          <Link to="/menu" className={linkClass}>
+            See the menu
+          </Link>
+          {' · '}
+          <Link to="/branches" className={linkClass}>
+            Visit us
+          </Link>
+          {' · '}
+          <Link to="/events" className={linkClass}>
+            Events
+          </Link>
+        </TimelineContent>
+
+        <div className="mt-8 flex flex-col gap-6 sm:mt-10 sm:flex-row sm:items-end sm:justify-between">
+          <TimelineContent as="div" animationNum={7} timelineRef={heroRef} customVariants={textVariants}>
+            <p className="font-sans text-sm font-medium text-kado-dark/60 sm:text-base">We are Kado Kohi and we will</p>
+            <p className="font-display text-lg font-bold uppercase tracking-wide text-kado-red sm:text-xl">
+              brew it honest
+            </p>
+          </TimelineContent>
+
+          <TimelineContent as="div" animationNum={8} timelineRef={heroRef} customVariants={textVariants}>
+            <Link
+              to="/menu"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-kado-red px-8 text-sm font-semibold text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
+            >
+              Explore menu
+              <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
+            </Link>
+          </TimelineContent>
+        </div>
+
+        <TimelineContent
+          as="nav"
+          animationNum={9}
+          timelineRef={heroRef}
+          customVariants={textVariants}
+          aria-label="Kado Coffee social media"
+          className="mt-10 border-t border-kado-dark/8 pt-8 sm:mt-12"
+        >
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-kado-dark/40">Follow along</p>
+          <ul className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+            {SOCIAL_LINKS.map(({ key, href, label, handle, Icon }) => (
+              <li key={key} className="min-w-0">
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  className="group inline-flex min-h-[44px] w-full max-w-full items-center gap-3 rounded-2xl border border-kado-dark/8 bg-kado-offwhite/80 px-4 py-2.5 text-kado-dark transition-colors hover:border-kado-red/25 hover:text-kado-red sm:w-auto"
+                  aria-label={label}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-kado-dark/10 bg-white transition-colors group-hover:border-kado-red group-hover:bg-kado-red group-hover:text-kado-cream">
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0 truncate font-sans text-sm font-semibold">{handle}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </TimelineContent>
       </div>
     </section>
   );
