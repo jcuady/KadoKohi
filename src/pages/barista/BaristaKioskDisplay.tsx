@@ -9,13 +9,12 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useKioskTheme } from '../../hooks/useKioskTheme';
 import { startOperationsRealtime, refreshOperationsData } from '../../lib/supabase/operationsRealtime';
-import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
-import OrderTableBadge from '../../components/OrderTableBadge';
-
-type KioskColumnId = NonNullable<ReturnType<typeof kioskColumnKey>>;
+import { kioskDisplayColumnKey, type KioskDisplayColumn } from '../../lib/orderStatus';
+import { getOrderTableLabel } from '../../lib/orderTable';
+import { useTableStore } from '../../store/tableStore';
 
 type KioskColumn = {
-  id: KioskColumnId;
+  id: KioskDisplayColumn;
   label: string;
   accentLight: string;
   accentDark: string;
@@ -25,38 +24,46 @@ type KioskColumn = {
 
 const COLUMNS: KioskColumn[] = [
   {
-    id: 'awaiting_payment',
-    label: 'Awaiting payment',
-    accentLight: 'border-t-amber-500',
-    accentDark: 'border-t-amber-400',
-    badgeLight: 'bg-amber-500/15 text-amber-900',
-    badgeDark: 'bg-amber-400/20 text-amber-200',
-  },
-  {
-    id: 'paid_queue',
-    label: 'Paid · in queue',
-    accentLight: 'border-t-sky-600',
-    accentDark: 'border-t-sky-400',
-    badgeLight: 'bg-sky-600/10 text-sky-900',
-    badgeDark: 'bg-sky-400/15 text-sky-200',
-  },
-  {
     id: 'preparing',
-    label: ORDER_STATUS_LABELS.preparing,
+    label: 'Preparing',
     accentLight: 'border-t-kado-red',
     accentDark: 'border-t-kado-red',
     badgeLight: 'bg-kado-red/12 text-kado-red',
     badgeDark: 'bg-kado-red/25 text-kado-cream',
   },
   {
-    id: 'ready',
-    label: ORDER_STATUS_LABELS.ready,
+    id: 'pickup',
+    label: 'Pickup',
     accentLight: 'border-t-emerald-600',
     accentDark: 'border-t-emerald-400',
     badgeLight: 'bg-emerald-600/10 text-emerald-900',
     badgeDark: 'bg-emerald-400/15 text-emerald-200',
   },
 ];
+
+function KioskOrderMeta({ order, isDark }: { order: Order; isDark: boolean }) {
+  const tables = useTableStore((s) => s.tables);
+  const tableLabel = order.channel === 'dine-in' ? getOrderTableLabel(order, tables) : null;
+  const isOnline = order.channel === 'online';
+
+  if (!tableLabel && !isOnline) return null;
+
+  const chipBase =
+    'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest';
+  const tableChip = isDark
+    ? 'border-violet-400/35 bg-violet-500/20 text-violet-200'
+    : 'border-violet-300 bg-violet-100 text-violet-900';
+  const onlineChip = isDark
+    ? 'border-sky-400/35 bg-sky-500/20 text-sky-200'
+    : 'border-sky-300 bg-sky-100 text-sky-900';
+
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-2">
+      {tableLabel ? <span className={`${chipBase} ${tableChip}`}>{tableLabel}</span> : null}
+      {isOnline ? <span className={`${chipBase} ${onlineChip}`}>Online</span> : null}
+    </div>
+  );
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -128,7 +135,7 @@ export default function BaristaKioskDisplay() {
     () =>
       orders
         .filter((order) => (activeBranchId ? order.branchId === activeBranchId : false))
-        .filter((order) => kioskColumnKey(order) !== null)
+        .filter((order) => kioskDisplayColumnKey(order) !== null)
         .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
     [orders, activeBranchId],
   );
@@ -255,9 +262,9 @@ export default function BaristaKioskDisplay() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {COLUMNS.map((column) => {
-            const items = filtered.filter((order) => kioskColumnKey(order) === column.id);
+            const items = filtered.filter((order) => kioskDisplayColumnKey(order) === column.id);
             const accent = isDark ? column.accentDark : column.accentLight;
             const badge = isDark ? column.badgeDark : column.badgeLight;
 
@@ -302,13 +309,10 @@ export default function BaristaKioskDisplay() {
                           boxShadow: 'var(--kiosk-order-shadow)',
                         }}
                       >
-                        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            <p className="font-display text-3xl font-black tracking-wide text-kado-red md:text-4xl">
-                              {order.shortCode}
-                            </p>
-                            <OrderTableBadge order={order} variant="kiosk" />
-                          </div>
+                        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="font-display text-3xl font-black tracking-wide text-kado-red md:text-4xl">
+                            {order.shortCode}
+                          </p>
                           <span
                             className="shrink-0 text-xs font-bold uppercase tracking-wider"
                             style={{ color: 'var(--kiosk-text-muted)' }}
@@ -316,6 +320,7 @@ export default function BaristaKioskDisplay() {
                             {timeAgo(order.createdAt)}
                           </span>
                         </div>
+                        <KioskOrderMeta order={order} isDark={isDark} />
                         <p
                           className="line-clamp-2 text-sm font-medium leading-snug"
                           style={{ color: 'var(--kiosk-text-muted)' }}

@@ -154,6 +154,18 @@ export function kioskColumnKey(order: Order): 'awaiting_payment' | 'paid_queue' 
   return 'awaiting_payment';
 }
 
+export type KioskDisplayColumn = 'preparing' | 'pickup';
+
+/** Customer-facing kiosk: only active prep + ready-for-pickup (paid orders). */
+export function kioskDisplayColumnKey(order: Order): KioskDisplayColumn | null {
+  if (['completed', 'cancelled', 'served'].includes(order.status)) return null;
+  if (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted') return null;
+  if (isGcashOrder(order) && order.paymentStatus !== 'paid') return null;
+  if (order.status === 'preparing') return 'preparing';
+  if (order.status === 'ready') return 'pickup';
+  return null;
+}
+
 export function formatPaymentMethod(method?: PaymentMethod): string {
   switch (method) {
     case 'gcash-qr':
