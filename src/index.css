@@ -76,6 +76,7 @@
   --kiosk-border-strong: rgba(25, 25, 25, 0.18);
   --kiosk-order-bg: #FFFFFF;
   --kiosk-order-shadow: 0 4px 24px rgba(25, 25, 25, 0.06);
+  --kiosk-pickup-shadow: 0 8px 32px rgba(5, 150, 105, 0.12);
   --kiosk-empty-bg: rgba(25, 25, 25, 0.04);
   --kiosk-header-btn-hover: rgba(25, 25, 25, 0.06);
   --kiosk-logo-filter: none;
@@ -93,6 +94,7 @@
   --kiosk-border-strong: rgba(255, 255, 255, 0.16);
   --kiosk-order-bg: rgba(0, 0, 0, 0.35);
   --kiosk-order-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --kiosk-pickup-shadow: 0 12px 40px rgba(52, 211, 153, 0.15);
   --kiosk-empty-bg: rgba(255, 255, 255, 0.04);
   --kiosk-header-btn-hover: rgba(255, 255, 255, 0.08);
   --kiosk-logo-filter: brightness(0) invert(1);
