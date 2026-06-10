@@ -4,8 +4,8 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import {
-  List,
   LayoutGrid,
+  List,
   Clock,
   ChefHat,
   CheckCircle2,
@@ -15,10 +15,27 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
+  MapPin,
+  TrendingUp,
+  Wallet,
+  ShoppingBag,
+  AlertTriangle,
 } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import {
   ALL_ORDER_STATUSES,
   KANBAN_COLUMNS,
@@ -33,13 +50,15 @@ import {
 import {
   ORDER_PERIOD_LABELS,
   compareOrdersNewestFirst,
+  formatPeriodRangeLabel,
   orderInPeriod,
   type OrderPeriod,
 } from '../../lib/orderTime';
+import { computeAdminOrderInsights, formatChannelLabel } from '../../lib/adminOrderStats';
 import OrderPlacedAt from '../../components/OrderPlacedAt';
 
 const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'merch'];
-const PERIOD_OPTIONS: OrderPeriod[] = ['all', 'day', 'week', 'month'];
+const PERIOD_OPTIONS: OrderPeriod[] = ['day', 'week', 'month', 'all'];
 
 const KANBAN_STYLE: Record<string, { icon: typeof Clock; color: string; bgCard: string }> = {
   awaiting_payment: { icon: Clock, color: 'text-amber-400', bgCard: 'border-amber-500/30' },
@@ -62,7 +81,7 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<OrderPeriod>('day');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -73,20 +92,23 @@ export default function AdminOrders() {
     return (id: string) => m.get(id) ?? id;
   }, [branches]);
 
-  const filtered = useMemo(() => {
-    let list = orders.filter((o) => orderInPeriod(o.createdAt, periodFilter));
-    if (channelFilter !== 'all') list = list.filter((o) => o.channel === channelFilter);
-    if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
-    if (branchFilter !== 'all') list = list.filter((o) => o.branchId === branchFilter);
-    return [...list].sort(compareOrdersNewestFirst);
-  }, [orders, channelFilter, statusFilter, branchFilter, periodFilter]);
-
-  const periodTotal = useMemo(
-    () => filtered.reduce((sum, o) => sum + o.total, 0),
-    [filtered],
+  const periodOrders = useMemo(
+    () => orders.filter((o) => orderInPeriod(o.createdAt, periodFilter)),
+    [orders, periodFilter],
   );
 
-  const nextStatus = (order: Order): OrderStatus | null => nextStatusInFlow(order);
+  const filtered = useMemo(() => {
+    let list = periodOrders;
+    if (branchFilter !== 'all') list = list.filter((o) => o.branchId === branchFilter);
+    if (channelFilter !== 'all') list = list.filter((o) => o.channel === channelFilter);
+    if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
+    return [...list].sort(compareOrdersNewestFirst);
+  }, [periodOrders, branchFilter, channelFilter, statusFilter]);
+
+  const insights = useMemo(() => computeAdminOrderInsights(filtered), [filtered]);
+
+  const branchLabel =
+    branchFilter === 'all' ? 'All branches' : branchName(branchFilter);
 
   const applyPatch = async (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
@@ -123,193 +145,236 @@ export default function AdminOrders() {
   };
 
   return (
-    <div className={`dash-page flex flex-col ${viewMode === 'kanban' ? 'h-[calc(100vh-2rem)]' : 'max-w-6xl'}`}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-        <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-1">Orders</h1>
-          <p className="dash-muted">
-            Admin — edit or delete any order. Filter by period, channel, status, or branch.
+    <div className={`dash-page flex flex-col gap-6 ${viewMode === 'kanban' ? 'h-[calc(100vh-2rem)]' : 'max-w-7xl'}`}>
+      {/* Header */}
+      <Card>
+        <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl md:text-3xl">Orders</CardTitle>
+            <CardDescription>
+              {formatPeriodRangeLabel(periodFilter)} · {branchLabel}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 rounded-xl border dash-border dash-input px-3 py-2">
+              <MapPin className="h-4 w-4 shrink-0 text-kado-red" />
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="min-w-[10rem] bg-transparent text-xs font-bold uppercase tracking-wider outline-none"
+                aria-label="Filter by branch"
+              >
+                <option value="all">All branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'kanban')}>
+              <TabsList>
+                <TabsTrigger value="table">
+                  <List className="h-4 w-4" />
+                  Table
+                </TabsTrigger>
+                <TabsTrigger value="kanban">
+                  <LayoutGrid className="h-4 w-4" />
+                  Board
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as OrderPeriod)}>
+            <TabsList className="w-full flex-wrap h-auto gap-1">
+              {PERIOD_OPTIONS.map((p) => (
+                <TabsTrigger key={p} value={p} className="flex-1 sm:flex-none">
+                  {ORDER_PERIOD_LABELS[p]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Owner KPIs — net sales excludes cancelled; collected = paid only */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-kado-red" />
+            <span className="text-[10px] font-bold uppercase tracking-widest dash-muted">Net sales</span>
+          </div>
+          <p className="font-display text-2xl font-bold text-kado-red">{formatPhp(insights.netSales)}</p>
+          <p className="mt-1 text-[10px] dash-muted">Excl. cancelled orders</p>
+        </Card>
+        <Card className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-kado-red" />
+            <span className="text-[10px] font-bold uppercase tracking-widest dash-muted">Collected</span>
+          </div>
+          <p className="font-display text-2xl font-bold dash-heading">{formatPhp(insights.collectedRevenue)}</p>
+          <p className="mt-1 text-[10px] dash-muted">Paid orders only</p>
+        </Card>
+        <Card className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-kado-red" />
+            <span className="text-[10px] font-bold uppercase tracking-widest dash-muted">Orders</span>
+          </div>
+          <p className="font-display text-2xl font-bold dash-heading">{insights.orderCount}</p>
+          <p className="mt-1 text-[10px] dash-muted">
+            {insights.activeCount} active · {insights.completedCount} done
           </p>
-        </div>
-        <div className="flex bg-white/50 dark:bg-black/50 backdrop-blur-md p-1 rounded-xl border dash-border shrink-0 self-start">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
-              viewMode === 'list'
-                ? 'bg-white dark:bg-kado-dark shadow-sm text-kado-red border border-gray-200 dark:border-gray-800'
-                : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'
-            }`}
-            title="List View"
-          >
-            <List className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('kanban')}
-            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
-              viewMode === 'kanban'
-                ? 'bg-white dark:bg-kado-dark shadow-sm text-kado-red border border-gray-200 dark:border-gray-800'
-                : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'
-            }`}
-            title="Kanban View"
-          >
-            <LayoutGrid className="w-5 h-5" />
-          </button>
-        </div>
+        </Card>
+        <Card className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-[10px] font-bold uppercase tracking-widest dash-muted">Needs attention</span>
+          </div>
+          <p className="font-display text-2xl font-bold dash-heading">{insights.awaitingPaymentCount}</p>
+          <p className="mt-1 text-[10px] dash-muted">
+            Awaiting payment or proof
+            {insights.cancelledCount > 0 ? ` · ${insights.cancelledCount} cancelled` : ''}
+          </p>
+        </Card>
       </div>
 
-      {/* Period (admin) */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {PERIOD_OPTIONS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setPeriodFilter(p)}
-            className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-              periodFilter === p
-                ? 'bg-kado-red text-white shadow-sm'
-                : 'dash-card-alt dash-muted border dash-border hover:border-kado-red/30'
-            }`}
-          >
-            {ORDER_PERIOD_LABELS[p]}
-          </button>
-        ))}
-        <span className="ml-1 text-xs font-semibold dash-muted">
-          {filtered.length} order{filtered.length !== 1 ? 's' : ''}
-          {periodFilter !== 'all' ? ` · ${formatPhp(periodTotal)}` : ''}
-        </span>
+      {/* Secondary metrics */}
+      <div className="flex flex-wrap gap-2 text-xs font-semibold dash-muted">
+        <Badge variant="muted">Avg ticket {formatPhp(insights.avgTicket)}</Badge>
+        <Badge variant="muted">{insights.itemCount} items sold</Badge>
+        {insights.topChannel ? (
+          <Badge variant="outline">
+            Top channel {formatChannelLabel(insights.topChannel.channel)} ({insights.topChannel.count})
+          </Badge>
+        ) : null}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6 shrink-0">
-        <select
-          value={channelFilter}
-          onChange={(e) => setChannelFilter(e.target.value as OrderChannel | 'all')}
-          className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
-        >
-          <option value="all">All channels</option>
-          {ALL_CHANNELS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
-          className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
-        >
-          <option value="all">All statuses</option>
-          {ALL_ORDER_STATUSES.map((s) => (
-            <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>
-          ))}
-        </select>
-
-        <select
-          value={branchFilter}
-          onChange={(e) => setBranchFilter(e.target.value)}
-          className="rounded-xl dash-input border px-4 py-2 text-sm font-semibold"
-        >
-          <option value="all">All branches</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Main content */}
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl dash-card border p-12 text-center mt-6">
-          <p className="text-sm dash-muted">
-            No orders for {ORDER_PERIOD_LABELS[periodFilter].toLowerCase()}. Try another period or place one from POS.
-          </p>
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={channelFilter}
+            onChange={(e) => setChannelFilter(e.target.value as OrderChannel | 'all')}
+            className="rounded-xl dash-input border px-3 py-2 text-xs font-bold uppercase tracking-wider"
+          >
+            <option value="all">All channels</option>
+            {ALL_CHANNELS.map((c) => (
+              <option key={c} value={c}>{formatChannelLabel(c)}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
+            className="rounded-xl dash-input border px-3 py-2 text-xs font-bold uppercase tracking-wider"
+          >
+            <option value="all">All statuses</option>
+            {ALL_ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+          <span className="ml-auto text-xs font-bold dash-muted">
+            Showing {filtered.length} of {periodOrders.length} in period
+          </span>
         </div>
-      ) : viewMode === 'list' ? (
-        <ul className="space-y-3">
-          {filtered.map((o) => {
-            const next = nextStatus(o);
-            return (
-              <li key={o.id} className="rounded-2xl dash-card border p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full dash-card-alt text-kado-dark dash-heading border dash-border">
-                        {o.channel}
-                      </span>
-                      <OrderTableBadge order={o} variant="dash" />
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}>
-                        {PAYMENT_STATUS_LABELS[o.paymentStatus]}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border dash-border dash-card-alt dash-muted">
-                        {formatPaymentMethod(o.paymentMethod)}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${ORDER_STATUS_BADGE[o.status]}`}>
+      </Card>
+
+      {/* Content */}
+      {filtered.length === 0 ? (
+        <Card className="p-12 text-center">
+          <p className="text-sm dash-muted">
+            No orders match {ORDER_PERIOD_LABELS[periodFilter].toLowerCase()}, {branchLabel.toLowerCase()}, and your filters.
+          </p>
+        </Card>
+      ) : viewMode === 'table' ? (
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Branch</TableHead>
+                <TableHead>Channel</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Placed</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((o) => {
+                const next = nextStatusInFlow(o);
+                return (
+                  <TableRow key={o.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-display font-bold dash-heading">{o.shortCode}</p>
+                        <p className="max-w-[14rem] truncate text-xs dash-muted">
+                          {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          <OrderTableBadge order={o} variant="dash" />
+                          {o.guestName ? <Badge variant="muted">{o.guestName}</Badge> : null}
+                        </div>
+                        <OrderPaymentProofPreview order={o} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold dash-muted">{branchName(o.branchId)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{formatChannelLabel(o.channel)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}>
+                          {PAYMENT_STATUS_LABELS[o.paymentStatus]}
+                        </span>
+                        <p className="text-[10px] dash-muted">{formatPaymentMethod(o.paymentMethod)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${ORDER_STATUS_BADGE[o.status]}`}>
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
-                      <span className="text-xs dash-muted">{branchName(o.branchId)}</span>
-                    </div>
-                    <p className="text-sm dash-muted">
-                      {o.items.map((i) => `${i.qty}× ${i.productNameSnapshot}`).join(' · ')}
-                    </p>
-                    {o.loyaltyVoucherCode && (
-                      <p className="text-xs font-semibold text-kado-red mt-1">
-                        Voucher {o.loyaltyVoucherCode}
-                        {o.loyaltyDiscountTotal != null && o.loyaltyDiscountTotal > 0
-                          ? ` · −${formatPhp(o.loyaltyDiscountTotal)}`
-                          : ''}
-                      </p>
-                    )}
-                    {o.guestName && <p className="text-xs dash-muted mt-1">Pickup: {o.guestName}</p>}
-                    <OrderPaymentProofPreview order={o} />
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <OrderPlacedAt createdAt={o.createdAt} updatedAt={o.updatedAt} showDb />
-                    <div className="text-right">
-                      <p className="font-display font-bold text-kado-red text-lg">{formatPhp(o.total)}</p>
-                      {(o.tax ?? 0) > 0 && (
-                        <p className="text-[10px] dash-muted">incl. tax {formatPhp(o.tax!)}</p>
-                      )}
-                      <p className="text-[10px] font-bold uppercase tracking-wider dash-muted">
-                        {o.items.length} item{o.items.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1.5 min-w-[7rem]">
-                      <button
-                        type="button"
-                        onClick={() => setEditingOrder(o)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border dash-border dash-card-alt px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:border-kado-red/30 transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(o)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 text-red-600 px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
-                      {next && (
-                        <button
-                          type="button"
-                          onClick={async () => { const e = await updateOrderStatus(o.id, next); if (e) setPatchError(e); }}
-                          className="rounded-xl bg-kado-dark text-kado-cream px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors"
-                        >
-                          → {ORDER_STATUS_LABELS[next]}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <p className="font-display font-bold text-kado-red">{formatPhp(o.total)}</p>
+                      {o.loyaltyVoucherCode ? (
+                        <p className="text-[10px] text-kado-red">−{formatPhp(o.loyaltyDiscountTotal ?? 0)} voucher</p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <OrderPlacedAt createdAt={o.createdAt} updatedAt={o.updatedAt} showDb />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingOrder(o)} title="Edit order">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(o)} title="Delete order">
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                        {next ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                              const e = await updateOrderStatus(o.id, next);
+                              if (e) setPatchError(e);
+                            }}
+                          >
+                            → {ORDER_STATUS_LABELS[next]}
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pb-4 snap-x">
-          <div className="flex gap-4 h-full min-h-[500px] w-max snap-start">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-4">
+          <div className="flex h-full min-h-[500px] w-max gap-4">
             {KANBAN_COLUMNS.map((col) => {
               const colOrders = filtered
                 .filter((o) => kanbanColumnForOrder(o) === col.id)
@@ -318,62 +383,40 @@ export default function AdminOrders() {
               const Icon = style.icon;
 
               return (
-                <div key={col.id} className="flex flex-col h-full w-[280px] shrink-0">
-                  <div className="flex items-center gap-2 mb-3 px-1 shrink-0">
-                    <Icon className={`w-5 h-5 ${style.color}`} />
-                    <span className="font-bold text-sm uppercase tracking-wider dash-muted">{col.label}</span>
-                    <span className="ml-auto text-xs font-bold dash-card-alt dash-muted px-2 py-0.5 rounded-full">
-                      {colOrders.length}
-                    </span>
+                <div key={col.id} className="flex h-full w-[280px] shrink-0 flex-col">
+                  <div className="mb-3 flex shrink-0 items-center gap-2 px-1">
+                    <Icon className={`h-5 w-5 ${style.color}`} />
+                    <span className="text-sm font-bold uppercase tracking-wider dash-muted">{col.label}</span>
+                    <Badge variant="muted" className="ml-auto">{colOrders.length}</Badge>
                   </div>
-                  <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  <div className="custom-scrollbar flex-1 space-y-2 overflow-y-auto pr-1">
                     {colOrders.length === 0 ? (
-                      <div className="rounded-xl border dash-card-alt dash-border p-6 text-center dash-muted text-xs">
-                        Empty
-                      </div>
+                      <Card className="p-6 text-center text-xs dash-muted">Empty</Card>
                     ) : (
                       colOrders.map((o) => (
                         <button
                           key={o.id}
                           type="button"
                           onClick={() => setEditingOrder(o)}
-                          className={`w-full text-left rounded-xl border dash-card ${style.bgCard} p-4 transition-colors hover:border-kado-red/30`}
+                          className={`w-full rounded-xl border dash-card p-4 text-left transition-colors hover:border-kado-red/30 ${style.bgCard}`}
                         >
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
-                            <OrderPlacedAt createdAt={o.createdAt} showDb />
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <span className="font-display text-lg font-bold dash-heading">{o.shortCode}</span>
+                            <span className="font-display text-sm font-bold text-kado-red">{formatPhp(o.total)}</span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
-                              {o.channel}
-                            </span>
-                            <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
-                              {formatPaymentMethod(o.paymentMethod)}
-                            </span>
+                          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline">{formatChannelLabel(o.channel)}</Badge>
                             <OrderTableBadge order={o} variant="dash" />
-                            {o.guestName && (
-                              <span className="text-[9px] font-bold dash-muted dash-card-alt px-2 py-0.5 rounded">
-                                {o.guestName}
-                              </span>
-                            )}
                             <span className="text-[9px] dash-muted">{branchName(o.branchId)}</span>
                           </div>
-                          <ul className="text-xs dash-muted space-y-0.5">
-                            {o.items.slice(0, 4).map((item) => (
+                          <ul className="space-y-0.5 text-xs dash-muted">
+                            {o.items.slice(0, 3).map((item) => (
                               <li key={item.id} className="truncate">
                                 {item.qty}× {item.productNameSnapshot}
                               </li>
                             ))}
-                            {o.items.length > 4 && (
-                              <li className="dash-muted">+{o.items.length - 4} more</li>
-                            )}
                           </ul>
-                          <div className="mt-2 flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">
-                              {o.items.length} item{o.items.length !== 1 ? 's' : ''}
-                            </span>
-                            <span className="font-display font-bold text-kado-red text-sm">{formatPhp(o.total)}</span>
-                          </div>
+                          <OrderPlacedAt createdAt={o.createdAt} showDb />
                         </button>
                       ))
                     )}
@@ -396,43 +439,35 @@ export default function AdminOrders() {
         deleteBusy={deleteBusy}
       />
 
-      {deleteTarget && (
+      {deleteTarget ? (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-md rounded-2xl border dash-border dash-card p-6 shadow-2xl">
-            <h3 className="font-display text-xl font-bold dash-heading">Delete order?</h3>
-            <p className="mt-2 text-sm dash-muted">
+          <Card className="w-full max-w-md p-6 shadow-2xl">
+            <CardTitle>Delete order?</CardTitle>
+            <CardDescription className="mt-2">
               Permanently remove <strong className="dash-heading">{deleteTarget.shortCode}</strong> (
-              {formatPhp(deleteTarget.total)}) and all line items. This cannot be undone.
-            </p>
+              {formatPhp(deleteTarget.total)}) from {branchName(deleteTarget.branchId)}. This cannot be undone.
+            </CardDescription>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                disabled={deleteBusy}
-                onClick={() => setDeleteTarget(null)}
-                className="rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted"
-              >
+              <Button variant="outline" disabled={deleteBusy} onClick={() => setDeleteTarget(null)}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleteBusy}
-                onClick={() => void confirmDelete()}
-                className="rounded-xl bg-red-600 text-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-700 disabled:opacity-50"
-              >
+              </Button>
+              <Button variant="destructive" disabled={deleteBusy} onClick={() => void confirmDelete()}>
                 {deleteBusy ? 'Deleting…' : 'Delete order'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
-      )}
+      ) : null}
 
-      {patchError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+      {patchError ? (
+        <div className="fixed bottom-4 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-xl">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           {patchError}
-          <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>
+          <button type="button" onClick={() => setPatchError(null)} className="ml-2 text-xs text-white/70 hover:text-white">
+            ✕
+          </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

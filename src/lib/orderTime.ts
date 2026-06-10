@@ -73,6 +73,18 @@ export const ORDER_PERIOD_LABELS: Record<OrderPeriod, string> = {
   month: 'This month',
 };
 
+/** Human-readable range for admin dashboards (en-PH). */
+export function formatPeriodRangeLabel(period: OrderPeriod, now = new Date()): string {
+  if (period === 'all') return 'All recorded orders';
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: period === 'month' ? 'numeric' : undefined });
+  const end = fmt(now);
+  if (period === 'day') return `Today · ${end}`;
+  const start = fmt(periodRangeStart(period, now));
+  if (period === 'week') return `This week · ${start} – ${end}`;
+  return `This month · ${start} – ${end}`;
+}
+
 /** Full locale label aligned with Supabase `created_at` / `updated_at` in Table Editor. */
 export function formatOrderDbLabel(iso: string): string {
   const d = new Date(iso);
