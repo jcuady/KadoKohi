@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, Facebook, Instagram } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { TimelineContent } from '@/components/ui/timeline-animation';
+import AccentHeadline from '@/components/ui/AccentHeadline';
+import ResilientImage from '@/components/ui/ResilientImage';
 import { SEO_SOCIAL } from '@/content/seo';
 import { KADO_GOOGLE_LISTING } from '@/content/kadoGoogleReviews';
 import TikTokIcon from '@/components/icons/TikTokIcon';
+import type { BrandStoryCopy } from '@/store/landingContentStore';
 
 const revealVariants: Variants = {
   visible: (i: number) => ({
@@ -25,32 +28,6 @@ const textVariants: Variants = {
   }),
   hidden: { filter: 'blur(8px)', opacity: 0 },
 };
-
-const accent = 'text-kado-red';
-
-const STORY_PILLARS = [
-  {
-    title: 'Visit',
-    subtitle: 'Sta. Elena, Marikina',
-    image: '/featuredmarikina/kadom1.jpg',
-    imageAlt: 'Kado Kohi specialty cafe interior in Sta. Elena, Marikina',
-    copy: 'J.P. Laurel corner Mt. Everest — a Japanese-inspired tambayan for coffee near me in Marikina.',
-  },
-  {
-    title: 'Sip',
-    subtitle: 'Matcha · Hojicha · Lattes',
-    image: '/featuredmarikina/kadom2.jpg',
-    imageAlt: 'Specialty matcha and coffee drinks at Kado Coffee Marikina',
-    copy: 'Best matcha in Marikina, hojicha oat latte, and the KADO Latte — honest craft, quality ingredients.',
-  },
-  {
-    title: 'Stay',
-    subtitle: 'Events & booth coffee',
-    image: '/booth-photos/booth-1.jpg',
-    imageAlt: 'Kado Coffee mobile booth and community events in Marikina',
-    copy: 'Tambayan nights, pop-ups, and mobile booth booking for weddings and events in Metro Manila.',
-  },
-] as const;
 
 const SOCIAL_LINKS = [
   {
@@ -78,10 +55,15 @@ const SOCIAL_LINKS = [
 
 const linkClass = 'font-semibold text-kado-red underline-offset-4 hover:underline';
 
+const pillarCard =
+  'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[260px] lg:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
+
+type Props = { copy: BrandStoryCopy };
+
 /**
  * Homepage brand story — editorial pillars + crawlable local SEO copy.
  */
-export default function AboutSection2() {
+export default function AboutSection2({ copy }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
   const { rating, reviewCount } = KADO_GOOGLE_LISTING;
 
@@ -98,7 +80,7 @@ export default function AboutSection2() {
           customVariants={textVariants}
           className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red sm:mb-6"
         >
-          Our story
+          {copy.badge}
         </TimelineContent>
 
         <TimelineContent
@@ -109,8 +91,7 @@ export default function AboutSection2() {
           customVariants={revealVariants}
           className="max-w-4xl font-display text-[clamp(1.5rem,4.5vw,2.75rem)] font-bold leading-[1.16] tracking-tight text-kado-dark [@media(orientation:landscape)_and_(max-height:30rem)]:text-[clamp(1.35rem,4vw,2rem)]"
         >
-          the story <span className={accent}>behind every</span> sip — where passion meets{' '}
-          <span className={accent}>perfection</span>, shaped by skill, brewed by heart.
+          <AccentHeadline copy={copy.headline} />
         </TimelineContent>
 
         <TimelineContent
@@ -120,27 +101,23 @@ export default function AboutSection2() {
           customVariants={textVariants}
           className="mt-6 max-w-2xl font-sans text-[0.9375rem] leading-[1.75] text-kado-dark/70 sm:mt-8 sm:text-base sm:leading-[1.8]"
         >
-          <strong className="font-semibold text-kado-dark">Kado Coffee</strong> (Kado Kohi) is one of the best
-          specialty cafes in <strong className="font-semibold text-kado-dark">Marikina</strong>, right here in{' '}
-          <strong className="font-semibold text-kado-dark">Sta. Elena</strong>. Our Coffee, Our Rules — honest
-          craft for guests who want quality, not hype.
+          {copy.intro}
         </TimelineContent>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
-          {STORY_PILLARS.map((pillar, i) => (
+          {copy.pillars.map((pillar, i) => (
             <TimelineContent
-              key={pillar.title}
+              key={`${pillar.title}-${pillar.subtitle}`}
               as="article"
               animationNum={3 + i}
               timelineRef={heroRef}
               customVariants={revealVariants}
-              className="group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[260px] lg:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]"
+              className={pillarCard}
             >
-              <img
-                src={pillar.image}
+              <ResilientImage
+                src={pillar.imageUrl}
                 alt={pillar.imageAlt}
                 className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
               <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
@@ -150,7 +127,9 @@ export default function AboutSection2() {
                 <h3 className="mt-1 font-display text-lg font-bold text-kado-cream sm:text-xl lg:text-2xl">
                   {pillar.title}
                 </h3>
-                <p className="mt-2 text-xs leading-relaxed text-kado-cream/80 sm:text-sm">{pillar.copy}</p>
+                {pillar.body ? (
+                  <p className="mt-2 text-xs leading-relaxed text-kado-cream/80 sm:text-sm">{pillar.body}</p>
+                ) : null}
               </div>
             </TimelineContent>
           ))}
@@ -179,18 +158,18 @@ export default function AboutSection2() {
 
         <div className="mt-8 flex flex-col gap-6 sm:mt-10 sm:flex-row sm:items-end sm:justify-between">
           <TimelineContent as="div" animationNum={7} timelineRef={heroRef} customVariants={textVariants}>
-            <p className="font-sans text-sm font-medium text-kado-dark/60 sm:text-base">We are Kado Kohi and we will</p>
+            <p className="font-sans text-sm font-medium text-kado-dark/60 sm:text-base">{copy.footerTagline1}</p>
             <p className="font-display text-lg font-bold uppercase tracking-wide text-kado-red sm:text-xl">
-              brew it honest
+              {copy.footerTagline2}
             </p>
           </TimelineContent>
 
           <TimelineContent as="div" animationNum={8} timelineRef={heroRef} customVariants={textVariants}>
             <Link
               to="/menu"
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-kado-red px-8 text-sm font-semibold text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
+              className="inline-flex h-12 w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-kado-red px-8 text-sm font-semibold text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
             >
-              Explore menu
+              {copy.ctaLabel}
               <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           </TimelineContent>
@@ -204,7 +183,9 @@ export default function AboutSection2() {
           aria-label="Kado Coffee social media"
           className="mt-10 border-t border-kado-dark/8 pt-8 sm:mt-12"
         >
-          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-kado-dark/40">Follow along</p>
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-kado-dark/40">
+            {copy.socialHeading}
+          </p>
           <ul className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             {SOCIAL_LINKS.map(({ key, href, label, handle, Icon }) => (
               <li key={key} className="min-w-0">

@@ -107,10 +107,54 @@ export interface KadoCircleCopy {
   footerLinkLabel: string;
 }
 
+export interface AccentHeadlineCopy {
+  beforeAccent1: string;
+  accent1: string;
+  middle: string;
+  accent2: string;
+  afterAccent2: string;
+}
+
+export interface HomepagePillarCopy {
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  imageAlt: string;
+  body?: string;
+}
+
+export type MenuSeoPillarCategoryKey = 'matcha' | 'signatures' | 'classics-yuzu';
+
+export interface MenuSeoPillarCopy extends HomepagePillarCopy {
+  drinkCategoryKey: MenuSeoPillarCategoryKey;
+}
+
+export interface BrandStoryCopy {
+  badge: string;
+  headline: AccentHeadlineCopy;
+  intro: string;
+  pillars: [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy];
+  footerTagline1: string;
+  footerTagline2: string;
+  ctaLabel: string;
+  socialHeading: string;
+}
+
+export interface MenuSeoCopy {
+  locationBadge: string;
+  headline: AccentHeadlineCopy;
+  locationChipLabel: string;
+  pillars: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
+  bodyParagraphs: [string, string];
+  exploreHeading: string;
+}
+
 /** Fixed homepage layout — only text/images inside each slot are editable. */
 export interface LandingContentState {
   heroSlides: HomeHeroSlide[];
   heroChrome: HeroChrome;
+  storySeo: BrandStoryCopy;
+  menuSeo: MenuSeoCopy;
   featured: FeaturedCopy;
   events: EventsCopy;
   testimonials: TestimonialsCopy;
@@ -139,6 +183,10 @@ interface LandingContentStore {
   updateHeroSlide: (index: number, patch: Partial<HomeHeroSlide>) => void;
   updateHeroCard: (slideIndex: number, cardIndex: number, patch: Partial<HomeHeroCardMedia>) => void;
   updateHeroChrome: (patch: Partial<HeroChrome>) => void;
+  updateStorySeo: (patch: Partial<BrandStoryCopy>) => void;
+  updateStorySeoPillar: (index: number, patch: Partial<HomepagePillarCopy>) => void;
+  updateMenuSeo: (patch: Partial<MenuSeoCopy>) => void;
+  updateMenuSeoPillar: (index: number, patch: Partial<MenuSeoPillarCopy>) => void;
   updateFeatured: (patch: Partial<FeaturedCopy>) => void;
   updateEvents: (patch: Partial<EventsCopy>) => void;
   updateTestimonials: (patch: Partial<TestimonialsCopy>) => void;
@@ -210,6 +258,54 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
   },
 ];
 
+const SEED_STORY_PILLARS: [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy] = [
+  {
+    title: 'Visit',
+    subtitle: 'Sta. Elena, Marikina',
+    imageUrl: '/featuredmarikina/kadom1.jpg',
+    imageAlt: 'Kado Kohi specialty cafe interior in Sta. Elena, Marikina',
+    body: 'J.P. Laurel corner Mt. Everest — a Japanese-inspired tambayan for coffee near me in Marikina.',
+  },
+  {
+    title: 'Sip',
+    subtitle: 'Matcha · Hojicha · Lattes',
+    imageUrl: '/featuredmarikina/kadom2.jpg',
+    imageAlt: 'Specialty matcha and coffee drinks at Kado Coffee Marikina',
+    body: 'Best matcha in Marikina, hojicha oat latte, and the KADO Latte — honest craft, quality ingredients.',
+  },
+  {
+    title: 'Stay',
+    subtitle: 'Events & booth coffee',
+    imageUrl: '/booth-photos/booth-1.jpg',
+    imageAlt: 'Kado Coffee mobile booth and community events in Marikina',
+    body: 'Tambayan nights, pop-ups, and mobile booth booking for weddings and events in Metro Manila.',
+  },
+];
+
+const SEED_MENU_SEO_PILLARS: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy] = [
+  {
+    title: 'Matcha & hojicha',
+    subtitle: 'Best matcha in Marikina',
+    imageUrl: '/social/matcha-series.png',
+    imageAlt: 'Kado Coffee matcha and hojicha drinks in Marikina',
+    drinkCategoryKey: 'matcha',
+  },
+  {
+    title: 'Signature lattes',
+    subtitle: 'Torched muscovado & more',
+    imageUrl: '/social/coffee-series.png',
+    imageAlt: 'Kado Coffee signature lattes including KADO Latte',
+    drinkCategoryKey: 'signatures',
+  },
+  {
+    title: 'Classics & yuzu',
+    subtitle: 'Hot, iced, or oat milk',
+    imageUrl: '/social/cafe-latte.png',
+    imageAlt: 'Classic lattes and yuzu sodas at Kado Kohi',
+    drinkCategoryKey: 'classics-yuzu',
+  },
+];
+
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
@@ -219,6 +315,44 @@ export const SEED_CONTENT: LandingContentState = {
     primaryCtaPath: '/menu',
     secondaryCtaLabel: 'Shop Merch',
     secondaryCtaPath: '/merch',
+  },
+  storySeo: {
+    badge: 'Our story',
+    headline: {
+      beforeAccent1: 'the story ',
+      accent1: 'behind every',
+      middle: ' sip — where passion meets ',
+      accent2: 'perfection',
+      afterAccent2: ', shaped by skill, brewed by heart.',
+    },
+    intro:
+      'Kado Coffee (Kado Kohi) is one of the best specialty cafes in Marikina, right here in Sta. Elena. Our Coffee, Our Rules — honest craft for guests who want quality, not hype.',
+    pillars: SEED_STORY_PILLARS.map((p) => ({ ...p })) as [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy],
+    footerTagline1: 'We are Kado Kohi and we will',
+    footerTagline2: 'brew it honest',
+    ctaLabel: 'Explore menu',
+    socialHeading: 'Follow along',
+  },
+  menuSeo: {
+    locationBadge: 'Sta. Elena · Marikina',
+    headline: {
+      beforeAccent1: 'the cup ',
+      accent1: 'behind every',
+      middle: ' corner — best matcha in Marikina, crafted ',
+      accent2: 'with care',
+      afterAccent2: ', brewed by heart.',
+    },
+    locationChipLabel: 'Coffee near me · Sta. Elena',
+    pillars: SEED_MENU_SEO_PILLARS.map((p) => ({ ...p })) as [
+      MenuSeoPillarCopy,
+      MenuSeoPillarCopy,
+      MenuSeoPillarCopy,
+    ],
+    bodyParagraphs: [
+      'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — best matcha in Marikina, hojicha oat lattes, and signature drinks in a neighborhood tambayan.',
+      'Dine-in, takeout, or order online. Join our events or book the mobile booth for gatherings across Metro Manila.',
+    ],
+    exploreHeading: 'Explore',
   },
   featured: {
     badge: 'Signature Sips',
@@ -345,6 +479,67 @@ function clampBrandList(saved: unknown[] | undefined, seed: BrandMarqueeItem[]):
   return seed.map((fallback, i) => toBrandItem(saved[i], fallback));
 }
 
+function clampAccentHeadline(
+  saved: Partial<AccentHeadlineCopy> | undefined,
+  seed: AccentHeadlineCopy,
+): AccentHeadlineCopy {
+  if (!saved || typeof saved !== 'object') return { ...seed };
+  return {
+    beforeAccent1:
+      typeof saved.beforeAccent1 === 'string' ? saved.beforeAccent1 : seed.beforeAccent1,
+    accent1: typeof saved.accent1 === 'string' ? saved.accent1 : seed.accent1,
+    middle: typeof saved.middle === 'string' ? saved.middle : seed.middle,
+    accent2: typeof saved.accent2 === 'string' ? saved.accent2 : seed.accent2,
+    afterAccent2: typeof saved.afterAccent2 === 'string' ? saved.afterAccent2 : seed.afterAccent2,
+  };
+}
+
+function clampHomepagePillars(
+  saved: HomepagePillarCopy[] | undefined,
+  seed: [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy],
+): [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy] {
+  return seed.map((fallback, i) => {
+    const p = saved?.[i];
+    if (!p || typeof p !== 'object') return { ...fallback };
+    return {
+      title: typeof p.title === 'string' ? p.title : fallback.title,
+      subtitle: typeof p.subtitle === 'string' ? p.subtitle : fallback.subtitle,
+      imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : fallback.imageUrl,
+      imageAlt: typeof p.imageAlt === 'string' ? p.imageAlt : fallback.imageAlt,
+      body: typeof p.body === 'string' ? p.body : fallback.body,
+    };
+  }) as [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy];
+}
+
+function clampMenuSeoPillars(
+  saved: MenuSeoPillarCopy[] | undefined,
+  seed: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy],
+): [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy] {
+  const keys: MenuSeoPillarCategoryKey[] = ['matcha', 'signatures', 'classics-yuzu'];
+  return seed.map((fallback, i) => {
+    const p = saved?.[i];
+    if (!p || typeof p !== 'object') return { ...fallback };
+    const key = keys.includes(p.drinkCategoryKey as MenuSeoPillarCategoryKey)
+      ? (p.drinkCategoryKey as MenuSeoPillarCategoryKey)
+      : fallback.drinkCategoryKey;
+    return {
+      title: typeof p.title === 'string' ? p.title : fallback.title,
+      subtitle: typeof p.subtitle === 'string' ? p.subtitle : fallback.subtitle,
+      imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : fallback.imageUrl,
+      imageAlt: typeof p.imageAlt === 'string' ? p.imageAlt : fallback.imageAlt,
+      drinkCategoryKey: key,
+    };
+  }) as [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
+}
+
+function clampBodyParagraphs(
+  saved: string[] | undefined,
+  seed: [string, string],
+): [string, string] {
+  if (!Array.isArray(saved) || saved.length < 2) return [...seed];
+  return [saved[0] ?? seed[0], saved[1] ?? seed[1]];
+}
+
 function clampOrderingSteps(saved: OrderingStepCopy[] | undefined): OrderingStepCopy[] {
   const seed = SEED_ORDERING_STEPS;
   if (!Array.isArray(saved) || saved.length === 0) return seed.map((s) => ({ ...s }));
@@ -367,6 +562,19 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
   return {
     heroSlides: clampHeroSlides(raw.heroSlides),
     heroChrome: { ...SEED_CONTENT.heroChrome, ...(raw.heroChrome ?? {}) },
+    storySeo: {
+      ...SEED_CONTENT.storySeo,
+      ...(raw.storySeo ?? {}),
+      headline: clampAccentHeadline(raw.storySeo?.headline, SEED_CONTENT.storySeo.headline),
+      pillars: clampHomepagePillars(raw.storySeo?.pillars, SEED_CONTENT.storySeo.pillars),
+    },
+    menuSeo: {
+      ...SEED_CONTENT.menuSeo,
+      ...(raw.menuSeo ?? {}),
+      headline: clampAccentHeadline(raw.menuSeo?.headline, SEED_CONTENT.menuSeo.headline),
+      pillars: clampMenuSeoPillars(raw.menuSeo?.pillars, SEED_CONTENT.menuSeo.pillars),
+      bodyParagraphs: clampBodyParagraphs(raw.menuSeo?.bodyParagraphs, SEED_CONTENT.menuSeo.bodyParagraphs),
+    },
     featured: {
       ...SEED_CONTENT.featured,
       ...raw.featured,
@@ -488,6 +696,60 @@ export const useLandingContentStore = create<LandingContentStore>()(
       updateHeroChrome: (patch) =>
         patchDraft(set, get, (d) => ({ ...d, heroChrome: { ...d.heroChrome, ...patch } })),
 
+      updateStorySeo: (patch) =>
+        patchDraft(set, get, (d) => ({
+          ...d,
+          storySeo: {
+            ...d.storySeo,
+            ...patch,
+            headline:
+              patch.headline !== undefined
+                ? clampAccentHeadline(patch.headline, d.storySeo.headline)
+                : d.storySeo.headline,
+            pillars:
+              patch.pillars !== undefined
+                ? clampHomepagePillars(patch.pillars, d.storySeo.pillars)
+                : d.storySeo.pillars,
+          },
+        })),
+
+      updateStorySeoPillar: (index, patch) =>
+        patchDraft(set, get, (d) => {
+          const pillars = clampHomepagePillars([...d.storySeo.pillars], d.storySeo.pillars);
+          if (!pillars[index]) return d;
+          pillars[index] = { ...pillars[index], ...patch };
+          return { ...d, storySeo: { ...d.storySeo, pillars } };
+        }),
+
+      updateMenuSeo: (patch) =>
+        patchDraft(set, get, (d) => ({
+          ...d,
+          menuSeo: {
+            ...d.menuSeo,
+            ...patch,
+            headline:
+              patch.headline !== undefined
+                ? clampAccentHeadline(patch.headline, d.menuSeo.headline)
+                : d.menuSeo.headline,
+            pillars:
+              patch.pillars !== undefined
+                ? clampMenuSeoPillars(patch.pillars, d.menuSeo.pillars)
+                : d.menuSeo.pillars,
+            bodyParagraphs:
+              patch.bodyParagraphs !== undefined
+                ? clampBodyParagraphs(patch.bodyParagraphs, d.menuSeo.bodyParagraphs)
+                : d.menuSeo.bodyParagraphs,
+          },
+        })),
+
+      updateMenuSeoPillar: (index, patch) =>
+        patchDraft(set, get, (d) => {
+          const pillars = clampMenuSeoPillars([...d.menuSeo.pillars], d.menuSeo.pillars);
+          if (!pillars[index]) return d;
+          pillars[index] = { ...pillars[index], ...patch };
+          return { ...d, menuSeo: { ...d.menuSeo, pillars } };
+        }),
+
       updateFeatured: (patch) =>
         patchDraft(set, get, (d) => ({
           ...d,
@@ -588,7 +850,7 @@ export const useLandingContentStore = create<LandingContentStore>()(
       seed: () => set({ published: SEED_CONTENT, draft: null, isPreviewMode: false }),
     }),
     {
-      name: 'kado-landing-content-v4',
+      name: 'kado-landing-content-v5',
       partialize: (state) => ({ published: state.published }),
       merge: (persisted, current) => {
         const c = current as LandingContentStore;

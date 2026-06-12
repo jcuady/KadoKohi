@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Upload } from 'lucide-react';
-import { useLandingContentStore, useLandingDraftContent } from '../../store/landingContentStore';
+import {
+  useLandingContentStore,
+  useLandingDraftContent,
+  type AccentHeadlineCopy,
+} from '../../store/landingContentStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
 import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
@@ -18,6 +22,10 @@ export default function AdminLandingContent() {
   const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
   const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
+  const updateStorySeo = useLandingContentStore((s) => s.updateStorySeo);
+  const updateStorySeoPillar = useLandingContentStore((s) => s.updateStorySeoPillar);
+  const updateMenuSeo = useLandingContentStore((s) => s.updateMenuSeo);
+  const updateMenuSeoPillar = useLandingContentStore((s) => s.updateMenuSeoPillar);
   const updateFeatured = useLandingContentStore((s) => s.updateFeatured);
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const updateTestimonials = useLandingContentStore((s) => s.updateTestimonials);
@@ -78,6 +86,8 @@ export default function AdminLandingContent() {
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Fixed sections (read-only)</h2>
           <ol className="text-sm dash-muted list-decimal list-inside space-y-1">
             <li>Hero</li>
+            <li>Brand story (SEO intro)</li>
+            <li>Menu SEO pillars</li>
             <li>Featured products</li>
             <li>How to order</li>
             <li>Cafe hours</li>
@@ -193,6 +203,177 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
+          <h2 className="font-display font-bold text-xl dash-heading mb-2">Brand story (SEO intro)</h2>
+          <p className="text-xs dash-muted mb-4">
+            Headline, intro copy, and three image pillars below the hero. Drink links in the next section still come from
+            the SEO menu list.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <Field label="Badge" value={content.storySeo.badge} onChange={(v) => updateStorySeo({ badge: v })} />
+            <Field
+              label="CTA label"
+              value={content.storySeo.ctaLabel}
+              onChange={(v) => updateStorySeo({ ctaLabel: v })}
+            />
+          </div>
+          <HeadlineFields
+            label="Headline"
+            value={content.storySeo.headline}
+            onChange={(headline) => updateStorySeo({ headline })}
+          />
+          <div className="mt-4">
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Intro paragraph</label>
+            <textarea
+              value={content.storySeo.intro}
+              onChange={(e) => updateStorySeo({ intro: e.target.value })}
+              rows={3}
+              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+            />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <Field
+              label="Footer tagline (line 1)"
+              value={content.storySeo.footerTagline1}
+              onChange={(v) => updateStorySeo({ footerTagline1: v })}
+            />
+            <Field
+              label="Footer tagline (line 2)"
+              value={content.storySeo.footerTagline2}
+              onChange={(v) => updateStorySeo({ footerTagline2: v })}
+            />
+            <Field
+              label="Social heading"
+              value={content.storySeo.socialHeading}
+              onChange={(v) => updateStorySeo({ socialHeading: v })}
+            />
+          </div>
+          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Story pillars (3 fixed)</p>
+          <div className="space-y-4">
+            {content.storySeo.pillars.map((pillar, pi) => (
+              <article key={`story-pillar-${pi}`} className="rounded-xl border dash-border p-4 space-y-3">
+                <p className="text-xs font-bold dash-muted">Pillar {pi + 1}</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <Field
+                    label="Title"
+                    value={pillar.title}
+                    onChange={(v) => updateStorySeoPillar(pi, { title: v })}
+                  />
+                  <Field
+                    label="Subtitle"
+                    value={pillar.subtitle}
+                    onChange={(v) => updateStorySeoPillar(pi, { subtitle: v })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Body</label>
+                  <textarea
+                    value={pillar.body ?? ''}
+                    onChange={(e) => updateStorySeoPillar(pi, { body: e.target.value })}
+                    rows={2}
+                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+                  />
+                </div>
+                <ImageUrlField
+                  label="Image"
+                  value={pillar.imageUrl}
+                  onChange={(v) => updateStorySeoPillar(pi, { imageUrl: v })}
+                  onPickFile={(files) =>
+                    onPickImage((dataUrl) => updateStorySeoPillar(pi, { imageUrl: dataUrl }), files)
+                  }
+                />
+                <Field
+                  label="Image alt text"
+                  value={pillar.imageAlt}
+                  onChange={(v) => updateStorySeoPillar(pi, { imageAlt: v })}
+                />
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl dash-card border p-5 md:p-6">
+          <h2 className="font-display font-bold text-xl dash-heading mb-2">Menu SEO pillars</h2>
+          <p className="text-xs dash-muted mb-4">
+            Matcha / signatures / classics pillar cards and visible SEO body copy. Google review count stays live from
+            Maps.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <Field
+              label="Location badge"
+              value={content.menuSeo.locationBadge}
+              onChange={(v) => updateMenuSeo({ locationBadge: v })}
+            />
+            <Field
+              label="Location chip"
+              value={content.menuSeo.locationChipLabel}
+              onChange={(v) => updateMenuSeo({ locationChipLabel: v })}
+            />
+            <Field
+              label="Explore nav heading"
+              value={content.menuSeo.exploreHeading}
+              onChange={(v) => updateMenuSeo({ exploreHeading: v })}
+            />
+          </div>
+          <HeadlineFields
+            label="Headline"
+            value={content.menuSeo.headline}
+            onChange={(headline) => updateMenuSeo({ headline })}
+          />
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            {([0, 1] as const).map((i) => (
+              <div key={`menu-body-${i}`}>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Body paragraph {i + 1}
+                </label>
+                <textarea
+                  value={content.menuSeo.bodyParagraphs[i]}
+                  onChange={(e) => {
+                    const next: [string, string] = [...content.menuSeo.bodyParagraphs] as [string, string];
+                    next[i] = e.target.value;
+                    updateMenuSeo({ bodyParagraphs: next });
+                  }}
+                  rows={3}
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Menu pillars (3 fixed)</p>
+          <div className="space-y-4">
+            {content.menuSeo.pillars.map((pillar, pi) => (
+              <article key={`menu-pillar-${pi}`} className="rounded-xl border dash-border p-4 space-y-3">
+                <p className="text-xs font-bold dash-muted">Pillar {pi + 1}</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <Field
+                    label="Title"
+                    value={pillar.title}
+                    onChange={(v) => updateMenuSeoPillar(pi, { title: v })}
+                  />
+                  <Field
+                    label="Subtitle"
+                    value={pillar.subtitle}
+                    onChange={(v) => updateMenuSeoPillar(pi, { subtitle: v })}
+                  />
+                </div>
+                <ImageUrlField
+                  label="Image"
+                  value={pillar.imageUrl}
+                  onChange={(v) => updateMenuSeoPillar(pi, { imageUrl: v })}
+                  onPickFile={(files) =>
+                    onPickImage((dataUrl) => updateMenuSeoPillar(pi, { imageUrl: dataUrl }), files)
+                  }
+                />
+                <Field
+                  label="Image alt text"
+                  value={pillar.imageAlt}
+                  onChange={(v) => updateMenuSeoPillar(pi, { imageAlt: v })}
+                />
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Badge" value={content.featured.badge} onChange={(v) => updateFeatured({ badge: v })} />
@@ -255,10 +436,40 @@ export default function AdminLandingContent() {
               </div>
             ))}
           </div>
-          <p className="text-xs dash-muted mt-2">
-            Card photos always use each product&apos;s image from Admin → Menu (same as the public /menu page). Update
-            product images there if a card looks wrong.
+          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Card image overrides (optional)</p>
+          <p className="text-xs dash-muted mb-3">
+            Leave blank to use each product&apos;s menu image. Upload or paste a URL to override a featured card photo
+            without changing the menu product.
           </p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {([0, 1, 2] as const).map((slot) => (
+              <ImageUrlField
+                key={`featured-img-${slot}`}
+                label={`Card ${slot + 1} image override`}
+                value={content.featured.cardImageOverrides[slot] ?? ''}
+                onChange={(v) => {
+                  const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
+                    string,
+                    string,
+                    string,
+                  ];
+                  next[slot] = v;
+                  updateFeatured({ cardImageOverrides: next });
+                }}
+                onPickFile={(files) =>
+                  onPickImage((dataUrl) => {
+                    const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
+                      string,
+                      string,
+                      string,
+                    ];
+                    next[slot] = dataUrl;
+                    updateFeatured({ cardImageOverrides: next });
+                  }, files)
+                }
+              />
+            ))}
+          </div>
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
@@ -561,6 +772,39 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+      </div>
+    </div>
+  );
+}
+
+function HeadlineFields({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: AccentHeadlineCopy;
+  onChange: (next: AccentHeadlineCopy) => void;
+}) {
+  const fields: { key: keyof AccentHeadlineCopy; fieldLabel: string }[] = [
+    { key: 'beforeAccent1', fieldLabel: 'Before accent 1' },
+    { key: 'accent1', fieldLabel: 'Accent 1 (red)' },
+    { key: 'middle', fieldLabel: 'Middle' },
+    { key: 'accent2', fieldLabel: 'Accent 2 (red)' },
+    { key: 'afterAccent2', fieldLabel: 'After accent 2' },
+  ];
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase dash-muted mb-2">{label}</p>
+      <div className="grid md:grid-cols-2 gap-3">
+        {fields.map(({ key, fieldLabel }) => (
+          <Field
+            key={key}
+            label={fieldLabel}
+            value={value[key]}
+            onChange={(v) => onChange({ ...value, [key]: v })}
+          />
+        ))}
       </div>
     </div>
   );

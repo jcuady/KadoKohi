@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
 import type { FeaturedCopy } from '../../store/landingContentStore';
 import { formatPhp } from '../../lib/money';
+import ResilientImage from '../ui/ResilientImage';
 import {
   getMenuProductImageUrl,
   listVisibleCoffeeProducts,
@@ -44,13 +45,24 @@ type CardProps = {
   categoryLabel: string;
   index: number;
   hero?: boolean;
+  imageOverride?: string;
   sectionRef: RefObject<HTMLElement | null>;
   onSelect: (p: Product) => void;
   orderHint: string;
 };
 
-function DrinkCard({ drink, categoryLabel, index, hero, sectionRef, onSelect, orderHint }: CardProps) {
-  const image = getMenuProductImageUrl(drink);
+function DrinkCard({
+  drink,
+  categoryLabel,
+  index,
+  hero,
+  imageOverride,
+  sectionRef,
+  onSelect,
+  orderHint,
+}: CardProps) {
+  const menuImage = getMenuProductImageUrl(drink);
+  const image = imageOverride?.trim() || menuImage;
   const tag = drinkTag(drink, categoryLabel);
 
   return (
@@ -74,13 +86,11 @@ function DrinkCard({ drink, categoryLabel, index, hero, sectionRef, onSelect, or
           : 'aspect-[4/5] max-h-[20rem] lg:aspect-auto lg:max-h-none lg:min-h-[18rem]',
       ].join(' ')}
     >
-      <img
+      <ResilientImage
         src={image}
+        fallbackSrc={image !== menuImage ? menuImage : undefined}
         alt={drink.name}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/15" />
       <div className="absolute inset-0 bg-gradient-to-br from-kado-red/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -170,7 +180,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
     <section
       ref={sectionRef}
       aria-labelledby="featured-coffees-heading"
-      className="relative w-full overflow-x-clip border-t border-kado-dark/10 bg-kado-cream px-4 py-12 sm:px-6 sm:py-16 md:px-8 md:py-20 lg:px-16 lg:py-24"
+      className="relative w-full overflow-x-clip border-t border-kado-dark/10 bg-kado-cream px-[max(1rem,env(safe-area-inset-left))] py-12 sm:px-6 sm:py-16 md:px-8 md:py-20 lg:px-16 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-10"
     >
       <div
         aria-hidden
@@ -183,7 +193,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
         className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-kado-red to-transparent opacity-80"
       />
 
-      <div className="relative mx-auto max-w-[1400px] min-w-0">
+      <div className="relative mx-auto max-w-[1400px] min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-14">
           <div className="min-w-0 max-w-2xl">
             <TimelineContent
@@ -276,6 +286,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
                         categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
                         index={i}
                         hero={i === 0}
+                        imageOverride={copy.cardImageOverrides[i]}
                         sectionRef={sectionRef}
                         onSelect={setSelectedProduct}
                         orderHint={orderHint}
@@ -300,6 +311,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
                       categoryLabel={categoryById.get(showcaseDrinks[0].categoryId) ?? 'Coffee'}
                       index={0}
                       hero
+                      imageOverride={copy.cardImageOverrides[0]}
                       sectionRef={sectionRef}
                       onSelect={setSelectedProduct}
                       orderHint={orderHint}
@@ -312,6 +324,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
                       drink={drink}
                       categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
                       index={i + 1}
+                      imageOverride={copy.cardImageOverrides[i + 1]}
                       sectionRef={sectionRef}
                       onSelect={setSelectedProduct}
                       orderHint={orderHint}
