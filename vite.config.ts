@@ -13,10 +13,15 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: [
           'favicon.ico',
+          'site.webmanifest',
+          'android-chrome-192x192.png',
+          'android-chrome-512x512.png',
           'icons/favicon.ico',
           'icons/favicon-16x16.png',
           'icons/favicon-32x32.png',
           'icons/favicon-96x96.png',
+          'icons/icon-192x192.png',
+          'icons/android-chrome-512x512.png',
           'icons/apple-touch-icon.png',
         ],
         manifest: {
@@ -24,17 +29,15 @@ export default defineConfig(() => {
           short_name: 'KadoKohi',
           description:
             'Best specialty coffee in Marikina — order online, events, booth booking, and Kado Circle loyalty.',
-          theme_color: '#9A1F24',
-          background_color: '#FAF7F2',
+          theme_color: '#9E181D',
+          background_color: '#F1DFBA',
           display: 'standalone',
           start_url: '/',
           scope: '/',
           icons: [
-            { src: '/icons/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-            { src: '/icons/icon-144x144.png', sizes: '144x144', type: 'image/png' },
             { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-            { src: '/icons/icon-310x310.png', sizes: '310x310', type: 'image/png' },
+            { src: '/icons/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
           ],
         },
         workbox: {
