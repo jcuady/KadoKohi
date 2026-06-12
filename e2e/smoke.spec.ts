@@ -62,6 +62,17 @@ test('PWA manifest + primary icon are served', async ({ page, request }) => {
   const rootFavicon = await request.get('/favicon.ico');
   expect(rootFavicon.status(), 'root favicon.ico should be reachable').toBe(200);
   expect(rootFavicon.headers()['content-type'] ?? '', 'root favicon must be an image').toMatch(/image|icon/i);
+  const faviconBytes = await rootFavicon.body();
+  expect(
+    faviconBytes.slice(0, 20).toString('utf8').toLowerCase(),
+    'favicon must not be SPA HTML',
+  ).not.toContain('<!doctype');
+});
+
+test('favicon route must not return SPA 404 page', async ({ page }) => {
+  const resp = await page.goto('/favicon.ico');
+  expect(resp?.status()).toBeLessThan(400);
+  await expect(page.getByText(/page not found/i)).toHaveCount(0);
 });
 
 test('unknown route falls back to SPA (no hard 404)', async ({ page }) => {
