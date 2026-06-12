@@ -8,12 +8,17 @@ import {
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
 import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
+import { LANDING_CMS_TABS, isLandingTabId, type LandingTabId } from '../../lib/landingCmsTabs';
+import { LANDING_SECTION_IDS } from '../../lib/landingSectionAnchors';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
+const HERO_CARD_SLOTS = 4;
 const TRUSTED_BRAND_SLOTS = 5;
 const SPONSOR_SLOTS = 8;
+const TAB_STORAGE_KEY = 'kado-landing-cms-tab';
 
 export default function AdminLandingContent() {
   const content = useLandingDraftContent();
@@ -46,11 +51,23 @@ export default function AdminLandingContent() {
   }, [allProducts, categories, menuDataSource]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LandingTabId>(() => {
+    if (typeof window === 'undefined') return 'hero';
+    const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
+    return saved && isLandingTabId(saved) ? saved : 'hero';
+  });
+
+  const activeTabMeta = LANDING_CMS_TABS.find((tab) => tab.id === activeTab) ?? LANDING_CMS_TABS[0];
+  const previewSectionId = LANDING_SECTION_IDS[activeTab];
 
   useEffect(() => {
     initDraft();
     return () => useLandingContentStore.getState().setPreviewMode(false);
   }, [initDraft]);
+
+  useEffect(() => {
+    sessionStorage.setItem(TAB_STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   const onPickImage = async (onDone: (dataUrl: string) => void, fileList: FileList | null) => {
     const file = fileList?.[0];
@@ -72,35 +89,64 @@ export default function AdminLandingContent() {
       <div className="mb-6">
         <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Homepage content</h1>
         <p className="dash-muted text-sm mt-1">
-          Section order and layout are fixed. Replace text and images only, then preview (Zustand draft) or publish to
-          go live. Product names/prices still come from Menu; Kado Events details from Kado Events admin; branch rows from Branches.
+          Use the tabs below to edit each homepage section. Layout order is fixed — change text and images only, then
+          preview or publish. Product names/prices come from Menu; event details from Kado Events admin; branch rows
+          from Branches.
         </p>
         {uploadError ? <p className="mt-2 text-sm text-red-600 font-medium">{uploadError}</p> : null}
       </div>
 
       <LandingEditorToolbar />
-      <LandingPreviewFrame active={isPreviewMode} />
+      <LandingPreviewFrame active={isPreviewMode} scrollToSectionId={previewSectionId} />
 
-      <div className="space-y-6">
-        <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-2">Fixed sections (read-only)</h2>
-          <ol className="text-sm dash-muted list-decimal list-inside space-y-1">
-            <li>Hero</li>
-            <li>Brand story (SEO intro)</li>
-            <li>Menu SEO pillars</li>
-            <li>Featured products</li>
-            <li>How to order</li>
-            <li>Cafe hours</li>
-            <li>Kado Events</li>
-            <li>Testimonials</li>
-            <li>Branches</li>
-            <li>Kado Circle</li>
-          </ol>
-        </section>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          if (isLandingTabId(value)) setActiveTab(value);
+        }}
+        className="mt-6 space-y-4"
+      >
+        <div className="sticky top-0 z-20 -mx-1 rounded-2xl border dash-border dash-card px-2 py-2 sm:px-3 sm:py-3 backdrop-blur-md">
+          <label className="mb-2 block sm:hidden">
+            <span className="sr-only">Jump to section</span>
+            <select
+              value={activeTab}
+              onChange={(e) => {
+                if (isLandingTabId(e.target.value)) setActiveTab(e.target.value);
+              }}
+              className="w-full rounded-xl dash-input border px-3 py-2.5 text-sm font-semibold"
+            >
+              {LANDING_CMS_TABS.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <TabsList className="scrollbar-hide hidden h-auto w-full min-h-10 flex-nowrap items-stretch justify-start gap-1 overflow-x-auto p-1 sm:flex sm:flex-wrap">
+            {LANDING_CMS_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="min-h-[36px] shrink-0 whitespace-nowrap px-2.5 py-2 text-[9px] sm:px-3 sm:text-[10px]"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <p className="mt-2 px-1 text-xs dash-muted leading-relaxed">{activeTabMeta.hint}</p>
+        </div>
 
+        {activeTab === 'hero' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Hero">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero — Labels & CTAs</h2>
           <div className="grid md:grid-cols-2 gap-4">
+            <Field
+              label="Main headline (H1)"
+              value={content.heroChrome.mainHeadline}
+              onChange={(v) => updateHeroChrome({ mainHeadline: v })}
+            />
             <Field
               label="Location badge"
               value={content.heroChrome.locationBadge}
@@ -136,7 +182,9 @@ export default function AdminLandingContent() {
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero slides & card images</h2>
-          <p className="text-xs dash-muted mb-4">Three slides and three cards per slide — count cannot change.</p>
+          <p className="text-xs dash-muted mb-4">
+            Three slides and four cards per slide on desktop — count cannot change.
+          </p>
           <div className="space-y-6">
             {content.heroSlides.map((slide, index) => (
               <article key={slide.id} className="rounded-xl border dash-border p-4 space-y-4">
@@ -170,8 +218,8 @@ export default function AdminLandingContent() {
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider dash-muted mb-2">Hero cards</p>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {slide.cards.slice(0, 3).map((card, ci) => (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {slide.cards.slice(0, HERO_CARD_SLOTS).map((card, ci) => (
                       <div
                         key={card.id}
                        
@@ -201,7 +249,11 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'story' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Brand story">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Brand story (SEO intro)</h2>
           <p className="text-xs dash-muted mb-4">
@@ -290,7 +342,11 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'menu-seo' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Menu SEO">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Menu SEO pillars</h2>
           <p className="text-xs dash-muted mb-4">
@@ -372,7 +428,11 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'featured' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Featured products">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -443,8 +503,8 @@ export default function AdminLandingContent() {
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {([0, 1, 2] as const).map((slot) => (
+              <div key={`featured-img-${slot}`}>
               <ImageUrlField
-                key={`featured-img-${slot}`}
                 label={`Card ${slot + 1} image override`}
                 value={content.featured.cardImageOverrides[slot] ?? ''}
                 onChange={(v) => {
@@ -468,10 +528,15 @@ export default function AdminLandingContent() {
                   }, files)
                 }
               />
+              </div>
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'ordering' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="How to order">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -517,7 +582,11 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'schedule' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Cafe hours">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Schedule</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -540,7 +609,11 @@ export default function AdminLandingContent() {
             />
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'events' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Kado Events">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -565,7 +638,11 @@ export default function AdminLandingContent() {
             />
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'branches' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Branches">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -586,7 +663,11 @@ export default function AdminLandingContent() {
             />
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'testimonials' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Testimonials">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -633,7 +714,9 @@ export default function AdminLandingContent() {
             })}
           </div>
 
-          <p className="text-sm font-bold dash-heading mb-3">Customer quotes (4 fixed)</p>
+          <p className="text-sm font-bold dash-heading mb-3">
+            Customer quotes ({content.testimonialItems.length} fixed)
+          </p>
           <div className="space-y-4">
             {content.testimonialItems.map((t, ti) => (
               <div key={t.id} className="rounded-xl border dash-border p-4 space-y-2">
@@ -671,7 +754,11 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
+          </div>
+        ) : null}
 
+        {activeTab === 'kado-circle' ? (
+          <div className="space-y-6" role="tabpanel" aria-label="Kado Circle">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -772,7 +859,9 @@ export default function AdminLandingContent() {
             ))}
           </div>
         </section>
-      </div>
+          </div>
+        ) : null}
+      </Tabs>
     </div>
   );
 }
@@ -797,13 +886,14 @@ function HeadlineFields({
     <div>
       <p className="text-xs font-bold uppercase dash-muted mb-2">{label}</p>
       <div className="grid md:grid-cols-2 gap-3">
-        {fields.map(({ key, fieldLabel }) => (
-          <Field
-            key={key}
-            label={fieldLabel}
-            value={value[key]}
-            onChange={(v) => onChange({ ...value, [key]: v })}
-          />
+        {fields.map(({ key: fieldKey, fieldLabel }) => (
+          <div key={fieldKey}>
+            <Field
+              label={fieldLabel}
+              value={value[fieldKey]}
+              onChange={(v) => onChange({ ...value, [fieldKey]: v })}
+            />
+          </div>
         ))}
       </div>
     </div>

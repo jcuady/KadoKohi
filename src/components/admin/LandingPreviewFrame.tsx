@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import HomePageContent from '../home/HomePageContent';
 import { useLandingContentStore, useLandingDraftContent } from '../../store/landingContentStore';
@@ -5,6 +6,8 @@ import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
 
 type Props = {
   active: boolean;
+  /** Scroll the preview panel to this homepage section (matches active CMS tab). */
+  scrollToSectionId?: string;
 };
 
 function PreviewBody() {
@@ -12,11 +15,25 @@ function PreviewBody() {
   return <HomePageContent landing={landing} previewBanner />;
 }
 
-export default function LandingPreviewFrame({ active }: Props) {
+export default function LandingPreviewFrame({ active, scrollToSectionId }: Props) {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+
   const openPreviewTab = () => {
     const { draft, published } = useLandingContentStore.getState();
     writeLandingPreviewDraft(draft ?? published);
   };
+
+  useEffect(() => {
+    if (!active || !scrollToSectionId) return;
+    const root = scrollRootRef.current;
+    if (!root) return;
+    const target = root.querySelector<HTMLElement>(`#${CSS.escape(scrollToSectionId)}`);
+    if (!target) return;
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, scrollToSectionId]);
 
   return (
     <AnimatePresence>
@@ -33,19 +50,24 @@ export default function LandingPreviewFrame({ active }: Props) {
             className="rounded-2xl border dash-border overflow-hidden bg-kado-dark/5"
             layout
           >
-            <div className="px-4 py-2 border-b dash-border flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider dash-muted">Live preview (draft)</p>
+            <div className="px-4 py-2 border-b dash-border flex items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-wider dash-muted">
+                Live preview (draft) — jumps to the tab you are editing
+              </p>
               <a
                 href="/?preview=1"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-kado-red hover:underline"
+                className="text-xs font-bold text-kado-red hover:underline shrink-0"
                 onClick={openPreviewTab}
               >
-                Open in new tab
+                Open full page
               </a>
             </div>
-            <div className="max-h-[min(72vh,900px)] overflow-y-auto overflow-x-hidden bg-kado-cream">
+            <div
+              ref={scrollRootRef}
+              className="max-h-[min(72vh,900px)] overflow-y-auto overflow-x-hidden bg-kado-cream scroll-smooth"
+            >
               <PreviewBody />
             </div>
           </motion.div>

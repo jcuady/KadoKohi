@@ -58,12 +58,14 @@ import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
 import PublicDocumentTheme from './components/PublicDocumentTheme';
+import SiteCookieConsent from './components/SiteCookieConsent';
 
 export default function App() {
   return (
     <BrowserRouter>
       <PublicDocumentTheme />
       <RouteSeo />
+      <SiteCookieConsent />
       <Routes>
         {/* Standalone utility pages */}
         <Route path="/help/install" element={<HelpInstall />} />

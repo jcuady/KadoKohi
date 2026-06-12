@@ -962,6 +962,31 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
+  /** Upload menu product photo to public storage; returns HTTPS URL for kk_products.image. */
+  async uploadMenuProductImage(file: File, productId: string): Promise<string> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    if (!productId.trim()) throw new Error('Product id is required before uploading an image.');
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please choose an image file (PNG, JPG, WebP, etc.).');
+    }
+    if (file.size > 5_242_880) {
+      throw new Error('Image must be 5 MB or smaller.');
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const safeExt = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'].includes(ext) ? ext : 'jpg';
+    const path = `products/${productId}.${safeExt}`;
+    const { error } = await supabase.storage.from('kado-menu-images').upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg',
+      cacheControl: '3600',
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from('kado-menu-images').getPublicUrl(path);
+    const url = data.publicUrl;
+    if (!url) throw new Error('Could not get public URL for menu product image.');
+    return url;
+  },
+
   /** Upload shop GCash QR to public storage; returns HTTPS URL saved in kk_app_settings.gcash_qr_image. */
   async uploadGcashShopQr(file: File): Promise<string> {
     if (!supabase) throw new Error('Supabase is not configured.');

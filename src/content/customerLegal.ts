@@ -7,6 +7,8 @@ export type LegalSection = {
   title: string;
   paragraphs: string[];
   bullets?: string[];
+  /** Anchor id for in-page links (e.g. cookie banner → /legal/privacy#cookies). */
+  id?: string;
 };
 
 export const TERMS_OF_SERVICE: LegalSection[] = [
@@ -194,9 +196,12 @@ export const PRIVACY_POLICY: LegalSection[] = [
     ],
   },
   {
+    id: 'cookies',
     title: '10. Cookies and local storage',
     paragraphs: [
-      'We use essential cookies and local storage to keep you signed in and operate the shopping cart. Optional push notifications require your browser permission. We do not use third-party advertising cookies on the customer Platform as of the effective date above.',
+      'We use essential cookies and local storage so the Platform works — for example to keep you signed in, remember your cart, and load site settings. These are necessary for the service you request and do not require separate consent under the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).',
+      'When you first visit, we show a cookie notice so you can accept or refuse optional cookies and similar technologies (such as preferences that help us improve the site). Accept and refuse are given equal prominence. Your choice is stored in your browser (local storage and a first-party cookie) for up to one year, or until you change it via “Cookie preferences” in the site footer.',
+      'If you refuse optional cookies, we still provide the Platform using essential storage only. Optional push notifications, when offered, require a separate browser permission. We do not use third-party advertising cookies on the customer Platform as of the effective date above.',
     ],
   },
   {

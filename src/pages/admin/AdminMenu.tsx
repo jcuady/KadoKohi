@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react';
+import { Upload, X } from 'lucide-react';
 import type {
   MenuCategory,
   Product,
@@ -12,7 +13,18 @@ import { MENU_MILK_OPTIONS } from '../../data/menuCatalog';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { clampText } from '../../lib/validation';
-import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import {
+  describeMenuImageOnSave,
+  inferMenuImageSource,
+  isGoogleDriveUrl,
+  MENU_PRODUCT_IMAGE_MAX_BYTES,
+  previewUrlForMenuImageSource,
+  resolveMenuImageSaveIntent,
+  type MenuImageSource,
+} from '../../lib/menuProductImage';
 import MenuProductStockButton from '../../components/menu/MenuProductStockButton';
 import { isProductInStock } from '../../lib/productStock';
 
@@ -52,8 +64,6 @@ export default function AdminMenu() {
   const addCategory = useMenuStore((s) => s.addCategory);
   const updateCategory = useMenuStore((s) => s.updateCategory);
   const removeCategory = useMenuStore((s) => s.removeCategory);
-  const addProduct = useMenuStore((s) => s.addProduct);
-  const updateProduct = useMenuStore((s) => s.updateProduct);
   const removeProduct = useMenuStore((s) => s.removeProduct);
   const reorderCategories = useMenuStore((s) => s.reorderCategories);
   const reorderProductsInCategory = useMenuStore((s) => s.reorderProductsInCategory);
@@ -87,8 +97,12 @@ export default function AdminMenu() {
   const [addingToCat, setAddingToCat] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyProductForm);
   const [productFormError, setProductFormError] = useState('');
+  const [imageSource, setImageSource] = useState<MenuImageSource>('none');
+  const [originalImage, setOriginalImage] = useState('');
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
+  const [savingProduct, setSavingProduct] = useState(false);
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
 
@@ -126,25 +140,42 @@ export default function AdminMenu() {
       sizes: p.sizes ?? [],
       customFields: p.customFields ?? [],
     });
-    setUploadPreviewUrl(null);
-    setUploadPreviewLabel('');
+    clearPendingImageFile();
+    setOriginalImage(p.image ?? '');
+    setImageSource(inferMenuImageSource(p.image));
   };
 
   const startAddProduct = (catId: string) => {
     setAddingToCat(catId);
     setEditingProduct(null);
     setForm(emptyProductForm);
-    setUploadPreviewUrl(null);
-    setUploadPreviewLabel('');
+    clearPendingImageFile();
+    setOriginalImage('');
+    setImageSource('none');
   };
 
   const cancelForm = () => {
     setEditingProduct(null);
     setAddingToCat(null);
     setForm(emptyProductForm);
+    clearPendingImageFile();
+    setOriginalImage('');
+    setImageSource('none');
+    setSavingProduct(false);
+  };
+
+  const clearPendingImageFile = () => {
+    if (uploadPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadPreviewUrl);
+    setPendingImageFile(null);
     setUploadPreviewUrl(null);
     setUploadPreviewLabel('');
   };
+
+  useEffect(() => {
+    return () => {
+      if (uploadPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadPreviewUrl);
+    };
+  }, [uploadPreviewUrl]);
 
   const addMilkRow = () => {
     setForm((f) => ({
@@ -217,18 +248,24 @@ export default function AdminMenu() {
     }));
   };
 
-  const handleImageUploadPreview = (file: File | null) => {
-    if (!file) {
-      setUploadPreviewUrl(null);
-      setUploadPreviewLabel('');
+  const handleImageFilePick = (file: File | null) => {
+    if (!file) return;
+    setProductFormError('');
+    if (!file.type.startsWith('image/')) {
+      setProductFormError('Please choose an image file (PNG, JPG, WebP, etc.).');
       return;
     }
-    setUploadPreviewLabel(file.name);
-    if (file.type.startsWith('image/')) {
-      setUploadPreviewUrl(URL.createObjectURL(file));
-    } else {
-      setUploadPreviewUrl(null);
+    if (file.size > MENU_PRODUCT_IMAGE_MAX_BYTES) {
+      setProductFormError(
+        `Image is too large (${Math.round(file.size / 1024)} KB). Max ${Math.round(MENU_PRODUCT_IMAGE_MAX_BYTES / 1024)} KB.`,
+      );
+      return;
     }
+    if (uploadPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadPreviewUrl);
+    setPendingImageFile(file);
+    setUploadPreviewLabel(file.name);
+    setUploadPreviewUrl(URL.createObjectURL(file));
+    setImageSource('upload');
   };
 
   const beginCategoryRename = (category: MenuCategory) => {
@@ -246,7 +283,7 @@ export default function AdminMenu() {
 
   const activeCategoryCount = useMemo(() => categories.filter((cat) => cat.visible).length, [categories]);
 
-  const submitProduct = (e: FormEvent) => {
+  const submitProduct = async (e: FormEvent) => {
     e.preventDefault();
     setProductFormError('');
     if (!form.name.trim()) {
@@ -259,11 +296,28 @@ export default function AdminMenu() {
       return;
     }
 
-    const payload = {
+    const productId = editingProduct ?? newId();
+    const imageIntentInput = {
+      source: imageSource,
+      urlInput: form.image,
+      hasPendingFile: Boolean(pendingImageFile),
+      existingImage: originalImage,
+      isEditing: Boolean(editingProduct),
+    };
+    const intent = resolveMenuImageSaveIntent(imageIntentInput);
+
+    if (intent.ok === false) {
+      setProductFormError(intent.error);
+      return;
+    }
+
+    let image: string | undefined;
+
+    const now = new Date().toISOString();
+    const sharedFields = {
       name: clampText(form.name, 120),
       description: clampText(form.description, 500) || undefined,
       basePrice,
-      image: form.image.trim() || undefined,
       temperature: form.temperature,
       visible: form.visible,
       tags: form.tags
@@ -275,13 +329,86 @@ export default function AdminMenu() {
       customFields: form.customFields.filter((field) => field.label.trim() && field.key.trim() && field.value.trim()),
     };
 
+    let saved: Product;
     if (editingProduct) {
-      updateProduct(editingProduct, payload);
+      const prev = products.find((p) => p.id === editingProduct);
+      if (!prev) {
+        setProductFormError('Product not found. Refresh and try again.');
+        return;
+      }
+      saved = { ...prev, ...sharedFields, updatedAt: now };
     } else if (addingToCat) {
-      addProduct({ ...payload, categoryId: addingToCat, order: products.filter((p) => p.categoryId === addingToCat).length, sizes: [] });
+      saved = {
+        id: productId,
+        categoryId: addingToCat,
+        branchId: null,
+        ...sharedFields,
+        order: products.filter((p) => p.categoryId === addingToCat).length,
+        inStock: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+    } else {
+      return;
     }
-    cancelForm();
+
+    try {
+      setSavingProduct(true);
+      switch (intent.action) {
+        case 'clear':
+          image = undefined;
+          break;
+        case 'use_url':
+          image = intent.url;
+          break;
+        case 'keep_existing':
+          image = intent.url;
+          break;
+        case 'needs_upload':
+          if (!pendingImageFile) {
+            setProductFormError('Choose an image file to upload.');
+            return;
+          }
+          image = await orderingRepo.uploadMenuProductImage(pendingImageFile, productId);
+          break;
+      }
+
+      saved = { ...saved, ...sharedFields, image, updatedAt: new Date().toISOString() };
+
+      await orderingRepo.upsertProduct(saved);
+      useMenuStore.setState((s) => ({
+        products: editingProduct
+          ? s.products.map((p) => (p.id === saved.id ? saved : p))
+          : [...s.products, saved],
+        hydrateError: null,
+      }));
+      cancelForm();
+    } catch (err) {
+      setProductFormError(err instanceof Error ? err.message : 'Could not save product.');
+    } finally {
+      setSavingProduct(false);
+    }
   };
+
+  const imageIntentInput = {
+    source: imageSource,
+    urlInput: form.image,
+    hasPendingFile: Boolean(pendingImageFile),
+    existingImage: originalImage,
+    isEditing: Boolean(editingProduct),
+  };
+  const pendingImageIntent = resolveMenuImageSaveIntent(imageIntentInput);
+  const saveSummary =
+    pendingImageIntent.ok === false ? pendingImageIntent.error : describeMenuImageOnSave(imageIntentInput);
+  const saveSummaryIsError = pendingImageIntent.ok === false;
+  const hasStoredUpload =
+    imageSource === 'upload' && !pendingImageFile && Boolean(originalImage.trim()) && pendingImageIntent.ok && pendingImageIntent.action === 'keep_existing';
+  const activePreviewSrc = previewUrlForMenuImageSource(
+    imageSource,
+    form.image,
+    originalImage,
+    uploadPreviewUrl,
+  );
 
   if (!remoteLoaded) {
     return (
@@ -604,35 +731,133 @@ export default function AdminMenu() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Image URL</label>
-                <input
-                  value={form.image}
-                  onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-                />
-              </div>
+              <div className="space-y-3 rounded-xl border dash-border p-4">
+                <p className="text-xs font-bold uppercase tracking-wider dash-muted">Product image</p>
+                <p className="text-xs dash-muted leading-relaxed">
+                  Choose how this drink&apos;s photo is stored. Only the selected source is saved — switch tabs before
+                  saving if you change your mind.
+                </p>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Upload preview (optional)</label>
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/*"
-                  onChange={(e) => handleImageUploadPreview(e.target.files?.[0] ?? null)}
-                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-xs"
-                />
-                {(uploadPreviewUrl || form.image || uploadPreviewLabel) && (
-                  <div className="mt-2 rounded-xl border dash-border p-2.5">
-                    {uploadPreviewUrl ? (
-                      <img src={uploadPreviewUrl} alt="Upload preview" className="w-full h-28 object-cover rounded-lg border dash-border" />
-                    ) : form.image ? (
-                      <img src={form.image} alt="URL preview" className="w-full h-28 object-cover rounded-lg border dash-border" />
-                    ) : (
-                      <p className="text-xs dash-muted">Selected file: {uploadPreviewLabel}</p>
-                    )}
+                <Tabs
+                  value={imageSource}
+                  onValueChange={(value) => {
+                    if (value === 'none' || value === 'url' || value === 'upload') setImageSource(value);
+                  }}
+                >
+                  <TabsList className="flex h-auto w-full flex-wrap gap-1 p-1">
+                    <TabsTrigger value="none" className="min-h-[36px] flex-1 px-2 text-[9px] sm:text-[10px]">
+                      No image
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="min-h-[36px] flex-1 px-2 text-[9px] sm:text-[10px]">
+                      Image link
+                    </TabsTrigger>
+                    <TabsTrigger value="upload" className="min-h-[36px] flex-1 px-2 text-[9px] sm:text-[10px]">
+                      Upload file
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <p
+                  className={[
+                    'rounded-lg border px-3 py-2 text-xs leading-relaxed',
+                    saveSummaryIsError
+                      ? 'border-amber-500/35 bg-amber-500/10 text-amber-950 dark:text-amber-100'
+                      : 'border-kado-red/20 bg-kado-red/5 text-kado-dark dark:text-kado-cream',
+                  ].join(' ')}
+                  role="status"
+                >
+                  <span className="font-bold uppercase tracking-wider text-[10px] block mb-1">
+                    Will display on menu
+                  </span>
+                  {saveSummary}
+                </p>
+
+                {imageSource === 'none' ? (
+                  <p className="text-xs dash-muted leading-relaxed">
+                    No custom image — the public menu uses the category fallback until you add a link or upload.
+                  </p>
+                ) : null}
+
+                {imageSource === 'url' ? (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                      Image URL
+                    </label>
+                    <input
+                      value={form.image}
+                      onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                      placeholder="https://… or /public/path.jpg"
+                      disabled={savingProduct}
+                      className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
+                    />
+                    {form.image.trim() && isGoogleDriveUrl(form.image) ? (
+                      <p className="mt-1.5 text-[11px] dash-muted leading-relaxed">
+                        Google Drive link — converted on save. File must be shared as{' '}
+                        <span className="font-semibold">Anyone with the link</span>, or use Upload file instead.
+                      </p>
+                    ) : null}
+                    <p className="mt-1.5 text-[11px] font-semibold text-kado-red">
+                      Saving uses this URL only (uploaded files are ignored while Image link is selected).
+                    </p>
                   </div>
-                )}
+                ) : null}
+
+                {imageSource === 'upload' ? (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                      Upload image
+                    </label>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark/5">
+                        <Upload className="h-4 w-4 shrink-0" aria-hidden />
+                        Choose file
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
+                          disabled={savingProduct}
+                          className="hidden"
+                          onChange={(e) => {
+                            handleImageFilePick(e.target.files?.[0] ?? null);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {pendingImageFile ? (
+                        <button
+                          type="button"
+                          onClick={clearPendingImageFile}
+                          disabled={savingProduct}
+                          className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-red-300/50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden />
+                          Clear new file
+                        </button>
+                      ) : null}
+                    </div>
+                    {uploadPreviewLabel ? (
+                      <p className="mt-1.5 text-[11px] dash-muted truncate">New file: {uploadPreviewLabel}</p>
+                    ) : hasStoredUpload ? (
+                      <p className="mt-1.5 text-[11px] dash-muted">Keeping current uploaded image unless you pick a new file.</p>
+                    ) : null}
+                    <p className="mt-1.5 text-[11px] font-semibold text-kado-red">
+                      Saving uploads to Kado storage (external URLs are ignored while Upload file is selected).
+                    </p>
+                  </div>
+                ) : null}
+
+                {activePreviewSrc ? (
+                  <MenuImagePreview
+                    src={activePreviewSrc}
+                    label={
+                      imageSource === 'upload'
+                        ? pendingImageFile
+                          ? 'Upload preview (will be saved)'
+                          : 'Current uploaded image (will be kept)'
+                        : 'URL preview (will be saved)'
+                    }
+                    emphasize={imageSource === 'upload'}
+                  />
+                ) : null}
               </div>
 
               <div>
@@ -790,13 +1015,54 @@ export default function AdminMenu() {
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors"
+                disabled={savingProduct}
+                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {editingProduct ? 'Update' : 'Create'}
+                {savingProduct ? 'Saving…' : editingProduct ? 'Update' : 'Create'}
               </button>
             </div>
           </form>
         </div>
+      )}
+    </div>
+  );
+}
+
+function MenuImagePreview({
+  src,
+  label,
+  emphasize = false,
+}: {
+  src: string;
+  label: string;
+  emphasize?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  return (
+    <div
+      className={[
+        'rounded-xl border p-2.5',
+        emphasize ? 'border-kado-red/30 bg-kado-red/5' : 'dash-border',
+      ].join(' ')}
+    >
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider dash-muted">{label}</p>
+      {failed ? (
+        <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100">
+          Could not load this preview. Use a direct image link (https://…jpg) or upload a file. Google Drive files must
+          be shared as &quot;Anyone with the link&quot;.
+        </p>
+      ) : (
+        <img
+          src={src}
+          alt=""
+          className="h-32 w-full rounded-lg border dash-border object-cover"
+          onError={() => setFailed(true)}
+        />
       )}
     </div>
   );

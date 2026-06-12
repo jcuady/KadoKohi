@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Eye, RotateCcw, Save } from 'lucide-react';
 import { useLandingContentStore } from '../../store/landingContentStore';
@@ -8,9 +8,12 @@ export default function LandingEditorToolbar() {
   const draft = useLandingContentStore((s) => s.draft);
   const isPreviewMode = useLandingContentStore((s) => s.isPreviewMode);
   const publishDraft = useLandingContentStore((s) => s.publishDraft);
+  const publishError = useLandingContentStore((s) => s.publishError);
+  const clearPublishError = useLandingContentStore((s) => s.clearPublishError);
   const discardDraft = useLandingContentStore((s) => s.discardDraft);
   const setPreviewMode = useLandingContentStore((s) => s.setPreviewMode);
   const initDraft = useLandingContentStore((s) => s.initDraft);
+  const [publishing, setPublishing] = useState(false);
 
   const hasChanges = useMemo(() => {
     if (!draft) return false;
@@ -40,7 +43,11 @@ export default function LandingEditorToolbar() {
           <p className="text-xs dash-muted mt-0.5">
             Layout is fixed. Edit text and images only, then preview (Zustand draft) or publish to go live.
           </p>
-          {hasChanges ? (
+          {publishError ? (
+            <p className="text-xs text-red-700 font-semibold mt-1" role="alert">
+              Publish failed: {publishError}
+            </p>
+          ) : hasChanges ? (
             <p className="text-xs text-amber-700 font-semibold mt-1">Unpublished changes in draft</p>
           ) : (
             <p className="text-xs text-green-700/80 font-medium mt-1">Matches live site</p>
@@ -65,6 +72,7 @@ export default function LandingEditorToolbar() {
           <button
             type="button"
             onClick={() => {
+              clearPublishError();
               discardDraft();
               initDraft();
             }}
@@ -76,12 +84,16 @@ export default function LandingEditorToolbar() {
           </button>
           <button
             type="button"
-            onClick={() => publishDraft()}
-            disabled={!draft || !hasChanges}
+            onClick={() => {
+              clearPublishError();
+              setPublishing(true);
+              void publishDraft().finally(() => setPublishing(false));
+            }}
+            disabled={!draft || !hasChanges || publishing}
             className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-40 transition-colors"
           >
             <Save className="w-4 h-4" />
-            Publish
+            {publishing ? 'Publishing…' : 'Publish'}
           </button>
         </motion.div>
       </motion.div>

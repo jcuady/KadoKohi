@@ -49,23 +49,41 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         </motion.div>
       ) : null}
       <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
-      <HomeSeoIntro copy={landing.storySeo} />
-      <HomePageSeoSection copy={landing.menuSeo} />
-      <FeaturedCoffeesSection copy={landing.featured} />
-      <KadoOrderingCarousel copy={landing.ordering} />
-      <CafeScheduleSection copy={landing.schedule} />
-      <EventsSection copy={landing.events} />
-      <AnimatedTestimonials
-        badgeText={landing.testimonials.badge}
-        title={landing.testimonials.title}
-        subtitle={landing.testimonials.subtitle}
-        trustedCompaniesTitle={landing.testimonials.trustedTitle}
-        trustedCompanies={landing.trustedBrands}
-        testimonials={landing.testimonialItems}
-        googleListing={KADO_GOOGLE_LISTING}
-      />
-      <BranchesStrip copy={landing.branchesStrip} />
-      <KadoCircleCTA copy={landing.kadoCircle} />
+      <div id="landing-story">
+        <HomeSeoIntro copy={landing.storySeo} />
+      </div>
+      <div id="landing-menu-seo">
+        <HomePageSeoSection copy={landing.menuSeo} />
+      </div>
+      <div id="landing-featured">
+        <FeaturedCoffeesSection copy={landing.featured} />
+      </div>
+      <div id="landing-ordering">
+        <KadoOrderingCarousel copy={landing.ordering} />
+      </div>
+      <div id="landing-schedule">
+        <CafeScheduleSection copy={landing.schedule} />
+      </div>
+      <div id="landing-events">
+        <EventsSection copy={landing.events} />
+      </div>
+      <div id="landing-testimonials">
+        <AnimatedTestimonials
+          badgeText={landing.testimonials.badge}
+          title={landing.testimonials.title}
+          subtitle={landing.testimonials.subtitle}
+          trustedCompaniesTitle={landing.testimonials.trustedTitle}
+          trustedCompanies={landing.trustedBrands}
+          testimonials={landing.testimonialItems}
+          googleListing={KADO_GOOGLE_LISTING}
+        />
+      </div>
+      <div id="landing-branches">
+        <BranchesStrip copy={landing.branchesStrip} />
+      </div>
+      <div id="landing-kado-circle">
+        <KadoCircleCTA copy={landing.kadoCircle} />
+      </div>
     </motion.div>
   );
 }

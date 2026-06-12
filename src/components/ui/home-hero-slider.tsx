@@ -32,7 +32,10 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
   const c = chrome;
 
   return (
-    <section className="relative h-[calc(100svh-3.5rem)] md:h-[calc(100svh-3.75rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10">
+    <section
+      id="landing-hero"
+      className="relative h-[calc(100svh-3.5rem)] md:h-[calc(100svh-3.75rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
+    >
       <AnimatePresence mode="wait">
         <motion.img
           key={current.id}
@@ -54,7 +57,7 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
             {c?.locationBadge ?? 'Kado Kohi · Marikina'}
           </p>
           <h1 className="font-display text-[clamp(1.75rem,5vw,3.25rem)] font-bold leading-[1.05] tracking-[-0.015em] text-white drop-shadow-lg">
-            Kado Coffee — Best Matcha in Marikina Near Me
+            {c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
           </h1>
           <h2 className="mt-3 font-display text-[clamp(1.5rem,4.5vw,3rem)] font-bold leading-[0.98] tracking-[-0.01em] text-kado-cream/95 drop-shadow-md">
             {current.title}

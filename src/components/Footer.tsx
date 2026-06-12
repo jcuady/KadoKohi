@@ -2,6 +2,7 @@ import { MapPin, Clock, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSettingsStore } from '../store/settingsStore';
 import { FooterSocialLinks } from './ContactSocialLinks';
+import { requestCookiePreferences } from '../lib/cookieConsent';
 
 export default function Footer() {
   const contact = useSettingsStore((s) => s.settings);
@@ -91,6 +92,13 @@ export default function Footer() {
             <Link to="/legal/privacy" className="hover:text-kado-cream/90 underline-offset-2 hover:underline">
               Privacy Policy
             </Link>
+            <button
+              type="button"
+              onClick={() => requestCookiePreferences()}
+              className="hover:text-kado-cream/90 underline-offset-2 hover:underline"
+            >
+              Cookie preferences
+            </button>
             <span className="hidden sm:inline text-kado-cream/60">·</span>
             <span>Specialty Coffee · Marikina City</span>
           </div>

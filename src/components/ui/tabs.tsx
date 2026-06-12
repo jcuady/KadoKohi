@@ -54,10 +54,10 @@ function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
       aria-selected={selected}
       onClick={() => onValueChange(value)}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors',
+        'inline-flex items-center justify-center rounded-lg border px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors',
         selected
-          ? 'bg-white dark:bg-kado-dark dash-heading shadow-sm border dash-border'
-          : 'dash-muted hover:dash-heading',
+          ? 'border-kado-red bg-kado-red text-kado-cream shadow-sm shadow-kado-red/20'
+          : 'border-transparent dash-muted hover:border-kado-red/20 hover:bg-kado-red/5 hover:text-kado-red',
         className,
       )}
       {...props}

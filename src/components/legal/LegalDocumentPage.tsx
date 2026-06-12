@@ -48,7 +48,7 @@ export default function LegalDocumentPage({ title, subtitle, sections, sibling }
       <article className="px-4 sm:px-6 py-10 sm:py-12 md:py-16 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto w-full space-y-8 sm:space-y-10">
           {sections.map((section) => (
-            <section key={section.title}>
+            <section key={section.title} id={section.id}>
               <h2 className="font-display text-base sm:text-lg md:text-xl font-bold text-kado-dark mb-3 break-words">
                 {section.title}
               </h2>

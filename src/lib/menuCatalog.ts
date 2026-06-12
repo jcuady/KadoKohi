@@ -1,4 +1,5 @@
 import type { MenuCategory, Product } from '../types/domain';
+import { normalizeExternalMenuImageUrl } from './menuProductImage';
 
 const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
   cat_classics:
@@ -21,7 +22,7 @@ export function isMerchCategoryName(name: string | undefined): boolean {
 /** Same image resolution as /menu — product.image from Supabase, then category fallback. */
 export function getMenuProductImageUrl(product: Pick<Product, 'image' | 'categoryId'>): string {
   const fromProduct = product.image?.trim();
-  if (fromProduct) return fromProduct;
+  if (fromProduct) return normalizeExternalMenuImageUrl(fromProduct);
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     return FALLBACK_IMAGE_BY_CATEGORY[product.categoryId];
   }

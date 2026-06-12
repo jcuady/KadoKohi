@@ -7,6 +7,8 @@ import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 
 export interface HeroChrome {
+  /** Large SEO headline above the rotating slide title. */
+  mainHeadline: string;
   locationBadge: string;
   imageCredit: string;
   primaryCtaLabel: string;
@@ -177,7 +179,9 @@ interface LandingContentStore {
   hydrateFromRemote: () => Promise<void>;
   initDraft: () => void;
   discardDraft: () => void;
-  publishDraft: () => void;
+  publishDraft: () => Promise<void>;
+  publishError: string | null;
+  clearPublishError: () => void;
   setPreviewMode: (active: boolean) => void;
 
   updateHeroSlide: (index: number, patch: Partial<HomeHeroSlide>) => void;
@@ -309,6 +313,7 @@ const SEED_MENU_SEO_PILLARS: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPilla
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
+    mainHeadline: 'Kado Coffee — Best Matcha in Marikina Near Me',
     locationBadge: 'Kado Coffee · Marikina',
     imageCredit: 'Images: Kado Kohi Social + InsideMarikina',
     primaryCtaLabel: 'Explore Menu',
@@ -561,7 +566,14 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
 
   return {
     heroSlides: clampHeroSlides(raw.heroSlides),
-    heroChrome: { ...SEED_CONTENT.heroChrome, ...(raw.heroChrome ?? {}) },
+    heroChrome: {
+      ...SEED_CONTENT.heroChrome,
+      ...(raw.heroChrome ?? {}),
+      mainHeadline:
+        typeof raw.heroChrome?.mainHeadline === 'string' && raw.heroChrome.mainHeadline.trim()
+          ? raw.heroChrome.mainHeadline
+          : SEED_CONTENT.heroChrome.mainHeadline,
+    },
     storySeo: {
       ...SEED_CONTENT.storySeo,
       ...(raw.storySeo ?? {}),
@@ -632,6 +644,7 @@ export const useLandingContentStore = create<LandingContentStore>()(
       published: SEED_CONTENT,
       draft: null,
       isPreviewMode: false,
+      publishError: null,
 
       hydrateFromRemote: async () => {
         if (!supabase) return;
@@ -653,14 +666,20 @@ export const useLandingContentStore = create<LandingContentStore>()(
         clearLandingPreviewDraft();
         set({ draft: null, isPreviewMode: false });
       },
-      publishDraft: () => {
+      clearPublishError: () => set({ publishError: null }),
+      publishDraft: async () => {
         const { draft } = get();
         if (!draft) return;
-        clearLandingPreviewDraft();
-        const published = cloneContent(draft);
-        set({ published, draft: null, isPreviewMode: false });
-        // Persist to the shared CMS so real visitors see the update across devices.
-        void orderingRepo.upsertLandingContent(published).catch(() => {});
+        set({ publishError: null });
+        const nextPublished = cloneContent(draft);
+        try {
+          await orderingRepo.upsertLandingContent(nextPublished);
+          clearLandingPreviewDraft();
+          set({ published: nextPublished, draft: null, isPreviewMode: false, publishError: null });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Could not save homepage content to the database.';
+          set({ publishError: message });
+        }
       },
       setPreviewMode: (active) => {
         const { draft, published } = get();

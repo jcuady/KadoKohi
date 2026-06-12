@@ -8,6 +8,7 @@ import { useCartToggle } from '../hooks/useCartToggle';
 import CartDrawer from '../components/CartDrawer';
 import { PUBLIC_SITE_NAV } from '../config/siteNav';
 import { ACCOUNT_NAV } from '../config/accountNav';
+import { requestCookiePreferences } from '../lib/cookieConsent';
 
 export default function CustomerLayout() {
   const user = useAuthStore((s) => s.user);
@@ -222,6 +223,13 @@ export default function CustomerLayout() {
             <Link to="/menu" className="hover:text-kado-red transition-colors">Menu</Link>
             <Link to="/branches" className="hover:text-kado-red transition-colors">Branches</Link>
             <Link to="/contact" className="hover:text-kado-red transition-colors">Contact</Link>
+            <button
+              type="button"
+              onClick={() => requestCookiePreferences()}
+              className="hover:text-kado-red transition-colors"
+            >
+              Cookies
+            </button>
           </div>
         </div>
       </footer>
