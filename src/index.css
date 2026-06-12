@@ -100,7 +100,7 @@
   --kiosk-logo-filter: brightness(0) invert(1);
 }
 
-/* Guest QR / takeout ordering — light default; OS dark mode via prefers-color-scheme */
+/* Guest QR / takeout ordering — always light (matches public site). */
 .qr-root {
   --qr-bg: #faf7f2;
   --qr-bg-header: rgba(250, 247, 242, 0.95);
@@ -130,39 +130,6 @@
   --qr-pill-active-bg: #191919;
   --qr-pill-active-text: #faf9f6;
   --qr-pill-active-border: #191919;
-}
-
-@media (prefers-color-scheme: dark) {
-  .qr-root {
-    --qr-bg: #121110;
-    --qr-bg-header: rgba(18, 17, 16, 0.94);
-    --qr-sheet-bg: #1a1818;
-    --qr-surface: #252222;
-    --qr-text: #faf9f6;
-    --qr-text-muted: rgba(250, 249, 246, 0.68);
-    --qr-text-subtle: rgba(250, 249, 246, 0.48);
-    --qr-border: rgba(255, 255, 255, 0.14);
-    --qr-focus-ring: #f1dfba;
-    --qr-chip-idle-bg: #252222;
-    --qr-chip-idle-text: rgba(250, 249, 246, 0.82);
-    --qr-chip-idle-border: rgba(255, 255, 255, 0.22);
-    --qr-chip-active-bg: #9e181d;
-    --qr-chip-active-text: #faf9f6;
-    --qr-chip-active-border: #b83a3f;
-    --qr-chip-hot-bg: #9e181d;
-    --qr-chip-hot-text: #faf9f6;
-    --qr-chip-hot-border: #f1dfba;
-    --qr-chip-iced-bg: #f1dfba;
-    --qr-chip-iced-text: #191919;
-    --qr-chip-iced-border: #f1dfba;
-    --qr-chip-active-shadow: 0 0 0 2px rgba(241, 223, 186, 0.45);
-    --qr-pill-idle-bg: #252222;
-    --qr-pill-idle-text: rgba(250, 249, 246, 0.7);
-    --qr-pill-idle-border: rgba(255, 255, 255, 0.16);
-    --qr-pill-active-bg: #9e181d;
-    --qr-pill-active-text: #faf9f6;
-    --qr-pill-active-border: #9e181d;
-  }
 }
 
 .qr-chip-idle {
@@ -202,8 +169,16 @@ body {
   background-color: var(--color-kado-cream);
   color: var(--color-kado-dark);
   font-family: var(--font-sans);
-  /* Prevent accidental horizontal scroll from full-bleed sections (e.g. w-screen) */
   overflow-x: clip;
+}
+
+/* Customer site — ignore OS dark mode; admin uses .dash-dark */
+html.public-light {
+  color-scheme: light;
+}
+
+html.dash-dark {
+  color-scheme: dark;
 }
 
 /* Safe-area padding helpers (notched phones, home indicator) */

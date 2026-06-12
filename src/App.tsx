@@ -57,10 +57,12 @@ import AccountVouchers from './pages/account/AccountVouchers';
 import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
+import PublicDocumentTheme from './components/PublicDocumentTheme';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <PublicDocumentTheme />
       <RouteSeo />
       <Routes>
         {/* Standalone utility pages */}

@@ -1,4 +1,4 @@
-/** Shared option-chip styles for QR dine-in / takeout (light + prefers-color-scheme: dark). */
+/** Shared option-chip styles for QR dine-in / takeout (light mode only). */
 
 export const QR_CHIP_BASE =
   'relative min-h-[44px] px-3 py-2.5 rounded-xl text-xs font-bold border-2 touch-manipulation transition-[background-color,border-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qr-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--qr-sheet-bg)]';

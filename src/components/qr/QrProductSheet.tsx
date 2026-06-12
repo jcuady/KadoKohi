@@ -225,7 +225,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
 
             <div className="shrink-0 p-4 border-t border-[var(--qr-border)] pb-[max(1rem,env(safe-area-inset-bottom))] bg-[var(--qr-sheet-bg)]">
               {!inStock && (
-                <p className="text-xs text-amber-800 font-medium text-center mb-3 [@media(prefers-color-scheme:dark)]:text-amber-200">
+                <p className="text-xs text-amber-800 font-medium text-center mb-3">
                   This drink is out of stock right now. Ask staff when it is available again.
                 </p>
               )}
