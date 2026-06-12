@@ -67,6 +67,12 @@ test('PWA manifest + primary icon are served', async ({ page, request }) => {
     faviconBytes.slice(0, 20).toString('utf8').toLowerCase(),
     'favicon must not be SPA HTML',
   ).not.toContain('<!doctype');
+
+  for (const path of ['/icons/favicon-48x48.png', '/icons/favicon-96x96.png']) {
+    const resp = await request.get(path);
+    expect(resp.status(), `${path} should be reachable`).toBe(200);
+    expect(resp.headers()['content-type'] ?? '', `${path} must be png`).toMatch(/image\/png/i);
+  }
 });
 
 test('favicon route must not return SPA 404 page', async ({ page }) => {

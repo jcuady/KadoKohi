@@ -19,6 +19,7 @@ export default defineConfig(() => {
           'icons/favicon.ico',
           'icons/favicon-16x16.png',
           'icons/favicon-32x32.png',
+          'icons/favicon-48x48.png',
           'icons/favicon-96x96.png',
           'icons/icon-192x192.png',
           'icons/android-chrome-512x512.png',
