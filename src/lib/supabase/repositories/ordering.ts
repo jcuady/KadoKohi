@@ -829,6 +829,17 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
+  async cancelGuestOrder(orderId: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_guest_cancel_order', { p_order_id: orderId });
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'PGRST202') {
+        throw new Error('Order cancellation is not available yet. Please ask staff to cancel.');
+      }
+      throw error;
+    }
+  },
   async deleteOrder(id: string): Promise<void> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.rpc('kk_admin_delete_order', { p_order_id: id });

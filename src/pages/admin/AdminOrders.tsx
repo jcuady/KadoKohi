@@ -145,7 +145,7 @@ export default function AdminOrders() {
   };
 
   return (
-    <div className={`dash-page flex flex-col gap-6 ${viewMode === 'kanban' ? 'h-[calc(100vh-2rem)]' : 'max-w-7xl'}`}>
+    <div className={`dash-page flex min-w-0 flex-col gap-4 md:gap-6 ${viewMode === 'kanban' ? 'h-[calc(100dvh-7rem)] max-w-none' : 'max-w-7xl'}`}>
       {/* Header */}
       <Card>
         <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -373,8 +373,8 @@ export default function AdminOrders() {
           </Table>
         </Card>
       ) : (
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-4">
-          <div className="flex h-full min-h-[500px] w-max gap-4">
+        <div className="admin-orders-kanban min-h-0 min-w-0 flex-1">
+          <div className="grid h-full min-h-[min(520px,calc(100dvh-18rem))] auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
             {KANBAN_COLUMNS.map((col) => {
               const colOrders = filtered
                 .filter((o) => kanbanColumnForOrder(o) === col.id)
@@ -383,13 +383,15 @@ export default function AdminOrders() {
               const Icon = style.icon;
 
               return (
-                <div key={col.id} className="flex h-full w-[280px] shrink-0 flex-col">
-                  <div className="mb-3 flex shrink-0 items-center gap-2 px-1">
-                    <Icon className={`h-5 w-5 ${style.color}`} />
-                    <span className="text-sm font-bold uppercase tracking-wider dash-muted">{col.label}</span>
-                    <Badge variant="muted" className="ml-auto">{colOrders.length}</Badge>
+                <div key={col.id} className="flex min-h-[220px] min-w-0 flex-col md:min-h-[280px]">
+                  <div className="mb-2 flex shrink-0 items-center gap-1.5 px-0.5 md:mb-3 md:gap-2">
+                    <Icon className={`h-4 w-4 shrink-0 md:h-5 md:w-5 ${style.color}`} />
+                    <span className="truncate text-[11px] font-bold uppercase tracking-wider dash-muted md:text-sm">
+                      {col.label}
+                    </span>
+                    <Badge variant="muted" className="ml-auto shrink-0">{colOrders.length}</Badge>
                   </div>
-                  <div className="custom-scrollbar flex-1 space-y-2 overflow-y-auto pr-1">
+                  <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5">
                     {colOrders.length === 0 ? (
                       <Card className="p-6 text-center text-xs dash-muted">Empty</Card>
                     ) : (
@@ -398,7 +400,7 @@ export default function AdminOrders() {
                           key={o.id}
                           type="button"
                           onClick={() => setEditingOrder(o)}
-                          className={`w-full rounded-xl border dash-card p-4 text-left transition-colors hover:border-kado-red/30 ${style.bgCard}`}
+                          className={`w-full min-w-0 rounded-xl border dash-card p-3 text-left transition-colors hover:border-kado-red/30 md:p-4 ${style.bgCard}`}
                         >
                           <div className="mb-1 flex items-start justify-between gap-2">
                             <span className="font-display text-lg font-bold dash-heading">{o.shortCode}</span>

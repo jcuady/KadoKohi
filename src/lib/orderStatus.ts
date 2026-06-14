@@ -188,3 +188,8 @@ export function defaultFieldsForNewOrder(paymentMethod?: PaymentMethod): {
   }
   return { status: 'pending', paymentStatus: 'paid' };
 }
+
+/** Guest QR / takeout may cancel until staff moves the order past pending. */
+export function canGuestCancelOrder(order: Pick<Order, 'status' | 'channel'>): boolean {
+  return (order.channel === 'dine-in' || order.channel === 'takeout') && order.status === 'pending';
+}

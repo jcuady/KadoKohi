@@ -63,6 +63,33 @@
 }
 .dash-border { border-color: var(--color-dash-border); }
 
+/* Admin order board — thin scrollbars on column stacks */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(158, 24, 29, 0.28) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(158, 24, 29, 0.28);
+  border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-orders-kanban {
+  width: 100%;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .admin-orders-kanban .grid {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Kiosk display (customer-facing order board) — light default */
 .kiosk-root {
   --kiosk-bg: #FAF7F2;

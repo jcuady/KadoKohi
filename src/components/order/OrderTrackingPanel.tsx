@@ -4,7 +4,9 @@ import { motion } from 'motion/react';
 import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle, Wallet } from 'lucide-react';
 import type { OrderStatus } from '../../types/domain';
 import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
-import { isGcashOrder } from '../../lib/orderStatus';
+import { canGuestCancelOrder } from '../../lib/orderStatus';
+import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
 import GcashQrModal from '../GcashQrModal';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -73,8 +75,11 @@ export default function OrderTrackingPanel({
   const gcashQrImage = useSettingsStore((s) => s.settings.gcashQrImage);
   const { tracked, loadFailed, isLive, refresh } = useGuestOrderTracking(orderId);
   const [gcashModalOpen, setGcashModalOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState('');
 
-  const gcash = isGcashOrder({ paymentMethod: tracked?.paymentMethod });
+  const gcash = tracked?.paymentMethod === 'gcash-qr';
   const steps =
     channel === 'takeout'
       ? gcash
@@ -90,6 +95,31 @@ export default function OrderTrackingPanel({
   const isCompleted = status === 'completed';
   const currentRank = ORDER_RANK[status];
   const awaitingGcash = gcash && paymentStatus === 'unpaid';
+  const canCancel =
+    tracked != null &&
+    canGuestCancelOrder({ status: tracked.status, channel: tracked.channel }) &&
+    !isCancelled &&
+    !isCompleted;
+
+  const handleCancel = async () => {
+    setCancelBusy(true);
+    setCancelError('');
+    try {
+      await orderingRepo.cancelGuestOrder(orderId);
+      void broadcastGuestOrderUpdate(orderId, {
+        status: 'cancelled',
+        paymentStatus: tracked?.paymentStatus ?? 'unpaid',
+        updatedAt: new Date().toISOString(),
+        shortCode: tracked?.shortCode,
+      });
+      await refresh();
+      setCancelOpen(false);
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Could not cancel order. Please ask staff.');
+    } finally {
+      setCancelBusy(false);
+    }
+  };
 
   const headline = isCancelled
     ? 'Order cancelled'
@@ -254,6 +284,52 @@ export default function OrderTrackingPanel({
                 Log in
               </Link>
             </div>
+          </div>
+        )}
+
+        {canCancel && (
+          <div className="mb-3">
+            {!cancelOpen ? (
+              <button
+                type="button"
+                onClick={() => setCancelOpen(true)}
+                className="w-full min-h-[44px] rounded-2xl border border-red-200 bg-white text-red-700 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors touch-manipulation"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancel order
+              </button>
+            ) : (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-bold text-red-900 mb-1">Cancel this order?</p>
+                <p className="text-xs text-red-800/80 mb-3 leading-relaxed">
+                  You can cancel until our team accepts your order. This cannot be undone.
+                </p>
+                {cancelError ? (
+                  <p className="text-xs font-semibold text-red-700 mb-3">{cancelError}</p>
+                ) : null}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={cancelBusy}
+                    onClick={() => {
+                      setCancelOpen(false);
+                      setCancelError('');
+                    }}
+                    className="min-h-[44px] rounded-xl border border-red-200 bg-white text-red-800 text-[11px] font-bold uppercase tracking-wider touch-manipulation disabled:opacity-60"
+                  >
+                    Keep order
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancelBusy}
+                    onClick={() => void handleCancel()}
+                    className="min-h-[44px] rounded-xl bg-red-600 text-white text-[11px] font-bold uppercase tracking-wider touch-manipulation disabled:opacity-60"
+                  >
+                    {cancelBusy ? 'Cancelling…' : 'Yes, cancel'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
