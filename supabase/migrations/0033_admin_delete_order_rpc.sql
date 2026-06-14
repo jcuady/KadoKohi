@@ -1,4 +1,4 @@
--- Admin-only order delete (removes line items, then the order).
+-- Admin-only order delete (line items cascade; clears promo/voucher links).
 
 CREATE OR REPLACE FUNCTION public.kk_admin_delete_order(p_order_id text)
 RETURNS jsonb
@@ -11,12 +11,21 @@ BEGIN
     RAISE EXCEPTION 'Admin access required';
   END IF;
 
-  DELETE FROM public.kk_order_items WHERE order_id = p_order_id;
-  DELETE FROM public.kk_orders WHERE id = p_order_id;
+  IF p_order_id IS NULL OR length(trim(p_order_id)) = 0 OR length(p_order_id) > 64 THEN
+    RAISE EXCEPTION 'Invalid order id';
+  END IF;
 
-  IF NOT FOUND THEN
+  IF NOT EXISTS (SELECT 1 FROM public.kk_orders WHERE id = p_order_id) THEN
     RAISE EXCEPTION 'Order not found or already deleted';
   END IF;
+
+  DELETE FROM public.kk_promo_claims WHERE order_id = p_order_id;
+
+  UPDATE public.kk_loyalty_vouchers
+  SET redeemed_order_id = NULL
+  WHERE redeemed_order_id = p_order_id;
+
+  DELETE FROM public.kk_orders WHERE id = p_order_id;
 
   RETURN jsonb_build_object('ok', true, 'id', p_order_id);
 END;

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { clearSupabaseAuthStorageSync, prepareAuthStorageSync } from './authStorage';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const publishableKey =
@@ -15,6 +16,9 @@ if (import.meta.env.DEV && supabaseUrl && !supabaseUrl.includes(KADO_SUPABASE_PR
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && publishableKey);
 
+// Purge tokens from other Supabase projects before GoTrue init attempts refresh.
+prepareAuthStorageSync(supabaseUrl);
+
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, publishableKey!, {
       auth: {
@@ -24,3 +28,11 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+
+if (supabase && typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+      clearSupabaseAuthStorageSync(supabaseUrl);
+    }
+  });
+}

@@ -11,9 +11,21 @@ import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 function categoryIcon(categoryId: string): React.ReactNode {
-  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4" />;
-  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4" />;
-  return <Coffee className="w-4 h-4" />;
+  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4 shrink-0" />;
+  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4 shrink-0" />;
+  return <Coffee className="w-4 h-4 shrink-0" />;
+}
+
+/** Shorter labels for narrow mobile grid cells — full name stays in aria-label. */
+function categoryShortLabel(categoryId: string, fullName: string): string {
+  switch (categoryId) {
+    case 'cat_classics':
+      return 'Espresso Classics';
+    case 'cat_signatures':
+      return 'Espresso Signatures';
+    default:
+      return fullName;
+  }
 }
 
 export default function Menu() {
@@ -105,25 +117,36 @@ export default function Menu() {
           </div>
         </section>
 
-        {/* Category tabs */}
+        {/* Category tabs — one control: 2×2 grid on mobile, wrapped pills on md+ */}
         <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-4 backdrop-blur-md sm:px-6 sm:pt-5 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 md:pb-5 md:pt-0 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
           <div className="mx-auto max-w-6xl min-w-0">
-            <div className="guest-order-category-rail -mx-4 items-center gap-2.5 px-4 pb-1 scroll-pl-4 scroll-pr-6 sm:-mx-6 sm:gap-3 sm:px-6 md:mx-0 md:px-0 md:pb-0">
-              {sortedCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategoryId(cat.id)}
-                  className={`flex min-h-[44px] shrink-0 touch-manipulation items-center gap-2 rounded-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 md:px-5 md:text-[11px] ${
-                    activeCategoryId === cat.id
-                      ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
-                      : 'bg-white border border-kado-dark/15 text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
-                  }`}
-                >
-                  {categoryIcon(cat.id)}
-                  {cat.name}
-                </button>
-              ))}
+            <div
+              className="menu-category-tabs grid grid-cols-2 gap-2 sm:gap-2.5 md:flex md:flex-wrap md:items-center md:gap-3 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-4 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-1.5 [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex-wrap"
+              role="tablist"
+              aria-label="Menu categories"
+            >
+              {sortedCategories.map((cat) => {
+                const active = activeCategoryId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-label={cat.name}
+                    onClick={() => setActiveCategoryId(cat.id)}
+                    className={`flex min-h-[44px] min-w-0 touch-manipulation items-center font-black uppercase tracking-widest transition-all duration-300 ${
+                      active
+                        ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
+                        : 'border border-kado-dark/15 bg-white text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
+                    } flex-col justify-center gap-1.5 rounded-2xl px-2.5 py-3 text-[9px] leading-snug text-center sm:text-[10px] md:flex-row md:justify-start md:gap-2 md:rounded-full md:px-5 md:py-2.5 md:text-[11px] md:whitespace-nowrap md:text-left`}
+                  >
+                    {categoryIcon(cat.id)}
+                    <span className="md:hidden">{categoryShortLabel(cat.id, cat.name)}</span>
+                    <span className="hidden md:inline">{cat.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>

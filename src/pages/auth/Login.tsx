@@ -1,8 +1,8 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { isValidEmail } from '../../lib/validation';
-import { formatAuthErrorMessage, recoverStaleAuthSession } from '../../lib/supabase/authSession';
+import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { AlertCircle, Check, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
@@ -16,10 +16,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    void recoverStaleAuthSession();
-  }, []);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();

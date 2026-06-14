@@ -832,7 +832,13 @@ export const orderingRepo = {
   async deleteOrder(id: string): Promise<void> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.rpc('kk_admin_delete_order', { p_order_id: id });
-    if (error) throw error;
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'PGRST202') {
+        throw new Error('Order delete is not available yet. Ask an engineer to apply migration 0033 on Supabase.');
+      }
+      throw error;
+    }
   },
   async patchOrder(id: string, patch: Partial<Order>) {
     if (!supabase) return;

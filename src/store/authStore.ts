@@ -7,8 +7,8 @@ import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 import {
   isInvalidRefreshTokenError,
+  invalidateLocalAuthSession,
   pauseAuthListener,
-  recoverStaleAuthSession,
   resumeAuthListener,
 } from '../lib/supabase/authSession';
 import {
@@ -104,7 +104,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         }
         set({ loading: true });
         try {
-          await recoverStaleAuthSession();
           const session = await authRepo.session();
           if (!session?.user) {
             stopOperationsRealtime();
@@ -117,7 +116,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           syncOperationalSession(profile);
         } catch (err) {
           if (isInvalidRefreshTokenError(err)) {
-            await recoverStaleAuthSession();
+            await invalidateLocalAuthSession();
           }
           set({ user: null, loading: false });
         }

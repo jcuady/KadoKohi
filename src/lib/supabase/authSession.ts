@@ -1,5 +1,18 @@
 import type { AuthError } from '@supabase/supabase-js';
 import { supabase } from './client';
+import {
+  clearSupabaseAuthStorageSync,
+  hasLocalAuthStorage,
+  purgeForeignSupabaseAuthKeysSync,
+} from './authStorage';
+
+export {
+  clearSupabaseAuthStorageSync,
+  getSupabaseAuthStorageKey,
+  hasLocalAuthStorage,
+  prepareAuthStorageSync,
+  purgeForeignSupabaseAuthKeysSync,
+} from './authStorage';
 
 /** True when localStorage holds a refresh token Supabase can no longer use. */
 export function isInvalidRefreshTokenError(error: unknown): boolean {
@@ -49,42 +62,37 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
 }
 
 /** Drop corrupted local auth state so sign-up/sign-in are not blocked by refresh loops. */
-const AUTH_STORAGE_KEY_SUFFIX = '-auth-token';
-
-function hasLocalAuthStorage(): boolean {
-  if (typeof window === 'undefined') return false;
+export async function invalidateLocalAuthSession(): Promise<void> {
+  clearSupabaseAuthStorageSync();
+  if (!supabase) return;
   try {
-    const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    if (!url) return false;
-    const projectRef = new URL(url).hostname.split('.')[0];
-    const key = `sb-${projectRef}${AUTH_STORAGE_KEY_SUFFIX}`;
-    return Boolean(localStorage.getItem(key));
+    await supabase.auth.signOut({ scope: 'local' });
   } catch {
-    return false;
+    // Storage is already cleared; ignore lock errors.
   }
 }
 
 /** Clears local tokens only — no Auth API call (safe on the sign-up page). */
 export async function clearLocalAuthBeforeSignup(): Promise<void> {
-  if (!supabase) return;
-  await supabase.auth.signOut({ scope: 'local' });
+  await invalidateLocalAuthSession();
 }
 
 export async function recoverStaleAuthSession(): Promise<void> {
   if (!supabase) return;
+  purgeForeignSupabaseAuthKeysSync();
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error && isInvalidRefreshTokenError(error)) {
-      await supabase.auth.signOut({ scope: 'local' });
+      await invalidateLocalAuthSession();
       return;
     }
     // getSession() can return null session while a bad refresh token remains in storage.
     if (!data.session && hasLocalAuthStorage()) {
-      await supabase.auth.signOut({ scope: 'local' });
+      await invalidateLocalAuthSession();
     }
   } catch (err) {
     if (isInvalidRefreshTokenError(err)) {
-      await supabase.auth.signOut({ scope: 'local' });
+      await invalidateLocalAuthSession();
     }
   }
 }

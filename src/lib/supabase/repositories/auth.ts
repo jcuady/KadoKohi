@@ -3,6 +3,8 @@ import { supabase } from '../client';
 import type { Role } from '../../../types/domain';
 import {
   clearLocalAuthBeforeSignup,
+  invalidateLocalAuthSession,
+  isInvalidRefreshTokenError,
   isRateLimitAuthError,
   recoverStaleAuthSession,
 } from '../authSession';
@@ -91,7 +93,11 @@ export const authRepo = {
     if (!supabase) return null;
     const { data, error } = await supabase.auth.getSession();
     if (error) {
-      await recoverStaleAuthSession();
+      if (isInvalidRefreshTokenError(error)) {
+        await invalidateLocalAuthSession();
+      } else {
+        await recoverStaleAuthSession();
+      }
       return null;
     }
     return data.session;

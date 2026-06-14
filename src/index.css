@@ -256,6 +256,11 @@ html.dash-dark {
   min-height: 100svh;
 }
 
+/* Coffee menu (/menu): category grid cells shrink correctly on mobile */
+.menu-category-tabs button {
+  min-width: 0;
+}
+
 html {
   scroll-behavior: smooth;
 }
