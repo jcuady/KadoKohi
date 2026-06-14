@@ -113,7 +113,7 @@ export const COFFEE_MENU_CATEGORY_IDS = [
 export const MERCH_MIRROR_CATEGORY_ID = 'cat_hidden_merch';
 
 export function isCoffeeMenuCategory(categoryId: string): boolean {
-  return (COFFEE_MENU_CATEGORY_IDS as readonly string[]).includes(categoryId);
+  return categoryId !== MERCH_MIRROR_CATEGORY_ID;
 }
 
 export function filterCoffeeMenu(categories: MenuCategory[], products: Product[]) {

@@ -103,7 +103,7 @@ export const SEED_MERCH_PRODUCTS: MerchProduct[] = [
     name: 'Kado Dad Cap',
     description: 'Washed cotton dad cap with embroidered 角 logo.',
     basePrice: 450,
-    image: 'https://images.unsplash.com/photo-1588850561407-ed78c334e67a?q=80&w=400&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop',
     variants: [{
       id: 'sv_cap_color',
       name: 'Color',

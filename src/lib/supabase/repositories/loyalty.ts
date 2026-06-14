@@ -78,6 +78,16 @@ export const loyaltyRepo = {
     return (data ?? []).map((r) => mapVoucher(r as Record<string, unknown>));
   },
 
+  async fetchAllVouchers(): Promise<LoyaltyVoucher[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('kk_loyalty_vouchers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r) => mapVoucher(r as Record<string, unknown>));
+  },
+
   async claimReward(rewardId: string): Promise<LoyaltyVoucher> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase.rpc('kk_claim_loyalty_reward', {

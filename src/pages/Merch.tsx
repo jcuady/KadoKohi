@@ -146,6 +146,10 @@ export default function Merch() {
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (img.src !== DEFAULT_IMAGE) img.src = DEFAULT_IMAGE;
+                        }}
                       />
                     </div>
                     <div className="p-3 sm:p-4 flex flex-col flex-1">

@@ -3,7 +3,10 @@ import { Plus, Pencil, Trash2, Gift, ToggleLeft, ToggleRight } from 'lucide-reac
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBranchStore } from '../../store/branchStore';
 import type { LoyaltyReward, LoyaltyRewardType } from '../../types/domain';
-import { newId } from '../../lib/id';
+import AdminLoyaltyMembers from '../../components/admin/AdminLoyaltyMembers';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { formatVoucherScopeLabel } from '../../lib/branchScope';
 
 const REWARD_TYPE_LABELS: Record<LoyaltyRewardType, string> = {
@@ -43,6 +46,8 @@ export default function AdminLoyalty() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteRewardId, setDeleteRewardId] = useState<string | null>(null);
+  const [section, setSection] = useState<'members' | 'rewards'>('members');
   const [form, setForm] = useState<Omit<LoyaltyReward, 'id'>>(EMPTY_FORM);
 
   const activeCount = config.rewards.filter((r) => r.active).length;
@@ -83,16 +88,27 @@ export default function AdminLoyalty() {
   };
 
   return (
-    <div className="dash-page max-w-4xl">
-      {/* Header */}
-      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">
-        Loyalty Program
-      </h1>
-      <p className="dash-muted text-sm mb-8">
-        {activeCount} active reward{activeCount !== 1 && 's'} configured
-      </p>
+    <div className="dash-page max-w-7xl">
+      <div className="mb-6">
+        <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">
+          Loyalty Program
+        </h1>
+        <p className="dash-muted text-sm">
+          {activeCount} active reward{activeCount !== 1 && 's'} · manage Kado Circle members and rewards
+        </p>
+      </div>
 
-      <div className="dash-card rounded-2xl border p-6 mb-8 space-y-3">
+      <Tabs value={section} onValueChange={(v) => setSection(v as 'members' | 'rewards')} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="members">Members &amp; stamps</TabsTrigger>
+          <TabsTrigger value="rewards">Rewards catalog</TabsTrigger>
+        </TabsList>
+
+        {section === 'members' ? (
+          <AdminLoyaltyMembers />
+        ) : (
+        <div className="space-y-8">
+      <div className="dash-card rounded-2xl border p-6 space-y-3">
         <h2 className="font-display font-bold text-lg dash-heading">Stamp policy</h2>
         <ul className="text-sm dash-muted space-y-2 list-disc pl-5">
           <li>
@@ -175,7 +191,7 @@ export default function AdminLoyalty() {
                     <Pencil className="w-4 h-4 dash-muted" />
                   </button>
                   <button
-                    onClick={() => removeReward(reward.id)}
+                    onClick={() => setDeleteRewardId(reward.id)}
                     className="rounded-lg p-1.5 hover:bg-red-500/10 transition-colors"
                   >
                     <Trash2 className="w-4 h-4 text-red-400" />
@@ -226,6 +242,34 @@ export default function AdminLoyalty() {
           )}
         </div>
       </div>
+        </div>
+        )}
+      </Tabs>
+
+      {deleteRewardId ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4">
+          <Card className="w-full max-w-md p-6 shadow-2xl">
+            <CardTitle>Delete reward?</CardTitle>
+            <CardDescription className="mt-2">
+              This removes the reward from the catalog. Existing vouchers already claimed are not affected.
+            </CardDescription>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteRewardId(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await removeReward(deleteRewardId);
+                  setDeleteRewardId(null);
+                }}
+              >
+                Delete reward
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
 
       {/* Modal */}
       {showModal && (

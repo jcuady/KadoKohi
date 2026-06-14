@@ -38,6 +38,8 @@ export interface UserStore {
   updateUser: (id: string, patch: Partial<User>) => Promise<void>;
   /** Admin/barista manual stamp adjustment (delta can be negative). Audited. */
   adjustLoyaltyStamps: (id: string, delta: number, reason?: string) => void;
+  /** Admin: set exact stamp balance. Audited. */
+  setLoyaltyStamps: (id: string, stamps: number, reason?: string) => void;
   removeUser: (id: string) => Promise<void>;
   getById: (id: string) => User | undefined;
   seed: () => void;
@@ -113,6 +115,24 @@ export const useUserStore = create<UserStore>()((set, get) => ({
           entityId: id,
           summary: `${user.name}: ${before} → ${after} stamps (${delta > 0 ? '+' : ''}${delta})`,
           metadata: { before, after, delta, reason: reason ?? null },
+        });
+      },
+
+      setLoyaltyStamps: (id, stamps, reason) => {
+        const user = get().getById(id);
+        if (!user) return;
+        const before = user.loyaltyStamps ?? 0;
+        const after = Math.max(0, Math.floor(stamps));
+        if (after === before) return;
+        const updated = { ...user, loyaltyStamps: after };
+        set({ users: get().users.map((u) => (u.id === id ? updated : u)) });
+        void orderingRepo.updateUserStamps(id, after);
+        logAudit({
+          action: 'loyalty.stamps_adjusted',
+          entityType: 'customer',
+          entityId: id,
+          summary: `${user.name}: ${before} → ${after} stamps (set balance)`,
+          metadata: { before, after, delta: after - before, reason: reason ?? null, mode: 'set' },
         });
       },
 

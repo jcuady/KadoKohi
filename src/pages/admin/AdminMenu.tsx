@@ -90,6 +90,8 @@ export default function AdminMenu() {
 
   const onDragEnd = () => setDrag(null);
   const [newCatName, setNewCatName] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [addCategoryError, setAddCategoryError] = useState('');
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
 
@@ -118,11 +120,21 @@ export default function AdminMenu() {
     }
   };
 
-  const handleAddCategory = (e: FormEvent) => {
+  const handleAddCategory = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newCatName.trim()) return;
-    addCategory(newCatName.trim());
-    setNewCatName('');
+    const name = newCatName.trim();
+    if (!name) return;
+    setAddingCategory(true);
+    setAddCategoryError('');
+    try {
+      const created = await addCategory(name);
+      setNewCatName('');
+      setExpandedCat(created.id);
+    } catch (err) {
+      setAddCategoryError(err instanceof Error ? err.message : 'Could not add category.');
+    } finally {
+      setAddingCategory(false);
+    }
   };
 
   const startEditProduct = (p: Product) => {
@@ -457,19 +469,26 @@ export default function AdminMenu() {
       )}
 
       {/* Add category */}
-      <form onSubmit={handleAddCategory} className="flex gap-2 mb-8">
+      <form onSubmit={(e) => void handleAddCategory(e)} className="mb-8 space-y-2">
+        <div className="flex gap-2">
         <input
           value={newCatName}
           onChange={(e) => setNewCatName(e.target.value)}
           placeholder="New category name…"
-          className="flex-1 rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+          disabled={addingCategory}
+          className="flex-1 rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
         />
         <button
           type="submit"
-          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1"
+          disabled={addingCategory || !newCatName.trim()}
+          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1 disabled:opacity-60"
         >
-          <Plus className="w-4 h-4" /> Category
+          <Plus className="w-4 h-4" /> {addingCategory ? 'Adding…' : 'Category'}
         </button>
+        </div>
+        {addCategoryError ? (
+          <p className="text-xs font-semibold text-red-600">{addCategoryError}</p>
+        ) : null}
       </form>
 
       {/* Category accordion */}

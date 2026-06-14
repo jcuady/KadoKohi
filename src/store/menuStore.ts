@@ -22,7 +22,7 @@ export interface MenuStore {
   ensureCatalogInDatabase: () => Promise<void>;
   setCategories: (c: MenuCategory[]) => void;
   setProducts: (p: Product[]) => void;
-  addCategory: (name: string, order?: number) => void;
+  addCategory: (name: string, order?: number) => Promise<MenuCategory>;
   updateCategory: (id: string, patch: Partial<MenuCategory>) => void;
   removeCategory: (id: string) => void;
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
@@ -124,7 +124,7 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           ...applyMenuSnapshot(get().categories, products, get().dataSource, get().hydrateError),
         }),
 
-      addCategory: (name, order) => {
+      addCategory: async (name, order) => {
         const list = get().categories;
         const c: MenuCategory = {
           id: newId(),
@@ -133,10 +133,17 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           order: order ?? list.length,
           visible: true,
         };
-        set({ categories: [...list, c] });
-        void orderingRepo.upsertCategory(c).catch(() => {
-          set({ hydrateError: 'Could not save category to database.' });
-        });
+        set({ categories: [...list, c], hydrateError: null });
+        try {
+          await orderingRepo.upsertCategory(c);
+          return c;
+        } catch {
+          set({
+            categories: list,
+            hydrateError: 'Could not save category to database.',
+          });
+          throw new Error('Could not save category to database.');
+        }
       },
 
       updateCategory: (id, patch) => {

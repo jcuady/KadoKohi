@@ -7,7 +7,7 @@ import {
   KADO_INBOUND_EMAIL,
   type ContactPurpose,
 } from '../lib/contactEmail';
-import { sendInboundEmail } from '../lib/sendInboundEmail';
+import { sendInboundEmail, validateContactForm } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { cn } from '../lib/utils';
@@ -29,6 +29,13 @@ export default function Contact() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const validationError = validateContactForm(formData);
+    if (validationError) {
+      setFeedback('error');
+      setFeedbackMessage(validationError);
+      return;
+    }
+
     setSubmitting(true);
     setFeedback('idle');
     setFeedbackMessage('');
@@ -51,7 +58,8 @@ export default function Contact() {
 
     if (result.via === 'mailto') {
       window.location.href = result.mailto;
-      setFeedbackMessage('Opening your email app…');
+      setFeedback('sent');
+      setFeedbackMessage('Opening your email app with your message pre-filled…');
       return;
     }
 
@@ -137,6 +145,7 @@ export default function Contact() {
                     type="text"
                     id="name"
                     required
+                    minLength={2}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-5 py-3.5 rounded-xl border border-kado-dark/15 bg-white text-sm text-kado-dark placeholder:text-kado-dark/30 font-medium focus:outline-none focus:ring-2 focus:ring-kado-red/20 focus:border-kado-red/50 transition-all"
@@ -166,12 +175,14 @@ export default function Contact() {
                   <textarea
                     id="message"
                     required
+                    minLength={10}
                     rows={5}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="w-full px-5 py-3.5 rounded-xl border border-kado-dark/15 bg-white text-sm text-kado-dark placeholder:text-kado-dark/30 font-medium focus:outline-none focus:ring-2 focus:ring-kado-red/20 focus:border-kado-red/50 transition-all resize-none"
-                    placeholder="Share details — dates, scope, links, or questions..."
+                    placeholder="Share details — dates, scope, links, or questions (at least 10 characters)..."
                   />
+                  <p className="mt-1 text-[10px] text-kado-dark/40">{formData.message.trim().length}/10 min characters</p>
                 </div>
               </div>
 
