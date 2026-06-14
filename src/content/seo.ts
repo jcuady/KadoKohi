@@ -225,6 +225,18 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
     keywords: routeKeywords('book kado coffee booth'),
   },
   {
+    path: '/pastries',
+    title: 'Kado Coffee Pastries | Fresh Bakes Marikina',
+    description:
+      'Daily pastries and bakes at Kado Kohi in Sta. Elena, Marikina — pair with matcha, hojicha, and specialty coffee in-store.',
+  },
+  {
+    path: '/blog',
+    title: 'Kado Kohi Blog | Community Runs & Events',
+    description:
+      'Stories from Kado Kohi — Kado Run community mornings, tambayan nights, mobile booth season, and cafe updates in Marikina.',
+  },
+  {
     path: '/branches',
     title: 'Kado Coffee Location | Marikina Coffee Near Me',
     description:
@@ -261,8 +273,10 @@ export const SEO_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/', name: 'Home' },
   { path: '/menu', name: 'Coffee Menu' },
   { path: '/merch', name: 'Merch' },
+  { path: '/pastries', name: 'Pastries' },
   { path: '/events', name: 'Events' },
   { path: '/book/booth', name: 'Booth Booking' },
+  { path: '/blog', name: 'Blog' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About' },
   { path: '/contact', name: 'Contact' },
@@ -274,6 +288,8 @@ export const SEO_SITEMAP_PATHS: Array<{ path: string; changefreq: string; priori
   { path: '/events', changefreq: 'daily', priority: '0.9' },
   { path: '/book/booth', changefreq: 'weekly', priority: '0.85' },
   { path: '/merch', changefreq: 'weekly', priority: '0.8' },
+  { path: '/pastries', changefreq: 'weekly', priority: '0.75' },
+  { path: '/blog', changefreq: 'weekly', priority: '0.75' },
   { path: '/branches', changefreq: 'weekly', priority: '0.8' },
   { path: '/about', changefreq: 'monthly', priority: '0.7' },
   { path: '/contact', changefreq: 'monthly', priority: '0.7' },
@@ -402,7 +418,7 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
   '/about': {
     heading: 'About Kado Coffee & Kado Kohi',
     paragraphs: [
-      'Kado Coffee is Marikina’s specialty coffee tambayan — quality Arabica, matcha, and hospitality on J.P. Laurel. Known online as Kado Kohi, rated 4.9 on Google.',
+      'Kado Coffee is Marikina’s specialty coffee tambayan on J.P. Laurel, Sta. Elena — soft opening February 15, 2026. Known online as Kado Kohi, rated 4.9 on Google.',
     ],
     links: [{ label: 'Read Google reviews', href: KADO_GOOGLE_LISTING.reviewsUrl, external: true }],
   },

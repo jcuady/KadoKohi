@@ -4,6 +4,9 @@
 
 @theme {
   --color-kado-cream: #F1DFBA;
+  --color-kado-cream-light: #F5E8C8;
+  --color-kado-cream-deep: #E5CF9E;
+  --color-kado-cream-track: #E8D4A8;
   --color-kado-red: #9E181D;
   --color-kado-red-hover: #801419;
   --color-kado-dark: #191919;
@@ -262,6 +265,214 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   line-height: 1.4;
+}
+
+/* Public navbar — single solid cream capsule, flat links (no nested pills) */
+.public-nav-shell {
+  display: inline-flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 9999px;
+  background-color: var(--color-kado-cream);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.14),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.public-nav-link {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.375rem 0.75rem;
+  background-color: transparent;
+  color: var(--color-kado-dark);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.public-nav-link:hover {
+  background-color: rgba(25, 25, 25, 0.06);
+}
+
+.public-nav-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-kado-dark);
+}
+
+.public-nav-link.is-active,
+.public-nav-link[aria-current='page'],
+.public-nav-link[aria-expanded='true'] {
+  background-color: var(--color-kado-cream-deep);
+  color: var(--color-kado-dark);
+  font-weight: 600;
+}
+
+.public-nav-link.is-active:hover,
+.public-nav-link[aria-current='page']:hover,
+.public-nav-link[aria-expanded='true']:hover {
+  background-color: var(--color-kado-cream-deep);
+}
+
+.public-nav-dropdown {
+  min-width: 12.5rem;
+  overflow: hidden;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(25, 25, 25, 0.08);
+  background-color: var(--color-kado-cream);
+  padding: 0.35rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+
+.public-nav-dropdown-link {
+  display: block;
+  border-radius: 0.625rem;
+  padding: 0.55rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(25, 25, 25, 0.78);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.public-nav-dropdown-link:hover {
+  background-color: rgba(25, 25, 25, 0.06);
+  color: var(--color-kado-dark);
+}
+
+.public-nav-dropdown-link.is-active,
+.public-nav-dropdown-link[aria-current='page'] {
+  background-color: var(--color-kado-cream-deep);
+  color: var(--color-kado-dark);
+  font-weight: 600;
+}
+
+/* Standalone cream CTA on red bar (Join) — matches nav shell */
+.public-nav-cta {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  background-color: var(--color-kado-cream);
+  color: var(--color-kado-dark);
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.public-nav-cta:hover {
+  background-color: var(--color-kado-cream-light);
+}
+
+.public-nav-cta:active {
+  transform: scale(0.98);
+}
+
+/* Ghost action on red bar (Sign in, cart hover) */
+.public-nav-ghost {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0 0.625rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.public-nav-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.public-nav-icon-btn {
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.92);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.public-nav-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Mobile drawer — one cream panel, flat rows */
+.public-nav-mobile-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  border-radius: 1rem;
+  background-color: var(--color-kado-cream);
+  padding: 0.35rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.public-nav-mobile-link {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.875rem;
+  background-color: transparent;
+  color: var(--color-kado-dark);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: background-color 160ms ease;
+}
+
+.public-nav-mobile-link:hover {
+  background-color: rgba(25, 25, 25, 0.06);
+}
+
+.public-nav-mobile-link.is-active,
+.public-nav-mobile-link[aria-current='page'],
+.public-nav-mobile-link[aria-expanded='true'] {
+  background-color: var(--color-kado-cream-deep);
+  font-weight: 600;
+}
+
+.public-nav-mobile-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  border-top: 1px solid rgba(25, 25, 25, 0.06);
+  padding: 0.25rem 0.25rem 0.125rem;
+  margin-top: 0.125rem;
+}
+
+.public-nav-mobile-sub .public-nav-dropdown-link {
+  margin: 0;
 }
 
 /* Customer site — ignore OS dark mode; admin uses .dash-dark */

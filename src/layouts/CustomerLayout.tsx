@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useCartToggle } from '../hooks/useCartToggle';
 import CartDrawer from '../components/CartDrawer';
-import { PUBLIC_SITE_NAV } from '../config/siteNav';
+import { flattenPublicNavLinks } from '../components/nav/PublicSiteNavMenu';
 import { ACCOUNT_NAV } from '../config/accountNav';
 import { requestCookiePreferences } from '../lib/cookieConsent';
 
@@ -61,15 +61,25 @@ export default function CustomerLayout() {
           </Link>
 
           <div className="hidden lg:flex items-center gap-1 bg-kado-offwhite/80 backdrop-blur-md px-2 py-1.5 rounded-full border border-kado-dark/10 shadow-sm">
-            {PUBLIC_SITE_NAV.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="text-[12px] font-medium transition-colors whitespace-nowrap px-3 py-1.5 rounded-full text-kado-dark/70 hover:text-kado-red"
-              >
-                {link.label}
-              </Link>
-            ))}
+                {flattenPublicNavLinks().map((link) =>
+                  'path' in link ? (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className="text-[12px] font-medium transition-colors whitespace-nowrap px-3 py-1.5 rounded-full text-kado-dark/70 hover:text-kado-red"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="text-[12px] font-medium transition-colors whitespace-nowrap px-3 py-1.5 rounded-full text-kado-dark/70 hover:text-kado-red"
+                    >
+                      {link.label}
+                    </a>
+                  ),
+                )}
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -112,6 +122,7 @@ export default function CustomerLayout() {
             </button>
 
             <button
+              type="button"
               className="lg:hidden text-kado-dark hover:text-kado-red transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
@@ -134,20 +145,31 @@ export default function CustomerLayout() {
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/40 px-4 pb-1">
                   Site
                 </p>
-                {PUBLIC_SITE_NAV.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={`text-sm font-medium py-2.5 px-4 rounded-xl ${
-                      location.pathname === link.path
-                        ? 'bg-kado-dark text-white'
-                        : 'text-kado-dark/80 hover:bg-kado-dark/5 hover:text-kado-red'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {flattenPublicNavLinks().map((link) =>
+                  'path' in link ? (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      onClick={() => setMobileOpen(false)}
+                      className={`text-sm font-medium py-2.5 px-4 rounded-xl ${
+                        location.pathname === link.path
+                          ? 'bg-kado-dark text-white'
+                          : 'text-kado-dark/80 hover:bg-kado-dark/5 hover:text-kado-red'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="text-sm font-medium py-2.5 px-4 rounded-xl text-kado-dark/80 hover:bg-kado-dark/5 hover:text-kado-red"
+                    >
+                      {link.label}
+                    </a>
+                  ),
+                )}
                 <div className="my-2 border-t border-kado-dark/10" />
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/40 px-4 pb-1">
                   My account

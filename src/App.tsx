@@ -29,6 +29,9 @@ import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
 import Merch from './pages/Merch';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
+import Pastries from './pages/Pastries';
 import BookBooth from './pages/BookBooth';
 import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -84,6 +87,9 @@ export default function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/order" element={<Order />} />
           <Route path="/merch" element={<Merch />} />
+          <Route path="/pastries" element={<Pastries />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/book/booth" element={<BookBooth />} />
           <Route path="/legal/terms" element={<TermsOfService />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
