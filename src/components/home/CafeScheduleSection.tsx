@@ -57,17 +57,17 @@ export default function CafeScheduleSection({ copy }: Props) {
   if (!activeBranch) return null;
 
   return (
-    <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-[#F7F2E9] border-y border-kado-dark/10">
+    <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-offwhite border-y border-kado-dark/10">
       <div className="max-w-[1200px] mx-auto">
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
-            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-kado-red">
+            <p className="mb-3 kado-label text-kado-red">
               {copy?.badge ?? 'Kado Kohi'}
             </p>
-            <h2 className="font-display text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[0.95] text-kado-dark">
+            <h2 className="kado-h2 text-kado-dark">
               {copy?.title ?? 'Cafe Hours'}
             </h2>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-kado-dark/70 sm:text-base">
+            <p className="mt-4 max-w-md kado-body text-kado-dark/70">
               {copy?.description ??
                 'Your daily coffee routine, now clearly scheduled. Check our opening hours before dropping by for coffee, matcha, and community nights.'}
             </p>
@@ -77,21 +77,21 @@ export default function CafeScheduleSection({ copy }: Props) {
             <div className="rounded-[1.5rem] bg-kado-red px-4 py-5 sm:px-6 sm:py-6 text-kado-cream">
               {scheduleRows.map((row) => (
                 <div key={row.dayLabel} className="flex items-center justify-between gap-4 border-b border-kado-cream/20 py-2.5 last:border-b-0">
-                  <span className="text-sm font-semibold uppercase tracking-[0.14em] sm:text-base">{row.dayLabel}</span>
-                  <span className="text-sm font-bold sm:text-base">{row.hours}</span>
+                  <span className="kado-body font-semibold uppercase tracking-[0.14em]">{row.dayLabel}</span>
+                  <span className="kado-body font-bold">{row.hours}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-center text-xs font-medium text-kado-dark/65 sm:text-sm">
+            <p className="mt-4 text-center kado-body-sm text-kado-dark/65">
               {activeBranch.address}, {activeBranch.city}
             </p>
-            <p className="mt-1 text-center text-xs font-medium text-kado-dark/65 sm:text-sm">
+            <p className="mt-1 text-center kado-body-sm text-kado-dark/65">
               {copy?.phone ?? '+63 920 948 2934'}
             </p>
           </div>
         </div>
 
-        <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.14em] text-kado-dark/55">
+        <p className="mt-6 kado-subtext font-medium uppercase tracking-[0.14em] text-kado-dark/55">
           {copy?.creditLine ?? 'Featured local photos credited to InsideMarikina.'}
         </p>
       </div>

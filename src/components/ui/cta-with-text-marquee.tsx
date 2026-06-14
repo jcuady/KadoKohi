@@ -122,15 +122,15 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 lg:items-end animate-fade-in-up">
           {/* Copy */}
           <div className="max-w-xl">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-kado-red mb-5">
+            <p className="kado-label mb-5 flex items-center gap-2 text-kado-red">
               <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden />
               {copy?.badge ?? 'The Inner Circle'}
             </p>
-            <h2 className="font-display font-bold leading-[0.95] tracking-tight text-white mb-4 sm:mb-5 text-[clamp(2rem,6vw,4rem)]">
+            <h2 className="kado-h2 mb-4 sm:mb-5 text-white">
               {copy?.titleBefore ?? 'Join the'}{' '}
               <span className="text-kado-red not-italic">{copy?.titleAccent ?? 'Kado Circle.'}</span>
             </h2>
-            <p className="text-white/55 font-medium text-base md:text-lg leading-relaxed">
+            <p className="kado-body md:text-base text-white/55">
               {copy?.body ??
                 'Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a local.'}
             </p>
@@ -155,7 +155,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-[#7d1115] transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
+                className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-kado-red-hover transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
               >
                 {submitting ? 'Sending…' : (copy?.submitLabel ?? 'Request access')}{' '}
                 {!submitting ? <ArrowRight className="w-4 h-4" aria-hidden /> : null}
@@ -223,7 +223,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             { num: '∞', label: 'Good vibes' },
           ]).map(({ num, label }) => (
             <div key={label}>
-              <p className="font-display font-bold text-3xl md:text-4xl text-white mb-1">{num}</p>
+              <p className="kado-h3 text-white mb-1">{num}</p>
               <p className="text-white/40 text-xs uppercase tracking-widest font-bold">{label}</p>
             </div>
           ))}

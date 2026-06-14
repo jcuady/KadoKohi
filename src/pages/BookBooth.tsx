@@ -84,7 +84,7 @@ export default function BookBooth() {
 
             <a
               href="#booking-form"
-              className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-[#7d1115] transition-colors"
+              className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
             >
               Book an Event <ArrowDown className="w-4 h-4 shrink-0" />
             </a>

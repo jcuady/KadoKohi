@@ -138,7 +138,7 @@ export default function AccountDashboard() {
                 key={i}
                 className={`w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   i < stamps
-                    ? 'bg-kado-red/20 border-2 border-kado-red text-kado-red shadow-[0_0_12px_rgba(155,43,44,0.2)]'
+                    ? 'bg-kado-red/20 border-2 border-kado-red text-kado-red shadow-[0_0_12px_rgba(158,24,29,0.2)]'
                     : 'bg-white/5 border border-white/10 text-white/15'
                 }`}
               >

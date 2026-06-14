@@ -124,7 +124,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
   };
 
   return (
-    <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-[#EFE6D5]">
+    <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-cream">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -139,13 +139,13 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
           transition={{ duration: 0.45 }}
           className="text-center mb-12 sm:mb-16 md:mb-20"
         >
-          <span className="inline-flex items-center gap-2 text-kado-red font-bold tracking-[0.2em] uppercase text-[10px] sm:text-xs mb-4 bg-kado-red/10 px-3 sm:px-4 py-2 rounded-full border border-kado-red/20 shadow-sm">
+          <span className="inline-flex items-center gap-2 kado-label text-kado-red bg-kado-red/10 px-3 sm:px-4 py-2 rounded-full border border-kado-red/20 shadow-sm">
             <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> {copy.badge}
           </span>
-          <h2 className="font-display text-[clamp(1.75rem,7vw,4.5rem)] md:text-6xl lg:text-8xl font-bold text-[#2A2626] leading-[1.08] px-1">
+          <h2 className="kado-h2 text-kado-dark leading-[1.08] px-1">
             {copy.title}
           </h2>
-          <p className="text-base sm:text-lg md:text-2xl text-[#4A423C] font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0 leading-relaxed">
+          <p className="kado-body md:text-base text-kado-dark/80 font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0">
             {copy.subtitle}
           </p>
         </motion.div>
@@ -180,11 +180,11 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                         initial={{ opacity: 0, x: -12 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="bg-[#EFE6D5] text-[#2A2626] font-display font-bold text-xl sm:text-2xl lg:text-3xl px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] shadow-2xl leading-none text-center shrink-0 self-start"
+                        className="bg-kado-cream text-kado-dark kado-h3 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] shadow-2xl leading-none text-center shrink-0 self-start"
                       >
                         {day}
                         <br />
-                        <span className="text-[10px] sm:text-xs font-sans uppercase tracking-widest text-kado-red mt-1 block">
+                        <span className="kado-label text-kado-red mt-1 block">
                           {month}
                         </span>
                       </motion.div>
@@ -209,11 +209,11 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                           {i > 0 && <span className="text-white/30 font-bold self-start mt-1 hidden sm:inline">:</span>}
                           <motion.div className="text-center min-w-[2.25rem]">
                             <span
-                              className={`block font-display font-bold text-lg sm:text-2xl lg:text-4xl leading-none ${red ? 'text-kado-red' : 'text-white'}`}
+                              className={`block kado-h3 leading-none ${red ? 'text-kado-red' : 'text-white'}`}
                             >
                               {String(v).padStart(2, '0')}
                             </span>
-                            <span className="text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest text-[#A09A90] font-bold mt-0.5 sm:mt-1 block">
+                            <span className="kado-subtext uppercase tracking-widest text-kado-cream/70 font-semibold mt-0.5 sm:mt-1 block">
                               {l}
                             </span>
                           </motion.div>
@@ -233,10 +233,10 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                   viewport={{ once: true }}
                   transition={{ delay: 0.1 }}
                 >
-                  <h3 className="font-display font-bold text-2xl sm:text-4xl lg:text-7xl text-white mb-3 sm:mb-4 lg:mb-6 leading-[1.1]">
+                  <h3 className="kado-h2 text-white mb-3 sm:mb-4 lg:mb-6 leading-[1.1]">
                     {ev.title}
                   </h3>
-                  <p className="text-[#EFE6D5]/90 font-medium text-sm sm:text-lg lg:text-2xl leading-relaxed mb-6 sm:mb-8 line-clamp-6 sm:line-clamp-none">
+                  <p className="text-kado-cream/90 kado-body md:text-base leading-relaxed mb-6 sm:mb-8 line-clamp-6 sm:line-clamp-none">
                     {ev.description}
                   </p>
                   {durationLabel && (
@@ -246,7 +246,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
                   )}
                   <Link
                     to={ctaHref}
-                    className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-red-500/50 shadow-[0_0_30px_rgba(155,43,44,0.4)] transition-all"
+                    className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-kado-red/40 shadow-[0_0_30px_rgba(158,24,29,0.35)] transition-all"
                   >
                     {ctaLabel} <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
                   </Link>
@@ -293,12 +293,12 @@ function BranchesStrip({ copy }: { copy: BranchesStripCopy }) {
           className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12"
         >
           <div>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">{copy.badge}</span>
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-kado-cream">{copy.title}</h2>
+            <span className="kado-label text-kado-red mb-3 block">{copy.badge}</span>
+            <h2 className="kado-h2 text-kado-cream">{copy.title}</h2>
           </div>
           <Link
             to="/branches"
-            className="text-kado-cream/60 hover:text-kado-red text-sm font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+            className="kado-label text-kado-cream/60 hover:text-white flex items-center gap-1 transition-colors"
           >
             {copy.ctaLabel} <ArrowRight className="w-4 h-4" />
           </Link>
@@ -342,7 +342,7 @@ function BranchesStrip({ copy }: { copy: BranchesStripCopy }) {
                   </div>
 
                   <div>
-                    <h3 className="font-display font-bold text-xl md:text-2xl text-kado-cream mb-1 group-hover:text-kado-red transition-colors">
+                    <h3 className="kado-h3 text-kado-cream mb-1 group-hover:text-white transition-colors">
                       {branch.name}
                     </h3>
                     <p className="text-kado-cream/55 text-sm flex items-start gap-1.5">

@@ -78,7 +78,7 @@ export default function AboutSection2({ copy }: Props) {
           animationNum={0}
           timelineRef={heroRef}
           customVariants={textVariants}
-          className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red sm:mb-6"
+          className="mb-5 kado-label text-kado-red sm:mb-6"
         >
           {copy.badge}
         </TimelineContent>
@@ -89,7 +89,7 @@ export default function AboutSection2({ copy }: Props) {
           animationNum={1}
           timelineRef={heroRef}
           customVariants={revealVariants}
-          className="max-w-4xl font-display text-[clamp(1.5rem,4.5vw,2.75rem)] font-bold leading-[1.16] tracking-tight text-kado-dark [@media(orientation:landscape)_and_(max-height:30rem)]:text-[clamp(1.35rem,4vw,2rem)]"
+          className="max-w-4xl kado-h2 text-kado-dark"
         >
           <AccentHeadline copy={copy.headline} />
         </TimelineContent>
@@ -99,7 +99,7 @@ export default function AboutSection2({ copy }: Props) {
           animationNum={2}
           timelineRef={heroRef}
           customVariants={textVariants}
-          className="mt-6 max-w-2xl font-sans text-[0.9375rem] leading-[1.75] text-kado-dark/70 sm:mt-8 sm:text-base sm:leading-[1.8]"
+          className="mt-6 max-w-2xl kado-body text-kado-dark/70 sm:mt-8 sm:text-base"
         >
           {copy.intro}
         </TimelineContent>
@@ -121,14 +121,14 @@ export default function AboutSection2({ copy }: Props) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
               <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-kado-cream/60">
+                <p className="kado-label text-kado-cream/60">
                   {pillar.subtitle}
                 </p>
-                <h3 className="mt-1 font-display text-lg font-bold text-kado-cream sm:text-xl lg:text-2xl">
+                <h3 className="mt-1 kado-h3 text-kado-cream">
                   {pillar.title}
                 </h3>
                 {pillar.body ? (
-                  <p className="mt-2 text-xs leading-relaxed text-kado-cream/80 sm:text-sm">{pillar.body}</p>
+                  <p className="mt-2 kado-body-sm text-kado-cream/80">{pillar.body}</p>
                 ) : null}
               </div>
             </TimelineContent>
@@ -140,7 +140,7 @@ export default function AboutSection2({ copy }: Props) {
           animationNum={6}
           timelineRef={heroRef}
           customVariants={textVariants}
-          className="mt-8 max-w-2xl font-sans text-sm leading-relaxed text-kado-dark/65 sm:mt-10 sm:text-[0.9375rem] sm:leading-[1.75]"
+          className="mt-8 max-w-2xl kado-body text-kado-dark/65 sm:mt-10"
         >
           Rated {rating}★ on Google ({reviewCount} reviews).{' '}
           <Link to="/menu" className={linkClass}>
@@ -158,8 +158,8 @@ export default function AboutSection2({ copy }: Props) {
 
         <div className="mt-8 flex flex-col gap-6 sm:mt-10 sm:flex-row sm:items-end sm:justify-between">
           <TimelineContent as="div" animationNum={7} timelineRef={heroRef} customVariants={textVariants}>
-            <p className="font-sans text-sm font-medium text-kado-dark/60 sm:text-base">{copy.footerTagline1}</p>
-            <p className="font-display text-lg font-bold uppercase tracking-wide text-kado-red sm:text-xl">
+            <p className="kado-body text-kado-dark/60 sm:text-base">{copy.footerTagline1}</p>
+            <p className="kado-h3 uppercase tracking-wide text-kado-red">
               {copy.footerTagline2}
             </p>
           </TimelineContent>
@@ -183,7 +183,7 @@ export default function AboutSection2({ copy }: Props) {
           aria-label="Kado Coffee social media"
           className="mt-10 border-t border-kado-dark/8 pt-8 sm:mt-12"
         >
-          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-kado-dark/40">
+          <p className="mb-4 kado-label text-kado-dark/40">
             {copy.socialHeading}
           </p>
           <ul className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
@@ -199,7 +199,7 @@ export default function AboutSection2({ copy }: Props) {
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-kado-dark/10 bg-white transition-colors group-hover:border-kado-red group-hover:bg-kado-red group-hover:text-kado-cream">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
-                  <span className="min-w-0 truncate font-sans text-sm font-semibold">{handle}</span>
+                  <span className="min-w-0 truncate kado-body font-semibold">{handle}</span>
                 </a>
               </li>
             ))}

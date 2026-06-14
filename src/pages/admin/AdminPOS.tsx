@@ -306,7 +306,7 @@ export default function AdminPOS() {
             type="button"
             disabled={!cart.length}
             onClick={placeOrder}
-            className="mt-4 w-full rounded-xl bg-kado-red text-kado-cream py-3.5 text-sm font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-[#7d1115] transition-colors"
+            className="mt-4 w-full rounded-xl bg-kado-red text-kado-cream py-3.5 text-sm font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-red-hover transition-colors"
           >
             Place POS order
           </button>

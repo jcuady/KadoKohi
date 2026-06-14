@@ -120,7 +120,7 @@ function VisualOnlineOrder() {
       <div className="absolute right-0 top-[2%] w-[72%] rounded-2xl overflow-hidden shadow-2xl border border-kado-dark/10">
         <div className="bg-kado-dark/90 px-3 py-2 flex items-center gap-2">
           <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-500/80" />
+            <div className="w-2 h-2 rounded-full bg-kado-red/80" />
             <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
             <div className="w-2 h-2 rounded-full bg-green-500/80" />
           </div>
@@ -391,7 +391,7 @@ function FeatureCard({
                 </motion.div>
 
                 <motion.h3
-                  className="font-display text-2xl md:text-3xl font-bold text-kado-dark leading-tight tracking-tight"
+                  className="kado-h3 text-kado-dark leading-tight tracking-tight"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
@@ -540,19 +540,19 @@ export function KadoOrderingCarousel({
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
           <div>
-            <span className="text-kado-red font-bold tracking-[0.2em] uppercase text-xs mb-3 block">
+            <span className="kado-label mb-3 block text-kado-red">
               {copy?.badge ?? 'How it works'}
             </span>
-            <h2 className="font-display text-[clamp(1.75rem,5.5vw,3.75rem)] md:text-5xl lg:text-6xl font-bold text-kado-dark leading-tight">
+            <h2 className="kado-h2 text-kado-dark">
               {copy?.title ?? 'Order your way.'}
             </h2>
           </div>
-          <p className="text-kado-dark/55 font-medium max-w-sm text-sm md:text-base hidden md:block leading-relaxed">
+          <p className="kado-body hidden max-w-sm text-kado-dark/55 md:block">
             {copy?.subtitleDesktop ??
               'Walk in, order online, or scan a table QR — then collect stamps every time.'}
           </p>
         </div>
-        <p className="text-kado-dark/55 text-sm leading-relaxed md:hidden -mt-2">
+        <p className="kado-body -mt-2 text-kado-dark/55 md:hidden">
           {copy?.subtitleMobile ?? 'In-store, online, QR at your table — earn stamps every visit.'}
         </p>
 

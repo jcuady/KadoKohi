@@ -105,17 +105,17 @@ export function AnimatedTestimonials({
           <motion.div variants={itemVariants} className="flex flex-col justify-center">
             <div className="space-y-6">
               {badgeText && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-kado-red/10 text-kado-red">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full kado-label bg-kado-red/10 text-kado-red">
                   <Star className="h-3 w-3 fill-kado-red" />
                   <span>{badgeText}</span>
                 </div>
               )}
 
-              <h2 className="font-display text-[clamp(1.625rem,5vw,3rem)] sm:text-4xl md:text-5xl font-bold tracking-tight text-kado-dark leading-tight">
+              <h2 className="kado-h2 text-kado-dark">
                 {title}
               </h2>
 
-              <p className="max-w-[520px] text-kado-dark/60 text-base md:text-lg leading-relaxed">
+              <p className="max-w-[520px] kado-body md:text-base text-kado-dark/60">
                 {subtitle}
               </p>
 

@@ -4,6 +4,7 @@
 export const BRAND = {
   cream: '#F1DFBA',
   red: '#9E181D',
+  redHover: '#801419',
   dark: '#191919',
   offwhite: '#FAF9F6',
   muted: '#5C5348',
@@ -16,7 +17,10 @@ export const FONT_BODY = '"M PLUS 1", ui-sans-serif, system-ui, sans-serif';
 export const FONT_MONO = 'ui-monospace, "Cascadia Mono", Consolas, monospace';
 
 export const LOGO = {
+  /** Horizontal KADO KOHI wordmark — primary nav mark */
   wordmark: '/logo/Logo1.png',
+  /** Stacked KADO / KŌHĪ lockup */
+  stackedWordmark: '/logo/Copy%20of%20KADO%20LOGOS-01.png',
   hybridMark: '/logo/Logo2.png',
 } as const;
 

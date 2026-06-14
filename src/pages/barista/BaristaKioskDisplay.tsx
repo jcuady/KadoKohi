@@ -334,7 +334,7 @@ export default function BaristaKioskDisplay() {
             <button
               type="button"
               onClick={requestFullScreen}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-kado-red px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-md shadow-kado-red/20 transition-colors hover:bg-[#7d1115]"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-kado-red px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-md shadow-kado-red/20 transition-colors hover:bg-kado-red-hover"
             >
               <Monitor className="h-4 w-4" />
               <span className="hidden sm:inline">Fullscreen</span>

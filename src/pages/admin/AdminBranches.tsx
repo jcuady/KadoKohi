@@ -261,7 +261,7 @@ export default function AdminBranches() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-xl bg-kado-red text-kado-cream py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#7d1115] transition-colors disabled:opacity-60"
+              className="flex-1 rounded-xl bg-kado-red text-kado-cream py-3 text-sm font-bold uppercase tracking-wider hover:bg-kado-red-hover transition-colors disabled:opacity-60"
             >
               {saving ? 'Saving…' : editingId ? 'Save' : 'Create'}
             </button>

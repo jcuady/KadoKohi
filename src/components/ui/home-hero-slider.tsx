@@ -34,7 +34,7 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
   return (
     <section
       id="landing-hero"
-      className="relative h-[calc(100svh-3.5rem)] md:h-[calc(100svh-3.75rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
+      className="relative h-[calc(100svh-3.5rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
     >
       <AnimatePresence mode="wait">
         <motion.img
@@ -53,23 +53,23 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
 
       <div className="relative z-10 grid h-full grid-cols-1 items-end gap-6 md:gap-8 px-5 pb-28 pt-16 sm:px-8 sm:pb-32 md:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.8fr)] md:px-12 md:pb-12 lg:px-20">
         <div className="max-w-3xl">
-          <p className="mb-3 text-[10px] sm:text-xs font-bold uppercase tracking-[0.24em] text-kado-cream/85 drop-shadow-md">
+          <p className="kado-label mb-3 text-kado-cream/85 drop-shadow-md">
             {c?.locationBadge ?? 'Kado Kohi · Marikina'}
           </p>
-          <h1 className="font-display text-[clamp(1.75rem,5vw,3.25rem)] font-bold leading-[1.05] tracking-[-0.015em] text-white drop-shadow-lg">
+          <h1 className="kado-h1 kado-h1-hero text-white drop-shadow-lg">
             {c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
           </h1>
-          <h2 className="mt-3 font-display text-[clamp(1.5rem,4.5vw,3rem)] font-bold leading-[0.98] tracking-[-0.01em] text-kado-cream/95 drop-shadow-md">
+          <h2 className="mt-3 kado-h2 text-kado-cream/95 drop-shadow-md">
             {current.title}
           </h2>
-          <p className="mt-4 sm:mt-5 max-w-2xl text-sm sm:text-base md:text-lg font-medium leading-relaxed text-kado-cream/90 drop-shadow-md">
+          <p className="mt-4 sm:mt-5 max-w-2xl kado-body md:text-base leading-relaxed text-kado-cream/90 drop-shadow-md">
             {current.subtitle}
           </p>
 
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Link
               to={c?.primaryCtaPath ?? '/menu'}
-              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-sm bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-[#7d1115] shadow-lg shadow-kado-red/30"
+              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-sm bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-kado-red-hover shadow-lg shadow-kado-red/30"
             >
               {c?.primaryCtaLabel ?? 'Explore Menu'} <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>

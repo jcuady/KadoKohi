@@ -100,27 +100,22 @@ function DrinkCard({
       </span>
 
       <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-5">
-        <p className="mb-1 font-sans text-[9px] font-semibold uppercase tracking-[0.16em] text-kado-cream/55 sm:text-[10px]">
+        <p className="mb-1 kado-label text-kado-cream/55">
           {categoryLabel}
         </p>
         <div className="flex items-end justify-between gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
-            <h3
-              className={[
-                'font-display font-bold leading-tight text-kado-offwhite line-clamp-2',
-                hero ? 'text-lg sm:text-2xl lg:text-3xl' : 'text-base sm:text-xl',
-              ].join(' ')}
-            >
+            <h3 className="kado-h3 text-kado-offwhite line-clamp-2">
               {drink.name}
             </h3>
             {!hero && (
-              <p className="mt-1 line-clamp-2 font-sans text-[11px] font-medium leading-snug text-kado-cream/70 sm:text-xs">
+              <p className="mt-1 line-clamp-2 kado-body-sm text-kado-cream/70">
                 {drinkBlurb(drink)}
               </p>
             )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
-            <span className="font-display text-base font-bold text-kado-cream sm:text-xl">
+            <span className="kado-h3 text-kado-cream">
               {formatPhp(drink.basePrice)}
             </span>
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-kado-cream backdrop-blur-sm transition-colors group-hover:bg-kado-red group-hover:border-kado-red sm:h-9 sm:w-9">
@@ -129,11 +124,11 @@ function DrinkCard({
           </div>
         </div>
         {hero && (
-          <p className="mt-2 line-clamp-3 font-sans text-xs font-medium leading-relaxed text-kado-cream/75 sm:mt-3 sm:line-clamp-none sm:text-sm">
+          <p className="mt-2 line-clamp-3 kado-body-sm text-kado-cream/75 sm:mt-3 sm:line-clamp-none">
             {drinkBlurb(drink)}
           </p>
         )}
-        <p className="mt-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-kado-cream/45 transition-colors group-hover:text-kado-cream/80 sm:mt-3 sm:text-[10px] sm:tracking-[0.14em]">
+        <p className="mt-2 kado-subtext font-semibold uppercase tracking-[0.12em] text-kado-cream/45 transition-colors group-hover:text-kado-cream/80 sm:mt-3">
           {orderHint}
         </p>
       </div>
@@ -205,7 +200,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kado-red font-display text-base font-black text-kado-cream shadow-md sm:h-11 sm:w-11 sm:text-lg">
                 角
               </span>
-              <span className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 font-sans text-[9px] font-bold uppercase tracking-[0.18em] text-kado-red sm:text-[10px] sm:tracking-[0.2em]">
+              <span className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label text-kado-red">
                 {copy.badge}
               </span>
             </TimelineContent>
@@ -215,7 +210,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               id="featured-coffees-heading"
               animationNum={1}
               timelineRef={sectionRef}
-              className="font-display text-[1.55rem] font-bold leading-[1.12] tracking-tight text-kado-dark sm:text-3xl sm:leading-[1.08] md:text-4xl lg:text-[3.25rem]"
+              className="kado-h2 text-kado-dark"
             >
               {copy.title}
             </TimelineContent>
@@ -224,7 +219,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               as="p"
               animationNum={2}
               timelineRef={sectionRef}
-              className="mt-3 max-w-xl font-sans text-sm font-medium leading-relaxed text-kado-dark/70 sm:mt-4 sm:text-base"
+              className="mt-3 max-w-xl kado-body text-kado-dark/70 sm:mt-4"
             >
               <span className="hidden md:inline">{copy.subtitleDesktop}</span>
               <span className="md:hidden">{copy.subtitleMobile}</span>
@@ -261,7 +256,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               <div className="hidden aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 sm:block lg:col-span-5 lg:aspect-auto lg:min-h-[16rem] lg:w-auto" />
             </div>
           ) : showcaseDrinks.length === 0 ? (
-            <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 font-sans text-sm font-medium text-kado-dark/60 sm:px-6 sm:py-8">
+            <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 sm:px-6 sm:py-8">
               No coffee items are available on the menu yet. Add products in Admin → Menu, then select
               them in Homepage content.
             </p>
@@ -296,7 +291,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
                 </div>
                 <div className="mt-4 flex items-center justify-center gap-1.5">
                   <ChevronRight className="h-3.5 w-3.5 text-kado-dark/35" aria-hidden />
-                  <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-kado-dark/40">
+                  <p className="kado-subtext font-semibold uppercase tracking-[0.18em] text-kado-dark/40">
                     Swipe for more
                   </p>
                 </div>

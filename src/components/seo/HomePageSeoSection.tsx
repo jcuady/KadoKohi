@@ -32,26 +32,26 @@ export default function HomePageSeoSection({ copy }: Props) {
       className={`customer-menu-page border-t border-kado-dark/6 bg-kado-offwhite ${sectionPad}`}
     >
       <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
-        <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red sm:mb-5">
+        <p className="mb-4 kado-label text-kado-red sm:mb-5">
           {copy.locationBadge}
         </p>
 
         <h2
           id="home-menu-seo-heading"
-          className="max-w-4xl font-display text-[clamp(1.5rem,4.5vw,2.75rem)] font-bold leading-[1.16] tracking-tight text-kado-dark [@media(orientation:landscape)_and_(max-height:30rem)]:text-[clamp(1.35rem,4vw,2rem)]"
+          className="max-w-4xl kado-h2 text-kado-dark"
         >
           <AccentHeadline copy={copy.headline} />
           <span className="sr-only">{SEO_HOME_H1}. </span>
         </h2>
 
         <div className="mt-6 flex flex-col gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3">
-          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 text-sm font-medium text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
+          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 kado-body text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
             <Star className="h-4 w-4 shrink-0 fill-kado-red text-kado-red" aria-hidden />
             <span className="truncate">
               {rating}★ · {reviewCount} Google reviews
             </span>
           </div>
-          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 text-sm font-medium text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
+          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 kado-body text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
             <MapPin className="h-4 w-4 shrink-0 text-kado-red" aria-hidden />
             <span className="truncate">{copy.locationChipLabel}</span>
           </div>
@@ -67,10 +67,10 @@ export default function HomePageSeoSection({ copy }: Props) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/55 to-kado-dark/15" />
               <div className="relative mt-auto flex flex-col p-4 sm:p-5 lg:p-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-kado-cream/65">
+                <p className="kado-label text-kado-cream/65">
                   {pillar.subtitle}
                 </p>
-                <h3 className="mt-1 font-display text-lg font-bold text-kado-cream sm:text-xl lg:text-2xl">
+                <h3 className="mt-1 kado-h3 text-kado-cream">
                   {pillar.title}
                 </h3>
                 <ul className="mt-2 space-y-1 border-t border-white/10 pt-2 sm:mt-3 sm:space-y-1.5 sm:pt-3">

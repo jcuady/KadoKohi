@@ -156,7 +156,7 @@ export default function InternalLogin() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-[#7d1115] transition-colors mt-2 disabled:opacity-60"
+            className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 font-bold uppercase tracking-wider text-sm hover:bg-kado-red-hover transition-colors mt-2 disabled:opacity-60"
           >
             {submitting ? 'Signing in…' : `Sign in — ${tabs.find((currentTab) => currentTab.key === tab)?.label}`}
           </button>

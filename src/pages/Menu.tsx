@@ -296,7 +296,7 @@ function LoyaltyCard() {
                 <div
                   className={`w-12 h-12 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center transition-all ${
                     i < 3
-                      ? 'border-kado-red bg-kado-red/10 text-kado-red shadow-[0_0_15px_rgba(155,43,44,0.25)]'
+                      ? 'border-kado-red bg-kado-red/10 text-kado-red shadow-[0_0_15px_rgba(158,24,29,0.25)]'
                       : 'border-white/10 bg-transparent text-white/20 border-dashed'
                   }`}
                 >
