@@ -1,4 +1,5 @@
 import type { Product } from '../types/domain';
+import { productFallbackDescription } from './menuProductModifiers';
 
 /** Category fallbacks — same sources as public /menu when admin image URL is empty. */
 export const PRODUCT_IMAGE_BY_CATEGORY: Record<string, string> = {
@@ -22,8 +23,5 @@ export function getProductImageUrl(product: Pick<Product, 'image' | 'categoryId'
 }
 
 export function getProductDescription(product: Product): string {
-  if (product.description?.trim()) return product.description.trim();
-  if (product.temperature === 'iced') return 'Served iced — crisp and refreshing.';
-  if (product.temperature === 'both') return 'Available hot or iced.';
-  return 'Crafted in-house with care.';
+  return productFallbackDescription(product);
 }

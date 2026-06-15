@@ -55,13 +55,20 @@ export interface StoredTestimonial {
   avatar: string;
 }
 
-export interface ScheduleCopy {
+export interface MixMatchSectionCopy {
   badge: string;
-  title: string;
+  titleTop: string;
+  titleBottom: string;
   description: string;
-  phone: string;
-  creditLine: string;
+  offerBadge: string;
+  offerNote: string;
+  ctaLabel: string;
+  featuredCtaLabel: string;
+  featuredProductId: string;
 }
+
+/** @deprecated CMS key `schedule` — homepage Mix & Match section (replaces cafe hours). */
+export type ScheduleCopy = MixMatchSectionCopy;
 
 export interface BrandMarqueeItem {
   label: string;
@@ -390,12 +397,15 @@ export const SEED_CONTENT: LandingContentState = {
   testimonialItems: SEED_TESTIMONIALS,
   trustedBrands: SEED_TRUSTED_BRANDS,
   schedule: {
-    badge: 'Kado Kohi',
-    title: 'Cafe Hours',
-    description:
-      'Your daily coffee routine, now clearly scheduled. Check our opening hours before dropping by for coffee, matcha, and community nights.',
-    phone: '+63 920 948 2934',
-    creditLine: 'Featured local photos credited to InsideMarikina.',
+    badge: 'Kukidō x Kado Kohi',
+    titleTop: 'Mix',
+    titleBottom: '& Match',
+    description: 'Pair any Kado Kohi drink with a Kukidō handcrafted cookie — build your bundle on the homepage or pastries page.',
+    offerBadge: '10% off on your bundle',
+    offerNote: 'In-store bundle · ask your barista',
+    ctaLabel: 'View pastries & collabs',
+    featuredCtaLabel: 'Order Kado Kukilatte',
+    featuredProductId: 'c8f3a1b2-6d4e-4f9a-b7c2-8e1d0f9a3b4c',
   },
   ordering: {
     badge: 'How it works',
@@ -438,6 +448,25 @@ function clampCardOverrides(tuple: [string, string, string] | undefined): [strin
 function clampFeaturedProducts(tuple: [string, string, string] | undefined): [string, string, string] {
   if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return ['', '', ''];
   return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
+}
+
+function clampMixMatchSection(
+  raw: (Partial<MixMatchSectionCopy> & { title?: string }) | undefined,
+): MixMatchSectionCopy {
+  const base = SEED_CONTENT.schedule;
+  if (!raw) return { ...base };
+  const legacyHours = Boolean(raw.title && !raw.titleTop);
+  return {
+    badge: raw.badge ?? base.badge,
+    titleTop: legacyHours ? base.titleTop : (raw.titleTop ?? base.titleTop),
+    titleBottom: legacyHours ? base.titleBottom : (raw.titleBottom ?? base.titleBottom),
+    description: legacyHours ? base.description : (raw.description ?? base.description),
+    offerBadge: raw.offerBadge ?? base.offerBadge,
+    offerNote: raw.offerNote ?? base.offerNote,
+    ctaLabel: raw.ctaLabel ?? base.ctaLabel,
+    featuredCtaLabel: raw.featuredCtaLabel ?? base.featuredCtaLabel,
+    featuredProductId: raw.featuredProductId ?? base.featuredProductId,
+  };
 }
 
 function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
@@ -601,7 +630,7 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
     testimonials: { ...SEED_CONTENT.testimonials, ...(raw.testimonials ?? {}) },
     testimonialItems: clampTestimonials(raw.testimonialItems),
     trustedBrands: clampBrandList(raw.trustedBrands as unknown[] | undefined, SEED_TRUSTED_BRANDS),
-    schedule: { ...SEED_CONTENT.schedule, ...(raw.schedule ?? {}) },
+    schedule: clampMixMatchSection(raw.schedule as Partial<MixMatchSectionCopy> & { title?: string }),
     ordering: {
       ...SEED_CONTENT.ordering,
       ...(raw.ordering ?? {}),

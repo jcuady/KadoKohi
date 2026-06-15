@@ -9,6 +9,7 @@ import type { Product } from '../types/domain';
 import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import { isIcedOnlyDrink, productFallbackDescription } from '../lib/menuProductModifiers';
 
 function categoryIcon(categoryId: string, categoryName?: string): React.ReactNode {
   if (categoryName?.trim().toLowerCase() === 'pastries') {
@@ -166,15 +167,9 @@ export default function Menu() {
             >
               {paginatedItems.map((product, i) => {
                 const image = getMenuProductImageUrl(product);
-                const tag = product.tags?.[0];
+                const tag = isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0];
                 const inStock = isProductInStock(product);
-                const desc =
-                  product.description ??
-                  (product.temperature === 'iced'
-                    ? 'Served iced — crisp and refreshing.'
-                    : product.temperature === 'both'
-                      ? 'Available hot or iced.'
-                      : 'Crafted in-house with care.');
+                const desc = productFallbackDescription(product);
 
                 return (
                   <motion.button

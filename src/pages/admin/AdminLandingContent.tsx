@@ -586,17 +586,41 @@ export default function AdminLandingContent() {
         ) : null}
 
         {activeTab === 'schedule' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Cafe hours">
+          <div className="space-y-6" role="tabpanel" aria-label="Mix and Match">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Schedule</h2>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match (homepage)</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
-            <Field label="Title" value={content.schedule.title} onChange={(v) => updateSchedule({ title: v })} />
-            <Field label="Phone" value={content.schedule.phone} onChange={(v) => updateSchedule({ phone: v })} />
+            <Field label="Eyebrow" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
             <Field
-              label="Credit line"
-              value={content.schedule.creditLine}
-              onChange={(v) => updateSchedule({ creditLine: v })}
+              label="Headline line 1 (blue)"
+              value={content.schedule.titleTop}
+              onChange={(v) => updateSchedule({ titleTop: v })}
+            />
+            <Field
+              label="Headline line 2 (red)"
+              value={content.schedule.titleBottom}
+              onChange={(v) => updateSchedule({ titleBottom: v })}
+            />
+            <Field
+              label="Bundle badge"
+              value={content.schedule.offerBadge}
+              onChange={(v) => updateSchedule({ offerBadge: v })}
+            />
+            <Field
+              label="Bundle note"
+              value={content.schedule.offerNote}
+              onChange={(v) => updateSchedule({ offerNote: v })}
+            />
+            <Field label="CTA label" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
+            <Field
+              label="Featured order button"
+              value={content.schedule.featuredCtaLabel}
+              onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
+            />
+            <Field
+              label="Featured product ID"
+              value={content.schedule.featuredProductId}
+              onChange={(v) => updateSchedule({ featuredProductId: v })}
             />
           </div>
           <div className="mt-4">
@@ -608,6 +632,10 @@ export default function AdminLandingContent() {
               className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
             />
           </div>
+          <p className="mt-3 text-xs dash-muted">
+            Drink and cookie lists pull from the live menu (Pastries tab + mix-match drink tags). Hours moved to Branches
+            and Contact.
+          </p>
         </section>
           </div>
         ) : null}

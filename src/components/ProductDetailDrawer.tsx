@@ -9,6 +9,19 @@ import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
 import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp } from '../lib/money';
 import { isProductInStock } from '../lib/productStock';
+import { getMenuProductImageUrl } from '../lib/menuCatalog';
+import { isPastriesCategoryId, findPastriesCategory } from '../lib/pastriesCategory';
+import { useMenuStore } from '../store/menuStore';
+import {
+  defaultMilkId,
+  defaultOrderTemperature,
+  getOrderableMilks,
+  productFallbackDescription,
+  resolveMilkPriceDelta,
+  resolveOrderTemperature,
+  showMilkChoice,
+  showTemperatureChoice,
+} from '../lib/menuProductModifiers';
 
 const FALLBACK_BY_CATEGORY: Record<string, string> = {
   cat_classics:
@@ -43,6 +56,7 @@ export default function ProductDetailDrawer({
   requireAuthToOrder = false,
 }: Props) {
   const user = useAuthStore((s) => s.user);
+  const categories = useMenuStore((s) => s.categories);
   const addItem = useCartStore((s) => s.addItem);
   const orderHours = useOnlineOrderHours();
   const isCustomer = user?.role === 'customer';
@@ -71,11 +85,12 @@ export default function ProductDetailDrawer({
       setSelectedVariants(defaults);
       setSelectedMilkId('');
     } else {
-      setSelectedMilkId(product.milks?.[0]?.id ?? '');
-      setSelectedTemp(product.temperature === 'iced' ? 'iced' : 'hot');
+      setSelectedMilkId(defaultMilkId(product) ?? '');
+      const pastry = isPastriesCategoryId(categories, product.categoryId);
+      setSelectedTemp(defaultOrderTemperature(product, pastry));
       setSelectedVariants({});
     }
-  }, [product?.id]);
+  }, [product?.id, categories]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -83,10 +98,10 @@ export default function ProductDetailDrawer({
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const selectedMilk = useMemo(
-    () => (product && !isMerchProduct(product)) ? product.milks?.find((m) => m.id === selectedMilkId) : undefined,
-    [product, selectedMilkId],
-  );
+  const selectedMilk = useMemo(() => {
+    if (!product || isMerchProduct(product) || !showMilkChoice(product)) return undefined;
+    return getOrderableMilks(product).find((m) => m.id === selectedMilkId);
+  }, [product, selectedMilkId]);
 
   const variantsDelta = useMemo(() => {
     if (!product || !isMerchProduct(product)) return 0;
@@ -99,18 +114,16 @@ export default function ProductDetailDrawer({
     return d;
   }, [product, selectedVariants]);
 
-  const unitPrice = (product?.basePrice ?? 0) + (selectedMilk?.priceDelta ?? 0) + variantsDelta;
+  const unitPrice =
+    (product?.basePrice ?? 0) +
+    (product && !isMerchProduct(product) ? resolveMilkPriceDelta(product, selectedMilkId) : 0) +
+    variantsDelta;
   const lineTotal = unitPrice * qty;
 
   const desc = product
-    ? (product.description ??
-        (isMerch
-          ? 'Premium Kado Kohi merchandise.'
-          : (product as Product).temperature === 'iced'
-            ? 'Served iced — crisp and refreshing.'
-            : (product as Product).temperature === 'both'
-              ? 'Available hot or iced. Crafted with premium beans.'
-              : 'Carefully crafted in-house with our finest beans.'))
+    ? isMerch
+      ? product.description ?? 'Premium Kado Kohi merchandise.'
+      : productFallbackDescription(product as Product)
     : '';
 
   const handleAdd = () => {
@@ -145,9 +158,9 @@ export default function ProductDetailDrawer({
           productId: product.id,
           productNameSnapshot: product.name,
           qty,
-          milkId: selectedMilk?.id,
-          milkLabelSnapshot: selectedMilk?.label,
-          temperature: product.temperature === 'both' ? selectedTemp : product.temperature === 'iced' ? 'iced' : 'hot',
+          milkId: showMilkChoice(product) ? selectedMilk?.id : undefined,
+          milkLabelSnapshot: showMilkChoice(product) ? selectedMilk?.label : undefined,
+          temperature: resolveOrderTemperature(product, selectedTemp),
           unitPrice,
           lineTotal,
         },
@@ -160,6 +173,13 @@ export default function ProductDetailDrawer({
 
   const coffeeProduct = product && !isMerch ? (product as Product) : null;
   const merchProduct = product && isMerch ? (product as MerchProduct) : null;
+  const pastriesCategoryId = findPastriesCategory(categories)?.id;
+  const isPastryProduct =
+    coffeeProduct && isPastriesCategoryId(categories, coffeeProduct.categoryId);
+  const productImageSrc =
+    coffeeProduct && isPastryProduct
+      ? getMenuProductImageUrl(coffeeProduct, { pastriesCategoryId })
+      : product?.image ?? (coffeeProduct ? (FALLBACK_BY_CATEGORY[coffeeProduct.categoryId] ?? DEFAULT_IMAGE) : DEFAULT_IMAGE);
 
   return (
     <AnimatePresence>
@@ -187,7 +207,7 @@ export default function ProductDetailDrawer({
               <div className="relative shrink-0">
                 <div className="aspect-[16/9] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] overflow-hidden bg-kado-dark/5">
                   <img
-                    src={product.image ?? (coffeeProduct ? (FALLBACK_BY_CATEGORY[coffeeProduct.categoryId] ?? DEFAULT_IMAGE) : DEFAULT_IMAGE)}
+                    src={productImageSrc}
                     alt={product.name}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
@@ -233,7 +253,7 @@ export default function ProductDetailDrawer({
                 <p className="text-sm text-kado-dark/70 font-medium leading-relaxed mb-6">{desc}</p>
 
                 {/* Coffee: temperature toggle */}
-                {coffeeProduct?.temperature === 'both' && (
+                {coffeeProduct && showTemperatureChoice(coffeeProduct) && (
                   <div className="mb-6">
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/50 mb-3">Temperature</p>
                     <div className="flex gap-2">
@@ -253,11 +273,11 @@ export default function ProductDetailDrawer({
                 )}
 
                 {/* Coffee: milk options */}
-                {coffeeProduct && coffeeProduct.milks && coffeeProduct.milks.length > 0 && (
+                {coffeeProduct && showMilkChoice(coffeeProduct) && (
                   <div className="mb-2">
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/50 mb-3">Milk Option</p>
                     <div className="flex flex-wrap gap-2">
-                      {coffeeProduct.milks.map((m) => (
+                      {getOrderableMilks(coffeeProduct).map((m) => (
                         <button key={m.id} type="button" onClick={() => setSelectedMilkId(m.id)}
                           className={`px-5 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all duration-200 ${
                             selectedMilkId === m.id

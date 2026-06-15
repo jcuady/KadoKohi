@@ -2,20 +2,15 @@ import type { OrderItem, Product } from '../types/domain';
 import type { QrCartPayload } from '../components/qr/QrProductSheet';
 import { computeOrderTotals } from './money';
 import { newId } from './id';
+import { resolveMilkLabel, resolveMilkPriceDelta } from './menuProductModifiers';
 
 export type QrCartLine = QrCartPayload & { key: string };
 
 function resolveUnit(product: Product, milkId?: string): { unit: number; milkLabel?: string } {
-  let unit = product.basePrice;
-  let milkLabel: string | undefined;
-  if (milkId && product.milks?.length) {
-    const m = product.milks.find((x) => x.id === milkId);
-    if (m) {
-      unit += m.priceDelta;
-      milkLabel = m.label;
-    }
-  }
-  return { unit, milkLabel };
+  return {
+    unit: product.basePrice + resolveMilkPriceDelta(product, milkId),
+    milkLabel: resolveMilkLabel(product, milkId),
+  };
 }
 
 export function buildQrCartTotals(

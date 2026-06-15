@@ -75,15 +75,17 @@ export const MENU_PRODUCTS: Product[] = [
     tags: ['iced-only'],
   }),
 
-  // ── Matcha & Hojicha ──
-  product('prod_matcha_oat', 'cat_matcha', 'Matcha Oat Latte', 170, 'both', 0),
-  product('prod_dirty_matcha', 'cat_matcha', 'Dirty Matcha Oat Latte', 200, 'both', 1),
+  // ── Matcha & Hojicha (oat in name = oat milk included, no milk picker) ──
+  product('prod_matcha_oat', 'cat_matcha', 'Matcha Oat Latte', 170, 'both', 0, { milks: noMilks }),
+  product('prod_dirty_matcha', 'cat_matcha', 'Dirty Matcha Oat Latte', 200, 'both', 1, { milks: noMilks }),
   product('prod_matcha_straw', 'cat_matcha', 'Matcha Strawberry Oat Latte', 180, 'iced', 2, {
     tags: ['iced-only'],
+    milks: noMilks,
   }),
-  product('prod_hojicha_oat', 'cat_matcha', 'Hojicha Oat Latte', 200, 'both', 3),
+  product('prod_hojicha_oat', 'cat_matcha', 'Hojicha Oat Latte', 200, 'both', 3, { milks: noMilks }),
   product('prod_salted_hojicha', 'cat_matcha', 'Salted Cream Hojicha Oat Latte', 210, 'iced', 4, {
     tags: ['iced-only'],
+    milks: noMilks,
   }),
 
   // ── Yuzu Soda (iced only, no milk) ──

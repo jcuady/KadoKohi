@@ -9,7 +9,7 @@ import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
 import FeaturedCoffeesSection from './FeaturedCoffeesSection';
-import CafeScheduleSection from './CafeScheduleSection';
+import MixMatchHomeSection from './MixMatchHomeSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useCountdown } from '../../hooks/useCountdown';
@@ -62,7 +62,7 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
         <KadoOrderingCarousel copy={landing.ordering} />
       </div>
       <div id="landing-schedule">
-        <CafeScheduleSection copy={landing.schedule} />
+        <MixMatchHomeSection copy={landing.schedule} />
       </div>
       <div id="landing-events">
         <EventsSection copy={landing.events} />

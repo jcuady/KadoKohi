@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OrderItemVariantSnapshot, Product } from '../../types/domain';
 import { defaultPosLineConfig, parseCustomFieldOptions, resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { formatPhp } from '../../lib/money';
+import { getOrderableMilks, showTemperatureChoice } from '../../lib/menuProductModifiers';
 
 type PosVariantModalProps = {
   product: Product | null;
@@ -53,7 +54,7 @@ export default function PosVariantModal({ product, open, initial, onClose, onCon
         </div>
 
         <div className="px-6 py-4 space-y-4 overflow-y-auto">
-          {product.temperature === 'both' && (
+          {showTemperatureChoice(product) && (
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-dark/55 mb-2">Temperature</p>
               <div className="grid grid-cols-2 gap-2">
@@ -93,11 +94,11 @@ export default function PosVariantModal({ product, open, initial, onClose, onCon
             </div>
           )}
 
-          {product.milks.length > 0 && (
+          {getOrderableMilks(product).length > 0 && (
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-dark/55 mb-2">Milk Option</p>
               <div className="grid sm:grid-cols-2 gap-2">
-                {product.milks.map((milk) => (
+                {getOrderableMilks(product).map((milk) => (
                   <button
                     key={milk.id}
                     type="button"

@@ -14,20 +14,22 @@ import { getProductImageUrl } from '../lib/productImage';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import { ShoppingBag, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
+import {
+  defaultMilkId,
+  defaultOrderTemperature,
+  getOrderableMilks,
+  resolveMilkLabel,
+  resolveMilkPriceDelta,
+  showMilkChoice,
+} from '../lib/menuProductModifiers';
 
 type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
 
 function resolveUnit(product: Product, milkId?: string): { unit: number; milkLabel?: string } {
-  let unit = product.basePrice;
-  let milkLabel: string | undefined;
-  if (milkId && product.milks?.length) {
-    const m = product.milks.find((x) => x.id === milkId);
-    if (m) {
-      unit += m.priceDelta;
-      milkLabel = m.label;
-    }
-  }
-  return { unit, milkLabel };
+  return {
+    unit: product.basePrice + resolveMilkPriceDelta(product, milkId),
+    milkLabel: resolveMilkLabel(product, milkId),
+  };
 }
 
 export default function Order() {
@@ -65,9 +67,18 @@ export default function Order() {
 
   const addToCart = (product: Product) => {
     if (!isProductInStock(product)) return;
-    const defaultMilk = product.milks?.[0]?.id;
-    const temp: 'hot' | 'iced' = product.temperature === 'iced' ? 'iced' : 'hot';
-    setCart((c) => [...c, { key: newId(), productId: product.id, qty: 1, milkId: defaultMilk, temperature: temp }]);
+    const defaultMilk = defaultMilkId(product);
+    const temp = defaultOrderTemperature(product);
+    setCart((c) => [
+      ...c,
+      {
+        key: newId(),
+        productId: product.id,
+        qty: 1,
+        milkId: defaultMilk,
+        temperature: temp,
+      },
+    ]);
     setMobileCartOpen(true);
   };
 
@@ -150,7 +161,7 @@ export default function Order() {
                   <span className="min-w-0 truncate">{p.name}</span>
                   <span className="text-kado-red shrink-0">{formatPhp(unit)}</span>
                 </div>
-                {p.milks && p.milks.length > 0 && (
+                {showMilkChoice(p) && (
                   <select
                     id={`${idPrefix}-milk-${line.key}`}
                     value={line.milkId ?? ''}
@@ -161,7 +172,7 @@ export default function Order() {
                     }
                     className="mt-2 w-full min-h-[44px] rounded-lg border border-kado-dark/10 bg-[#FAF7F2] text-sm py-2 px-3 touch-manipulation"
                   >
-                    {p.milks.map((m) => (
+                    {getOrderableMilks(p).map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.label} {m.priceDelta ? `+${m.priceDelta}` : ''}
                       </option>

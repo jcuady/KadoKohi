@@ -6,6 +6,15 @@ import { formatPhp } from '../../lib/money';
 import { getProductDescription, getProductImageUrl } from '../../lib/productImage';
 import { isProductInStock } from '../../lib/productStock';
 import { qrChipClass } from '../../lib/qrGuestTheme';
+import {
+  defaultMilkId,
+  defaultOrderTemperature,
+  getOrderableMilks,
+  resolveMilkPriceDelta,
+  resolveOrderTemperature,
+  showMilkChoice,
+  showTemperatureChoice,
+} from '../../lib/menuProductModifiers';
 
 export type QrCartPayload = {
   productId: string;
@@ -48,39 +57,32 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
   useEffect(() => {
     if (!product) return;
     setQty(1);
-    setMilkId(product.milks?.[0]?.id ?? '');
-    setTemp(product.temperature === 'iced' ? 'iced' : 'hot');
+    setMilkId(defaultMilkId(product) ?? '');
+    setTemp(defaultOrderTemperature(product));
   }, [product]);
 
   const unitPrice = useMemo(() => {
     if (!product) return 0;
-    let price = product.basePrice;
-    const milk = product.milks?.find((m) => m.id === milkId);
-    if (milk) price += milk.priceDelta;
-    return price;
+    return product.basePrice + resolveMilkPriceDelta(product, milkId);
   }, [product, milkId]);
 
   if (!product) return null;
 
   const inStock = isProductInStock(product);
   const image = getProductImageUrl(product);
-  const showTemp = product.temperature === 'both';
-  const showMilk = (product.milks?.length ?? 0) > 0;
+  const showTemp = showTemperatureChoice(product);
+  const orderableMilks = getOrderableMilks(product);
+  const showMilk = showMilkChoice(product);
 
   const handleAdd = () => {
     if (!inStock) return;
-    const milk = product.milks?.find((m) => m.id === milkId);
+    const milk = orderableMilks.find((m) => m.id === milkId);
     onAdd({
       productId: product.id,
       qty,
-      milkId: milk?.id,
-      milkLabel: milk?.label,
-      temperature:
-        product.temperature === 'both'
-          ? temp
-          : product.temperature === 'iced'
-            ? 'iced'
-            : 'hot',
+      milkId: showMilk ? milk?.id : undefined,
+      milkLabel: showMilk ? milk?.label : undefined,
+      temperature: resolveOrderTemperature(product, temp),
     });
     onClose();
   };
@@ -147,7 +149,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                       Milk
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {product.milks!.map((m) => {
+                      {orderableMilks.map((m) => {
                         const active = milkId === m.id;
                         return (
                           <button

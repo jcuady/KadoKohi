@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react';
-import { Upload, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Upload, X, Croissant, Coffee } from 'lucide-react';
 import type {
   MenuCategory,
   Product,
@@ -27,6 +28,23 @@ import {
 } from '../../lib/menuProductImage';
 import MenuProductStockButton from '../../components/menu/MenuProductStockButton';
 import { isProductInStock } from '../../lib/productStock';
+import {
+  findPastriesCategory,
+  isPastriesCategory,
+  isPastriesCategoryId,
+  isCollabPastry,
+  isMixMatchCookie,
+  pastryHasPrice,
+  PASTRIES_CATEGORY_NAME,
+} from '../../lib/pastriesCategory';
+import {
+  PASTRY_KIND_OPTIONS,
+  pastryKindFromTags,
+  tagsForPastryKind,
+  type PastryKind,
+} from '../../content/pastriesPage';
+
+type MenuManagerTab = 'coffee' | 'pastries';
 
 type ProductFormData = {
   name: string;
@@ -35,6 +53,7 @@ type ProductFormData = {
   image: string;
   temperature: ProductTemperature;
   visible: boolean;
+  inStock: boolean;
   tags: string;
   milks: MilkOption[];
   sizes: ProductSize[];
@@ -48,13 +67,30 @@ const emptyProductForm: ProductFormData = {
   image: '',
   temperature: 'both',
   visible: true,
+  inStock: true,
   tags: '',
   milks: MENU_MILK_OPTIONS,
   sizes: [],
   customFields: [],
 };
 
+const pastryProductForm: ProductFormData = {
+  name: '',
+  description: '',
+  basePrice: '',
+  image: '',
+  temperature: 'both',
+  visible: true,
+  inStock: true,
+  tags: '',
+  milks: [],
+  sizes: [],
+  customFields: [],
+};
+
 export default function AdminMenu() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const menuTab: MenuManagerTab = searchParams.get('tab') === 'pastries' ? 'pastries' : 'coffee';
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
   const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
@@ -69,6 +105,22 @@ export default function AdminMenu() {
   const reorderProductsInCategory = useMenuStore((s) => s.reorderProductsInCategory);
 
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+  const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
+  const visibleCategories = useMemo(() => {
+    if (menuTab === 'pastries') {
+      return pastriesCategory ? [pastriesCategory] : [];
+    }
+    return sortedCategories.filter((c) => !isPastriesCategory(c));
+  }, [menuTab, sortedCategories, pastriesCategory]);
+
+  const setMenuTab = (tab: MenuManagerTab) => {
+    if (tab === 'pastries') {
+      setSearchParams({ tab: 'pastries' }, { replace: true });
+      if (pastriesCategory) setExpandedCat(pastriesCategory.id);
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
 
@@ -77,10 +129,16 @@ export default function AdminMenu() {
   }, []);
 
   useEffect(() => {
-    if (!remoteLoaded || expandedCat) return;
-    const first = sortedCategories[0]?.id;
-    if (first) setExpandedCat(first);
-  }, [remoteLoaded, sortedCategories, expandedCat]);
+    if (!remoteLoaded) return;
+    if (menuTab === 'pastries' && pastriesCategory) {
+      setExpandedCat(pastriesCategory.id);
+      return;
+    }
+    if (!expandedCat && sortedCategories[0]) {
+      const firstCoffee = sortedCategories.find((c) => !isPastriesCategory(c));
+      if (firstCoffee) setExpandedCat(firstCoffee.id);
+    }
+  }, [remoteLoaded, menuTab, pastriesCategory, sortedCategories, expandedCat]);
 
   type DragState =
     | null
@@ -105,6 +163,7 @@ export default function AdminMenu() {
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
   const [savingProduct, setSavingProduct] = useState(false);
+  const [pastryKind, setPastryKind] = useState<PastryKind>('mix-match');
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
 
@@ -124,14 +183,20 @@ export default function AdminMenu() {
     e.preventDefault();
     const name = newCatName.trim();
     if (!name) return;
+    await createCategoryByName(name);
+  };
+
+  const createCategoryByName = async (name: string) => {
     setAddingCategory(true);
     setAddCategoryError('');
     try {
       const created = await addCategory(name);
       setNewCatName('');
       setExpandedCat(created.id);
+      return created;
     } catch (err) {
       setAddCategoryError(err instanceof Error ? err.message : 'Could not add category.');
+      return null;
     } finally {
       setAddingCategory(false);
     }
@@ -140,13 +205,18 @@ export default function AdminMenu() {
   const startEditProduct = (p: Product) => {
     setEditingProduct(p.id);
     setAddingToCat(null);
+    setProductFormError('');
     setForm({
       name: p.name,
       description: p.description ?? '',
-      basePrice: String(p.basePrice),
+      basePrice:
+        isPastriesCategoryId(categories, p.categoryId) && !pastryHasPrice(p)
+          ? ''
+          : String(p.basePrice),
       image: p.image ?? '',
       temperature: p.temperature,
       visible: p.visible,
+      inStock: p.inStock !== false,
       tags: (p.tags ?? []).join(', '),
       milks: p.milks ?? [],
       sizes: p.sizes ?? [],
@@ -155,21 +225,29 @@ export default function AdminMenu() {
     clearPendingImageFile();
     setOriginalImage(p.image ?? '');
     setImageSource(inferMenuImageSource(p.image));
+    if (isPastriesCategoryId(categories, p.categoryId)) {
+      setPastryKind(pastryKindFromTags(p.tags));
+    }
   };
 
   const startAddProduct = (catId: string) => {
     setAddingToCat(catId);
     setEditingProduct(null);
-    setForm(emptyProductForm);
+    setProductFormError('');
+    setForm(isPastriesCategoryId(categories, catId) ? pastryProductForm : emptyProductForm);
     clearPendingImageFile();
     setOriginalImage('');
     setImageSource('none');
+    if (isPastriesCategoryId(categories, catId)) {
+      setPastryKind('mix-match');
+    }
   };
 
   const cancelForm = () => {
     setEditingProduct(null);
     setAddingToCat(null);
     setForm(emptyProductForm);
+    setProductFormError('');
     clearPendingImageFile();
     setOriginalImage('');
     setImageSource('none');
@@ -302,9 +380,21 @@ export default function AdminMenu() {
       setProductFormError('Product name is required.');
       return;
     }
-    const basePrice = Number(form.basePrice);
+
+    const categoryId = editingProduct
+      ? products.find((p) => p.id === editingProduct)?.categoryId
+      : addingToCat;
+    const isPastryForm = isPastriesCategoryId(categories, categoryId);
+
+    const priceInput = form.basePrice.trim();
+    const basePrice =
+      priceInput === '' ? 0 : Number(priceInput);
     if (!Number.isFinite(basePrice) || basePrice < 0) {
-      setProductFormError('Enter a valid price (0 or greater).');
+      setProductFormError('Enter a valid price (0 or greater), or leave blank.');
+      return;
+    }
+    if (!isPastryForm && priceInput === '') {
+      setProductFormError('Enter a price for this drink.');
       return;
     }
 
@@ -330,15 +420,19 @@ export default function AdminMenu() {
       name: clampText(form.name, 120),
       description: clampText(form.description, 500) || undefined,
       basePrice,
-      temperature: form.temperature,
+      temperature: isPastryForm ? ('both' as const) : form.temperature,
       visible: form.visible,
-      tags: form.tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      milks: form.milks.filter((m) => m.label.trim()),
-      sizes: form.sizes.filter((s) => s.label.trim()),
-      customFields: form.customFields.filter((field) => field.label.trim() && field.key.trim() && field.value.trim()),
+      tags: isPastryForm
+        ? tagsForPastryKind(pastryKind)
+        : form.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+      milks: isPastryForm ? [] : form.milks.filter((m) => m.label.trim()),
+      sizes: isPastryForm ? [] : form.sizes.filter((s) => s.label.trim()),
+      customFields: isPastryForm
+        ? []
+        : form.customFields.filter((field) => field.label.trim() && field.key.trim() && field.value.trim()),
     };
 
     let saved: Product;
@@ -348,7 +442,12 @@ export default function AdminMenu() {
         setProductFormError('Product not found. Refresh and try again.');
         return;
       }
-      saved = { ...prev, ...sharedFields, updatedAt: now };
+      saved = {
+        ...prev,
+        ...sharedFields,
+        inStock: isPastryForm ? form.inStock : prev.inStock,
+        updatedAt: now,
+      };
     } else if (addingToCat) {
       saved = {
         id: productId,
@@ -356,7 +455,7 @@ export default function AdminMenu() {
         branchId: null,
         ...sharedFields,
         order: products.filter((p) => p.categoryId === addingToCat).length,
-        inStock: true,
+        inStock: isPastryForm ? form.inStock : true,
         createdAt: now,
         updatedAt: now,
       };
@@ -422,6 +521,15 @@ export default function AdminMenu() {
     uploadPreviewUrl,
   );
 
+  const activeFormCategoryId = editingProduct
+    ? products.find((p) => p.id === editingProduct)?.categoryId
+    : addingToCat;
+  const isPastryForm = isPastriesCategoryId(categories, activeFormCategoryId);
+  const pastryItemCount = pastriesCategory
+    ? products.filter((p) => p.categoryId === pastriesCategory.id).length
+    : 0;
+  const coffeeCategoryCount = sortedCategories.filter((c) => !isPastriesCategory(c)).length;
+
   if (!remoteLoaded) {
     return (
       <div className="max-w-4xl dash-page">
@@ -442,6 +550,48 @@ export default function AdminMenu() {
         KADO MENU V2 — edit here or on the public Menu page after changes save to the database.
       </p>
 
+      <div className="mb-6 flex gap-2 rounded-2xl border dash-border p-1.5">
+        <button
+          type="button"
+          onClick={() => setMenuTab('coffee')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+            menuTab === 'coffee'
+              ? 'bg-kado-red text-kado-cream shadow-sm'
+              : 'dash-muted hover:bg-kado-cream/60'
+          }`}
+        >
+          <Coffee className="w-4 h-4" />
+          Coffee & drinks
+        </button>
+        <button
+          type="button"
+          onClick={() => setMenuTab('pastries')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+            menuTab === 'pastries'
+              ? 'bg-kado-red text-kado-cream shadow-sm'
+              : 'dash-muted hover:bg-kado-cream/60'
+          }`}
+        >
+          <Croissant className="w-4 h-4" />
+          Pastries
+        </button>
+      </div>
+
+      <p className="dash-muted text-sm mb-6">
+        {menuTab === 'pastries' ? (
+          <>
+            {pastriesCategory
+              ? `${pastryItemCount} pastry item${pastryItemCount === 1 ? '' : 's'} · shown on /pastries and under Pastries on the menu`
+              : `Create a "${PASTRIES_CATEGORY_NAME}" category to manage pastries here.`}
+          </>
+        ) : (
+          <>
+            {coffeeCategoryCount} drink categor{coffeeCategoryCount === 1 ? 'y' : 'ies'} · {products.length - pastryItemCount}{' '}
+            drink product{products.length - pastryItemCount === 1 ? '' : 's'}
+          </>
+        )}
+      </p>
+
       {(hydrateError || initCatalogError) && (
         <div
           className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
@@ -451,7 +601,7 @@ export default function AdminMenu() {
         </div>
       )}
 
-      {categories.length === 0 && (
+      {categories.length === 0 && menuTab === 'coffee' && (
         <div className="mb-6 rounded-xl border border-dashed border-kado-red/30 bg-kado-cream/50 px-4 py-4">
           <p className="text-sm dash-muted mb-3">
             No coffee categories in this Supabase project yet. Initialize the flyer catalog (4 categories, 19 drinks) or
@@ -468,7 +618,23 @@ export default function AdminMenu() {
         </div>
       )}
 
-      {/* Add category */}
+      {menuTab === 'pastries' && !pastriesCategory && (
+        <div className="mb-6 rounded-xl border border-dashed border-kado-red/30 bg-kado-cream/50 px-4 py-4">
+          <p className="text-sm dash-muted mb-3">
+            Add a menu category named <strong>{PASTRIES_CATEGORY_NAME}</strong> to manage pastries in this tab.
+          </p>
+          <button
+            type="button"
+            disabled={addingCategory}
+            onClick={() => void createCategoryByName(PASTRIES_CATEGORY_NAME)}
+            className="rounded-xl bg-kado-red text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {addingCategory ? 'Creating…' : `Create ${PASTRIES_CATEGORY_NAME} category`}
+          </button>
+        </div>
+      )}
+
+      {menuTab === 'coffee' && (
       <form onSubmit={(e) => void handleAddCategory(e)} className="mb-8 space-y-2">
         <div className="flex gap-2">
         <input
@@ -490,12 +656,19 @@ export default function AdminMenu() {
           <p className="text-xs font-semibold text-red-600">{addCategoryError}</p>
         ) : null}
       </form>
+      )}
 
       {/* Category accordion */}
-      <p className="text-xs dash-muted mb-4">Drag categories or products (grip) to reorder display order.</p>
+      <p className="text-xs dash-muted mb-4">
+        {menuTab === 'pastries'
+          ? 'Quick-add cookies by name only — price, photo, and description are optional.'
+          : 'Drag categories or products (grip) to reorder display order.'}
+      </p>
 
       <div className="space-y-3">
-        {sortedCategories.map((cat, catIndex) => {
+        {visibleCategories.map((cat) => {
+          const catIndex = sortedCategories.findIndex((c) => c.id === cat.id);
+          const catIsPastry = isPastriesCategory(cat);
           const catProducts = products
             .filter((p) => p.categoryId === cat.id)
             .sort((a, b) => a.order - b.order);
@@ -524,9 +697,14 @@ export default function AdminMenu() {
                   role="button"
                   tabIndex={0}
                   aria-label={`Drag to reorder category ${cat.name}`}
-                  className="cursor-grab active:cursor-grabbing touch-none p-1 -m-1 rounded hover:bg-kado-cream/80"
-                  draggable
+                  className={`p-1 -m-1 rounded shrink-0 ${
+                    menuTab === 'pastries'
+                      ? 'cursor-not-allowed opacity-30'
+                      : 'cursor-grab active:cursor-grabbing touch-none hover:bg-kado-cream/80'
+                  }`}
+                  draggable={menuTab !== 'pastries'}
                   onDragStart={(e) => {
+                    if (menuTab === 'pastries') return;
                     e.dataTransfer.effectAllowed = 'move';
                     setDrag({ kind: 'cat', from: catIndex });
                   }}
@@ -649,13 +827,31 @@ export default function AdminMenu() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs dash-muted mt-0.5 flex gap-2">
-                          <span>{formatPhp(p.basePrice)}</span>
-                          <span>{p.temperature}</span>
-                  {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
-                          {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
-                  {p.customFields?.length > 0 && <span>{p.customFields.length} custom group(s)</span>}
-                          {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
+                        <div className="text-xs dash-muted mt-0.5 flex gap-2 flex-wrap">
+                          {catIsPastry && !pastryHasPrice(p) ? (
+                            <span>No listed price</span>
+                          ) : (
+                            <span>{formatPhp(p.basePrice)}</span>
+                          )}
+                          {catIsPastry && isMixMatchCookie(p) ? (
+                            <span className="rounded-full bg-[#1e4d8c]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#1e4d8c]">
+                              Mix &amp; Match
+                            </span>
+                          ) : null}
+                          {catIsPastry && isCollabPastry(p) ? (
+                            <span className="rounded-full bg-kado-red/10 px-2 py-0.5 text-[9px] font-bold uppercase text-kado-red">
+                              Collab
+                            </span>
+                          ) : null}
+                          {!catIsPastry && (
+                            <>
+                              <span>{p.temperature}</span>
+                              {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
+                              {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
+                              {p.customFields?.length > 0 && <span>{p.customFields.length} custom group(s)</span>}
+                              {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
+                            </>
+                          )}
                         </div>
                       </div>
                       <MenuProductStockButton product={p} />
@@ -681,7 +877,7 @@ export default function AdminMenu() {
                     onClick={() => startAddProduct(cat.id)}
                     className="w-full rounded-xl border-2 border-dashed dash-border py-3 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red hover:text-kado-red transition-colors flex items-center justify-center gap-1"
                   >
-                    <Plus className="w-4 h-4" /> Add product
+                    <Plus className="w-4 h-4" /> {catIsPastry ? 'Add pastry' : 'Add product'}
                   </button>
                 </div>
               )}
@@ -698,25 +894,44 @@ export default function AdminMenu() {
             className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <h2 className="font-display font-bold text-xl dash-heading mb-4">
-              {editingProduct ? 'Edit product' : 'Add product'}
+              {isPastryForm
+                ? editingProduct
+                  ? 'Edit pastry'
+                  : 'Add pastry'
+                : editingProduct
+                  ? 'Edit product'
+                  : 'Add product'}
             </h2>
             {productFormError && (
               <p className="mb-3 text-xs text-red-600 font-medium">{productFormError}</p>
             )}
 
+            {isPastryForm && (
+              <p className="mb-4 rounded-xl border border-kado-red/15 bg-kado-cream/40 px-4 py-3 text-xs dash-muted leading-relaxed">
+                Only the <strong className="dash-heading">name</strong> is required. Choose a{' '}
+                <strong className="dash-heading">pastry type</strong> so it appears in the right Mix &amp; Match
+                section. Mix &amp; Match cookies need a price for online bundle ordering.
+              </p>
+            )}
+
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Name</label>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Name <span className="text-kado-red">*</span>
+                </label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder={isPastryForm ? 'e.g. Red Velvet Cookie' : undefined}
                   className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Description</label>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Description{isPastryForm ? ' (optional)' : ''}
+                </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -725,17 +940,44 @@ export default function AdminMenu() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {isPastryForm && (
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Base price (₱)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                    Pastry type
+                  </label>
+                  <select
+                    value={pastryKind}
+                    onChange={(e) => setPastryKind(e.target.value as PastryKind)}
+                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                  >
+                    {PASTRY_KIND_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-[11px] dash-muted">
+                    {PASTRY_KIND_OPTIONS.find((o) => o.value === pastryKind)?.hint}
+                  </p>
+                </div>
+              )}
+
+              <div className={isPastryForm ? '' : 'grid grid-cols-2 gap-4'}>
+                <div className={isPastryForm ? '' : undefined}>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                    {isPastryForm ? 'Price (₱, optional)' : 'Base price (₱)'}
+                  </label>
                   <input
                     type="number"
+                    min={0}
                     value={form.basePrice}
                     onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                    placeholder={isPastryForm ? 'Leave blank if priced in-store only' : undefined}
                     className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-                    required
+                    required={!isPastryForm}
                   />
                 </div>
+                {!isPastryForm && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Temperature</label>
                   <select
@@ -748,13 +990,17 @@ export default function AdminMenu() {
                     <option value="iced">Iced only</option>
                   </select>
                 </div>
+                )}
               </div>
 
               <div className="space-y-3 rounded-xl border dash-border p-4">
-                <p className="text-xs font-bold uppercase tracking-wider dash-muted">Product image</p>
+                <p className="text-xs font-bold uppercase tracking-wider dash-muted">
+                  Product image{isPastryForm ? ' (optional)' : ''}
+                </p>
                 <p className="text-xs dash-muted leading-relaxed">
-                  Choose how this drink&apos;s photo is stored. Only the selected source is saved — switch tabs before
-                  saving if you change your mind.
+                  {isPastryForm
+                    ? 'Add a photo when you have one. Items without photos still appear on the pastries list.'
+                    : "Choose how this drink's photo is stored. Only the selected source is saved — switch tabs before saving if you change your mind."}
                 </p>
 
                 <Tabs
@@ -879,6 +1125,30 @@ export default function AdminMenu() {
                 ) : null}
               </div>
 
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm dash-muted">
+                  <input
+                    type="checkbox"
+                    checked={form.visible}
+                    onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
+                    className="rounded"
+                  />
+                  {isPastryForm ? 'Visible on menu & pastries page' : 'Visible on menu'}
+                </label>
+                {isPastryForm && (
+                  <label className="flex items-center gap-2 text-sm dash-muted">
+                    <input
+                      type="checkbox"
+                      checked={form.inStock}
+                      onChange={(e) => setForm((f) => ({ ...f, inStock: e.target.checked }))}
+                      className="rounded"
+                    />
+                    In stock
+                  </label>
+                )}
+              </div>
+
+              {!isPastryForm && (
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Tags (comma-separated)</label>
                 <input
@@ -888,17 +1158,10 @@ export default function AdminMenu() {
                   className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 />
               </div>
+              )}
 
-              <label className="flex items-center gap-2 text-sm dash-muted">
-                <input
-                  type="checkbox"
-                  checked={form.visible}
-                  onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
-                  className="rounded"
-                />
-                Visible on menu
-              </label>
-
+              {!isPastryForm && (
+              <>
               {/* Milk modifiers */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1022,6 +1285,8 @@ export default function AdminMenu() {
                   ))}
                 </div>
               </div>
+              </>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

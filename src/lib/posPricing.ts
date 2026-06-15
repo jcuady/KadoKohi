@@ -1,4 +1,11 @@
 import type { OrderItemVariantSnapshot, Product } from '../types/domain';
+import {
+  defaultMilkId,
+  defaultOrderTemperature,
+  resolveMilkLabel,
+  resolveMilkPriceDelta,
+  showMilkChoice,
+} from './menuProductModifiers';
 
 export type ParsedCustomOption = {
   id: string;
@@ -51,12 +58,9 @@ export function resolvePosUnitPrice(
     }
   }
 
-  if (config.milkId) {
-    const milk = product.milks.find((item) => item.id === config.milkId);
-    if (milk) {
-      unit += milk.priceDelta;
-      milkLabel = milk.label;
-    }
+  if (config.milkId && showMilkChoice(product)) {
+    unit += resolveMilkPriceDelta(product, config.milkId);
+    milkLabel = resolveMilkLabel(product, config.milkId);
   }
 
   for (const custom of config.customizations) {
@@ -70,8 +74,8 @@ export function defaultPosLineConfig(product: Product): PosLineConfig {
   const customGroups = parseCustomFieldOptions(product);
   return {
     qty: 1,
-    temperature: product.temperature === 'both' ? 'hot' : product.temperature === 'iced' ? 'iced' : 'hot',
-    milkId: product.milks[0]?.id,
+    temperature: defaultOrderTemperature(product),
+    milkId: defaultMilkId(product),
     sizeId: product.sizes[0]?.id,
     customizations: customGroups.map((group) => ({
       groupName: group.groupName,

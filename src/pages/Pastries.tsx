@@ -1,29 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Croissant, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin, Percent, ShoppingBag } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
-import { findPastriesCategory, pastriesProducts } from '../lib/pastriesCategory';
+import {
+  collabPastries,
+  findPastriesCategory,
+  findFeaturedPastry,
+  pastryHasPrice,
+} from '../lib/pastriesCategory';
 import { formatPhp } from '../lib/money';
 import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
+import MixMatchBundlePicker from '../components/mix-match/MixMatchBundlePicker';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-
-const PAIRINGS = [
-  {
-    title: 'Matcha & Bakes',
-    body: 'Pair a Matcha Oat Latte with our daily pastry rotation — balanced sweetness and earthy matcha.',
-  },
-  {
-    title: 'Espresso Classics',
-    body: 'Spanish Latte and Karamel Latte are regular favorites alongside butter-forward pastries.',
-  },
-  {
-    title: 'Seasonal Drops',
-    body: 'Limited bakes appear on busy weekends and event mornings — follow us for same-day availability.',
-  },
-];
+import { PASTRIES_PAGE, MIX_MATCH_BLUE } from '../content/pastriesPage';
 
 export default function Pastries() {
   const categories = useMenuStore((s) => s.categories);
@@ -36,104 +28,122 @@ export default function Pastries() {
   }, [hydrateFromRemote]);
 
   const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
-  const items = useMemo(() => pastriesProducts(categories, products), [categories, products]);
+  const collabs = useMemo(() => collabPastries(categories, products), [categories, products]);
+  const featured = useMemo(() => findFeaturedPastry(collabs) ?? collabs[0], [collabs]);
+
+  const { hero, poster, cta } = PASTRIES_PAGE;
+  const featuredInStock = featured ? isProductInStock(featured) : false;
+  const canOrderFeatured = featured && pastryHasPrice(featured) && featuredInStock;
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-kado-offwhite font-sans">
-      <section className="border-b border-kado-dark/5 bg-kado-cream px-6 pb-12 pt-28">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="kado-label mb-3 text-kado-red">Fresh at the bar</p>
-          <h1 className="kado-h2 text-kado-dark uppercase tracking-tight">Pastries</h1>
-          <p className="mx-auto mt-4 max-w-xl kado-body text-kado-dark/65">
-            Daily bakes at Kado Kohi — pulled from our live menu. Best enjoyed in-store with your favorite drink.
-          </p>
+    <div className="flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-kado-offwhite font-sans">
+      <section className="border-b border-kado-dark/5 bg-kado-cream px-4 pb-8 pt-24 sm:px-6 sm:pb-10 sm:pt-28 md:px-12">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2">
+            <div className="order-2 text-center lg:order-1 lg:text-left">
+              <p className="kado-label mb-2 text-kado-red sm:mb-3">{hero.eyebrow}</p>
+              <h1 className="text-balance font-display text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl md:text-6xl">
+                <span style={{ color: MIX_MATCH_BLUE }}>{hero.headlineTop}</span>
+                <br />
+                <span className="text-kado-red">{hero.headlineBottom}</span>
+              </h1>
+              <p className="mx-auto mt-4 max-w-lg kado-body text-kado-dark/70 sm:mt-5 lg:mx-0">{hero.subhead}</p>
+              <div className="mt-5 inline-flex w-full max-w-sm flex-col items-center gap-1 sm:mt-6 lg:max-w-none lg:items-start">
+                <span
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg sm:w-auto sm:px-5 sm:text-xs"
+                  style={{ backgroundColor: MIX_MATCH_BLUE }}
+                >
+                  <Percent className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="text-center">{hero.badge}</span>
+                </span>
+                <span className="kado-subtext text-center font-semibold uppercase tracking-wider text-kado-dark/45 lg:text-left">
+                  {hero.badgeNote}
+                </span>
+              </div>
+            </div>
+            <div className="order-1 mx-auto w-full max-w-sm lg:order-2 lg:max-w-none">
+              <img
+                src={poster.primaryImage}
+                alt="Kukidō x Kado Kohi Mix and Match poster"
+                className="w-full rounded-[1rem] border border-kado-dark/10 shadow-xl sm:rounded-[1.25rem]"
+                loading="eager"
+                decoding="async"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="px-6 py-16 md:py-24">
-        {items.length > 0 ? (
-          <div className="mx-auto mb-14 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((product) => {
-              const inStock = isProductInStock(product);
-              return (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => setSelected(product)}
-                  className="group flex flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-white text-left shadow-[0_12px_32px_rgba(25,25,25,0.06)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(158,24,29,0.1)]"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={getMenuProductImageUrl(product, { pastriesCategoryId: pastriesCategory?.id })}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    {!inStock ? (
-                      <span className="absolute left-3 top-3 rounded-full bg-amber-600 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white">
-                        Out today
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <div className="mb-1 flex items-start justify-between gap-2">
-                      <h2 className="kado-h3 text-kado-dark group-hover:text-kado-red transition-colors">{product.name}</h2>
-                      <span className="shrink-0 kado-body-sm font-bold text-kado-dark">{formatPhp(product.basePrice)}</span>
-                    </div>
-                    {product.description ? (
-                      <p className="kado-body-sm text-kado-dark/65 line-clamp-2">{product.description}</p>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="mx-auto mb-14 max-w-md text-center kado-body text-kado-dark/55">
-            {pastriesCategory
-              ? 'Pastry lineup updates throughout the day — check back soon or visit us in-store.'
-              : 'Our pastry menu is being updated. Visit us on J.P. Laurel or browse our coffee menu.'}
-          </p>
-        )}
-
-        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
-          {PAIRINGS.map(({ title, body }) => (
-            <article
-              key={title}
-              className="rounded-[1.25rem] border border-kado-dark/10 bg-white p-6 shadow-[0_12px_32px_rgba(25,25,25,0.05)]"
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-kado-red text-white">
-                <Croissant className="h-5 w-5" aria-hidden />
-              </div>
-              <h3 className="kado-h3 text-kado-dark">{title}</h3>
-              <p className="mt-2 kado-body-sm text-kado-dark/65">{body}</p>
-            </article>
-          ))}
+      <section className="px-4 py-10 sm:px-6 sm:py-12 md:px-12 md:py-16">
+        <div className="mx-auto w-full max-w-5xl">
+          <p className="mb-5 text-center kado-label text-kado-red sm:mb-6">{cta.title}</p>
+          <MixMatchBundlePicker
+            categories={categories}
+            products={products}
+            pastriesCategoryId={pastriesCategory?.id}
+          />
         </div>
 
-        <div className="mx-auto mt-12 max-w-3xl rounded-[1.5rem] border border-kado-red/20 bg-kado-red px-6 py-8 text-center text-white sm:px-10">
-          <p className="kado-label mb-2 text-kado-cream/80">In-store today</p>
-          <p className="kado-body text-white/90">
-            Pastry selection changes daily. Visit us on J.P. Laurel, Sta. Elena, Marikina — or browse our{' '}
-            <Link to="/menu" className="font-semibold text-kado-cream underline-offset-4 hover:underline">
-              coffee menu
-            </Link>{' '}
-            to plan your pairing.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {featured ? (
+          <div className="mx-auto mt-10 w-full max-w-5xl sm:mt-14">
+            <h2 className="mb-4 text-center kado-label text-kado-red sm:mb-5">Takeover exclusive</h2>
+            <article className="overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-white shadow-[0_20px_60px_rgba(25,25,25,0.08)] sm:rounded-[1.5rem] lg:grid lg:grid-cols-2">
+              <div className="relative aspect-[4/3] w-full bg-kado-red sm:aspect-[16/10] lg:aspect-auto lg:min-h-[300px]">
+                <img
+                  src={getMenuProductImageUrl(featured, { pastriesCategoryId: pastriesCategory?.id })}
+                  alt={featured.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div className="flex flex-col justify-center p-5 sm:p-6 md:p-8">
+                <p className="kado-label text-kado-red">Kukidō x Kado Kohi</p>
+                <h3 className="mt-1 text-balance font-display text-2xl font-black uppercase tracking-tight text-kado-dark sm:text-3xl">
+                  {featured.name}
+                </h3>
+                {featured.description ? (
+                  <p className="mt-3 kado-body text-kado-dark/70">{featured.description}</p>
+                ) : null}
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  {pastryHasPrice(featured) ? (
+                    <span className="kado-h2 text-kado-dark">{formatPhp(featured.basePrice)}</span>
+                  ) : null}
+                  {canOrderFeatured ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelected(featured)}
+                      className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-6 kado-label text-kado-cream touch-manipulation hover:bg-kado-dark sm:w-auto"
+                    >
+                      <ShoppingBag className="h-4 w-4 shrink-0" />
+                      Order {featured.name}
+                    </button>
+                  ) : !featuredInStock ? (
+                    <span className="text-center text-xs font-bold uppercase tracking-wider text-amber-700 sm:text-left">
+                      Out today
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+          </div>
+        ) : null}
+
+        <div className="mx-auto mt-10 w-full max-w-3xl rounded-[1.25rem] border border-kado-red/20 bg-kado-red px-5 py-7 text-center text-white sm:mt-12 sm:rounded-[1.5rem] sm:px-8 sm:py-8 md:px-10">
+          <p className="kado-body text-white/90">{cta.body}</p>
+          <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
             <Link
               to="/branches"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-kado-cream px-6 kado-label text-kado-red transition-colors hover:bg-kado-offwhite"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-cream px-6 kado-label text-kado-red touch-manipulation hover:bg-kado-offwhite sm:w-auto"
             >
-              <MapPin className="h-4 w-4" aria-hidden />
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
               Find a branch
             </Link>
             <Link
               to="/menu"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/30 px-6 kado-label text-white transition-colors hover:bg-white/10"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-white/30 px-6 kado-label text-white touch-manipulation hover:bg-white/10 sm:w-auto"
             >
               View coffee menu
-              <ArrowRight className="h-4 w-4" aria-hidden />
+              <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           </div>
         </div>
