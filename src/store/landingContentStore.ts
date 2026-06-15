@@ -62,6 +62,7 @@ export interface MixMatchSectionCopy {
   description: string;
   offerBadge: string;
   offerNote: string;
+  posterImageUrl: string;
   ctaLabel: string;
   featuredCtaLabel: string;
   featuredProductId: string;
@@ -403,6 +404,7 @@ export const SEED_CONTENT: LandingContentState = {
     description: 'Pair any Kado Kohi drink with a Kukidō handcrafted cookie — build your bundle on the homepage or pastries page.',
     offerBadge: '10% off on your bundle',
     offerNote: 'In-store bundle · ask your barista',
+    posterImageUrl: '/mix-match/kukido1.jpg',
     ctaLabel: 'View pastries & collabs',
     featuredCtaLabel: 'Order Kado Kukilatte',
     featuredProductId: 'c8f3a1b2-6d4e-4f9a-b7c2-8e1d0f9a3b4c',
@@ -463,6 +465,7 @@ function clampMixMatchSection(
     description: legacyHours ? base.description : (raw.description ?? base.description),
     offerBadge: raw.offerBadge ?? base.offerBadge,
     offerNote: raw.offerNote ?? base.offerNote,
+    posterImageUrl: raw.posterImageUrl?.trim() || base.posterImageUrl,
     ctaLabel: raw.ctaLabel ?? base.ctaLabel,
     featuredCtaLabel: raw.featuredCtaLabel ?? base.featuredCtaLabel,
     featuredProductId: raw.featuredProductId ?? base.featuredProductId,

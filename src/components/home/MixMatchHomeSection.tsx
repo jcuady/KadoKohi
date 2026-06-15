@@ -43,6 +43,8 @@ export default function MixMatchHomeSection({ copy }: Props) {
   const titleBottom = copy?.titleBottom ?? PASTRIES_PAGE.hero.headlineBottom;
   const description = copy?.description ?? PASTRIES_PAGE.hero.subhead;
   const offerBadge = copy?.offerBadge ?? PASTRIES_PAGE.hero.badge;
+  const offerNote = copy?.offerNote ?? PASTRIES_PAGE.hero.badgeNote;
+  const posterImage = copy?.posterImageUrl?.trim() || PASTRIES_PAGE.poster.primaryImage;
   const ctaLabel = copy?.ctaLabel ?? 'View full Mix & Match menu';
   const featuredCtaLabel = copy?.featuredCtaLabel ?? 'Order Kado Kukilatte';
 
@@ -62,15 +64,18 @@ export default function MixMatchHomeSection({ copy }: Props) {
             </h2>
             <p className="mx-auto mt-3 max-w-md kado-body text-kado-dark/70 sm:mt-4 lg:mx-0">{description}</p>
             <span
-              className="mt-4 inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg sm:mt-5 sm:w-auto sm:px-5 sm:text-xs"
+              className="mt-4 inline-flex w-full max-w-xs flex-col items-center justify-center gap-1 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg sm:mt-5 sm:w-auto sm:px-5 sm:text-xs"
               style={{ backgroundColor: MIX_MATCH_BLUE }}
             >
-              <Percent className="h-4 w-4 shrink-0" aria-hidden />
-              {offerBadge}
+              <span className="inline-flex items-center gap-2">
+                <Percent className="h-4 w-4 shrink-0" aria-hidden />
+                {offerBadge}
+              </span>
+              {offerNote ? <span className="text-[9px] font-semibold normal-case tracking-normal opacity-90">{offerNote}</span> : null}
             </span>
           </div>
           <img
-            src={PASTRIES_PAGE.poster.primaryImage}
+            src={posterImage}
             alt="Kukidō x Kado Kohi Mix and Match"
             className="mx-auto w-full max-w-md rounded-[1rem] border border-kado-dark/10 shadow-lg sm:max-w-none sm:rounded-[1.25rem] lg:mx-0"
             loading="lazy"
@@ -82,6 +87,7 @@ export default function MixMatchHomeSection({ copy }: Props) {
           categories={categories}
           products={products}
           pastriesCategoryId={pastriesCategory?.id}
+          bundleNote={offerNote}
         />
 
         {featured ? (

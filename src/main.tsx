@@ -14,6 +14,7 @@ import { useMerchStore } from './store/merchStore';
 import { useEventStore } from './store/eventStore';
 import { useEventFormStore } from './store/eventFormStore';
 import { useBoothBookingStore } from './store/boothBookingStore';
+import { useBoothShowcaseStore } from './store/boothShowcaseStore';
 import { useLandingContentStore } from './store/landingContentStore';
 import { useLoyaltyStore } from './store/loyaltyStore';
 import { useBlogStore } from './store/blogStore';
@@ -34,6 +35,7 @@ function Bootstrap() {
   const hydrateEvents = useEventStore((s) => s.hydrateFromRemote);
   const hydrateEventForms = useEventFormStore((s) => s.hydrateFromRemote);
   const hydrateBookings = useBoothBookingStore((s) => s.hydrateFromRemote);
+  const hydrateBoothPage = useBoothShowcaseStore((s) => s.hydrateFromRemote);
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
   const hydrateLoyalty = useLoyaltyStore((s) => s.hydrateFromRemote);
   const hydrateBlog = useBlogStore((s) => s.hydrateFromRemote);
@@ -50,6 +52,7 @@ function Bootstrap() {
     void hydrateEvents();
     void hydrateEventForms();
     void hydrateBookings();
+    void hydrateBoothPage();
     void hydrateLanding();
     void hydrateLoyalty();
     void hydrateBlog();

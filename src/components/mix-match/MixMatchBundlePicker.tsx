@@ -19,6 +19,7 @@ type Props = {
   categories: MenuCategory[];
   products: Product[];
   pastriesCategoryId?: string;
+  bundleNote?: string;
 };
 
 const SELECT_BTN =
@@ -41,7 +42,7 @@ function SelectionRing({ selected, tone }: { selected: boolean; tone: 'blue' | '
   );
 }
 
-export default function MixMatchBundlePicker({ categories, products, pastriesCategoryId }: Props) {
+export default function MixMatchBundlePicker({ categories, products, pastriesCategoryId, bundleNote }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const orderHours = useOnlineOrderHours();
   const drinks = useMemo(() => mixMatchDrinkEntries(categories, products), [categories, products]);
@@ -115,6 +116,7 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
                 </span>
               </p>
               <p className="kado-h3 text-kado-dark">{formatPhp(pricing.total)}</p>
+              {bundleNote ? <p className="text-xs text-kado-dark/50">{bundleNote}</p> : null}
             </div>
           ) : (
             <p className="mt-1 kado-body-sm text-kado-dark/55">

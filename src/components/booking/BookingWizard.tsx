@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Check, Mail, PartyPopper, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
+import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import type { BoothBookingOccasion } from '../../types/domain';
 import EventAvailabilityCalendar from './EventAvailabilityCalendar';
@@ -35,6 +36,7 @@ interface BookingWizardProps {
 export default function BookingWizard({ onStageChange }: BookingWizardProps) {
   const user = useAuthStore((s) => s.user);
   const contactEmail = useSettingsStore((s) => s.settings.contactEmail);
+  const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
 
@@ -199,10 +201,9 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
               <PartyPopper className="w-6 h-6" />
             </span>
             <div>
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-kado-dark">Submit your event proposal</h2>
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-kado-dark">{pageCopy.proposalTitle}</h2>
               <p className="text-sm text-kado-dark/60 mt-1 max-w-2xl leading-relaxed">
-                Tell us about your celebration, pick an open date, then submit — we&apos;ll email you back to talk through
-                pricing and setup. No packages or payments on this page.
+                {pageCopy.proposalDescription}
               </p>
             </div>
           </div>
@@ -265,12 +266,11 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-[52px] px-8 rounded-full bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] hover:bg-kado-dark transition-colors disabled:opacity-60"
               >
                 <Mail className="w-4 h-4" />
-                {submitting ? 'Saving…' : 'Submit your proposal'}
+                {submitting ? 'Saving…' : pageCopy.proposalCtaLabel}
               </motion.button>
 
               <p className="text-xs text-kado-dark/50 leading-relaxed">
-                Submitting saves your request and opens your email to {contactEmail}. We&apos;ll follow up to discuss
-                pricing — nothing is confirmed until we agree together.
+                {pageCopy.proposalEmailNote} Email: {contactEmail}
               </p>
             </div>
 

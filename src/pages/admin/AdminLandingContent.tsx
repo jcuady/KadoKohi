@@ -13,6 +13,7 @@ import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
 import { LANDING_CMS_TABS, isLandingTabId, type LandingTabId } from '../../lib/landingCmsTabs';
 import { LANDING_SECTION_IDS } from '../../lib/landingSectionAnchors';
+import { collabPastries, findPastriesCategory } from '../../lib/pastriesCategory';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const HERO_CARD_SLOTS = 4;
@@ -49,6 +50,11 @@ export default function AdminLandingContent() {
     if (menuDataSource !== 'remote') return [];
     return listVisibleCoffeeProducts(allProducts, categories);
   }, [allProducts, categories, menuDataSource]);
+  const collabProducts = useMemo(
+    () => collabPastries(categories, allProducts),
+    [categories, allProducts],
+  );
+  const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<LandingTabId>(() => {
@@ -611,17 +617,36 @@ export default function AdminLandingContent() {
               value={content.schedule.offerNote}
               onChange={(v) => updateSchedule({ offerNote: v })}
             />
+            <ImageUrlField
+              label="Poster image"
+              value={content.schedule.posterImageUrl}
+              onChange={(v) => updateSchedule({ posterImageUrl: v })}
+              onPickFile={(files) => onPickImage((url) => updateSchedule({ posterImageUrl: url }), files)}
+            />
             <Field label="CTA label" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
             <Field
               label="Featured order button"
               value={content.schedule.featuredCtaLabel}
               onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
             />
-            <Field
-              label="Featured product ID"
-              value={content.schedule.featuredProductId}
-              onChange={(v) => updateSchedule({ featuredProductId: v })}
-            />
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Featured collab product</label>
+              <select
+                value={content.schedule.featuredProductId}
+                onChange={(e) => updateSchedule({ featuredProductId: e.target.value })}
+                className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+              >
+                <option value="">— Auto (first collab) —</option>
+                {collabProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {pastriesCategory ? (
+                <p className="mt-1 text-[10px] dash-muted">From Menu → Pastries (collab type). ID: {content.schedule.featuredProductId || 'auto'}</p>
+              ) : null}
+            </div>
           </div>
           <div className="mt-4">
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Description</label>

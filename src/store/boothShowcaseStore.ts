@@ -3,9 +3,24 @@ import { persist } from 'zustand/middleware';
 import type { BookingShowcaseMedia } from '../types/domain';
 import { SEED_BOOKING_SHOWCASE_GALLERY } from '../data/seed';
 import { newId } from '../lib/id';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import {
+  DEFAULT_BOOTH_PAGE_COPY,
+  normalizeBoothPageContent,
+  type BoothPageCopy,
+  type BoothHowItWorksStep,
+} from '../lib/boothPageContent';
 
 export interface BoothShowcaseStore {
   media: BookingShowcaseMedia[];
+  pageCopy: BoothPageCopy;
+  saveError: string | null;
+  saving: boolean;
+  hydrateFromRemote: () => Promise<void>;
+  saveToRemote: () => Promise<void>;
+  updatePageCopy: (patch: Partial<BoothPageCopy>) => void;
+  updateHowItWorksStep: (index: number, patch: Partial<BoothHowItWorksStep>) => void;
+  updateChip: (index: number, value: string) => void;
   addMedia: (input: Omit<BookingShowcaseMedia, 'id'> & { id?: string }) => void;
   updateMedia: (id: string, patch: Partial<BookingShowcaseMedia>) => void;
   removeMedia: (id: string) => void;
@@ -18,6 +33,50 @@ export const useBoothShowcaseStore = create<BoothShowcaseStore>()(
   persist(
     (set, get) => ({
       media: SEED_BOOKING_SHOWCASE_GALLERY,
+      pageCopy: DEFAULT_BOOTH_PAGE_COPY,
+      saveError: null,
+      saving: false,
+
+      hydrateFromRemote: async () => {
+        try {
+          const remote = await orderingRepo.fetchBoothPageContent();
+          if (!remote || typeof remote !== 'object') return;
+          const normalized = normalizeBoothPageContent(remote, get().media);
+          set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null });
+        } catch {
+          // Keep local persisted content when remote fetch fails.
+        }
+      },
+
+      saveToRemote: async () => {
+        const { media, pageCopy } = get();
+        set({ saving: true, saveError: null });
+        try {
+          await orderingRepo.upsertBoothPageContent({ copy: pageCopy, showcase: media });
+          set({ saving: false, saveError: null });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Could not save booth page content.';
+          set({ saving: false, saveError: message });
+          throw err;
+        }
+      },
+
+      updatePageCopy: (patch) =>
+        set({ pageCopy: { ...get().pageCopy, ...patch } }),
+
+      updateHowItWorksStep: (index, patch) => {
+        const steps = [...get().pageCopy.howItWorksSteps] as BoothPageCopy['howItWorksSteps'];
+        if (index < 0 || index > 2) return;
+        steps[index] = { ...steps[index], ...patch };
+        set({ pageCopy: { ...get().pageCopy, howItWorksSteps: steps } });
+      },
+
+      updateChip: (index, value) => {
+        if (index < 0 || index > 3) return;
+        const chips = [...get().pageCopy.chips] as BoothPageCopy['chips'];
+        chips[index] = value;
+        set({ pageCopy: { ...get().pageCopy, chips } });
+      },
 
       addMedia: (input) =>
         set({
@@ -55,8 +114,16 @@ export const useBoothShowcaseStore = create<BoothShowcaseStore>()(
           .media.filter((item) => item.visible)
           .sort((a, b) => a.order - b.order),
 
-      seed: () => set({ media: SEED_BOOKING_SHOWCASE_GALLERY }),
+      seed: () =>
+        set({
+          media: SEED_BOOKING_SHOWCASE_GALLERY,
+          pageCopy: DEFAULT_BOOTH_PAGE_COPY,
+          saveError: null,
+        }),
     }),
-    { name: 'kado-booth-showcase-v1' },
+    {
+      name: 'kado-booth-showcase-v1',
+      partialize: (state) => ({ media: state.media, pageCopy: state.pageCopy }),
+    },
   ),
 );

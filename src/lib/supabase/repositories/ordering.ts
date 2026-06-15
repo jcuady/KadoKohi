@@ -1125,4 +1125,19 @@ export const orderingRepo = {
       .upsert({ id: true, landing_content: content });
     if (error) throw error;
   },
+  async fetchBoothPageContent(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('booth_content')
+      .eq('id', true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return (data as { booth_content?: unknown }).booth_content ?? null;
+  },
+  async upsertBoothPageContent(content: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_content: content });
+    if (error) throw error;
+  },
 };

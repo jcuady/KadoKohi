@@ -1,35 +1,32 @@
 import { CalendarDays, Mail, MessageCircle } from 'lucide-react';
+import type { BoothHowItWorksStep } from '../../lib/boothPageContent';
 
-const STEPS = [
-  {
-    icon: MessageCircle,
-    title: 'Share your event',
-    body: 'Tell us the occasion, guest count, and what you have in mind — no packages to pick.',
-  },
-  {
-    icon: CalendarDays,
-    title: 'Choose an open date',
-    body: 'Use the calendar to see which days are available. Unavailable dates are blocked by our team.',
-  },
-  {
-    icon: Mail,
-    title: 'Submit your proposal',
-    body: 'We save your request and open email so you can reach our events team to discuss pricing.',
-  },
-];
+const ICONS = [MessageCircle, CalendarDays, Mail] as const;
 
-export default function BookingSteps() {
+type Props = {
+  eyebrow?: string;
+  title?: string;
+  steps?: [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep];
+};
+
+export default function BookingSteps({ eyebrow, title, steps }: Props) {
+  const items = steps ?? [
+    { title: 'Share your event', body: 'Tell us the occasion, guest count, and what you have in mind — no packages to pick.' },
+    { title: 'Choose an open date', body: 'Use the calendar to see which days are available. Unavailable dates are blocked by our team.' },
+    { title: 'Submit your proposal', body: 'We save your request and open email so you can reach our events team to discuss pricing.' },
+  ];
+
   return (
     <section className="py-16">
       <div className="max-w-6xl mx-auto px-6">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-3">How it works</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-3">{eyebrow ?? 'How it works'}</p>
         <h2 className="font-display text-3xl md:text-4xl font-black tracking-tight text-kado-dark mb-10">
-          Simple, No-Pressure Booking
+          {title ?? 'Simple, No-Pressure Booking'}
         </h2>
 
         <div className="grid md:grid-cols-3 gap-4 md:gap-5">
-          {STEPS.map((step, idx) => {
-            const Icon = step.icon;
+          {items.map((step, idx) => {
+            const Icon = ICONS[idx] ?? MessageCircle;
             return (
               <article key={step.title} className="rounded-2xl bg-white border border-kado-dark/10 p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">

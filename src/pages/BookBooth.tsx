@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { CalendarHeart, Users, Clock3, BadgeCheck, ArrowDown } from 'lucide-react';
 import BookingSteps from '../components/booking/BookingSteps';
@@ -6,9 +6,18 @@ import BookingWizard, { type BookingWizardStage } from '../components/booking/Bo
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
+const CHIP_ICONS = [CalendarHeart, Users, Clock3, BadgeCheck] as const;
+
 export default function BookBooth() {
   const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
+  const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
+  const hydrateFromRemote = useBoothShowcaseStore((s) => s.hydrateFromRemote);
   const [, setWizardStage] = useState<BookingWizardStage>('form');
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
+
   const showcaseMedia = useMemo(
     () =>
       [...showcaseMediaRaw]
@@ -54,34 +63,33 @@ export default function BookBooth() {
             className="max-w-2xl"
           >
             <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] text-kado-red mb-4">
-              Events &amp; Celebrations
+              {pageCopy.heroEyebrow}
             </p>
             <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] font-black text-white leading-[0.95] tracking-tight uppercase mb-5 drop-shadow-lg">
-              Your Moment,<br />Our Space.
+              {pageCopy.heroTitleLine1}
+              <br />
+              {pageCopy.heroTitleLine2}
             </h1>
             <p className="text-kado-cream/85 text-base sm:text-lg leading-relaxed max-w-xl mb-8">
-              Host birthdays, weddings, and intimate celebrations with curated coffee and an event-ready setup. Submit a
-              proposal — we&apos;ll email you back to talk through pricing.
+              {pageCopy.heroDescription}
             </p>
 
             <div className="flex flex-wrap gap-3 mb-8">
-              {[
-                { icon: CalendarHeart, label: 'Events & Celebrations' },
-                { icon: Users, label: 'Flexible Group Sizes' },
-                { icon: Clock3, label: 'Custom Duration' },
-                { icon: BadgeCheck, label: 'Talk Before You Commit' },
-              ].map(({ icon: Icon, label }) => (
+              {pageCopy.chips.map((label, i) => {
+                const Icon = CHIP_ICONS[i] ?? CalendarHeart;
+                return (
                 <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90">
                   <Icon className="w-3 h-3 text-kado-red shrink-0" />{label}
                 </span>
-              ))}
+                );
+              })}
             </div>
 
             <a
               href="#booking-form"
               className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
             >
-              Submit a proposal <ArrowDown className="w-4 h-4 shrink-0" />
+              {pageCopy.heroCtaLabel} <ArrowDown className="w-4 h-4 shrink-0" />
             </a>
           </motion.div>
         </div>
@@ -117,7 +125,11 @@ export default function BookBooth() {
         </section>
       )}
 
-      <BookingSteps />
+      <BookingSteps
+        eyebrow={pageCopy.howItWorksEyebrow}
+        title={pageCopy.howItWorksTitle}
+        steps={pageCopy.howItWorksSteps}
+      />
       <BookingWizard onStageChange={setWizardStage} />
       <PageSeoBlurb />
     </div>

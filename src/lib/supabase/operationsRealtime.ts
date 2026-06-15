@@ -12,6 +12,7 @@ import { useMerchStore } from '../../store/merchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useEventFormStore } from '../../store/eventFormStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
+import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBlogStore } from '../../store/blogStore';
@@ -55,7 +56,11 @@ const refresh = {
   users: debounce(() => void useUserStore.getState().hydrateFromRemote(), 300),
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
-  settings: debounce(() => void useSettingsStore.getState().hydrateFromRemote(), 300),
+  settings: debounce(() => {
+    void useSettingsStore.getState().hydrateFromRemote();
+    void useLandingContentStore.getState().hydrateFromRemote();
+    void useBoothShowcaseStore.getState().hydrateFromRemote();
+  }, 300),
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
   merch: debounce(() => void useMerchStore.getState().hydrateFromRemote(), 300),
