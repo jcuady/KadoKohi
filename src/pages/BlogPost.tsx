@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, Clock } from 'lucide-react';
-import { blogPostBySlug } from '../content/blogPosts';
+import { useBlogStore } from '../store/blogStore';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 function formatDate(iso: string) {
@@ -14,8 +15,23 @@ function formatDate(iso: string) {
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const post = slug ? blogPostBySlug(slug) : undefined;
+  const hydrateFromRemote = useBlogStore((s) => s.hydrateFromRemote);
+  const postBySlug = useBlogStore((s) => s.postBySlug);
+  const [ready, setReady] = useState(false);
+  const post = slug ? postBySlug(slug) : undefined;
 
+  useEffect(() => {
+    void hydrateFromRemote().finally(() => setReady(true));
+  }, [hydrateFromRemote, slug]);
+
+  if (!slug) return <Navigate to="/blog" replace />;
+  if (!ready) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center bg-kado-offwhite">
+        <p className="kado-body text-kado-dark/50">Loading story…</p>
+      </div>
+    );
+  }
   if (!post) return <Navigate to="/blog" replace />;
 
   return (
@@ -36,7 +52,7 @@ export default function BlogPost() {
           <div className="mt-4 flex flex-wrap gap-4 kado-body-sm text-kado-dark/55">
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 text-kado-red" aria-hidden />
-              {formatDate(post.date)}
+              {formatDate(post.publishedAt)}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Clock className="h-4 w-4 text-kado-red" aria-hidden />
@@ -44,13 +60,15 @@ export default function BlogPost() {
             </span>
           </div>
         </div>
-        <div className="mx-auto max-w-5xl px-6 pb-0">
-          <img
-            src={post.imageUrl}
-            alt={post.imageAlt}
-            className="aspect-[21/9] w-full rounded-t-[1.5rem] object-cover shadow-lg"
-          />
-        </div>
+        {post.imageUrl ? (
+          <div className="mx-auto max-w-5xl px-6 pb-0">
+            <img
+              src={post.imageUrl}
+              alt={post.imageAlt}
+              className="aspect-[21/9] w-full rounded-t-[1.5rem] object-cover shadow-lg"
+            />
+          </div>
+        ) : null}
       </section>
 
       <section className="px-6 py-12 md:py-16">

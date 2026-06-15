@@ -1,6 +1,7 @@
 import type { EventFormTemplate } from '../../eventForms';
 import { parseFormFields } from '../../eventForms';
 import type {
+  BlogPost,
   BoothBooking,
   BoothBookingStatus,
   Branch,
@@ -206,6 +207,30 @@ function mapEventRegistration(row: any): EventRegistration {
     customAnswers:
       row.custom_answers && typeof row.custom_answers === 'object' ? row.custom_answers : undefined,
     createdAt: row.created_at,
+  };
+}
+
+function parseBlogBody(row: { body?: unknown }): string[] {
+  if (Array.isArray(row.body)) {
+    return row.body.map((p) => String(p)).filter(Boolean);
+  }
+  return [];
+}
+
+function mapBlogPost(row: Record<string, unknown>): BlogPost {
+  return {
+    id: String(row.id),
+    slug: String(row.slug),
+    title: String(row.title),
+    excerpt: String(row.excerpt ?? ''),
+    category: String(row.category ?? ''),
+    publishedAt: String(row.published_at),
+    readMinutes: Number(row.read_minutes ?? 3),
+    imageUrl: String(row.image_url ?? ''),
+    imageAlt: String(row.image_alt ?? ''),
+    body: parseBlogBody(row),
+    visible: Boolean(row.visible),
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
@@ -669,6 +694,38 @@ export const orderingRepo = {
   async deleteEvent(id: string) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_events').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async fetchBlogPosts(): Promise<BlogPost[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('kk_blog_posts')
+      .select('*')
+      .order('published_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => mapBlogPost(row as Record<string, unknown>));
+  },
+  async upsertBlogPost(post: BlogPost) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_blog_posts').upsert({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt ?? '',
+      category: post.category ?? '',
+      published_at: new Date(post.publishedAt).toISOString(),
+      read_minutes: post.readMinutes,
+      image_url: post.imageUrl || null,
+      image_alt: post.imageAlt ?? '',
+      body: post.body ?? [],
+      visible: post.visible,
+      sort_order: post.sortOrder,
+    });
+    if (error) throw error;
+  },
+  async deleteBlogPost(id: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_blog_posts').delete().eq('id', id);
     if (error) throw error;
   },
   async fetchBookings(): Promise<BoothBooking[]> {

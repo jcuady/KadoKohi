@@ -41,6 +41,8 @@ import AdminBoothBookings from './pages/admin/AdminBoothBookings';
 import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
 import AdminBoothContent from './pages/admin/AdminBoothContent';
 import AdminLandingContent from './pages/admin/AdminLandingContent';
+import AdminBlog from './pages/admin/AdminBlog';
+import AdminPastries from './pages/admin/AdminPastries';
 import StaffLayout from './layouts/StaffLayout';
 import StaffMerchOrders from './pages/staff/StaffMerchOrders';
 import StaffAllOrders from './pages/staff/StaffAllOrders';
@@ -116,6 +118,8 @@ export default function App() {
             <Route path="tables" element={<AdminTables />} />
             <Route path="sections" element={<AdminSections />} />
             <Route path="landing" element={<AdminLandingContent />} />
+            <Route path="blog" element={<AdminBlog />} />
+            <Route path="pastries" element={<AdminPastries />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="audit" element={<AdminAuditLog />} />
             <Route path="vouchers" element={<AdminVouchers />} />

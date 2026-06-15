@@ -4,6 +4,7 @@ import { useMenuStore } from '../../store/menuStore';
 import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useBlogStore } from '../../store/blogStore';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -11,6 +12,7 @@ const GUEST_TABLES = [
   'kk_tables',
   'kk_branches',
   'kk_app_settings',
+  'kk_blog_posts',
 ] as const;
 
 type GuestTable = (typeof GUEST_TABLES)[number];
@@ -31,6 +33,7 @@ const refresh = {
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
   settings: debounce(() => void useSettingsStore.getState().hydrateFromRemote(), 300),
+  blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: GuestTable) {
@@ -47,6 +50,9 @@ function onTableChange(table: GuestTable) {
       break;
     case 'kk_app_settings':
       refresh.settings();
+      break;
+    case 'kk_blog_posts':
+      refresh.blog();
       break;
     default:
       break;

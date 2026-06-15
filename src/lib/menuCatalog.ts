@@ -12,6 +12,9 @@ const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
     'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=700&auto=format&fit=crop',
 };
 
+const PASTRY_FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=700&auto=format&fit=crop';
+
 const DEFAULT_MENU_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=700&auto=format&fit=crop';
 
@@ -20,11 +23,17 @@ export function isMerchCategoryName(name: string | undefined): boolean {
 }
 
 /** Same image resolution as /menu — product.image from Supabase, then category fallback. */
-export function getMenuProductImageUrl(product: Pick<Product, 'image' | 'categoryId'>): string {
+export function getMenuProductImageUrl(
+  product: Pick<Product, 'image' | 'categoryId'>,
+  options?: { pastriesCategoryId?: string },
+): string {
   const fromProduct = product.image?.trim();
   if (fromProduct) return normalizeExternalMenuImageUrl(fromProduct);
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     return FALLBACK_IMAGE_BY_CATEGORY[product.categoryId];
+  }
+  if (options?.pastriesCategoryId && product.categoryId === options.pastriesCategoryId) {
+    return PASTRY_FALLBACK_IMAGE;
   }
   return DEFAULT_MENU_PRODUCT_IMAGE;
 }

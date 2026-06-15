@@ -14,6 +14,7 @@ import { useEventFormStore } from '../../store/eventFormStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
+import { useBlogStore } from '../../store/blogStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -32,6 +33,7 @@ const OPS_TABLES = [
   'kk_event_forms',
   'kk_booth_bookings',
   'kk_loyalty_rewards',
+  'kk_blog_posts',
 ] as const;
 
 type OpsTable = (typeof OPS_TABLES)[number];
@@ -62,6 +64,7 @@ const refresh = {
   bookings: debounce(() => void useBoothBookingStore.getState().hydrateFromRemote(), 300),
   landing: debounce(() => void useLandingContentStore.getState().hydrateFromRemote(), 300),
   loyalty: debounce(() => void useLoyaltyStore.getState().hydrateFromRemote(), 300),
+  blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: OpsTable) {
@@ -108,6 +111,9 @@ function onTableChange(table: OpsTable) {
     case 'kk_loyalty_rewards':
       refresh.loyalty();
       break;
+    case 'kk_blog_posts':
+      refresh.blog();
+      break;
     default:
       break;
   }
@@ -129,6 +135,7 @@ export async function refreshOperationsData(): Promise<void> {
     useEventFormStore.getState().hydrateFromRemote(),
     useBoothBookingStore.getState().hydrateFromRemote(),
     useLandingContentStore.getState().hydrateFromRemote(),
+    useBlogStore.getState().hydrateFromRemote(),
   ]);
 }
 

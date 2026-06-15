@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Coffee, Leaf, IceCreamCone, Star } from 'lucide-react';
+import { Coffee, Leaf, IceCreamCone, Star, Croissant } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
 import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
@@ -10,7 +10,10 @@ import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
-function categoryIcon(categoryId: string): React.ReactNode {
+function categoryIcon(categoryId: string, categoryName?: string): React.ReactNode {
+  if (categoryName?.trim().toLowerCase() === 'pastries') {
+    return <Croissant className="w-4 h-4 shrink-0" />;
+  }
   if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4 shrink-0" />;
   if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4 shrink-0" />;
   return <Coffee className="w-4 h-4 shrink-0" />;
@@ -141,7 +144,7 @@ export default function Menu() {
                         : 'border border-kado-dark/15 bg-white text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
                     } flex-col justify-center gap-1.5 rounded-2xl px-2.5 py-3 text-[9px] leading-snug text-center sm:text-[10px] md:flex-row md:justify-start md:gap-2 md:rounded-full md:px-5 md:py-2.5 md:text-[11px] md:whitespace-nowrap md:text-left`}
                   >
-                    {categoryIcon(cat.id)}
+                    {categoryIcon(cat.id, cat.name)}
                     <span className="md:hidden">{categoryShortLabel(cat.id, cat.name)}</span>
                     <span className="hidden md:inline">{cat.name}</span>
                   </button>

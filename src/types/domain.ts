@@ -200,6 +200,21 @@ export interface EventRegistration {
   createdAt: string;
 }
 
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  publishedAt: string;
+  readMinutes: number;
+  imageUrl: string;
+  imageAlt: string;
+  body: string[];
+  visible: boolean;
+  sortOrder: number;
+}
+
 export interface TakeoutQr {
   id: string;
   branchId: string;
