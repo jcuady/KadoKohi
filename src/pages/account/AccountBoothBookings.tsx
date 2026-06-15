@@ -42,8 +42,8 @@ export default function AccountBoothBookings() {
             Event Booking
           </h1>
           <p className="text-sm text-kado-dark/55 mt-2 max-w-xl">
-            Track booth requests, estimates, and official quotes. Prices start as estimates until our team sends a
-            final quote — call us anytime to discuss.
+            Track event proposals you submitted. Our team will email you to discuss pricing — nothing is final until you
+            agree together.
           </p>
         </div>
         <Link
@@ -60,7 +60,7 @@ export default function AccountBoothBookings() {
           <CalendarHeart className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
           <p className="font-display font-bold text-kado-dark text-lg mb-2">No booth bookings yet</p>
           <p className="text-sm text-kado-dark/55 mb-6 max-w-sm mx-auto">
-            Plan a celebration at Kado Kohi — submit a request and we will follow up with an official quote.
+            Plan a celebration at Kado Kohi — submit a proposal and we will follow up by email.
           </p>
           <Link
             to="/book/booth"

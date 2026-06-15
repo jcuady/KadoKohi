@@ -12,13 +12,13 @@ export const BOOTH_BOOKING_STATUS_LABELS: Record<BoothBookingStatus, string> = {
 };
 
 export const BOOTH_BOOKING_STATUS_CUSTOMER: Record<BoothBookingStatus, string> = {
-  submitted: 'We received your request. Our team will review your estimate shortly.',
-  under_review: 'We are reviewing your event details and preparing a quote.',
-  quoted: 'Your official quote is ready. Call us to confirm or ask questions.',
-  awaiting_confirmation: 'Please confirm your booking. Call us if you need changes.',
-  confirmed: 'Your booth booking is confirmed. See you on your event date!',
-  declined: 'This request was declined. Contact us if you have questions.',
-  cancelled: 'This booking was cancelled.',
+  submitted: 'We received your proposal. Email us or wait for our team to reply about pricing and details.',
+  under_review: 'We are reviewing your event and preparing a quote to discuss with you.',
+  quoted: 'We sent a quote — reply by email or call us to confirm or adjust.',
+  awaiting_confirmation: 'Almost set — confirm with us by email or phone when you are ready.',
+  confirmed: 'Your event date is confirmed. See you on the day!',
+  declined: 'This proposal was declined. Contact us if you have questions.',
+  cancelled: 'This proposal was cancelled.',
   completed: 'Thank you — your event is marked complete.',
 };
 

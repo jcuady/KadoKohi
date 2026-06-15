@@ -9,6 +9,7 @@ import {
 } from '../../lib/boothBookingStatus';
 import { formatPhp } from '../../lib/money';
 import BoothBookingManageModal from '../../components/admin/BoothBookingManageModal';
+import EventAvailabilityCalendar from '../../components/booking/EventAvailabilityCalendar';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -36,13 +37,16 @@ export default function AdminBoothBookings() {
 
   return (
     <div className="max-w-6xl dash-page">
-      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booth Bookings</h1>
-      <p className="dash-muted text-sm mb-2">
-        Review requests, send official quotes, and override status. Customers see estimates until you publish a quote.
+      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Event Proposals</h1>
+      <p className="dash-muted text-sm mb-6">
+        Review customer proposals, manage the availability calendar, and send official quotes when ready.
       </p>
-      <p className="text-xs dash-muted mb-6">
-        Set the events phone in Settings so customers can call you from their booking page.
-      </p>
+
+      <div className="mb-10 max-w-md">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Availability calendar</p>
+        <p className="text-xs dash-muted mb-3">Only admins can block or reopen dates. Confirmed bookings show as booked.</p>
+        <EventAvailabilityCalendar adminMode />
+      </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
         <select

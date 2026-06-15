@@ -728,6 +728,29 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_blog_posts').delete().eq('id', id);
     if (error) throw error;
   },
+  async fetchEventCalendar(year: number, month: number): Promise<{ blockouts: string[]; booked: string[] }> {
+    if (!supabase) return { blockouts: [], booked: [] };
+    const { data, error } = await supabase.rpc('kk_fetch_event_calendar', {
+      p_year: year,
+      p_month: month,
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as { blockouts?: string[]; booked?: string[] };
+    return {
+      blockouts: row.blockouts ?? [],
+      booked: row.booked ?? [],
+    };
+  },
+  async toggleEventBlockout(dateKey: string, note?: string): Promise<{ blocked: boolean }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_admin_toggle_event_blockout', {
+      p_date: dateKey,
+      p_note: note ?? null,
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as { blocked?: boolean };
+    return { blocked: !!row.blocked };
+  },
   async fetchBookings(): Promise<BoothBooking[]> {
     if (!supabase) return [];
     const { data, error } = await supabase
