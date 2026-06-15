@@ -1,24 +1,27 @@
 import type { BookingShowcaseMedia } from '../types/domain';
+import { clampCmsTextField, cmsTextPlain, type CmsText } from './cmsTypography';
+
+export type { CmsText };
 
 export interface BoothHowItWorksStep {
-  title: string;
-  body: string;
+  title: CmsText;
+  body: CmsText;
 }
 
 export interface BoothPageCopy {
-  heroEyebrow: string;
-  heroTitleLine1: string;
-  heroTitleLine2: string;
-  heroDescription: string;
-  heroCtaLabel: string;
-  chips: [string, string, string, string];
-  howItWorksEyebrow: string;
-  howItWorksTitle: string;
+  heroEyebrow: CmsText;
+  heroTitleLine1: CmsText;
+  heroTitleLine2: CmsText;
+  heroDescription: CmsText;
+  heroCtaLabel: CmsText;
+  chips: [CmsText, CmsText, CmsText, CmsText];
+  howItWorksEyebrow: CmsText;
+  howItWorksTitle: CmsText;
   howItWorksSteps: [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep];
-  proposalTitle: string;
-  proposalDescription: string;
-  proposalCtaLabel: string;
-  proposalEmailNote: string;
+  proposalTitle: CmsText;
+  proposalDescription: CmsText;
+  proposalCtaLabel: CmsText;
+  proposalEmailNote: CmsText;
 }
 
 export interface BoothPageContent {
@@ -58,40 +61,49 @@ export const DEFAULT_BOOTH_PAGE_COPY: BoothPageCopy = {
     'Submitting saves your request and opens your email to our events team. We\'ll follow up to discuss pricing — nothing is confirmed until we agree together.',
 };
 
-function clampChipTuple(raw: string[] | undefined): [string, string, string, string] {
+function clampChipTuple(raw: unknown[] | undefined): [CmsText, CmsText, CmsText, CmsText] {
   const base = DEFAULT_BOOTH_PAGE_COPY.chips;
   if (!Array.isArray(raw) || raw.length < 4) return [...base];
-  return [raw[0] ?? base[0], raw[1] ?? base[1], raw[2] ?? base[2], raw[3] ?? base[3]];
+  return [0, 1, 2, 3].map((i) => clampCmsTextField(raw[i], base[i])) as [
+    CmsText,
+    CmsText,
+    CmsText,
+    CmsText,
+  ];
 }
 
 function clampHowItWorksSteps(
-  raw: BoothHowItWorksStep[] | undefined,
+  raw: Partial<BoothHowItWorksStep>[] | undefined,
 ): [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep] {
   const base = DEFAULT_BOOTH_PAGE_COPY.howItWorksSteps;
   if (!Array.isArray(raw) || raw.length < 3) return [...base];
   return [0, 1, 2].map((i) => ({
-    title: raw[i]?.title?.trim() || base[i].title,
-    body: raw[i]?.body?.trim() || base[i].body,
+    title: clampCmsTextField(raw[i]?.title, base[i].title),
+    body: clampCmsTextField(raw[i]?.body, base[i].body),
   })) as [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep];
+}
+
+function clampCopyField(raw: unknown, key: keyof BoothPageCopy): CmsText {
+  return clampCmsTextField(raw, DEFAULT_BOOTH_PAGE_COPY[key] as CmsText);
 }
 
 export function normalizeBoothPageCopy(raw?: Partial<BoothPageCopy>): BoothPageCopy {
   const base = DEFAULT_BOOTH_PAGE_COPY;
   if (!raw) return { ...base, chips: [...base.chips], howItWorksSteps: [...base.howItWorksSteps] };
   return {
-    heroEyebrow: raw.heroEyebrow?.trim() || base.heroEyebrow,
-    heroTitleLine1: raw.heroTitleLine1?.trim() || base.heroTitleLine1,
-    heroTitleLine2: raw.heroTitleLine2?.trim() || base.heroTitleLine2,
-    heroDescription: raw.heroDescription?.trim() || base.heroDescription,
-    heroCtaLabel: raw.heroCtaLabel?.trim() || base.heroCtaLabel,
+    heroEyebrow: clampCopyField(raw.heroEyebrow, 'heroEyebrow'),
+    heroTitleLine1: clampCopyField(raw.heroTitleLine1, 'heroTitleLine1'),
+    heroTitleLine2: clampCopyField(raw.heroTitleLine2, 'heroTitleLine2'),
+    heroDescription: clampCopyField(raw.heroDescription, 'heroDescription'),
+    heroCtaLabel: clampCopyField(raw.heroCtaLabel, 'heroCtaLabel'),
     chips: clampChipTuple(raw.chips),
-    howItWorksEyebrow: raw.howItWorksEyebrow?.trim() || base.howItWorksEyebrow,
-    howItWorksTitle: raw.howItWorksTitle?.trim() || base.howItWorksTitle,
+    howItWorksEyebrow: clampCopyField(raw.howItWorksEyebrow, 'howItWorksEyebrow'),
+    howItWorksTitle: clampCopyField(raw.howItWorksTitle, 'howItWorksTitle'),
     howItWorksSteps: clampHowItWorksSteps(raw.howItWorksSteps),
-    proposalTitle: raw.proposalTitle?.trim() || base.proposalTitle,
-    proposalDescription: raw.proposalDescription?.trim() || base.proposalDescription,
-    proposalCtaLabel: raw.proposalCtaLabel?.trim() || base.proposalCtaLabel,
-    proposalEmailNote: raw.proposalEmailNote?.trim() || base.proposalEmailNote,
+    proposalTitle: clampCopyField(raw.proposalTitle, 'proposalTitle'),
+    proposalDescription: clampCopyField(raw.proposalDescription, 'proposalDescription'),
+    proposalCtaLabel: clampCopyField(raw.proposalCtaLabel, 'proposalCtaLabel'),
+    proposalEmailNote: clampCopyField(raw.proposalEmailNote, 'proposalEmailNote'),
   };
 }
 
@@ -103,4 +115,9 @@ export function normalizeBoothPageContent(
     copy: normalizeBoothPageCopy(raw?.copy),
     showcase: Array.isArray(raw?.showcase) && raw.showcase.length > 0 ? raw.showcase : fallbackShowcase,
   };
+}
+
+/** Stable React key for chip lists. */
+export function boothChipKey(chip: CmsText, index: number): string {
+  return `${index}-${cmsTextPlain(chip)}`;
 }

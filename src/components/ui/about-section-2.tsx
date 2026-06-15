@@ -4,6 +4,8 @@ import { ArrowUpRight, Facebook, Instagram } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { TimelineContent } from '@/components/ui/timeline-animation';
 import AccentHeadline from '@/components/ui/AccentHeadline';
+import CmsStyledText from '@/components/cms/CmsStyledText';
+import { cmsTextPlain } from '@/lib/cmsTypography';
 import ResilientImage from '@/components/ui/ResilientImage';
 import { SEO_SOCIAL } from '@/content/seo';
 import { KADO_GOOGLE_LISTING } from '@/content/kadoGoogleReviews';
@@ -80,7 +82,7 @@ export default function AboutSection2({ copy }: Props) {
           customVariants={textVariants}
           className="mb-5 kado-label text-kado-red sm:mb-6"
         >
-          {copy.badge}
+          <CmsStyledText value={copy.badge} as="span" defaultSizeClass="kado-label" defaultColorClass="text-kado-red" />
         </TimelineContent>
 
         <TimelineContent
@@ -101,13 +103,13 @@ export default function AboutSection2({ copy }: Props) {
           customVariants={textVariants}
           className="mt-6 max-w-2xl kado-body text-kado-dark/70 sm:mt-8 sm:text-base"
         >
-          {copy.intro}
+          <CmsStyledText value={copy.intro} as="span" defaultSizeClass="kado-body" defaultColorClass="text-kado-dark/70" />
         </TimelineContent>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
           {copy.pillars.map((pillar, i) => (
             <TimelineContent
-              key={`${pillar.title}-${pillar.subtitle}`}
+              key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
               as="article"
               animationNum={3 + i}
               timelineRef={heroRef}
@@ -121,14 +123,10 @@ export default function AboutSection2({ copy }: Props) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
               <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
-                <p className="kado-label text-kado-cream/60">
-                  {pillar.subtitle}
-                </p>
-                <h3 className="mt-1 kado-h3 text-kado-cream">
-                  {pillar.title}
-                </h3>
+                <CmsStyledText value={pillar.subtitle} as="p" className="kado-label" defaultColorClass="text-kado-cream/60" />
+                <CmsStyledText value={pillar.title} as="h3" className="mt-1 kado-h3" defaultColorClass="text-kado-cream" />
                 {pillar.body ? (
-                  <p className="mt-2 kado-body-sm text-kado-cream/80">{pillar.body}</p>
+                  <CmsStyledText value={pillar.body} as="p" className="mt-2" defaultSizeClass="kado-body-sm" defaultColorClass="text-kado-cream/80" />
                 ) : null}
               </div>
             </TimelineContent>
@@ -158,10 +156,8 @@ export default function AboutSection2({ copy }: Props) {
 
         <div className="mt-8 flex flex-col gap-6 sm:mt-10 sm:flex-row sm:items-end sm:justify-between">
           <TimelineContent as="div" animationNum={7} timelineRef={heroRef} customVariants={textVariants}>
-            <p className="kado-body text-kado-dark/60 sm:text-base">{copy.footerTagline1}</p>
-            <p className="kado-h3 uppercase tracking-wide text-kado-red">
-              {copy.footerTagline2}
-            </p>
+            <CmsStyledText value={copy.footerTagline1} as="p" className="sm:text-base" defaultSizeClass="kado-body" defaultColorClass="text-kado-dark/60" />
+            <CmsStyledText value={copy.footerTagline2} as="p" className="kado-h3 uppercase tracking-wide" defaultColorClass="text-kado-red" />
           </TimelineContent>
 
           <TimelineContent as="div" animationNum={8} timelineRef={heroRef} customVariants={textVariants}>
@@ -169,7 +165,7 @@ export default function AboutSection2({ copy }: Props) {
               to="/menu"
               className="inline-flex h-12 w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-kado-red px-8 text-sm font-semibold text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
             >
-              {copy.ctaLabel}
+              <CmsStyledText value={copy.ctaLabel} as="span" />
               <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           </TimelineContent>
@@ -184,7 +180,7 @@ export default function AboutSection2({ copy }: Props) {
           className="mt-10 border-t border-kado-dark/8 pt-8 sm:mt-12"
         >
           <p className="mb-4 kado-label text-kado-dark/40">
-            {copy.socialHeading}
+            <CmsStyledText value={copy.socialHeading} as="span" />
           </p>
           <ul className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             {SOCIAL_LINKS.map(({ key, href, label, handle, Icon }) => (

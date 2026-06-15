@@ -1,3 +1,6 @@
+import type { CmsText } from '../../lib/cmsTypography';
+import CmsStyledText from '../cms/CmsStyledText';
+import { cmsTextPlain } from '../../lib/cmsTypography';
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
 import { Separator } from "./separator"
 import { ExternalLink, Quote, Star } from "lucide-react"
@@ -8,27 +11,27 @@ import { cn } from "../../lib/utils"
 
 export interface Testimonial {
   id: number
-  name: string
-  role: string
-  company: string
-  content: string
+  name: CmsText
+  role: CmsText
+  company: CmsText
+  content: CmsText
   rating: number
   avatar: string
 }
 
 export interface TrustedBrandItem {
-  label: string
+  label: CmsText
   imageUrl?: string
 }
 
 export interface AnimatedTestimonialsProps {
-  title?: string
-  subtitle?: string
-  badgeText?: string
+  title?: CmsText
+  subtitle?: CmsText
+  badgeText?: CmsText
   testimonials?: Testimonial[]
   autoRotateInterval?: number
   trustedCompanies?: TrustedBrandItem[]
-  trustedCompaniesTitle?: string
+  trustedCompaniesTitle?: CmsText
   googleListing?: GoogleReviewsListing
   className?: string
 }
@@ -107,17 +110,19 @@ export function AnimatedTestimonials({
               {badgeText && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full kado-label bg-kado-red/10 text-kado-red">
                   <Star className="h-3 w-3 fill-kado-red" />
-                  <span>{badgeText}</span>
+                  <CmsStyledText value={badgeText} as="span" />
                 </div>
               )}
 
-              <h2 className="kado-h2 text-kado-dark">
-                {title}
-              </h2>
+              <CmsStyledText value={title} as="h2" className="kado-h2 text-kado-dark" />
 
-              <p className="max-w-[520px] kado-body md:text-base text-kado-dark/60">
-                {subtitle}
-              </p>
+              <CmsStyledText
+                value={subtitle}
+                as="p"
+                className="max-w-[520px] md:text-base text-kado-dark/60"
+                defaultSizeClass="kado-body"
+                defaultColorClass="text-kado-dark/60"
+              />
 
               {googleListing ? (
                 <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -203,7 +208,7 @@ export function AnimatedTestimonials({
                   <div className="relative mb-6 flex-1">
                     <Quote className="absolute -top-1 -left-1 h-7 w-7 text-kado-red/15 rotate-180" />
                     <p className="relative z-10 text-kado-dark text-base leading-relaxed font-medium">
-                      &ldquo;{formatReviewText(testimonial.content)}&rdquo;
+                      &ldquo;{formatReviewText(cmsTextPlain(testimonial.content))}&rdquo;
                     </p>
                   </div>
 
@@ -215,20 +220,20 @@ export function AnimatedTestimonials({
                       {testimonial.avatar?.trim() ? (
                         <AvatarImage
                           src={testimonial.avatar}
-                          alt={testimonial.name}
+                          alt={cmsTextPlain(testimonial.name)}
                           referrerPolicy="no-referrer"
                           className="object-cover"
                         />
                       ) : null}
                       <AvatarFallback delayMs={testimonial.avatar?.trim() ? 600 : 0}>
-                        {testimonial.name.charAt(0)}
+                        {cmsTextPlain(testimonial.name).charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-kado-dark text-sm">{testimonial.name}</p>
+                      <CmsStyledText value={testimonial.name} as="p" className="font-semibold text-sm" defaultColorClass="text-kado-dark" />
                       <p className="text-xs text-kado-dark/50">
-                        {testimonial.role}
-                        {testimonial.company ? ` · ${testimonial.company}` : ""}
+                        {cmsTextPlain(testimonial.role)}
+                        {cmsTextPlain(testimonial.company) ? ` · ${cmsTextPlain(testimonial.company)}` : ""}
                       </p>
                     </div>
                   </div>
@@ -250,27 +255,33 @@ export function AnimatedTestimonials({
             animate={controls}
             className="mt-20 text-center"
           >
-            <p className="text-xs font-semibold tracking-widest uppercase text-kado-dark/40 mb-8">
-              {trustedCompaniesTitle}
-            </p>
+            <CmsStyledText
+              value={trustedCompaniesTitle}
+              as="p"
+              className="text-xs font-semibold tracking-widest uppercase mb-8"
+              defaultColorClass="text-kado-dark/40"
+            />
             <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6">
               {trustedCompanies
-                .filter((c) => c.label.trim() || c.imageUrl?.trim())
+                .filter((c) => cmsTextPlain(c.label).trim() || c.imageUrl?.trim())
                 .map((company) => (
                   <div
-                    key={`${company.label}-${company.imageUrl ?? 'text'}`}
+                    key={`${cmsTextPlain(company.label)}-${company.imageUrl ?? 'text'}`}
                     className="flex items-center justify-center min-h-[2.5rem]"
                   >
                     {company.imageUrl?.trim() ? (
                       <img
                         src={company.imageUrl}
-                        alt={company.label}
+                        alt={cmsTextPlain(company.label)}
                         className="h-8 md:h-10 w-auto max-w-[120px] object-contain opacity-70 hover:opacity-100 transition-opacity"
                       />
                     ) : (
-                      <span className="font-display text-lg font-bold text-kado-dark/25 tracking-tight hover:text-kado-dark/50 transition-colors duration-200">
-                        {company.label}
-                      </span>
+                      <CmsStyledText
+                        value={company.label}
+                        as="span"
+                        className="font-display text-lg font-bold tracking-tight opacity-70 hover:opacity-100 transition-opacity duration-200"
+                        defaultColorClass="text-kado-dark/25"
+                      />
                     )}
                   </div>
                 ))}

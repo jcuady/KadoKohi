@@ -8,6 +8,7 @@ import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import type { BoothBookingOccasion } from '../../types/domain';
 import EventAvailabilityCalendar from './EventAvailabilityCalendar';
+import CmsStyledText from '../cms/CmsStyledText';
 import { buildBoothProposalMailto } from '../../lib/boothProposalEmail';
 import { buildProposalEstimate } from '../../lib/boothProposal';
 import {
@@ -201,10 +202,14 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
               <PartyPopper className="w-6 h-6" />
             </span>
             <div>
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-kado-dark">{pageCopy.proposalTitle}</h2>
-              <p className="text-sm text-kado-dark/60 mt-1 max-w-2xl leading-relaxed">
-                {pageCopy.proposalDescription}
-              </p>
+              <CmsStyledText value={pageCopy.proposalTitle} as="h2" className="font-display text-2xl md:text-3xl font-bold" defaultColorClass="text-kado-dark" />
+              <CmsStyledText
+                value={pageCopy.proposalDescription}
+                as="p"
+                className="mt-1 max-w-2xl leading-relaxed"
+                defaultSizeClass="kado-body-sm"
+                defaultColorClass="text-kado-dark/60"
+              />
             </div>
           </div>
 
@@ -266,11 +271,11 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-[52px] px-8 rounded-full bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] hover:bg-kado-dark transition-colors disabled:opacity-60"
               >
                 <Mail className="w-4 h-4" />
-                {submitting ? 'Saving…' : pageCopy.proposalCtaLabel}
+                {submitting ? 'Saving…' : <CmsStyledText value={pageCopy.proposalCtaLabel} as="span" />}
               </motion.button>
 
               <p className="text-xs text-kado-dark/50 leading-relaxed">
-                {pageCopy.proposalEmailNote} Email: {contactEmail}
+                <CmsStyledText value={pageCopy.proposalEmailNote} as="span" /> Email: {contactEmail}
               </p>
             </div>
 

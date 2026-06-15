@@ -1,18 +1,20 @@
+import type { CmsText } from '../lib/cmsTypography';
+
 export type HomeMediaSource = 'KadoKohi Social' | 'InsideMarikina';
 
 export interface HomeHeroCardMedia {
   id: string;
   src: string;
   alt: string;
-  title: string;
-  tag: string;
+  title: CmsText;
+  tag: CmsText;
   source: HomeMediaSource;
 }
 
 export interface HomeHeroSlide {
   id: string;
-  title: string;
-  subtitle: string;
+  title: CmsText;
+  subtitle: CmsText;
   image: string;
   imageAlt: string;
   source: HomeMediaSource;

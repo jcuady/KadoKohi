@@ -23,6 +23,7 @@ import {
 } from '../../lib/eventTiming';
 import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
 import type { EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
+import CmsStyledText from '../cms/CmsStyledText';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 
 type Props = {
@@ -140,14 +141,18 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
           className="text-center mb-12 sm:mb-16 md:mb-20"
         >
           <span className="inline-flex items-center gap-2 kado-label text-kado-red bg-kado-red/10 px-3 sm:px-4 py-2 rounded-full border border-kado-red/20 shadow-sm">
-            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> {copy.badge}
+            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> <CmsStyledText value={copy.badge} as="span" />
           </span>
           <h2 className="kado-h2 text-kado-dark leading-[1.08] px-1">
-            {copy.title}
+            <CmsStyledText value={copy.title} as="span" />
           </h2>
-          <p className="kado-body md:text-base text-kado-dark/80 font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0">
-            {copy.subtitle}
-          </p>
+          <CmsStyledText
+            value={copy.subtitle}
+            as="p"
+            className="font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0 md:text-base"
+            defaultSizeClass="kado-body"
+            defaultColorClass="text-kado-dark/80"
+          />
         </motion.div>
 
         {ev ? (
@@ -257,9 +262,9 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
         ) : (
           <div className="text-center py-16">
             <CalendarDays className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
-            <p className="text-kado-dark/50 text-sm">{copy.noEventBody}</p>
+            <CmsStyledText value={copy.noEventBody} as="p" className="text-sm" defaultColorClass="text-kado-dark/50" />
             <Link to="/events" className="mt-4 inline-block text-kado-red font-bold text-sm hover:underline">
-              {copy.noEventBrowseLabel}
+              <CmsStyledText value={copy.noEventBrowseLabel} as="span" />
             </Link>
           </div>
         )}
@@ -293,14 +298,14 @@ function BranchesStrip({ copy }: { copy: BranchesStripCopy }) {
           className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12"
         >
           <div>
-            <span className="kado-label text-kado-red mb-3 block">{copy.badge}</span>
-            <h2 className="kado-h2 text-kado-cream">{copy.title}</h2>
+            <CmsStyledText value={copy.badge} as="span" className="kado-label mb-3 block" defaultColorClass="text-kado-red" />
+            <CmsStyledText value={copy.title} as="h2" className="kado-h2" defaultColorClass="text-kado-cream" />
           </div>
           <Link
             to="/branches"
             className="kado-label text-kado-cream/60 hover:text-white flex items-center gap-1 transition-colors"
           >
-            {copy.ctaLabel} <ArrowRight className="w-4 h-4" />
+            <CmsStyledText value={copy.ctaLabel} as="span" /> <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
 

@@ -18,6 +18,8 @@ import {
   type MotionValue,
 } from "motion/react";
 import type { OrderingCopy } from '../../store/landingContentStore';
+import type { CmsText } from '../../lib/cmsTypography';
+import CmsStyledText from '../cms/CmsStyledText';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,9 +30,9 @@ type WrapperStyle = MotionStyle & {
 
 interface Step {
   id: string;
-  eyebrow: string;
-  title: string;
-  description: string;
+  eyebrow: CmsText;
+  title: CmsText;
+  description: CmsText;
   icon: string;
   visual: ReactNode;
 }
@@ -385,28 +387,36 @@ function FeatureCard({
                   transition={{ delay: 0.06, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <span className="text-xl">{steps[step].icon}</span>
-                  <span className="text-kado-red text-[10px] font-black uppercase tracking-[0.25em]">
-                    {steps[step].eyebrow}
-                  </span>
+                  <CmsStyledText
+                    value={steps[step].eyebrow}
+                    as="span"
+                    className="text-[10px] font-black uppercase tracking-[0.25em]"
+                    defaultColorClass="text-kado-red"
+                  />
                 </motion.div>
 
-                <motion.h3
+                <motion.div
                   className="kado-h3 text-kado-dark leading-tight tracking-tight"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {steps[step].title}
-                </motion.h3>
+                  <CmsStyledText value={steps[step].title} as="span" defaultSizeClass="kado-h3" defaultColorClass="text-kado-dark" />
+                </motion.div>
 
-                <motion.p
-                  className="text-kado-dark/65 text-sm md:text-base leading-relaxed"
+                <motion.div
+                  className="text-sm md:text-base leading-relaxed"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.14, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {steps[step].description}
-                </motion.p>
+                  <CmsStyledText
+                    value={steps[step].description}
+                    as="p"
+                    defaultSizeClass="kado-body"
+                    defaultColorClass="text-kado-dark/65"
+                  />
+                </motion.div>
               </motion.div>
             </AnimatePresence>
           </div>
@@ -480,7 +490,9 @@ function StepNav({
             >
               {done ? "✓" : i + 1}
             </span>
-            <span className="hidden sm:inline">{s.eyebrow}</span>
+            <span className="hidden sm:inline">
+              <CmsStyledText value={s.eyebrow} as="span" />
+            </span>
           </motion.button>
         );
       })}
@@ -540,21 +552,27 @@ export function KadoOrderingCarousel({
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
           <div>
-            <span className="kado-label mb-3 block text-kado-red">
-              {copy?.badge ?? 'How it works'}
-            </span>
-            <h2 className="kado-h2 text-kado-dark">
-              {copy?.title ?? 'Order your way.'}
-            </h2>
+            <CmsStyledText value={copy?.badge ?? 'How it works'} as="span" className="kado-label mb-3 block text-kado-red" />
+            <CmsStyledText value={copy?.title ?? 'Order your way.'} as="h2" className="kado-h2 text-kado-dark" />
           </div>
-          <p className="kado-body hidden max-w-sm text-kado-dark/55 md:block">
-            {copy?.subtitleDesktop ??
-              'Walk in, order online, or scan a table QR — then collect stamps every time.'}
-          </p>
+          <CmsStyledText
+            value={
+              copy?.subtitleDesktop ??
+              'Walk in, order online, or scan a table QR — then collect stamps every time.'
+            }
+            as="p"
+            className="hidden max-w-sm md:block"
+            defaultSizeClass="kado-body"
+            defaultColorClass="text-kado-dark/55"
+          />
         </div>
-        <p className="kado-body -mt-2 text-kado-dark/55 md:hidden">
-          {copy?.subtitleMobile ?? 'In-store, online, QR at your table — earn stamps every visit.'}
-        </p>
+        <CmsStyledText
+          value={copy?.subtitleMobile ?? 'In-store, online, QR at your table — earn stamps every visit.'}
+          as="p"
+          className="-mt-2 md:hidden"
+          defaultSizeClass="kado-body"
+          defaultColorClass="text-kado-dark/55"
+        />
 
         {/* Progress */}
         <ProgressBar step={current} total={steps.length} interval={INTERVAL} />

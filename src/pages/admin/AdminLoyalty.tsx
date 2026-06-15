@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Gift, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBranchStore } from '../../store/branchStore';
@@ -105,7 +106,16 @@ export default function AdminLoyalty() {
         </TabsList>
 
         {section === 'members' ? (
-          <AdminLoyaltyMembers />
+          <div className="space-y-4">
+            <p className="text-xs dash-muted">
+              Need quick +/- at the counter? Use{' '}
+              <Link to="/admin/stamps" className="font-semibold text-kado-red hover:underline">
+                Stamps
+              </Link>{' '}
+              in the sidebar (today&apos;s orders, search, fast adjustments).
+            </p>
+            <AdminLoyaltyMembers />
+          </div>
         ) : (
         <div className="space-y-8">
       <div className="dash-card rounded-2xl border p-6 space-y-3">

@@ -5,6 +5,8 @@ import { ArrowRight, Mail } from 'lucide-react';
 import { sendInboundEmail } from '../../lib/sendInboundEmail';
 import { HorizontalMarquee } from './marquee';
 import type { BrandMarqueeItem, KadoCircleCopy } from '../../store/landingContentStore';
+import CmsStyledText from '../cms/CmsStyledText';
+import { cmsTextPlain } from '../../lib/cmsTypography';
 
 /** Partners & collaborators — default strip when CMS copy is absent. */
 export const KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
@@ -36,7 +38,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
   const marqueeRef = useRef<HTMLDivElement>(null);
 
   const sponsors = copy?.sponsors?.length ? copy.sponsors : KADO_CIRCLE_SPONSORS;
-  const visibleSponsors = sponsors.filter((s) => s.label.trim() || s.imageUrl?.trim());
+  const visibleSponsors = sponsors.filter((s) => cmsTextPlain(s.label).trim() || s.imageUrl?.trim());
 
   useEffect(() => {
     const root = marqueeRef.current;
@@ -124,16 +126,22 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
           <div className="max-w-xl">
             <p className="kado-label mb-5 flex items-center gap-2 text-kado-red">
               <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              {copy?.badge ?? 'The Inner Circle'}
+              <CmsStyledText value={copy?.badge ?? 'The Inner Circle'} as="span" />
             </p>
             <h2 className="kado-h2 mb-4 sm:mb-5 text-white">
-              {copy?.titleBefore ?? 'Join the'}{' '}
-              <span className="text-kado-red not-italic">{copy?.titleAccent ?? 'Kado Circle.'}</span>
+              <CmsStyledText value={copy?.titleBefore ?? 'Join the'} as="span" />{' '}
+              <CmsStyledText value={copy?.titleAccent ?? 'Kado Circle.'} as="span" className="text-kado-red not-italic" />
             </h2>
-            <p className="kado-body md:text-base text-white/55">
-              {copy?.body ??
-                'Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a local.'}
-            </p>
+            <CmsStyledText
+              value={
+                copy?.body ??
+                'Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a local.'
+              }
+              as="p"
+              className="md:text-base"
+              defaultSizeClass="kado-body"
+              defaultColorClass="text-white/55"
+            />
           </div>
 
           {/* Email → signup */}
@@ -157,7 +165,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
                 disabled={submitting}
                 className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-kado-red-hover transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
               >
-                {submitting ? 'Sending…' : (copy?.submitLabel ?? 'Request access')}{' '}
+                {submitting ? 'Sending…' : <CmsStyledText value={copy?.submitLabel ?? 'Request access'} as="span" />}{' '}
                 {!submitting ? <ArrowRight className="w-4 h-4" aria-hidden /> : null}
               </button>
             </form>
@@ -175,7 +183,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
               <p className="text-white/45 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
             ) : (
               <p className="text-white/35 text-xs mt-3 text-center lg:text-left">
-                {copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}
+                <CmsStyledText value={copy?.disclaimer ?? 'No spam. Unsubscribe any time.'} as="span" />
               </p>
             )}
           </div>
@@ -183,27 +191,33 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
 
         {/* Sponsor marquee */}
         <div className="mt-14 md:mt-16">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35 mb-4 text-center">
-            {copy?.marqueeLabel ?? 'Friends of the corner'}
-          </p>
+          <CmsStyledText
+            value={copy?.marqueeLabel ?? 'Friends of the corner'}
+            as="p"
+            className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-center"
+            defaultColorClass="text-white/35"
+          />
           <div ref={marqueeRef} className="relative w-full py-2">
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] py-4 md:py-5">
               <HorizontalMarquee speed={32} pauseOnHover className="w-full">
                 {visibleSponsors.map((item) => (
                   <div
-                    key={`${item.label}-${item.imageUrl ?? 'text'}`}
+                    key={`${cmsTextPlain(item.label)}-${item.imageUrl ?? 'text'}`}
                     className="marquee-item-horizontal flex items-center justify-center px-6 sm:px-10 md:px-14 whitespace-nowrap min-h-[3rem] md:min-h-[4rem]"
                   >
                     {item.imageUrl?.trim() ? (
                       <img
                         src={item.imageUrl}
-                        alt={item.label}
+                        alt={cmsTextPlain(item.label)}
                         className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
                       />
                     ) : (
-                      <span className="font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-white/90">
-                        {item.label}
-                      </span>
+                      <CmsStyledText
+                        value={item.label}
+                        as="span"
+                        className="font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight"
+                        defaultColorClass="text-white/90"
+                      />
                     )}
                   </div>
                 ))}
@@ -222,9 +236,14 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             { num: '9', label: 'Stamp loyalty' },
             { num: '∞', label: 'Good vibes' },
           ]).map(({ num, label }) => (
-            <div key={label}>
-              <p className="kado-h3 text-white mb-1">{num}</p>
-              <p className="text-white/40 text-xs uppercase tracking-widest font-bold">{label}</p>
+            <div key={cmsTextPlain(label)}>
+              <CmsStyledText value={num} as="p" className="kado-h3 mb-1" defaultColorClass="text-white" />
+              <CmsStyledText
+                value={label}
+                as="p"
+                className="text-xs uppercase tracking-widest font-bold"
+                defaultColorClass="text-white/40"
+              />
             </div>
           ))}
         </div>
@@ -234,7 +253,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             to="/auth/signup"
             className="inline-flex min-h-[44px] items-center justify-center px-2 text-xs font-bold uppercase tracking-wider text-kado-red/90 hover:text-kado-cream transition-colors"
           >
-            {copy?.footerLinkLabel ?? 'Or go straight to create account →'}
+            <CmsStyledText value={copy?.footerLinkLabel ?? 'Or go straight to create account →'} as="span" />
           </Link>
         </p>
       </div>

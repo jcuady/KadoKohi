@@ -13,6 +13,8 @@ import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
 import { LANDING_CMS_TABS, isLandingTabId, type LandingTabId } from '../../lib/landingCmsTabs';
 import { LANDING_SECTION_IDS } from '../../lib/landingSectionAnchors';
+import CmsTextField from '../../components/admin/CmsTextField';
+import type { CmsText } from '../../lib/cmsTypography';
 import { collabPastries, findPastriesCategory } from '../../lib/pastriesCategory';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
@@ -148,37 +150,37 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero — Labels & CTAs</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field
+            <CmsField
               label="Main headline (H1)"
               value={content.heroChrome.mainHeadline}
               onChange={(v) => updateHeroChrome({ mainHeadline: v })}
             />
-            <Field
+            <CmsField
               label="Location badge"
               value={content.heroChrome.locationBadge}
               onChange={(v) => updateHeroChrome({ locationBadge: v })}
             />
-            <Field
+            <CmsField
               label="Image credit line"
               value={content.heroChrome.imageCredit}
               onChange={(v) => updateHeroChrome({ imageCredit: v })}
             />
-            <Field
+            <CmsField
               label="Primary CTA label"
               value={content.heroChrome.primaryCtaLabel}
               onChange={(v) => updateHeroChrome({ primaryCtaLabel: v })}
             />
-            <Field
+            <PlainField
               label="Primary CTA path"
               value={content.heroChrome.primaryCtaPath}
               onChange={(v) => updateHeroChrome({ primaryCtaPath: v })}
             />
-            <Field
+            <CmsField
               label="Secondary CTA label"
               value={content.heroChrome.secondaryCtaLabel}
               onChange={(v) => updateHeroChrome({ secondaryCtaLabel: v })}
             />
-            <Field
+            <PlainField
               label="Secondary CTA path"
               value={content.heroChrome.secondaryCtaPath}
               onChange={(v) => updateHeroChrome({ secondaryCtaPath: v })}
@@ -198,12 +200,12 @@ export default function AdminLandingContent() {
                   {HERO_SLIDE_LABELS[index] ?? `Slide ${index + 1}`}
                 </p>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Field
+                  <CmsField
                     label="Title"
                     value={slide.title}
                     onChange={(v) => updateHeroSlide(index, { title: v })}
                   />
-                  <Field
+                  <CmsField
                     label="Subtitle"
                     value={slide.subtitle}
                     onChange={(v) => updateHeroSlide(index, { subtitle: v })}
@@ -216,7 +218,7 @@ export default function AdminLandingContent() {
                       onPickImage((dataUrl) => updateHeroSlide(index, { image: dataUrl }), files)
                     }
                   />
-                  <Field
+                  <PlainField
                     label="Background alt text"
                     value={slide.imageAlt}
                     onChange={(v) => updateHeroSlide(index, { imageAlt: v })}
@@ -232,13 +234,13 @@ export default function AdminLandingContent() {
                         className="rounded-lg border dash-border p-3 space-y-2"
                       >
                         <p className="text-[10px] font-bold uppercase dash-muted">Card {ci + 1}</p>
-                        <Field
+                        <CmsField
                           label="Title"
                           value={card.title}
                           onChange={(v) => updateHeroCard(index, ci, { title: v })}
                         />
-                        <Field label="Tag" value={card.tag} onChange={(v) => updateHeroCard(index, ci, { tag: v })} />
-                        <Field label="Alt" value={card.alt} onChange={(v) => updateHeroCard(index, ci, { alt: v })} />
+                        <CmsField label="Tag" value={card.tag} onChange={(v) => updateHeroCard(index, ci, { tag: v })} />
+                        <PlainField label="Alt" value={card.alt} onChange={(v) => updateHeroCard(index, ci, { alt: v })} />
                         <ImageUrlField
                           label="Image"
                           value={card.src}
@@ -267,8 +269,8 @@ export default function AdminLandingContent() {
             the SEO menu list.
           </p>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <Field label="Badge" value={content.storySeo.badge} onChange={(v) => updateStorySeo({ badge: v })} />
-            <Field
+            <CmsField label="Badge" value={content.storySeo.badge} onChange={(v) => updateStorySeo({ badge: v })} />
+            <CmsField
               label="CTA label"
               value={content.storySeo.ctaLabel}
               onChange={(v) => updateStorySeo({ ctaLabel: v })}
@@ -280,26 +282,25 @@ export default function AdminLandingContent() {
             onChange={(headline) => updateStorySeo({ headline })}
           />
           <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Intro paragraph</label>
-            <textarea
+            <CmsField
+              label="Intro paragraph"
               value={content.storySeo.intro}
-              onChange={(e) => updateStorySeo({ intro: e.target.value })}
-              rows={3}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+              onChange={(v) => updateStorySeo({ intro: v })}
+              multiline
             />
           </div>
           <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <Field
+            <CmsField
               label="Footer tagline (line 1)"
               value={content.storySeo.footerTagline1}
               onChange={(v) => updateStorySeo({ footerTagline1: v })}
             />
-            <Field
+            <CmsField
               label="Footer tagline (line 2)"
               value={content.storySeo.footerTagline2}
               onChange={(v) => updateStorySeo({ footerTagline2: v })}
             />
-            <Field
+            <CmsField
               label="Social heading"
               value={content.storySeo.socialHeading}
               onChange={(v) => updateStorySeo({ socialHeading: v })}
@@ -311,26 +312,23 @@ export default function AdminLandingContent() {
               <article key={`story-pillar-${pi}`} className="rounded-xl border dash-border p-4 space-y-3">
                 <p className="text-xs font-bold dash-muted">Pillar {pi + 1}</p>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Field
+                  <CmsField
                     label="Title"
                     value={pillar.title}
                     onChange={(v) => updateStorySeoPillar(pi, { title: v })}
                   />
-                  <Field
+                  <CmsField
                     label="Subtitle"
                     value={pillar.subtitle}
                     onChange={(v) => updateStorySeoPillar(pi, { subtitle: v })}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Body</label>
-                  <textarea
-                    value={pillar.body ?? ''}
-                    onChange={(e) => updateStorySeoPillar(pi, { body: e.target.value })}
-                    rows={2}
-                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
-                  />
-                </div>
+                <CmsField
+                  label="Body"
+                  value={pillar.body ?? ''}
+                  onChange={(v) => updateStorySeoPillar(pi, { body: v })}
+                  multiline
+                />
                 <ImageUrlField
                   label="Image"
                   value={pillar.imageUrl}
@@ -339,7 +337,7 @@ export default function AdminLandingContent() {
                     onPickImage((dataUrl) => updateStorySeoPillar(pi, { imageUrl: dataUrl }), files)
                   }
                 />
-                <Field
+                <PlainField
                   label="Image alt text"
                   value={pillar.imageAlt}
                   onChange={(v) => updateStorySeoPillar(pi, { imageAlt: v })}
@@ -360,17 +358,17 @@ export default function AdminLandingContent() {
             Maps.
           </p>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <Field
+            <CmsField
               label="Location badge"
               value={content.menuSeo.locationBadge}
               onChange={(v) => updateMenuSeo({ locationBadge: v })}
             />
-            <Field
+            <CmsField
               label="Location chip"
               value={content.menuSeo.locationChipLabel}
               onChange={(v) => updateMenuSeo({ locationChipLabel: v })}
             />
-            <Field
+            <CmsField
               label="Explore nav heading"
               value={content.menuSeo.exploreHeading}
               onChange={(v) => updateMenuSeo({ exploreHeading: v })}
@@ -384,18 +382,15 @@ export default function AdminLandingContent() {
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             {([0, 1] as const).map((i) => (
               <div key={`menu-body-${i}`}>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-                  Body paragraph {i + 1}
-                </label>
-                <textarea
+                <CmsField
+                  label={`Body paragraph ${i + 1}`}
                   value={content.menuSeo.bodyParagraphs[i]}
-                  onChange={(e) => {
-                    const next: [string, string] = [...content.menuSeo.bodyParagraphs] as [string, string];
-                    next[i] = e.target.value;
+                  onChange={(v) => {
+                    const next: [typeof v, typeof v] = [...content.menuSeo.bodyParagraphs] as [typeof v, typeof v];
+                    next[i] = v;
                     updateMenuSeo({ bodyParagraphs: next });
                   }}
-                  rows={3}
-                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+                  multiline
                 />
               </div>
             ))}
@@ -406,12 +401,12 @@ export default function AdminLandingContent() {
               <article key={`menu-pillar-${pi}`} className="rounded-xl border dash-border p-4 space-y-3">
                 <p className="text-xs font-bold dash-muted">Pillar {pi + 1}</p>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Field
+                  <CmsField
                     label="Title"
                     value={pillar.title}
                     onChange={(v) => updateMenuSeoPillar(pi, { title: v })}
                   />
-                  <Field
+                  <CmsField
                     label="Subtitle"
                     value={pillar.subtitle}
                     onChange={(v) => updateMenuSeoPillar(pi, { subtitle: v })}
@@ -425,7 +420,7 @@ export default function AdminLandingContent() {
                     onPickImage((dataUrl) => updateMenuSeoPillar(pi, { imageUrl: dataUrl }), files)
                   }
                 />
-                <Field
+                <PlainField
                   label="Image alt text"
                   value={pillar.imageAlt}
                   onChange={(v) => updateMenuSeoPillar(pi, { imageAlt: v })}
@@ -442,29 +437,29 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.featured.badge} onChange={(v) => updateFeatured({ badge: v })} />
-            <Field label="Title" value={content.featured.title} onChange={(v) => updateFeatured({ title: v })} />
-            <Field
+            <CmsField label="Badge" value={content.featured.badge} onChange={(v) => updateFeatured({ badge: v })} />
+            <CmsField label="Title" value={content.featured.title} onChange={(v) => updateFeatured({ title: v })} />
+            <CmsField
               label="Desktop subtitle"
               value={content.featured.subtitleDesktop}
               onChange={(v) => updateFeatured({ subtitleDesktop: v })}
             />
-            <Field
+            <CmsField
               label="Mobile subtitle"
               value={content.featured.subtitleMobile}
               onChange={(v) => updateFeatured({ subtitleMobile: v })}
             />
-            <Field
+            <CmsField
               label="Menu CTA label"
               value={content.featured.menuCtaLabel}
               onChange={(v) => updateFeatured({ menuCtaLabel: v })}
             />
-            <Field
+            <CmsField
               label="Shop CTA label"
               value={content.featured.shopCtaLabel}
               onChange={(v) => updateFeatured({ shopCtaLabel: v })}
             />
-            <Field
+            <PlainField
               label="Shop CTA path"
               value={content.featured.shopCtaPath}
               onChange={(v) => updateFeatured({ shopCtaPath: v })}
@@ -546,14 +541,14 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.ordering.badge} onChange={(v) => updateOrdering({ badge: v })} />
-            <Field label="Title" value={content.ordering.title} onChange={(v) => updateOrdering({ title: v })} />
-            <Field
+            <CmsField label="Badge" value={content.ordering.badge} onChange={(v) => updateOrdering({ badge: v })} />
+            <CmsField label="Title" value={content.ordering.title} onChange={(v) => updateOrdering({ title: v })} />
+            <CmsField
               label="Desktop subtitle"
               value={content.ordering.subtitleDesktop}
               onChange={(v) => updateOrdering({ subtitleDesktop: v })}
             />
-            <Field
+            <CmsField
               label="Mobile subtitle"
               value={content.ordering.subtitleMobile}
               onChange={(v) => updateOrdering({ subtitleMobile: v })}
@@ -565,25 +560,20 @@ export default function AdminLandingContent() {
               <article key={step.id} className="rounded-xl border dash-border p-4 space-y-3">
                 <p className="text-xs font-bold dash-muted">Step {si + 1}</p>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Field
+                  <CmsField
                     label="Eyebrow"
                     value={step.eyebrow}
                     onChange={(v) => updateOrderingStep(si, { eyebrow: v })}
                   />
-                  <Field label="Icon (emoji)" value={step.icon} onChange={(v) => updateOrderingStep(si, { icon: v })} />
-                  <Field label="Title" value={step.title} onChange={(v) => updateOrderingStep(si, { title: v })} />
+                  <PlainField label="Icon (emoji)" value={step.icon} onChange={(v) => updateOrderingStep(si, { icon: v })} />
+                  <CmsField label="Title" value={step.title} onChange={(v) => updateOrderingStep(si, { title: v })} />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={step.description}
-                    onChange={(e) => updateOrderingStep(si, { description: e.target.value })}
-                    rows={3}
-                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
-                  />
-                </div>
+                <CmsField
+                  label="Description"
+                  value={step.description}
+                  onChange={(v) => updateOrderingStep(si, { description: v })}
+                  multiline
+                />
               </article>
             ))}
           </div>
@@ -596,23 +586,23 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match (homepage)</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Eyebrow" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
-            <Field
+            <CmsField label="Eyebrow" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
+            <CmsField
               label="Headline line 1 (blue)"
               value={content.schedule.titleTop}
               onChange={(v) => updateSchedule({ titleTop: v })}
             />
-            <Field
+            <CmsField
               label="Headline line 2 (red)"
               value={content.schedule.titleBottom}
               onChange={(v) => updateSchedule({ titleBottom: v })}
             />
-            <Field
+            <CmsField
               label="Bundle badge"
               value={content.schedule.offerBadge}
               onChange={(v) => updateSchedule({ offerBadge: v })}
             />
-            <Field
+            <CmsField
               label="Bundle note"
               value={content.schedule.offerNote}
               onChange={(v) => updateSchedule({ offerNote: v })}
@@ -623,8 +613,8 @@ export default function AdminLandingContent() {
               onChange={(v) => updateSchedule({ posterImageUrl: v })}
               onPickFile={(files) => onPickImage((url) => updateSchedule({ posterImageUrl: url }), files)}
             />
-            <Field label="CTA label" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
-            <Field
+            <CmsField label="CTA label" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
+            <CmsField
               label="Featured order button"
               value={content.schedule.featuredCtaLabel}
               onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
@@ -648,15 +638,12 @@ export default function AdminLandingContent() {
               ) : null}
             </div>
           </div>
-          <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Description</label>
-            <textarea
-              value={content.schedule.description}
-              onChange={(e) => updateSchedule({ description: e.target.value })}
-              rows={3}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
-            />
-          </div>
+          <CmsField
+            label="Description"
+            value={content.schedule.description}
+            onChange={(v) => updateSchedule({ description: v })}
+            multiline
+          />
           <p className="mt-3 text-xs dash-muted">
             Drink and cookie lists pull from the live menu (Pastries tab + mix-match drink tags). Hours moved to Branches
             and Contact.
@@ -670,21 +657,21 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.events.badge} onChange={(v) => updateEvents({ badge: v })} />
-            <Field label="Title" value={content.events.title} onChange={(v) => updateEvents({ title: v })} />
-            <Field label="Subtitle" value={content.events.subtitle} onChange={(v) => updateEvents({ subtitle: v })} />
+            <CmsField label="Badge" value={content.events.badge} onChange={(v) => updateEvents({ badge: v })} />
+            <CmsField label="Title" value={content.events.title} onChange={(v) => updateEvents({ title: v })} />
+            <CmsField label="Subtitle" value={content.events.subtitle} onChange={(v) => updateEvents({ subtitle: v })} />
             <ImageUrlField
               label="Cover image override (optional)"
               value={content.events.coverImageOverride}
               onChange={(v) => updateEvents({ coverImageOverride: v })}
               onPickFile={(files) => onPickImage((dataUrl) => updateEvents({ coverImageOverride: dataUrl }), files)}
             />
-            <Field
+            <CmsField
               label="No-event message"
               value={content.events.noEventBody}
               onChange={(v) => updateEvents({ noEventBody: v })}
             />
-            <Field
+            <CmsField
               label="No-event link label"
               value={content.events.noEventBrowseLabel}
               onChange={(v) => updateEvents({ noEventBrowseLabel: v })}
@@ -699,17 +686,17 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field
+            <CmsField
               label="Badge"
               value={content.branchesStrip.badge}
               onChange={(v) => updateBranchesStrip({ badge: v })}
             />
-            <Field
+            <CmsField
               label="Title"
               value={content.branchesStrip.title}
               onChange={(v) => updateBranchesStrip({ title: v })}
             />
-            <Field
+            <CmsField
               label="CTA label"
               value={content.branchesStrip.ctaLabel}
               onChange={(v) => updateBranchesStrip({ ctaLabel: v })}
@@ -724,23 +711,20 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <Field label="Badge" value={content.testimonials.badge} onChange={(v) => updateTestimonials({ badge: v })} />
-            <Field label="Title" value={content.testimonials.title} onChange={(v) => updateTestimonials({ title: v })} />
-            <Field
+            <CmsField label="Badge" value={content.testimonials.badge} onChange={(v) => updateTestimonials({ badge: v })} />
+            <CmsField label="Title" value={content.testimonials.title} onChange={(v) => updateTestimonials({ title: v })} />
+            <CmsField
               label="Trusted row title"
               value={content.testimonials.trustedTitle}
               onChange={(v) => updateTestimonials({ trustedTitle: v })}
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Subtitle</label>
-            <textarea
-              value={content.testimonials.subtitle}
-              onChange={(e) => updateTestimonials({ subtitle: e.target.value })}
-              rows={2}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
-            />
-          </div>
+          <CmsField
+            label="Subtitle"
+            value={content.testimonials.subtitle}
+            onChange={(v) => updateTestimonials({ subtitle: v })}
+            multiline
+          />
           <p className="text-xs font-bold uppercase dash-muted mb-2">
             Trusted brands ({TRUSTED_BRAND_SLOTS} slots) — label or logo image
           </p>
@@ -749,7 +733,7 @@ export default function AdminLandingContent() {
               const brand = content.trustedBrands[i] ?? { label: '', imageUrl: '' };
               return (
                 <div key={i} className="rounded-lg border dash-border p-3 space-y-2">
-                  <Field
+                  <CmsField
                     label={`Brand ${i + 1} name`}
                     value={brand.label}
                     onChange={(v) => updateTrustedBrand(i, { label: v })}
@@ -775,10 +759,10 @@ export default function AdminLandingContent() {
               <div key={t.id} className="rounded-xl border dash-border p-4 space-y-2">
                 <span className="text-xs font-bold dash-muted">Quote #{ti + 1}</span>
                 <div className="grid md:grid-cols-2 gap-2">
-                  <Field label="Name" value={t.name} onChange={(v) => updateTestimonialItem(ti, { name: v })} />
-                  <Field label="Role" value={t.role} onChange={(v) => updateTestimonialItem(ti, { role: v })} />
-                  <Field label="Area" value={t.company} onChange={(v) => updateTestimonialItem(ti, { company: v })} />
-                  <Field
+                  <CmsField label="Name" value={t.name} onChange={(v) => updateTestimonialItem(ti, { name: v })} />
+                  <CmsField label="Role" value={t.role} onChange={(v) => updateTestimonialItem(ti, { role: v })} />
+                  <CmsField label="Area" value={t.company} onChange={(v) => updateTestimonialItem(ti, { company: v })} />
+                  <PlainField
                     label="Rating (1–5)"
                     value={String(t.rating)}
                     onChange={(v) => {
@@ -788,15 +772,12 @@ export default function AdminLandingContent() {
                     }}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Quote</label>
-                  <textarea
-                    value={t.content}
-                    onChange={(e) => updateTestimonialItem(ti, { content: e.target.value })}
-                    rows={3}
-                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
-                  />
-                </div>
+                <CmsField
+                  label="Quote"
+                  value={t.content}
+                  onChange={(v) => updateTestimonialItem(ti, { content: v })}
+                  multiline
+                />
                 <ImageUrlField
                   label="Avatar image"
                   value={t.avatar}
@@ -815,52 +796,49 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Badge" value={content.kadoCircle.badge} onChange={(v) => updateKadoCircle({ badge: v })} />
-            <Field
+            <CmsField label="Badge" value={content.kadoCircle.badge} onChange={(v) => updateKadoCircle({ badge: v })} />
+            <CmsField
               label="Title (before accent)"
               value={content.kadoCircle.titleBefore}
               onChange={(v) => updateKadoCircle({ titleBefore: v })}
             />
-            <Field
+            <CmsField
               label="Title accent (red)"
               value={content.kadoCircle.titleAccent}
               onChange={(v) => updateKadoCircle({ titleAccent: v })}
             />
-            <Field
+            <PlainField
               label="Email placeholder"
               value={content.kadoCircle.emailPlaceholder}
               onChange={(v) => updateKadoCircle({ emailPlaceholder: v })}
             />
-            <Field
+            <CmsField
               label="Submit button"
               value={content.kadoCircle.submitLabel}
               onChange={(v) => updateKadoCircle({ submitLabel: v })}
             />
-            <Field
+            <CmsField
               label="Disclaimer"
               value={content.kadoCircle.disclaimer}
               onChange={(v) => updateKadoCircle({ disclaimer: v })}
             />
-            <Field
+            <CmsField
               label="Marquee label"
               value={content.kadoCircle.marqueeLabel}
               onChange={(v) => updateKadoCircle({ marqueeLabel: v })}
             />
-            <Field
+            <CmsField
               label="Footer link"
               value={content.kadoCircle.footerLinkLabel}
               onChange={(v) => updateKadoCircle({ footerLinkLabel: v })}
             />
           </div>
-          <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Body</label>
-            <textarea
-              value={content.kadoCircle.body}
-              onChange={(e) => updateKadoCircle({ body: e.target.value })}
-              rows={3}
-              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
-            />
-          </div>
+          <CmsField
+            label="Body"
+            value={content.kadoCircle.body}
+            onChange={(v) => updateKadoCircle({ body: v })}
+            multiline
+          />
           <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">
             Marquee carousel ({SPONSOR_SLOTS} slots) — partner name and/or logo
           </p>
@@ -869,7 +847,7 @@ export default function AdminLandingContent() {
               const sponsor = content.kadoCircle.sponsors[i] ?? { label: '', imageUrl: '' };
               return (
                 <div key={i} className="rounded-lg border dash-border p-3 space-y-2">
-                  <Field
+                  <CmsField
                     label={`Partner ${i + 1} name`}
                     value={sponsor.label}
                     onChange={(v) => updateKadoCircleSponsor(i, { label: v })}
@@ -890,7 +868,7 @@ export default function AdminLandingContent() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {content.kadoCircle.stats.map((stat, si) => (
               <div key={si} className="rounded-lg border dash-border p-3 space-y-2">
-                <Field
+                <CmsField
                   label={`Stat ${si + 1} value`}
                   value={stat.num}
                   onChange={(v) => {
@@ -899,7 +877,7 @@ export default function AdminLandingContent() {
                     updateKadoCircle({ stats });
                   }}
                 />
-                <Field
+                <CmsField
                   label="Label"
                   value={stat.label}
                   onChange={(v) => {
@@ -941,7 +919,7 @@ function HeadlineFields({
       <div className="grid md:grid-cols-2 gap-3">
         {fields.map(({ key: fieldKey, fieldLabel }) => (
           <div key={fieldKey}>
-            <Field
+            <CmsTextField
               label={fieldLabel}
               value={value[fieldKey]}
               onChange={(v) => onChange({ ...value, [fieldKey]: v })}
@@ -953,7 +931,7 @@ function HeadlineFields({
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function PlainField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
       <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">{label}</label>
@@ -964,6 +942,10 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       />
     </div>
   );
+}
+
+function CmsField({ label, value, onChange, multiline }: { label: string; value: CmsText; onChange: (v: CmsText) => void; multiline?: boolean }) {
+  return <CmsTextField label={label} value={value} onChange={onChange} multiline={multiline} />;
 }
 
 function ImageUrlField({

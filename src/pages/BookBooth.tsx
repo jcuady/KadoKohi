@@ -5,6 +5,8 @@ import BookingSteps from '../components/booking/BookingSteps';
 import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import CmsStyledText from '../components/cms/CmsStyledText';
+import { boothChipKey } from '../lib/boothPageContent';
 
 const CHIP_ICONS = [CalendarHeart, Users, Clock3, BadgeCheck] as const;
 
@@ -62,24 +64,30 @@ export default function BookBooth() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="max-w-2xl"
           >
-            <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] text-kado-red mb-4">
-              {pageCopy.heroEyebrow}
-            </p>
-            <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] font-black text-white leading-[0.95] tracking-tight uppercase mb-5 drop-shadow-lg">
-              {pageCopy.heroTitleLine1}
+            <CmsStyledText
+              value={pageCopy.heroEyebrow}
+              as="p"
+              className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] mb-4"
+              defaultColorClass="text-kado-red"
+            />
+            <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] font-black leading-[0.95] tracking-tight uppercase mb-5 drop-shadow-lg">
+              <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-white" />
               <br />
-              {pageCopy.heroTitleLine2}
+              <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-white" />
             </h1>
-            <p className="text-kado-cream/85 text-base sm:text-lg leading-relaxed max-w-xl mb-8">
-              {pageCopy.heroDescription}
-            </p>
+            <CmsStyledText
+              value={pageCopy.heroDescription}
+              as="p"
+              className="text-base sm:text-lg leading-relaxed max-w-xl mb-8"
+              defaultColorClass="text-kado-cream/85"
+            />
 
             <div className="flex flex-wrap gap-3 mb-8">
               {pageCopy.chips.map((label, i) => {
                 const Icon = CHIP_ICONS[i] ?? CalendarHeart;
                 return (
-                <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90">
-                  <Icon className="w-3 h-3 text-kado-red shrink-0" />{label}
+                <span key={boothChipKey(label, i)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90">
+                  <Icon className="w-3 h-3 text-kado-red shrink-0" /><CmsStyledText value={label} as="span" />
                 </span>
                 );
               })}
@@ -89,7 +97,7 @@ export default function BookBooth() {
               href="#booking-form"
               className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
             >
-              {pageCopy.heroCtaLabel} <ArrowDown className="w-4 h-4 shrink-0" />
+              <CmsStyledText value={pageCopy.heroCtaLabel} as="span" /> <ArrowDown className="w-4 h-4 shrink-0" />
             </a>
           </motion.div>
         </div>

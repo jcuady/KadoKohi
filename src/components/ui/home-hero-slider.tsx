@@ -4,6 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { HomeHeroSlide } from '../../data/homeHeroMedia';
 import type { HeroChrome } from '../../store/landingContentStore';
+import CmsStyledText from '../cms/CmsStyledText';
 
 interface Props {
   slides: HomeHeroSlide[];
@@ -53,38 +54,55 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
 
       <div className="relative z-10 grid h-full grid-cols-1 items-end gap-6 md:gap-8 px-5 pb-28 pt-16 sm:px-8 sm:pb-32 md:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.8fr)] md:px-12 md:pb-12 lg:px-20">
         <div className="max-w-3xl">
-          <p className="kado-label mb-3 text-kado-cream/85 drop-shadow-md">
-            {c?.locationBadge ?? 'Kado Kohi · Marikina'}
-          </p>
-          <h1 className="kado-h1 kado-h1-hero text-white drop-shadow-lg">
-            {c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
-          </h1>
-          <h2 className="mt-3 kado-h2 text-kado-cream/95 drop-shadow-md">
-            {current.title}
-          </h2>
-          <p className="mt-4 sm:mt-5 max-w-2xl kado-body md:text-base leading-relaxed text-kado-cream/90 drop-shadow-md">
-            {current.subtitle}
-          </p>
+          <CmsStyledText
+            value={c?.locationBadge ?? 'Kado Kohi · Marikina'}
+            as="p"
+            className="kado-label mb-3 drop-shadow-md"
+            defaultColorClass="text-kado-cream/85"
+          />
+          <CmsStyledText
+            value={c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
+            as="h1"
+            className="kado-h1 kado-h1-hero drop-shadow-lg"
+            defaultColorClass="text-white"
+          />
+          <CmsStyledText
+            value={current.title}
+            as="h2"
+            className="mt-3 drop-shadow-md"
+            defaultSizeClass="kado-h2"
+            defaultColorClass="text-kado-cream/95"
+          />
+          <CmsStyledText
+            value={current.subtitle}
+            as="p"
+            className="mt-4 sm:mt-5 max-w-2xl md:text-base leading-relaxed drop-shadow-md"
+            defaultSizeClass="kado-body"
+            defaultColorClass="text-kado-cream/90"
+          />
 
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Link
               to={c?.primaryCtaPath ?? '/menu'}
               className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-sm bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-kado-red-hover shadow-lg shadow-kado-red/30"
             >
-              {c?.primaryCtaLabel ?? 'Explore Menu'} <ArrowRight className="h-4 w-4 shrink-0" />
+              <CmsStyledText value={c?.primaryCtaLabel ?? 'Explore Menu'} as="span" /> <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>
             <Link
               to={c?.secondaryCtaPath ?? '/merch'}
               className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:border-white/80 hover:bg-white/10"
             >
-              {c?.secondaryCtaLabel ?? 'Shop Merch'}
+              <CmsStyledText value={c?.secondaryCtaLabel ?? 'Shop Merch'} as="span" />
             </Link>
           </div>
           
           <div className="mt-8 hidden md:block">
-            <p className="inline-flex rounded-full border border-white/20 bg-black/35 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-kado-cream/85 backdrop-blur-md">
-              {c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
-            </p>
+            <CmsStyledText
+              value={c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
+              as="p"
+              className="inline-flex rounded-full border border-white/20 bg-black/35 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md"
+              defaultColorClass="text-kado-cream/85"
+            />
           </div>
         </div>
 
@@ -106,8 +124,8 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
                 />
               </div>
               <div className="flex items-center justify-between px-2.5 py-2 border-t border-white/10">
-                <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-kado-cream/85">{card.title}</p>
-                <span className="shrink-0 ml-1 text-[8px] font-bold uppercase tracking-wider text-kado-red/80 bg-kado-red/15 px-1.5 py-0.5 rounded-sm">{card.tag}</span>
+                <CmsStyledText value={card.title} as="p" className="truncate text-[9px] font-bold uppercase tracking-[0.12em]" defaultColorClass="text-kado-cream/85" />
+                <CmsStyledText value={card.tag} as="span" className="shrink-0 ml-1 text-[8px] font-bold uppercase tracking-wider bg-kado-red/15 px-1.5 py-0.5 rounded-sm" defaultColorClass="text-kado-red/80" />
               </div>
             </motion.article>
           ))}

@@ -11,14 +11,18 @@ export function isInternalRole(role: Role | string | null | undefined): boolean 
 }
 
 export function matchesUserSearch(
-  user: Pick<User, 'name' | 'email'>,
+  user: Pick<User, 'name' | 'email' | 'phone'>,
   query: string,
 ): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
+  const phone = user.phone?.replace(/\s/g, '') ?? '';
+  const qDigits = q.replace(/\D/g, '');
   return (
     user.name.toLowerCase().includes(q) ||
-    user.email.toLowerCase().includes(q)
+    user.email.toLowerCase().includes(q) ||
+    (phone && phone.toLowerCase().includes(q)) ||
+    (qDigits.length >= 4 && phone.replace(/\D/g, '').includes(qDigits))
   );
 }
 

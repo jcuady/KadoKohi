@@ -8,6 +8,7 @@ import { useMenuStore } from '../../store/menuStore';
 import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
 import type { FeaturedCopy } from '../../store/landingContentStore';
+import CmsStyledText from '../cms/CmsStyledText';
 import { formatPhp } from '../../lib/money';
 import ResilientImage from '../ui/ResilientImage';
 import {
@@ -200,9 +201,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kado-red font-display text-base font-black text-kado-cream shadow-md sm:h-11 sm:w-11 sm:text-lg">
                 角
               </span>
-              <span className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label text-kado-red">
-                {copy.badge}
-              </span>
+              <CmsStyledText value={copy.badge} as="span" className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label" defaultColorClass="text-kado-red" />
             </TimelineContent>
 
             <TimelineContent
@@ -212,7 +211,7 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               timelineRef={sectionRef}
               className="kado-h2 text-kado-dark"
             >
-              {copy.title}
+              <CmsStyledText value={copy.title} as="span" className="kado-h2 text-kado-dark" />
             </TimelineContent>
 
             <TimelineContent
@@ -221,8 +220,8 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               timelineRef={sectionRef}
               className="mt-3 max-w-xl kado-body text-kado-dark/70 sm:mt-4"
             >
-              <span className="hidden md:inline">{copy.subtitleDesktop}</span>
-              <span className="md:hidden">{copy.subtitleMobile}</span>
+              <span className="hidden md:inline"><CmsStyledText value={copy.subtitleDesktop} as="span" /></span>
+              <span className="md:hidden"><CmsStyledText value={copy.subtitleMobile} as="span" /></span>
             </TimelineContent>
           </div>
 
@@ -236,14 +235,14 @@ export default function FeaturedCoffeesSection({ copy }: Props) {
               to={copy.shopCtaPath || '/menu'}
               className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-kado-red px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
             >
-              {copy.shopCtaLabel || 'View Shop'}
+              <CmsStyledText value={copy.shopCtaLabel || 'View Shop'} as="span" />
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
             <Link
               to="/menu"
               className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full border border-kado-dark/15 bg-kado-offwhite/90 px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-dark transition-colors hover:border-kado-red/40 hover:text-kado-red sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
             >
-              {copy.menuCtaLabel}
+              <CmsStyledText value={copy.menuCtaLabel} as="span" />
             </Link>
           </TimelineContent>
         </div>

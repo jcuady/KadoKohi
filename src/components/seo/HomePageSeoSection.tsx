@@ -11,6 +11,8 @@ import AccentHeadline from '../ui/AccentHeadline';
 import ResilientImage from '../ui/ResilientImage';
 import { drinksForMenuSeoPillar } from '../../lib/menuSeoDrinks';
 import type { MenuSeoCopy } from '../../store/landingContentStore';
+import CmsStyledText from '../cms/CmsStyledText';
+import { cmsTextPlain } from '../../lib/cmsTypography';
 
 const sectionPad =
   'px-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-8';
@@ -32,9 +34,7 @@ export default function HomePageSeoSection({ copy }: Props) {
       className={`customer-menu-page border-t border-kado-dark/6 bg-kado-offwhite ${sectionPad}`}
     >
       <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
-        <p className="mb-4 kado-label text-kado-red sm:mb-5">
-          {copy.locationBadge}
-        </p>
+        <CmsStyledText value={copy.locationBadge} as="p" className="mb-4 sm:mb-5" defaultSizeClass="kado-label" defaultColorClass="text-kado-red" />
 
         <h2
           id="home-menu-seo-heading"
@@ -53,13 +53,13 @@ export default function HomePageSeoSection({ copy }: Props) {
           </div>
           <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 kado-body text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
             <MapPin className="h-4 w-4 shrink-0 text-kado-red" aria-hidden />
-            <span className="truncate">{copy.locationChipLabel}</span>
+            <span className="truncate"><CmsStyledText value={copy.locationChipLabel} as="span" /></span>
           </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
           {copy.pillars.map((pillar) => (
-            <article key={`${pillar.title}-${pillar.subtitle}`} className={pillarCard}>
+            <article key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`} className={pillarCard}>
               <ResilientImage
                 src={pillar.imageUrl}
                 alt={pillar.imageAlt}
@@ -67,12 +67,8 @@ export default function HomePageSeoSection({ copy }: Props) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/55 to-kado-dark/15" />
               <div className="relative mt-auto flex flex-col p-4 sm:p-5 lg:p-6">
-                <p className="kado-label text-kado-cream/65">
-                  {pillar.subtitle}
-                </p>
-                <h3 className="mt-1 kado-h3 text-kado-cream">
-                  {pillar.title}
-                </h3>
+                <CmsStyledText value={pillar.subtitle} as="p" className="kado-label" defaultColorClass="text-kado-cream/65" />
+                <CmsStyledText value={pillar.title} as="h3" className="mt-1 kado-h3" defaultColorClass="text-kado-cream" />
                 <ul className="mt-2 space-y-1 border-t border-white/10 pt-2 sm:mt-3 sm:space-y-1.5 sm:pt-3">
                   {drinksForMenuSeoPillar(pillar.drinkCategoryKey).map((drink) => (
                     <li key={drink.name}>
@@ -93,12 +89,14 @@ export default function HomePageSeoSection({ copy }: Props) {
 
         <div className="mt-8 max-w-3xl space-y-4 sm:mt-10">
           {copy.bodyParagraphs.map((paragraph) => (
-            <p
-              key={paragraph.slice(0, 40)}
-              className="font-sans text-[0.9375rem] leading-[1.7] text-kado-dark/70 sm:text-base sm:leading-[1.75]"
-            >
-              {paragraph}
-            </p>
+            <div key={cmsTextPlain(paragraph).slice(0, 40)}>
+              <CmsStyledText
+                value={paragraph}
+                as="p"
+                defaultSizeClass="kado-body"
+                defaultColorClass="text-kado-dark/70"
+              />
+            </div>
           ))}
         </div>
 
@@ -125,9 +123,7 @@ export default function HomePageSeoSection({ copy }: Props) {
           aria-label="Kado Coffee site sections"
           className="mt-8 border-t border-kado-dark/8 pt-6 sm:mt-10 sm:pt-8"
         >
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-kado-dark/40">
-            {copy.exploreHeading}
-          </p>
+          <CmsStyledText value={copy.exploreHeading} as="p" className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em]" defaultColorClass="text-kado-dark/40" />
           <ul className="flex flex-wrap gap-2">
             {SEO_INTERNAL_LINKS.map(({ to, label }) => (
               <li key={to}>

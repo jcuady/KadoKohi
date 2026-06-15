@@ -27,6 +27,20 @@ export function isInvalidRefreshTokenError(error: unknown): boolean {
   );
 }
 
+/** True when fetch/auth failed at the network layer (offline, DNS, CORS block). */
+export function isNetworkAuthError(error: unknown): boolean {
+  if (!error) return false;
+  const msg = String(error instanceof Error ? error.message : error).toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network request failed') ||
+    msg.includes('load failed') ||
+    msg.includes('err_name_not_resolved') ||
+    msg.includes('err_internet_disconnected')
+  );
+}
+
 export function isRateLimitAuthError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const status = (error as AuthError).status;
@@ -41,6 +55,9 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
 
   if (isRateLimitAuthError(error)) {
     return 'Please wait about a minute and try again, or sign in if you already have an account.';
+  }
+  if (isNetworkAuthError(error)) {
+    return 'Cannot reach Kado Kohi servers. Check your internet connection and try again.';
   }
   if (isInvalidRefreshTokenError(error)) {
     return 'Your session expired. Please try signing up again.';

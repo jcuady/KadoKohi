@@ -16,6 +16,7 @@ const ADMIN_ROUTES = [
   '/admin/users',
   '/admin/vouchers',
   '/admin/loyalty',
+  '/admin/stamps',
   '/admin/audit',
   '/admin/settings',
   '/admin/pos',

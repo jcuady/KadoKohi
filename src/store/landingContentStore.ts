@@ -1,70 +1,73 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clampCmsTextField, cmsTextPlain, type CmsText } from '../lib/cmsTypography';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
 import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 
+export type { CmsText };
+
 export interface HeroChrome {
   /** Large SEO headline above the rotating slide title. */
-  mainHeadline: string;
-  locationBadge: string;
-  imageCredit: string;
-  primaryCtaLabel: string;
+  mainHeadline: CmsText;
+  locationBadge: CmsText;
+  imageCredit: CmsText;
+  primaryCtaLabel: CmsText;
   primaryCtaPath: string;
-  secondaryCtaLabel: string;
+  secondaryCtaLabel: CmsText;
   secondaryCtaPath: string;
 }
 
 export interface FeaturedCopy {
-  badge: string;
-  title: string;
-  subtitleDesktop: string;
-  subtitleMobile: string;
-  menuCtaLabel: string;
-  shopCtaLabel: string;
+  badge: CmsText;
+  title: CmsText;
+  subtitleDesktop: CmsText;
+  subtitleMobile: CmsText;
+  menuCtaLabel: CmsText;
+  shopCtaLabel: CmsText;
   shopCtaPath: string;
   productIds: [string, string, string];
   cardImageOverrides: [string, string, string];
 }
 
 export interface EventsCopy {
-  badge: string;
-  title: string;
-  subtitle: string;
+  badge: CmsText;
+  title: CmsText;
+  subtitle: CmsText;
   coverImageOverride: string;
-  noEventBody: string;
-  noEventBrowseLabel: string;
+  noEventBody: CmsText;
+  noEventBrowseLabel: CmsText;
 }
 
 export interface TestimonialsCopy {
-  badge: string;
-  title: string;
-  subtitle: string;
-  trustedTitle: string;
+  badge: CmsText;
+  title: CmsText;
+  subtitle: CmsText;
+  trustedTitle: CmsText;
 }
 
 export interface StoredTestimonial {
   id: number;
-  name: string;
-  role: string;
-  company: string;
-  content: string;
+  name: CmsText;
+  role: CmsText;
+  company: CmsText;
+  content: CmsText;
   rating: number;
   avatar: string;
 }
 
 export interface MixMatchSectionCopy {
-  badge: string;
-  titleTop: string;
-  titleBottom: string;
-  description: string;
-  offerBadge: string;
-  offerNote: string;
+  badge: CmsText;
+  titleTop: CmsText;
+  titleBottom: CmsText;
+  description: CmsText;
+  offerBadge: CmsText;
+  offerNote: CmsText;
   posterImageUrl: string;
-  ctaLabel: string;
-  featuredCtaLabel: string;
+  ctaLabel: CmsText;
+  featuredCtaLabel: CmsText;
   featuredProductId: string;
 }
 
@@ -72,65 +75,65 @@ export interface MixMatchSectionCopy {
 export type ScheduleCopy = MixMatchSectionCopy;
 
 export interface BrandMarqueeItem {
-  label: string;
+  label: CmsText;
   imageUrl?: string;
 }
 
 export interface OrderingStepCopy {
   id: string;
-  eyebrow: string;
-  title: string;
-  description: string;
+  eyebrow: CmsText;
+  title: CmsText;
+  description: CmsText;
   icon: string;
 }
 
 export interface OrderingCopy {
-  badge: string;
-  title: string;
-  subtitleDesktop: string;
-  subtitleMobile: string;
+  badge: CmsText;
+  title: CmsText;
+  subtitleDesktop: CmsText;
+  subtitleMobile: CmsText;
   steps: OrderingStepCopy[];
 }
 
 export interface BranchesStripCopy {
-  badge: string;
-  title: string;
-  ctaLabel: string;
+  badge: CmsText;
+  title: CmsText;
+  ctaLabel: CmsText;
 }
 
 export interface KadoCircleStat {
-  num: string;
-  label: string;
+  num: CmsText;
+  label: CmsText;
 }
 
 export interface KadoCircleCopy {
-  badge: string;
-  titleBefore: string;
-  titleAccent: string;
-  body: string;
+  badge: CmsText;
+  titleBefore: CmsText;
+  titleAccent: CmsText;
+  body: CmsText;
   emailPlaceholder: string;
-  submitLabel: string;
-  disclaimer: string;
-  marqueeLabel: string;
+  submitLabel: CmsText;
+  disclaimer: CmsText;
+  marqueeLabel: CmsText;
   sponsors: BrandMarqueeItem[];
   stats: KadoCircleStat[];
-  footerLinkLabel: string;
+  footerLinkLabel: CmsText;
 }
 
 export interface AccentHeadlineCopy {
-  beforeAccent1: string;
-  accent1: string;
-  middle: string;
-  accent2: string;
-  afterAccent2: string;
+  beforeAccent1: CmsText;
+  accent1: CmsText;
+  middle: CmsText;
+  accent2: CmsText;
+  afterAccent2: CmsText;
 }
 
 export interface HomepagePillarCopy {
-  title: string;
-  subtitle: string;
+  title: CmsText;
+  subtitle: CmsText;
   imageUrl: string;
   imageAlt: string;
-  body?: string;
+  body?: CmsText;
 }
 
 export type MenuSeoPillarCategoryKey = 'matcha' | 'signatures' | 'classics-yuzu';
@@ -140,23 +143,23 @@ export interface MenuSeoPillarCopy extends HomepagePillarCopy {
 }
 
 export interface BrandStoryCopy {
-  badge: string;
+  badge: CmsText;
   headline: AccentHeadlineCopy;
-  intro: string;
+  intro: CmsText;
   pillars: [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy];
-  footerTagline1: string;
-  footerTagline2: string;
-  ctaLabel: string;
-  socialHeading: string;
+  footerTagline1: CmsText;
+  footerTagline2: CmsText;
+  ctaLabel: CmsText;
+  socialHeading: CmsText;
 }
 
 export interface MenuSeoCopy {
-  locationBadge: string;
+  locationBadge: CmsText;
   headline: AccentHeadlineCopy;
-  locationChipLabel: string;
+  locationChipLabel: CmsText;
   pillars: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
-  bodyParagraphs: [string, string];
-  exploreHeading: string;
+  bodyParagraphs: [CmsText, CmsText];
+  exploreHeading: CmsText;
 }
 
 /** Fixed homepage layout — only text/images inside each slot are editable. */
@@ -459,15 +462,15 @@ function clampMixMatchSection(
   if (!raw) return { ...base };
   const legacyHours = Boolean(raw.title && !raw.titleTop);
   return {
-    badge: raw.badge ?? base.badge,
-    titleTop: legacyHours ? base.titleTop : (raw.titleTop ?? base.titleTop),
-    titleBottom: legacyHours ? base.titleBottom : (raw.titleBottom ?? base.titleBottom),
-    description: legacyHours ? base.description : (raw.description ?? base.description),
-    offerBadge: raw.offerBadge ?? base.offerBadge,
-    offerNote: raw.offerNote ?? base.offerNote,
+    badge: clampCmsTextField(raw.badge, base.badge),
+    titleTop: legacyHours ? base.titleTop : clampCmsTextField(raw.titleTop, base.titleTop),
+    titleBottom: legacyHours ? base.titleBottom : clampCmsTextField(raw.titleBottom, base.titleBottom),
+    description: legacyHours ? base.description : clampCmsTextField(raw.description, base.description),
+    offerBadge: clampCmsTextField(raw.offerBadge, base.offerBadge),
+    offerNote: clampCmsTextField(raw.offerNote, base.offerNote),
     posterImageUrl: raw.posterImageUrl?.trim() || base.posterImageUrl,
-    ctaLabel: raw.ctaLabel ?? base.ctaLabel,
-    featuredCtaLabel: raw.featuredCtaLabel ?? base.featuredCtaLabel,
+    ctaLabel: clampCmsTextField(raw.ctaLabel, base.ctaLabel),
+    featuredCtaLabel: clampCmsTextField(raw.featuredCtaLabel, base.featuredCtaLabel),
     featuredProductId: raw.featuredProductId ?? base.featuredProductId,
   };
 }
@@ -482,29 +485,47 @@ function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
       ...seedCard,
       ...(saved.cards?.[ci] ?? {}),
       id: seedCard.id,
+      title: clampCmsTextField(saved.cards?.[ci]?.title, seedCard.title),
+      tag: clampCmsTextField(saved.cards?.[ci]?.tag, seedCard.tag),
     }));
-    return { ...seedSlide, ...saved, id: seedSlide.id, cards };
+    return {
+      ...seedSlide,
+      ...saved,
+      id: seedSlide.id,
+      title: clampCmsTextField(saved.title, seedSlide.title),
+      subtitle: clampCmsTextField(saved.subtitle, seedSlide.subtitle),
+      cards,
+    };
   });
 }
 
 function clampTestimonials(items: StoredTestimonial[] | undefined): StoredTestimonial[] {
   const seed = SEED_CONTENT.testimonialItems;
   if (!Array.isArray(items) || items.length === 0) return seed;
-  // Drop legacy placeholder testimonials (pre–Google Reviews integration).
   if (items.some((t) => t.avatar?.includes('randomuser.me'))) return seed;
-  return seed.map((seedItem, i) => ({
-    ...seedItem,
-    ...(items[i] ?? {}),
-    id: seedItem.id,
-  }));
+  return seed.map((seedItem, i) => {
+    const saved = items[i];
+    if (!saved) return { ...seedItem };
+    return {
+      ...seedItem,
+      ...saved,
+      id: seedItem.id,
+      name: clampCmsTextField(saved.name, seedItem.name),
+      role: clampCmsTextField(saved.role, seedItem.role),
+      company: clampCmsTextField(saved.company, seedItem.company),
+      content: clampCmsTextField(saved.content, seedItem.content),
+    };
+  });
 }
 
 function toBrandItem(value: unknown, fallback: BrandMarqueeItem): BrandMarqueeItem {
-  if (typeof value === 'string') return { label: value.trim() || fallback.label, imageUrl: '' };
+  if (typeof value === 'string') {
+    return { label: clampCmsTextField(value, fallback.label), imageUrl: '' };
+  }
   if (value && typeof value === 'object') {
     const v = value as Partial<BrandMarqueeItem>;
     return {
-      label: typeof v.label === 'string' && v.label.trim() ? v.label : fallback.label,
+      label: clampCmsTextField(v.label, fallback.label),
       imageUrl: typeof v.imageUrl === 'string' ? v.imageUrl : '',
     };
   }
@@ -522,12 +543,11 @@ function clampAccentHeadline(
 ): AccentHeadlineCopy {
   if (!saved || typeof saved !== 'object') return { ...seed };
   return {
-    beforeAccent1:
-      typeof saved.beforeAccent1 === 'string' ? saved.beforeAccent1 : seed.beforeAccent1,
-    accent1: typeof saved.accent1 === 'string' ? saved.accent1 : seed.accent1,
-    middle: typeof saved.middle === 'string' ? saved.middle : seed.middle,
-    accent2: typeof saved.accent2 === 'string' ? saved.accent2 : seed.accent2,
-    afterAccent2: typeof saved.afterAccent2 === 'string' ? saved.afterAccent2 : seed.afterAccent2,
+    beforeAccent1: clampCmsTextField(saved.beforeAccent1, seed.beforeAccent1),
+    accent1: clampCmsTextField(saved.accent1, seed.accent1),
+    middle: clampCmsTextField(saved.middle, seed.middle),
+    accent2: clampCmsTextField(saved.accent2, seed.accent2),
+    afterAccent2: clampCmsTextField(saved.afterAccent2, seed.afterAccent2),
   };
 }
 
@@ -539,11 +559,11 @@ function clampHomepagePillars(
     const p = saved?.[i];
     if (!p || typeof p !== 'object') return { ...fallback };
     return {
-      title: typeof p.title === 'string' ? p.title : fallback.title,
-      subtitle: typeof p.subtitle === 'string' ? p.subtitle : fallback.subtitle,
+      title: clampCmsTextField(p.title, fallback.title),
+      subtitle: clampCmsTextField(p.subtitle, fallback.subtitle),
       imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : fallback.imageUrl,
       imageAlt: typeof p.imageAlt === 'string' ? p.imageAlt : fallback.imageAlt,
-      body: typeof p.body === 'string' ? p.body : fallback.body,
+      body: p.body != null ? clampCmsTextField(p.body, fallback.body ?? '') : fallback.body,
     };
   }) as [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy];
 }
@@ -560,8 +580,8 @@ function clampMenuSeoPillars(
       ? (p.drinkCategoryKey as MenuSeoPillarCategoryKey)
       : fallback.drinkCategoryKey;
     return {
-      title: typeof p.title === 'string' ? p.title : fallback.title,
-      subtitle: typeof p.subtitle === 'string' ? p.subtitle : fallback.subtitle,
+      title: clampCmsTextField(p.title, fallback.title),
+      subtitle: clampCmsTextField(p.subtitle, fallback.subtitle),
       imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : fallback.imageUrl,
       imageAlt: typeof p.imageAlt === 'string' ? p.imageAlt : fallback.imageAlt,
       drinkCategoryKey: key,
@@ -570,11 +590,11 @@ function clampMenuSeoPillars(
 }
 
 function clampBodyParagraphs(
-  saved: string[] | undefined,
-  seed: [string, string],
-): [string, string] {
+  saved: unknown[] | undefined,
+  seed: [CmsText, CmsText],
+): [CmsText, CmsText] {
   if (!Array.isArray(saved) || saved.length < 2) return [...seed];
-  return [saved[0] ?? seed[0], saved[1] ?? seed[1]];
+  return [clampCmsTextField(saved[0], seed[0]), clampCmsTextField(saved[1], seed[1])];
 }
 
 function clampOrderingSteps(saved: OrderingStepCopy[] | undefined): OrderingStepCopy[] {
@@ -585,12 +605,24 @@ function clampOrderingSteps(saved: OrderingStepCopy[] | undefined): OrderingStep
     if (!s || typeof s !== 'object') return { ...fallback };
     return {
       id: fallback.id,
-      eyebrow: typeof s.eyebrow === 'string' ? s.eyebrow : fallback.eyebrow,
-      title: typeof s.title === 'string' ? s.title : fallback.title,
-      description: typeof s.description === 'string' ? s.description : fallback.description,
+      eyebrow: clampCmsTextField(s.eyebrow, fallback.eyebrow),
+      title: clampCmsTextField(s.title, fallback.title),
+      description: clampCmsTextField(s.description, fallback.description),
       icon: typeof s.icon === 'string' ? s.icon : fallback.icon,
     };
   });
+}
+
+function clampCmsSection<S extends object>(
+  seed: S,
+  raw: Partial<S> | undefined,
+  textKeys: (keyof S)[],
+): S {
+  const out = { ...seed, ...(raw ?? {}) } as S;
+  for (const key of textKeys) {
+    (out as Record<string, unknown>)[key as string] = clampCmsTextField(raw?.[key], seed[key] as CmsText);
+  }
+  return out;
 }
 
 export function normalizeLandingContent(raw: Partial<LandingContentState> | undefined): LandingContentState {
@@ -598,30 +630,40 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
 
   return {
     heroSlides: clampHeroSlides(raw.heroSlides),
-    heroChrome: {
-      ...SEED_CONTENT.heroChrome,
-      ...(raw.heroChrome ?? {}),
-      mainHeadline:
-        typeof raw.heroChrome?.mainHeadline === 'string' && raw.heroChrome.mainHeadline.trim()
-          ? raw.heroChrome.mainHeadline
-          : SEED_CONTENT.heroChrome.mainHeadline,
-    },
+    heroChrome: clampCmsSection(SEED_CONTENT.heroChrome, raw.heroChrome, [
+      'mainHeadline',
+      'locationBadge',
+      'imageCredit',
+      'primaryCtaLabel',
+      'secondaryCtaLabel',
+    ]),
     storySeo: {
-      ...SEED_CONTENT.storySeo,
-      ...(raw.storySeo ?? {}),
+      ...clampCmsSection(SEED_CONTENT.storySeo, raw.storySeo, [
+        'badge',
+        'intro',
+        'footerTagline1',
+        'footerTagline2',
+        'ctaLabel',
+        'socialHeading',
+      ]),
       headline: clampAccentHeadline(raw.storySeo?.headline, SEED_CONTENT.storySeo.headline),
       pillars: clampHomepagePillars(raw.storySeo?.pillars, SEED_CONTENT.storySeo.pillars),
     },
     menuSeo: {
-      ...SEED_CONTENT.menuSeo,
-      ...(raw.menuSeo ?? {}),
+      ...clampCmsSection(SEED_CONTENT.menuSeo, raw.menuSeo, ['locationBadge', 'locationChipLabel', 'exploreHeading']),
       headline: clampAccentHeadline(raw.menuSeo?.headline, SEED_CONTENT.menuSeo.headline),
       pillars: clampMenuSeoPillars(raw.menuSeo?.pillars, SEED_CONTENT.menuSeo.pillars),
       bodyParagraphs: clampBodyParagraphs(raw.menuSeo?.bodyParagraphs, SEED_CONTENT.menuSeo.bodyParagraphs),
     },
     featured: {
-      ...SEED_CONTENT.featured,
-      ...raw.featured,
+      ...clampCmsSection(SEED_CONTENT.featured, raw.featured, [
+        'badge',
+        'title',
+        'subtitleDesktop',
+        'subtitleMobile',
+        'menuCtaLabel',
+        'shopCtaLabel',
+      ]),
       productIds: clampFeaturedProducts(
         raw.featured?.productIds as [string, string, string] | undefined,
       ),
@@ -629,24 +671,50 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
         raw.featured?.cardImageOverrides as [string, string, string] | undefined,
       ),
     },
-    events: { ...SEED_CONTENT.events, ...(raw.events ?? {}) },
-    testimonials: { ...SEED_CONTENT.testimonials, ...(raw.testimonials ?? {}) },
+    events: clampCmsSection(SEED_CONTENT.events, raw.events, [
+      'badge',
+      'title',
+      'subtitle',
+      'noEventBody',
+      'noEventBrowseLabel',
+    ]),
+    testimonials: clampCmsSection(SEED_CONTENT.testimonials, raw.testimonials, [
+      'badge',
+      'title',
+      'subtitle',
+      'trustedTitle',
+    ]),
     testimonialItems: clampTestimonials(raw.testimonialItems),
     trustedBrands: clampBrandList(raw.trustedBrands as unknown[] | undefined, SEED_TRUSTED_BRANDS),
     schedule: clampMixMatchSection(raw.schedule as Partial<MixMatchSectionCopy> & { title?: string }),
     ordering: {
-      ...SEED_CONTENT.ordering,
-      ...(raw.ordering ?? {}),
+      ...clampCmsSection(SEED_CONTENT.ordering, raw.ordering, [
+        'badge',
+        'title',
+        'subtitleDesktop',
+        'subtitleMobile',
+      ]),
       steps: clampOrderingSteps(raw.ordering?.steps),
     },
-    branchesStrip: { ...SEED_CONTENT.branchesStrip, ...(raw.branchesStrip ?? {}) },
+    branchesStrip: clampCmsSection(SEED_CONTENT.branchesStrip, raw.branchesStrip, ['badge', 'title', 'ctaLabel']),
     kadoCircle: {
-      ...SEED_CONTENT.kadoCircle,
-      ...(raw.kadoCircle ?? {}),
+      ...clampCmsSection(SEED_CONTENT.kadoCircle, raw.kadoCircle, [
+        'badge',
+        'titleBefore',
+        'titleAccent',
+        'body',
+        'submitLabel',
+        'disclaimer',
+        'marqueeLabel',
+        'footerLinkLabel',
+      ]),
       sponsors: clampBrandList(raw.kadoCircle?.sponsors as unknown[] | undefined, SEED_KADO_CIRCLE_SPONSORS),
       stats:
         Array.isArray(raw.kadoCircle?.stats) && raw.kadoCircle.stats.length >= 4
-          ? raw.kadoCircle.stats.slice(0, 4)
+          ? raw.kadoCircle.stats.slice(0, 4).map((stat, i) => ({
+              num: clampCmsTextField(stat?.num, SEED_CONTENT.kadoCircle.stats[i]?.num ?? ''),
+              label: clampCmsTextField(stat?.label, SEED_CONTENT.kadoCircle.stats[i]?.label ?? ''),
+            }))
           : SEED_CONTENT.kadoCircle.stats,
     },
   };

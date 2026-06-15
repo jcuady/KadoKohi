@@ -37,6 +37,7 @@ import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import AdminMerch from './pages/admin/AdminMerch';
 import AdminLoyalty from './pages/admin/AdminLoyalty';
+import AdminStamps from './pages/admin/AdminStamps';
 import AdminBoothBookings from './pages/admin/AdminBoothBookings';
 import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
 import AdminBoothContent from './pages/admin/AdminBoothContent';
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="menu" element={<AdminMenu />} />
             <Route path="merch" element={<AdminMerch />} />
             <Route path="loyalty" element={<AdminLoyalty />} />
+            <Route path="stamps" element={<AdminStamps />} />
             <Route path="booth-bookings" element={<AdminBoothBookings />} />
             <Route path="booth-catalog" element={<AdminBoothCatalog />} />
             <Route path="booth-content" element={<AdminBoothContent />} />

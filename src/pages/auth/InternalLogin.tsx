@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Coffee, Package, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { isValidEmail } from '../../lib/validation';
+import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { isSupabaseConfigured } from '../../lib/supabase/client';
 import type { Role } from '../../types/domain';
 
 type InternalTab = 'admin' | 'barista' | 'staff';
@@ -37,11 +39,16 @@ export default function InternalLogin() {
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      setError('Server connection is not configured. Contact your administrator.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await signIn(email.trim().toLowerCase(), password);
-    } catch {
-      setError('Invalid credentials.');
+    } catch (err) {
+      setError(formatAuthErrorMessage(err, 'Invalid credentials.'));
       setSubmitting(false);
       return;
     }

@@ -1115,7 +1115,11 @@ export const orderingRepo = {
       .select('landing_content')
       .eq('id', true)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
     return (data as { landing_content?: unknown }).landing_content ?? null;
   },
   async upsertLandingContent(content: unknown) {
@@ -1132,7 +1136,11 @@ export const orderingRepo = {
       .select('booth_content')
       .eq('id', true)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
     return (data as { booth_content?: unknown }).booth_content ?? null;
   },
   async upsertBoothPageContent(content: unknown) {

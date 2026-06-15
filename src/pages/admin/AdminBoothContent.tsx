@@ -1,4 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import CmsTextField from '../../components/admin/CmsTextField';
+import { boothChipKey } from '../../lib/boothPageContent';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
@@ -104,16 +106,16 @@ export default function AdminBoothContent() {
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
         <h2 className="font-display text-xl font-bold dash-heading">Hero</h2>
         <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Eyebrow" value={pageCopy.heroEyebrow} onChange={(v) => updatePageCopy({ heroEyebrow: v })} />
-          <Field label="CTA label" value={pageCopy.heroCtaLabel} onChange={(v) => updatePageCopy({ heroCtaLabel: v })} />
-          <Field label="Title line 1" value={pageCopy.heroTitleLine1} onChange={(v) => updatePageCopy({ heroTitleLine1: v })} />
-          <Field label="Title line 2" value={pageCopy.heroTitleLine2} onChange={(v) => updatePageCopy({ heroTitleLine2: v })} />
+          <CmsTextField label="Eyebrow" value={pageCopy.heroEyebrow} onChange={(v) => updatePageCopy({ heroEyebrow: v })} />
+          <CmsTextField label="CTA label" value={pageCopy.heroCtaLabel} onChange={(v) => updatePageCopy({ heroCtaLabel: v })} />
+          <CmsTextField label="Title line 1" value={pageCopy.heroTitleLine1} onChange={(v) => updatePageCopy({ heroTitleLine1: v })} />
+          <CmsTextField label="Title line 2" value={pageCopy.heroTitleLine2} onChange={(v) => updatePageCopy({ heroTitleLine2: v })} />
         </div>
-        <TextArea label="Description" value={pageCopy.heroDescription} onChange={(v) => updatePageCopy({ heroDescription: v })} />
+        <CmsTextField label="Description" value={pageCopy.heroDescription} onChange={(v) => updatePageCopy({ heroDescription: v })} multiline />
         <div className="grid md:grid-cols-2 gap-4">
           {pageCopy.chips.map((chip, i) => (
-            <div key={i}>
-              <Field label={`Chip ${i + 1}`} value={chip} onChange={(v) => updateChip(i, v)} />
+            <div key={boothChipKey(chip, i)}>
+              <CmsTextField label={`Chip ${i + 1}`} value={chip} onChange={(v) => updateChip(i, v)} />
             </div>
           ))}
         </div>
@@ -122,24 +124,24 @@ export default function AdminBoothContent() {
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
         <h2 className="font-display text-xl font-bold dash-heading">How it works</h2>
         <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Eyebrow" value={pageCopy.howItWorksEyebrow} onChange={(v) => updatePageCopy({ howItWorksEyebrow: v })} />
-          <Field label="Section title" value={pageCopy.howItWorksTitle} onChange={(v) => updatePageCopy({ howItWorksTitle: v })} />
+          <CmsTextField label="Eyebrow" value={pageCopy.howItWorksEyebrow} onChange={(v) => updatePageCopy({ howItWorksEyebrow: v })} />
+          <CmsTextField label="Section title" value={pageCopy.howItWorksTitle} onChange={(v) => updatePageCopy({ howItWorksTitle: v })} />
         </div>
         {pageCopy.howItWorksSteps.map((step, i) => (
-          <div key={step.title} className="rounded-xl border dash-border p-4 space-y-2">
+          <div key={boothChipKey(step.title, i)} className="rounded-xl border dash-border p-4 space-y-2">
             <p className="text-xs font-bold uppercase tracking-wider dash-muted">Step {i + 1}</p>
-            <Field label="Title" value={step.title} onChange={(v) => updateHowItWorksStep(i, { title: v })} />
-            <TextArea label="Body" value={step.body} onChange={(v) => updateHowItWorksStep(i, { body: v })} />
+            <CmsTextField label="Title" value={step.title} onChange={(v) => updateHowItWorksStep(i, { title: v })} />
+            <CmsTextField label="Body" value={step.body} onChange={(v) => updateHowItWorksStep(i, { body: v })} multiline />
           </div>
         ))}
       </section>
 
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
         <h2 className="font-display text-xl font-bold dash-heading">Proposal form</h2>
-        <Field label="Form title" value={pageCopy.proposalTitle} onChange={(v) => updatePageCopy({ proposalTitle: v })} />
-        <TextArea label="Form description" value={pageCopy.proposalDescription} onChange={(v) => updatePageCopy({ proposalDescription: v })} />
-        <Field label="Submit button" value={pageCopy.proposalCtaLabel} onChange={(v) => updatePageCopy({ proposalCtaLabel: v })} />
-        <TextArea label="Footer note" value={pageCopy.proposalEmailNote} onChange={(v) => updatePageCopy({ proposalEmailNote: v })} />
+        <CmsTextField label="Form title" value={pageCopy.proposalTitle} onChange={(v) => updatePageCopy({ proposalTitle: v })} />
+        <CmsTextField label="Form description" value={pageCopy.proposalDescription} onChange={(v) => updatePageCopy({ proposalDescription: v })} multiline />
+        <CmsTextField label="Submit button" value={pageCopy.proposalCtaLabel} onChange={(v) => updatePageCopy({ proposalCtaLabel: v })} />
+        <CmsTextField label="Footer note" value={pageCopy.proposalEmailNote} onChange={(v) => updatePageCopy({ proposalEmailNote: v })} multiline />
         <p className="text-xs dash-muted">Proposal emails use Contact Email from Settings.</p>
       </section>
 
@@ -221,28 +223,6 @@ function Field({
         required={required}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
-      />
-    </div>
-  );
-}
-
-function TextArea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">{label}</label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-        className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
       />
     </div>
   );

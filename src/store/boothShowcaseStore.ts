@@ -20,7 +20,7 @@ export interface BoothShowcaseStore {
   saveToRemote: () => Promise<void>;
   updatePageCopy: (patch: Partial<BoothPageCopy>) => void;
   updateHowItWorksStep: (index: number, patch: Partial<BoothHowItWorksStep>) => void;
-  updateChip: (index: number, value: string) => void;
+  updateChip: (index: number, value: import('../lib/cmsTypography').CmsText) => void;
   addMedia: (input: Omit<BookingShowcaseMedia, 'id'> & { id?: string }) => void;
   updateMedia: (id: string, patch: Partial<BookingShowcaseMedia>) => void;
   removeMedia: (id: string) => void;
