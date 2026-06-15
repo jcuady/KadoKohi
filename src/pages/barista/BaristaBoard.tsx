@@ -103,11 +103,18 @@ export default function BaristaBoard() {
                   colOrders.map((o) => {
                     const placed = formatOrderTimestamp(o.createdAt);
                     return (
-                    <button
+                    <div
                       key={o.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setEditingOrder(o)}
-                      className={`w-full text-left rounded-xl border dash-card ${col.bgCard} p-4 transition-colors`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setEditingOrder(o);
+                        }
+                      }}
+                      className={`w-full text-left rounded-xl border dash-card ${col.bgCard} p-4 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red/40`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <span className="font-display font-bold dash-heading text-lg">{o.shortCode}</span>
@@ -146,7 +153,7 @@ export default function BaristaBoard() {
                       <div className="mt-2 text-right">
                         <span className="font-display font-bold text-kado-red text-sm">{formatPhp(o.total)}</span>
                       </div>
-                    </button>
+                    </div>
                     );
                   })
                 )}
