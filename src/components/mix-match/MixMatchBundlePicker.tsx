@@ -14,12 +14,27 @@ import { useCartStore } from '../../store/cartStore';
 import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
 import OnlineOrderHoursNotice from '../OnlineOrderHoursNotice';
 import { PASTRIES_PAGE, MIX_MATCH_BLUE } from '../../content/pastriesPage';
+import type { QrCartPayload } from '../qr/QrProductSheet';
+import {
+  buildMixMatchQrPayload,
+  canAddMixMatchSelection,
+  defaultMixMatchMilkId,
+  mixMatchAddHint,
+  mixMatchCtaLabel,
+  mixMatchSelectionLabel,
+  mixMatchUnitPrice,
+  resolveMixMatchMode,
+} from '../../lib/mixMatchOrder';
+import { resolveMilkLabel } from '../../lib/menuProductModifiers';
 
 type Props = {
   categories: MenuCategory[];
   products: Product[];
   pastriesCategoryId?: string;
   bundleNote?: string;
+  /** Online uses cart drawer + store hours; QR adds directly to table/takeout cart. */
+  channel?: 'online' | 'qr';
+  onQrAdd?: (payload: QrCartPayload) => void;
 };
 
 const SELECT_BTN =
@@ -42,7 +57,18 @@ function SelectionRing({ selected, tone }: { selected: boolean; tone: 'blue' | '
   );
 }
 
-export default function MixMatchBundlePicker({ categories, products, pastriesCategoryId, bundleNote }: Props) {
+function toggleId(current: string | null, next: string): string | null {
+  return current === next ? null : next;
+}
+
+export default function MixMatchBundlePicker({
+  categories,
+  products,
+  pastriesCategoryId,
+  bundleNote,
+  channel = 'online',
+  onQrAdd,
+}: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const orderHours = useOnlineOrderHours();
   const drinks = useMemo(() => mixMatchDrinkEntries(categories, products), [categories, products]);
@@ -58,43 +84,75 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
 
   const selectedDrink = orderableDrinks.find((e) => e.product.id === selectedDrinkId)?.product;
   const selectedCookie = cookies.find((c) => c.id === selectedCookieId);
-  const pricing =
-    selectedDrink && selectedCookie ? computeMixMatchBundleTotal(selectedDrink, selectedCookie) : null;
+  const mode = resolveMixMatchMode(selectedDrink, selectedCookie);
 
-  const canAdd =
-    Boolean(selectedDrink) &&
-    Boolean(selectedCookie) &&
-    selectedDrink &&
-    selectedCookie &&
-    pastryHasPrice(selectedDrink) &&
-    pastryHasPrice(selectedCookie) &&
-    isProductInStock(selectedDrink) &&
-    isProductInStock(selectedCookie) &&
-    orderHours.isOpen;
+  const bundlePricing =
+    mode === 'bundle' && selectedDrink && selectedCookie
+      ? computeMixMatchBundleTotal(selectedDrink, selectedCookie)
+      : null;
 
-  const addHint = !orderHours.isOpen
-    ? 'Online ordering opens during store hours.'
-    : !selectedDrinkId
-      ? 'Pick a drink in Step 1.'
-      : !selectedCookieId
-        ? 'Pick a cookie in Step 2.'
+  const singlePrice =
+    mode === 'drink-only' && selectedDrink
+      ? mixMatchUnitPrice('drink-only', selectedDrink)
+      : mode === 'cookie-only' && selectedCookie
+        ? mixMatchUnitPrice('cookie-only', undefined, selectedCookie)
         : null;
 
-  const handleAddBundle = () => {
-    if (!canAdd || !pricing || !selectedDrink || !selectedCookie) return;
-    addItem(
-      {
-        itemType: 'coffee',
-        productId: selectedDrink.id,
-        productNameSnapshot: `Mix & Match: ${selectedDrink.name} + ${selectedCookie.name}`,
-        qty: 1,
-        temperature: selectedDrink.temperature === 'hot' ? 'hot' : 'iced',
-        unitPrice: pricing.total,
-        lineTotal: pricing.total,
-        image: selectedCookie.image ?? selectedDrink.image,
-      },
-      { openCart: true },
-    );
+  const requireHours = channel === 'online';
+  const canAdd = canAddMixMatchSelection(selectedDrink, selectedCookie, {
+    requireOpenHours: requireHours,
+    isOpen: orderHours.isOpen,
+  });
+
+  const addHint = mixMatchAddHint(selectedDrinkId, selectedCookieId, {
+    requireOpenHours: requireHours,
+    isOpen: orderHours.isOpen,
+  });
+
+  const handleAdd = () => {
+    if (!canAdd || !mode) return;
+
+    if (channel === 'qr') {
+      const payload = buildMixMatchQrPayload({
+        mode,
+        drink: selectedDrink,
+        cookie: selectedCookie,
+      });
+      if (!payload || !onQrAdd) return;
+      onQrAdd({
+        ...payload,
+        productNameSnapshot: mixMatchSelectionLabel(mode, selectedDrink, selectedCookie),
+      });
+    } else {
+      const milkId = selectedDrink ? defaultMixMatchMilkId(selectedDrink) : undefined;
+      const unit = mixMatchUnitPrice(mode, selectedDrink, selectedCookie, milkId);
+      const name = mixMatchSelectionLabel(mode, selectedDrink, selectedCookie);
+      const productId =
+        mode === 'cookie-only' && selectedCookie ? selectedCookie.id : selectedDrink!.id;
+
+      addItem(
+        {
+          itemType: mode === 'bundle' ? 'mix-match' : 'coffee',
+          productId,
+          mixMatchCookieId: mode === 'bundle' ? selectedCookie!.id : undefined,
+          productNameSnapshot: name,
+          qty: 1,
+          milkId,
+          milkLabelSnapshot: selectedDrink && milkId ? resolveMilkLabel(selectedDrink, milkId) : undefined,
+          temperature:
+            selectedDrink && selectedDrink.temperature === 'hot'
+              ? 'hot'
+              : selectedDrink
+                ? 'iced'
+                : undefined,
+          unitPrice: unit,
+          lineTotal: unit,
+          image: selectedCookie?.image ?? selectedDrink?.image,
+        },
+        { openCart: true },
+      );
+    }
+
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -103,24 +161,34 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
     <div className="rounded-[1.25rem] border border-kado-dark/10 bg-kado-cream/40 p-4 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="kado-label text-kado-red">Your bundle</p>
-          {pricing ? (
+          <p className="kado-label text-kado-red">Your selection</p>
+          {bundlePricing ? (
             <div className="mt-1 space-y-1 kado-body-sm text-kado-dark/75">
               <p className="break-words">
                 {selectedDrink?.name} + {selectedCookie?.name}
               </p>
               <p className="flex flex-wrap gap-x-2 gap-y-0.5">
-                <span>Subtotal {formatPhp(pricing.subtotal)}</span>
+                <span>Subtotal {formatPhp(bundlePricing.subtotal)}</span>
                 <span className="font-semibold" style={{ color: MIX_MATCH_BLUE }}>
-                  {PASTRIES_PAGE.bundleDiscountPercent}% off (−{formatPhp(pricing.discount)})
+                  {PASTRIES_PAGE.bundleDiscountPercent}% off (−{formatPhp(bundlePricing.discount)})
                 </span>
               </p>
-              <p className="kado-h3 text-kado-dark">{formatPhp(pricing.total)}</p>
+              <p className="kado-h3 text-kado-dark">{formatPhp(bundlePricing.total)}</p>
               {bundleNote ? <p className="text-xs text-kado-dark/50">{bundleNote}</p> : null}
+            </div>
+          ) : singlePrice != null && mode ? (
+            <div className="mt-1 space-y-1 kado-body-sm text-kado-dark/75">
+              <p className="break-words">{mixMatchSelectionLabel(mode, selectedDrink, selectedCookie)}</p>
+              <p className="kado-h3 text-kado-dark">{formatPhp(singlePrice)}</p>
+              {mode !== 'bundle' ? (
+                <p className="text-xs text-kado-dark/50">
+                  Add both drink and cookie for {PASTRIES_PAGE.bundleDiscountPercent}% off the pair.
+                </p>
+              ) : null}
             </div>
           ) : (
             <p className="mt-1 kado-body-sm text-kado-dark/55">
-              Select one drink and one cookie to see your price.
+              Pick a Kado Kohi drink, a Kukidō cookie, or both for a bundle discount.
             </p>
           )}
           {addHint ? (
@@ -130,29 +198,33 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
           ) : null}
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 lg:max-w-xs">
-          {!orderHours.isOpen ? <OnlineOrderHoursNotice status={orderHours} variant="compact" /> : null}
+          {requireHours && !orderHours.isOpen ? (
+            <OnlineOrderHoursNotice status={orderHours} variant="compact" />
+          ) : null}
           <button
             type="button"
             disabled={!canAdd}
-            onClick={handleAddBundle}
+            onClick={handleAdd}
             aria-live="polite"
             className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-6 kado-label text-kado-cream transition-colors hover:bg-kado-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {added ? (
               <>
-                <Check className="h-4 w-4 shrink-0" /> Added to cart
+                <Check className="h-4 w-4 shrink-0" /> Added
               </>
             ) : (
               <>
                 <ShoppingBag className="h-4 w-4 shrink-0" />
-                Add bundle to cart
+                {mixMatchCtaLabel(mode)}
               </>
             )}
           </button>
-          <span className="inline-flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1e4d8c]">
-            <Percent className="h-3.5 w-3.5 shrink-0" />
-            {PASTRIES_PAGE.hero.badge}
-          </span>
+          {mode === 'bundle' ? (
+            <span className="inline-flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1e4d8c]">
+              <Percent className="h-3.5 w-3.5 shrink-0" />
+              {PASTRIES_PAGE.hero.badge}
+            </span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -192,7 +264,7 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
                     type="button"
                     disabled={!orderable || !inStock}
                     aria-pressed={selected}
-                    onClick={() => setSelectedDrinkId(product.id)}
+                    onClick={() => setSelectedDrinkId((id) => toggleId(id, product.id))}
                     className={`${SELECT_BTN} ${
                       selected
                         ? 'border-[#1e4d8c] bg-[#1e4d8c]/8'
@@ -233,7 +305,7 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
                       type="button"
                       disabled={!pastryHasPrice(product) || !inStock}
                       aria-pressed={selected}
-                      onClick={() => setSelectedCookieId(product.id)}
+                      onClick={() => setSelectedCookieId((id) => toggleId(id, product.id))}
                       className={`${SELECT_BTN} ${
                         selected
                           ? 'border-kado-red bg-kado-red/8'
@@ -268,17 +340,14 @@ export default function MixMatchBundlePicker({ categories, products, pastriesCat
         </div>
       </div>
 
-      {/* In-flow checkout — desktop / tablet */}
       <div className="hidden md:block">{checkoutPanel}</div>
 
-      {/* Sticky checkout — phones */}
       <div
         className="sticky bottom-0 z-30 -mx-1 border-t border-kado-dark/10 bg-kado-offwhite/95 px-1 pt-3 backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         {checkoutPanel}
       </div>
-      {/* Spacer so sticky bar does not cover last cookie on small screens */}
       <div className="h-2 md:hidden" aria-hidden />
     </div>
   );

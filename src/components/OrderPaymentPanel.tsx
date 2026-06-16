@@ -10,7 +10,7 @@ import { formatOrderError } from '../lib/validation';
 type Props = {
   order: Order;
   onViewQr: () => void;
-  onUploadProof: (proofRef: string) => void;
+  onUploadProof: (proofRef: string) => void | Promise<void>;
 };
 
 const actionBtn =
@@ -39,7 +39,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
     setUploading(true);
     try {
       const proofRef = await orderingRepo.uploadPaymentProof(order.id, file);
-      onUploadProof(proofRef);
+      await onUploadProof(proofRef);
     } catch (err) {
       setError(formatOrderError(err));
     } finally {

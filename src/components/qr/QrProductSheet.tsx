@@ -22,6 +22,9 @@ export type QrCartPayload = {
   milkId?: string;
   milkLabel?: string;
   temperature?: 'hot' | 'iced';
+  /** Mix & Match bundle partner cookie — server validates 10% bundle discount. */
+  mixMatchCookieId?: string;
+  productNameSnapshot?: string;
 };
 
 type Props = {

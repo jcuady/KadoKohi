@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
+import CustomSectionRenderer from '../CustomSectionRenderer';
 import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
@@ -110,6 +111,7 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
           <BranchesStrip copy={landing.branchesStrip} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
+      {!sectionOnly ? <CustomSectionRenderer /> : null}
       {showSection('kado-circle', sectionOnly) ? (
         <div id="landing-kado-circle">
           <KadoCircleCTA copy={landing.kadoCircle} cmsEditMode={cmsEditMode} />

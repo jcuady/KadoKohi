@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useSectionStore, type CustomSection, type SectionType } from '../../store/sectionStore';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
 
-const SECTION_TYPES: SectionType[] = ['hero', 'image-text', 'gallery', 'cta', 'stat'];
+const SECTION_TYPES: SectionType[] = ['hero', 'image-text', 'gallery', 'cta', 'stat', 'faq'];
 
 type FormData = {
   type: SectionType;
@@ -21,12 +21,21 @@ export default function AdminSections() {
   const addSection = useSectionStore((s) => s.addSection);
   const updateSection = useSectionStore((s) => s.updateSection);
   const removeSection = useSectionStore((s) => s.removeSection);
+  const hydrateFromRemote = useSectionStore((s) => s.hydrateFromRemote);
+  const saveToRemote = useSectionStore((s) => s.saveToRemote);
+  const saving = useSectionStore((s) => s.saving);
+  const saveError = useSectionStore((s) => s.saveError);
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [savedMsg, setSavedMsg] = useState('');
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
 
   const startAdd = () => { setEditingId(null); setForm(emptyForm); setShowForm(true); };
   const startEdit = (s: CustomSection) => {
@@ -54,17 +63,40 @@ export default function AdminSections() {
     cancel();
   };
 
+  const handlePublish = async () => {
+    setSavedMsg('');
+    try {
+      await saveToRemote();
+      setSavedMsg('Custom sections published.');
+    } catch {
+      // saveError set in store
+    }
+  };
+
   return (
     <div className="dash-page max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Custom Sections</h1>
-          <p className="dash-muted text-sm mt-1">Compose dynamic sections for the home page without code changes.</p>
+          <p className="dash-muted text-sm mt-1">Compose dynamic sections for the home page. Publish to save to the database.</p>
         </div>
-        <button type="button" onClick={startAdd} className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1">
-          <Plus className="w-4 h-4" /> New section
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void handlePublish()}
+            disabled={saving}
+            className="rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
+          >
+            {saving ? 'Publishing…' : 'Publish'}
+          </button>
+          <button type="button" onClick={startAdd} className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1">
+            <Plus className="w-4 h-4" /> New section
+          </button>
+        </div>
       </div>
+
+      {savedMsg && <p className="mb-4 text-sm font-semibold text-green-600">{savedMsg}</p>}
+      {saveError && <p className="mb-4 text-sm text-red-600">{saveError}</p>}
 
       {sorted.length === 0 ? (
         <p className="rounded-2xl dash-card border p-8 text-center text-sm dash-muted">No custom sections yet.</p>

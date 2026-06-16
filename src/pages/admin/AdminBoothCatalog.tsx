@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { BoothAddonPricingType } from '../../types/domain';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useBranchStore } from '../../store/branchStore';
@@ -58,7 +58,27 @@ export default function AdminBoothCatalog() {
   const addAddon = useBoothCatalogStore((s) => s.addAddon);
   const updateAddon = useBoothCatalogStore((s) => s.updateAddon);
   const removeAddon = useBoothCatalogStore((s) => s.removeAddon);
+  const hydrateFromRemote = useBoothCatalogStore((s) => s.hydrateFromRemote);
+  const saveToRemote = useBoothCatalogStore((s) => s.saveToRemote);
+  const saving = useBoothCatalogStore((s) => s.saving);
+  const saveError = useBoothCatalogStore((s) => s.saveError);
   const branches = useBranchStore((s) => s.branches);
+
+  const [savedMsg, setSavedMsg] = useState('');
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
+
+  const handlePublish = async () => {
+    setSavedMsg('');
+    try {
+      await saveToRemote();
+      setSavedMsg('Booth catalog published.');
+    } catch {
+      // saveError set in store
+    }
+  };
 
   const sortedPackages = useMemo(() => [...packages].sort((a, b) => a.order - b.order), [packages]);
   const sortedAddons = useMemo(() => [...addons].sort((a, b) => a.order - b.order), [addons]);
@@ -169,7 +189,15 @@ export default function AdminBoothCatalog() {
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Booth Catalog</h1>
           <p className="dash-muted text-sm mt-1">Manage event packages and add-ons for booth bookings.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void handlePublish()}
+            disabled={saving}
+            className="rounded-xl bg-kado-red text-kado-cream px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
+          >
+            {saving ? 'Publishing…' : 'Publish'}
+          </button>
           <button
             type="button"
             onClick={openAddPackage}
@@ -186,6 +214,9 @@ export default function AdminBoothCatalog() {
           </button>
         </div>
       </div>
+
+      {savedMsg && <p className="mb-4 text-sm font-semibold text-green-600">{savedMsg}</p>}
+      {saveError && <p className="mb-4 text-sm text-red-600">{saveError}</p>}
 
       <section className="mb-8">
         <h2 className="font-display text-xl font-bold dash-heading mb-3">Packages</h2>

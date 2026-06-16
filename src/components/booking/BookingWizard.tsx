@@ -1,16 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Check, Mail, PartyPopper, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
+import { useBoothCatalogStore } from '../../store/boothCatalogStore';
+import { buildBookingEstimate } from '../../store/bookingEstimateStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import type { BoothBookingOccasion } from '../../types/domain';
+import type { BoothBookingOccasion, BoothBookingSelectedAddonSnapshot, BookingEstimate } from '../../types/domain';
 import EventAvailabilityCalendar from './EventAvailabilityCalendar';
 import CmsStyledText from '../cms/CmsStyledText';
 import { buildBoothProposalMailto } from '../../lib/boothProposalEmail';
 import { buildProposalEstimate } from '../../lib/boothProposal';
+import { formatPhp } from '../../lib/money';
 import {
   EVENT_PROPOSAL_PACKAGE_ID,
   EVENT_PROPOSAL_PACKAGE_NAME,
@@ -40,6 +43,13 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
   const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
+  const catalogPackages = useBoothCatalogStore((s) => s.visiblePackages());
+  const catalogAddons = useBoothCatalogStore((s) => s.visibleAddons());
+  const taxRate = useSettingsStore((s) => s.settings.taxRate);
+
+  const [packageChoice, setPackageChoice] = useState(EVENT_PROPOSAL_PACKAGE_ID);
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
+  const packageDefaulted = useRef(false);
 
   const [contactName, setContactName] = useState('');
   const [contactEmailField, setContactEmailField] = useState('');
@@ -74,6 +84,58 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
     void loadMonth(y, m);
   }, [eventDate, loadMonth]);
 
+  useEffect(() => {
+    if (packageDefaulted.current || catalogPackages.length === 0) return;
+    setPackageChoice(catalogPackages[0].id);
+    packageDefaulted.current = true;
+  }, [catalogPackages]);
+
+  const isProposal = packageChoice === EVENT_PROPOSAL_PACKAGE_ID;
+  const selectedPackage = catalogPackages.find((pkg) => pkg.id === packageChoice);
+
+  const durationHours = useMemo(() => {
+    if (!startTime || !endTime || endTime <= startTime) return selectedPackage?.durationHours ?? 3;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    return Math.max(1, Math.ceil((eh * 60 + em - (sh * 60 + sm)) / 60));
+  }, [startTime, endTime, selectedPackage?.durationHours]);
+
+  const liveEstimate = useMemo(() => {
+    if (isProposal || !selectedPackage) return null;
+    return buildBookingEstimate({
+      branchId: selectedPackage.branchId,
+      packageId: selectedPackage.id,
+      guestCount,
+      durationHours,
+      addonSelections: selectedAddonIds.map((addonId) => ({ addonId })),
+      taxRatePercent: taxRate,
+      assumptions: ['Indicative estimate — final quote confirmed by our events team'],
+    });
+  }, [isProposal, selectedPackage, guestCount, durationHours, selectedAddonIds, taxRate]);
+
+  const toggleAddon = (addonId: string) => {
+    setSelectedAddonIds((prev) =>
+      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId],
+    );
+  };
+
+  function addonSnapshotsFromEstimate(estimate: BookingEstimate): BoothBookingSelectedAddonSnapshot[] {
+    const addons = useBoothCatalogStore.getState().addons;
+    return estimate.lineItems
+      .filter((line) => line.sourceType === 'addon')
+      .map((line) => {
+        const addon = addons.find((a) => a.id === line.sourceId);
+        return {
+          addonId: line.sourceId,
+          addonNameSnapshot: line.labelSnapshot,
+          pricingType: addon?.pricingType ?? 'fixed',
+          qty: line.qty,
+          unitPrice: line.unitPrice,
+          lineTotal: line.lineTotal,
+        };
+      });
+  }
+
   const scheduleValid =
     !!contactName.trim() &&
     !!contactEmailField.trim() &&
@@ -106,7 +168,14 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
       return;
     }
 
-    const estimate = buildProposalEstimate('PENDING');
+    const estimate = isProposal
+      ? buildProposalEstimate('PENDING')
+      : liveEstimate ?? buildProposalEstimate('PENDING');
+
+    const packageId = isProposal ? EVENT_PROPOSAL_PACKAGE_ID : selectedPackage!.id;
+    const packageNameSnapshot = isProposal ? EVENT_PROPOSAL_PACKAGE_NAME : selectedPackage!.name;
+    const packageBasePriceSnapshot = isProposal ? 0 : selectedPackage!.basePrice;
+    const selectedAddons = isProposal ? [] : addonSnapshotsFromEstimate(estimate);
 
     setSubmitting(true);
     setError('');
@@ -122,10 +191,11 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
         eventDate: new Date(eventDate).toISOString(),
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
-        packageId: EVENT_PROPOSAL_PACKAGE_ID,
-        packageNameSnapshot: EVENT_PROPOSAL_PACKAGE_NAME,
-        packageBasePriceSnapshot: 0,
-        selectedAddons: [],
+        branchId: selectedPackage?.branchId,
+        packageId,
+        packageNameSnapshot,
+        packageBasePriceSnapshot,
+        selectedAddons,
         specialRequests: message.trim() || undefined,
         estimateSnapshot: { ...estimate, shortCode: 'PENDING' },
         status: 'submitted',
@@ -248,6 +318,96 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
                 <Field label="Start time" type="time" value={startTime} onChange={setStartTime} required />
                 <Field label="End time" type="time" value={endTime} onChange={setEndTime} required />
               </div>
+
+              {catalogPackages.length > 0 && (
+                <div>
+                  <Label>Package</Label>
+                  <div className="space-y-2">
+                    {catalogPackages.map((pkg) => (
+                      <label
+                        key={pkg.id}
+                        className={`flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${
+                          packageChoice === pkg.id
+                            ? 'border-kado-red bg-kado-red/5'
+                            : 'border-kado-dark/15 hover:border-kado-dark/30'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="booth-package"
+                          checked={packageChoice === pkg.id}
+                          onChange={() => setPackageChoice(pkg.id)}
+                          className="mt-1"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-bold text-sm text-kado-dark">{pkg.name}</span>
+                          <span className="block text-xs text-kado-dark/60 mt-0.5">
+                            Up to {pkg.capacity} guests · {pkg.durationHours}h from {formatPhp(pkg.basePrice)}
+                          </span>
+                          {pkg.description && (
+                            <span className="block text-xs text-kado-dark/50 mt-1">{pkg.description}</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                    <label
+                      className={`flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${
+                        isProposal
+                          ? 'border-kado-red bg-kado-red/5'
+                          : 'border-kado-dark/15 hover:border-kado-dark/30'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="booth-package"
+                        checked={isProposal}
+                        onChange={() => setPackageChoice(EVENT_PROPOSAL_PACKAGE_ID)}
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="block font-bold text-sm text-kado-dark">Custom proposal</span>
+                        <span className="block text-xs text-kado-dark/60 mt-0.5">
+                          Pricing discussed with our events team after review.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {!isProposal && catalogAddons.length > 0 && (
+                <div>
+                  <Label>Add-ons</Label>
+                  <div className="space-y-2">
+                    {catalogAddons.map((addon) => (
+                      <label
+                        key={addon.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-kado-dark/15 px-4 py-2.5 cursor-pointer hover:border-kado-dark/30"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedAddonIds.includes(addon.id)}
+                            onChange={() => toggleAddon(addon.id)}
+                          />
+                          <span className="text-sm text-kado-dark truncate">{addon.name}</span>
+                        </span>
+                        <span className="text-xs font-bold text-kado-dark/70 shrink-0">{formatPhp(addon.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!isProposal && liveEstimate && (
+                <div className="rounded-xl border border-kado-dark/10 bg-kado-offwhite/80 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/55 mb-2">
+                    Indicative estimate
+                  </p>
+                  <p className="font-display text-2xl font-bold text-kado-dark">{formatPhp(liveEstimate.total)}</p>
+                  <p className="text-xs text-kado-dark/55 mt-1">Final quote confirmed after our team reviews your event.</p>
+                </div>
+              )}
 
               <div>
                 <Label>What are you planning?</Label>

@@ -15,6 +15,8 @@ export async function ensureOrderReadiness(): Promise<void> {
 
   // Best-effort: RPC may still be warming up in PostgREST schema cache — don't block.
   await orderingRepo.ensureMenuCatalog().catch(() => undefined);
+  await orderingRepo.ensureMixMatchCatalog().catch(() => undefined);
+  await orderingRepo.ensureDefaultTables().catch(() => undefined);
 
   await Promise.all([
     useBranchStore.getState().hydrateFromRemote(),
@@ -37,9 +39,12 @@ export function isOrderCatalogReady(): boolean {
 }
 
 /** Confirm product ids exist in Supabase before placing an order. */
-export async function assertProductsOrderable(productIds: string[]): Promise<void> {
-  if (!supabase || productIds.length === 0) return;
-  const unique = [...new Set(productIds)];
+export async function assertProductsOrderable(
+  productIds: string[],
+  extraIds: string[] = [],
+): Promise<void> {
+  if (!supabase || (productIds.length === 0 && extraIds.length === 0)) return;
+  const unique = [...new Set([...productIds, ...extraIds])];
 
   const check = async () => {
     const { data, error } = await supabase!
@@ -68,7 +73,9 @@ export function pruneStaleCartLines(): void {
   useCartStore.setState({
     items: useCartStore.getState().items.filter((line) => {
       if (line.itemType === 'merch') return merchIds.has(line.productId);
-      return coffeeIds.has(line.productId);
+      const idsOk = coffeeIds.has(line.productId);
+      const cookieOk = !line.mixMatchCookieId || coffeeIds.has(line.mixMatchCookieId);
+      return idsOk && cookieOk;
     }),
   });
 }
@@ -98,6 +105,7 @@ export async function assertTableForOrder(tableId: string, branchId: string): Pr
 
   if (await check()) return;
 
+  await orderingRepo.ensureDefaultTables().catch(() => undefined);
   await useTableStore.getState().hydrateFromRemote();
 
   if (!(await check())) {

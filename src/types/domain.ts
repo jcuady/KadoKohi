@@ -103,7 +103,9 @@ export interface OrderItem {
   id: string;
   productId: string;
   productNameSnapshot: string;
-  itemType?: 'coffee' | 'merch';
+  itemType?: 'coffee' | 'merch' | 'mix-match';
+  /** When set with a mix-match drink, server applies bundle discount + cookie line. */
+  mixMatchCookieId?: string;
   sizeId?: string;
   sizeLabelSnapshot?: string;
   milkId?: string;

@@ -48,6 +48,69 @@ function shortCode(): string {
   return `EST-${n}`;
 }
 
+/** Pure estimate builder — safe for render paths (no store writes). */
+export function buildBookingEstimate(input: BookingEstimateDraftInput): BookingEstimate {
+  const catalog = useBoothCatalogStore.getState();
+  const selectedPkg = catalog.packages.find((pkg) => pkg.id === input.packageId);
+  const durationHours = input.durationHours ?? selectedPkg?.durationHours ?? 1;
+  const lineItems: BookingEstimateLineItem[] = [];
+
+  if (selectedPkg) {
+    lineItems.push({
+      id: newId(),
+      sourceType: 'package',
+      sourceId: selectedPkg.id,
+      labelSnapshot: selectedPkg.name,
+      descriptionSnapshot: selectedPkg.description,
+      qty: 1,
+      unitPrice: selectedPkg.basePrice,
+      lineTotal: selectedPkg.basePrice,
+    });
+  }
+
+  for (const selection of input.addonSelections) {
+    const addon = catalog.addons.find((a) => a.id === selection.addonId);
+    if (!addon) continue;
+    const qty = computeAddonLine(
+      addon.pricingType,
+      selection.qty ?? 1,
+      input.guestCount,
+      durationHours,
+    );
+    lineItems.push({
+      id: newId(),
+      sourceType: 'addon',
+      sourceId: addon.id,
+      labelSnapshot: addon.name,
+      descriptionSnapshot: addon.description,
+      qty,
+      unitPrice: addon.price,
+      lineTotal: qty * addon.price,
+    });
+  }
+
+  const subtotal = lineItems.reduce((sum, line) => sum + line.lineTotal, 0);
+  const taxRate = input.taxRatePercent ?? 0;
+  const tax = taxRate > 0 ? Math.round((subtotal * taxRate) / 100) : 0;
+  const total = subtotal + tax;
+  const now = new Date().toISOString();
+
+  return {
+    id: newId(),
+    shortCode: shortCode(),
+    branchId: input.branchId,
+    lineItems,
+    subtotal,
+    tax,
+    total,
+    assumptions: input.assumptions,
+    notes: input.notes,
+    status: 'draft',
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export const useBookingEstimateStore = create<BookingEstimateStore>()(
   persist(
     (set, get) => ({
@@ -55,66 +118,7 @@ export const useBookingEstimateStore = create<BookingEstimateStore>()(
       draft: null,
 
       calculateEstimate: (input) => {
-        const catalog = useBoothCatalogStore.getState();
-        const selectedPkg = catalog.packages.find((pkg) => pkg.id === input.packageId);
-        const durationHours = input.durationHours ?? selectedPkg?.durationHours ?? 1;
-        const lineItems: BookingEstimateLineItem[] = [];
-
-        if (selectedPkg) {
-          lineItems.push({
-            id: newId(),
-            sourceType: 'package',
-            sourceId: selectedPkg.id,
-            labelSnapshot: selectedPkg.name,
-            descriptionSnapshot: selectedPkg.description,
-            qty: 1,
-            unitPrice: selectedPkg.basePrice,
-            lineTotal: selectedPkg.basePrice,
-          });
-        }
-
-        for (const selection of input.addonSelections) {
-          const addon = catalog.addons.find((a) => a.id === selection.addonId);
-          if (!addon) continue;
-          const qty = computeAddonLine(
-            addon.pricingType,
-            selection.qty ?? 1,
-            input.guestCount,
-            durationHours,
-          );
-          lineItems.push({
-            id: newId(),
-            sourceType: 'addon',
-            sourceId: addon.id,
-            labelSnapshot: addon.name,
-            descriptionSnapshot: addon.description,
-            qty,
-            unitPrice: addon.price,
-            lineTotal: qty * addon.price,
-          });
-        }
-
-        const subtotal = lineItems.reduce((sum, line) => sum + line.lineTotal, 0);
-        const taxRate = input.taxRatePercent ?? 0;
-        const tax = taxRate > 0 ? Math.round((subtotal * taxRate) / 100) : 0;
-        const total = subtotal + tax;
-        const now = new Date().toISOString();
-
-        const estimate: BookingEstimate = {
-          id: newId(),
-          shortCode: shortCode(),
-          branchId: input.branchId,
-          lineItems,
-          subtotal,
-          tax,
-          total,
-          assumptions: input.assumptions,
-          notes: input.notes,
-          status: 'draft',
-          createdAt: now,
-          updatedAt: now,
-        };
-
+        const estimate = buildBookingEstimate(input);
         set({ draft: estimate });
         return estimate;
       },

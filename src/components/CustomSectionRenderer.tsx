@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
@@ -233,6 +233,7 @@ function SectionCard({ section }: { section: CustomSection }) {
 }
 
 export default function CustomSectionRenderer() {
+  const hydrateFromRemote = useSectionStore((s) => s.hydrateFromRemote);
   const allSections = useSectionStore((s) => s.sections);
   const sections = useMemo(
     () =>
@@ -241,6 +242,10 @@ export default function CustomSectionRenderer() {
         .sort((a, b) => a.order - b.order),
     [allSections],
   );
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
 
   if (sections.length === 0) return null;
 

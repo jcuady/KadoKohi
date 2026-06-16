@@ -250,7 +250,10 @@ export default function AccountOrders() {
                         <OrderPaymentPanel
                           order={o}
                           onViewQr={() => setQrModalOrderId(o.id)}
-                          onUploadProof={(dataUrl) => updateOrderPaymentProof(o.id, dataUrl)}
+                          onUploadProof={async (dataUrl) => {
+                            const err = await updateOrderPaymentProof(o.id, dataUrl);
+                            if (err) throw new Error(err);
+                          }}
                         />
 
                         <div className="mt-4 -mx-1 overflow-x-auto">

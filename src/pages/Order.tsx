@@ -22,6 +22,7 @@ import {
   resolveMilkPriceDelta,
   showMilkChoice,
 } from '../lib/menuProductModifiers';
+import { ensureOrderReadiness } from '../lib/orderReadiness';
 
 type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
 
@@ -55,6 +56,10 @@ export default function Order() {
   const [guestOrderError, setGuestOrderError] = useState('');
   const [placed, setPlaced] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+
+  useEffect(() => {
+    void ensureOrderReadiness().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!activeBranches.length) return;

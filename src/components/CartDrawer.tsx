@@ -133,18 +133,24 @@ export default function CartDrawer() {
   };
 
   const isCustomer = user?.role === 'customer';
+  const hasMerch = items.some((i) => i.itemType === 'merch');
+  const hasCoffee = items.some(
+    (i) => i.itemType === 'coffee' || i.itemType === 'mix-match' || !i.itemType,
+  );
+  const hasMixedCart = hasMerch && hasCoffee;
   const canOrder =
-    items.length > 0 && !!branchId && isCustomer && orderHours.isOpen && !voucherBlocksCheckout;
+    items.length > 0 && !!branchId && isCustomer && orderHours.isOpen && !voucherBlocksCheckout && !hasMixedCart;
 
   const handleClose = () => {
     closeCart();
   };
 
-  const hasMerch = items.some((i) => i.itemType === 'merch');
-  const hasCoffee = items.some((i) => i.itemType === 'coffee' || !i.itemType);
-
   const placeOrder = async () => {
     if (!canOrder) return;
+    if (hasMixedCart) {
+      setCheckoutError('Please checkout coffee and merch in separate orders.');
+      return;
+    }
     setLoading(true);
     setCheckoutError('');
 
@@ -153,6 +159,7 @@ export default function CartDrawer() {
       productId: line.productId,
       productNameSnapshot: line.productNameSnapshot,
       itemType: line.itemType ?? 'coffee',
+      mixMatchCookieId: line.mixMatchCookieId,
       milkId: line.milkId,
       milkLabelSnapshot: line.milkLabelSnapshot,
       sizeId: line.sizeId,
@@ -606,6 +613,12 @@ export default function CartDrawer() {
                       <span className="text-kado-red">{formatPhp(totals.total)}</span>
                     </div>
                   </div>
+
+                  {hasMixedCart && (
+                    <p className="text-xs text-amber-800 font-medium text-center">
+                      Coffee and merch must be ordered separately. Remove one type to continue.
+                    </p>
+                  )}
 
                   {checkoutError && (
                     <p className="text-xs text-red-600 font-medium text-center">{checkoutError}</p>

@@ -26,6 +26,7 @@ import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/g
 import { Store } from 'lucide-react';
 import { qrPillClass } from '../lib/qrGuestTheme';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
+import MixMatchQrSection from '../components/mix-match/MixMatchQrSection';
 
 export default function OrderTakeout() {
   const user = useAuthStore((s) => s.user);
@@ -124,7 +125,8 @@ export default function OrderTakeout() {
         (l) =>
           l.productId === payload.productId &&
           l.milkId === payload.milkId &&
-          l.temperature === payload.temperature,
+          l.temperature === payload.temperature &&
+          l.mixMatchCookieId === payload.mixMatchCookieId,
       );
       if (match) {
         return prev.map((l) => (l.key === match.key ? { ...l, qty: l.qty + payload.qty } : l));
@@ -342,6 +344,8 @@ export default function OrderTakeout() {
             className="w-full rounded-xl border border-kado-dark/12 bg-[#FAF7F2] px-4 py-3 text-sm min-h-[48px] focus:outline-none focus:ring-2 focus:ring-kado-red/30 touch-manipulation"
           />
         </div>
+
+        <MixMatchQrSection categories={categories} products={products} onAdd={addLine} />
 
         {list.length === 0 ? (
           <p className="text-center text-sm text-kado-dark/50 py-16">

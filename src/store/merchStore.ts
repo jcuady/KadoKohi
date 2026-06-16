@@ -120,7 +120,11 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
         if (fromIndex < 0 || fromIndex >= sorted.length || toIndex < 0 || toIndex >= sorted.length) return;
         const [removed] = sorted.splice(fromIndex, 1);
         sorted.splice(toIndex, 0, removed);
-        set({ categories: sorted.map((c, i) => ({ ...c, order: i })) });
+        const updated = sorted.map((c, i) => ({ ...c, order: i }));
+        set({ categories: updated });
+        for (const c of updated) {
+          void orderingRepo.upsertMerchCategory(c);
+        }
       },
 
       reorderProductsInCategory: (categoryId, fromIndex, toIndex) => {
@@ -132,11 +136,14 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
         inCat.splice(toIndex, 0, removed);
         const orderMap = new Map(inCat.map((p, i) => [p.id, i]));
         const t = new Date().toISOString();
-        set({
-          products: get().products.map((p) =>
-            orderMap.has(p.id) ? { ...p, order: orderMap.get(p.id)!, updatedAt: t } : p,
-          ),
-        });
+        const products = get().products.map((p) =>
+          orderMap.has(p.id) ? { ...p, order: orderMap.get(p.id)!, updatedAt: t } : p,
+        );
+        set({ products });
+        for (const p of inCat) {
+          const row = products.find((x) => x.id === p.id);
+          if (row) void orderingRepo.upsertMerchProduct(row);
+        }
       },
 
       seed: () => set({ categories: SEED_MERCH_CATEGORIES, products: SEED_MERCH_PRODUCTS }),

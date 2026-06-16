@@ -5,6 +5,10 @@ import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBlogStore } from '../../store/blogStore';
+import { useLandingContentStore } from '../../store/landingContentStore';
+import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
+import { useSectionStore } from '../../store/sectionStore';
+import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -32,7 +36,13 @@ const refresh = {
   menu: debounce(() => void useMenuStore.getState().hydrateFromRemote(), 300),
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
-  settings: debounce(() => void useSettingsStore.getState().hydrateFromRemote(), 300),
+  settings: debounce(() => {
+    void useSettingsStore.getState().hydrateFromRemote();
+    void useLandingContentStore.getState().hydrateFromRemote();
+    void useBoothShowcaseStore.getState().hydrateFromRemote();
+    void useSectionStore.getState().hydrateFromRemote();
+    void useBoothCatalogStore.getState().hydrateFromRemote();
+  }, 300),
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
 };
 

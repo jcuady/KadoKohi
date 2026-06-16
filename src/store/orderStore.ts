@@ -36,7 +36,7 @@ export interface OrderStore {
   ) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
   updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
-  updateOrderPaymentProof: (id: string, proofImage: string) => void;
+  updateOrderPaymentProof: (id: string, proofImage: string) => Promise<string | null>;
   deleteOrder: (id: string) => Promise<string | null>;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
   ordersForBarista: (branchId: string) => Order[];
@@ -50,8 +50,9 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         try {
           const orders = await orderingRepo.fetchOrders();
           set({ orders: orders.map((o) => normalizeOrder(o)) });
-        } catch {
-          // Keep in-memory state when remote fetch fails.
+        } catch (err) {
+          console.error('orderStore.hydrateFromRemote failed', err);
+          throw err;
         }
       },
 
@@ -87,7 +88,12 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         let persisted = o;
         const place = async () => {
           await ensureOrderReadiness();
-          await assertProductsOrderable(o.items.map((line) => line.productId));
+          await assertProductsOrderable(
+            o.items.map((line) => line.productId),
+            o.items.flatMap((line) =>
+              line.mixMatchCookieId ? [line.mixMatchCookieId] : [],
+            ),
+          );
           return orderingRepo.placeOrder(o, { promoCode: input.promoCode });
         };
         try {
@@ -232,31 +238,37 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         return null;
       },
 
-      updateOrderPaymentProof: (id, proofImage) =>
+      updateOrderPaymentProof: async (id, proofImage) => {
+        const prev = get().orders.find((o) => o.id === id);
+        if (!prev) return 'Order not found.';
+
+        const paymentStatus: PaymentStatus =
+          prev.paymentMethod === 'gcash-qr' ? 'proof_submitted' : prev.paymentStatus;
+        const updated = normalizeOrder({
+          ...prev,
+          paymentProofImage: proofImage,
+          paymentProofUploadedAt: new Date().toISOString(),
+          paymentStatus,
+          updatedAt: new Date().toISOString(),
+        });
+
         set({
-          orders: get().orders.map((o) => {
-            if (o.id !== id) return o;
-            const paymentStatus: PaymentStatus =
-              o.paymentMethod === 'gcash-qr' ? 'proof_submitted' : o.paymentStatus;
-            const updated = normalizeOrder({
-              ...o,
-              paymentProofImage: proofImage,
-              paymentProofUploadedAt: new Date().toISOString(),
-              paymentStatus,
-              updatedAt: new Date().toISOString(),
-            });
-            void orderingRepo.patchOrder(id, {
-              paymentProofImage: updated.paymentProofImage,
-              paymentProofUploadedAt: updated.paymentProofUploadedAt,
-              paymentStatus: updated.paymentStatus,
-            });
-            // Tell the branch a proof is awaiting verification.
-            if (paymentStatus === 'proof_submitted') {
-              notifyBaristasProofSubmitted(updated);
-            }
-            return updated;
-          }),
-        }),
+          orders: get().orders.map((o) => (o.id === id ? updated : o)),
+        });
+
+        try {
+          await orderingRepo.submitGuestPaymentProof(id, proofImage);
+          if (paymentStatus === 'proof_submitted') {
+            notifyBaristasProofSubmitted(updated);
+          }
+          return null;
+        } catch (err) {
+          set({
+            orders: get().orders.map((o) => (o.id === id ? prev : o)),
+          });
+          return err instanceof Error ? err.message : 'Failed to upload payment proof.';
+        }
+      },
 
       ordersForBranch: (branchId, channels) => {
         const list = get().orders.filter((o) => o.branchId === branchId);

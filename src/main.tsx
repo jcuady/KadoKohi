@@ -18,6 +18,9 @@ import { useBoothShowcaseStore } from './store/boothShowcaseStore';
 import { useLandingContentStore } from './store/landingContentStore';
 import { useLoyaltyStore } from './store/loyaltyStore';
 import { useBlogStore } from './store/blogStore';
+import { useSectionStore } from './store/sectionStore';
+import { useBoothCatalogStore } from './store/boothCatalogStore';
+import { ensurePublishedCms } from './lib/cmsBootstrap';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
 import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
@@ -39,23 +42,32 @@ function Bootstrap() {
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
   const hydrateLoyalty = useLoyaltyStore((s) => s.hydrateFromRemote);
   const hydrateBlog = useBlogStore((s) => s.hydrateFromRemote);
+  const hydrateSections = useSectionStore((s) => s.hydrateFromRemote);
+  const hydrateBoothCatalog = useBoothCatalogStore((s) => s.hydrateFromRemote);
 
   useEffect(() => {
     void recoverStaleAuthSession().then(() => initAuth());
-    void hydrateBranches();
-    void hydrateMenu();
-    void hydrateTables();
-    void hydrateOrders();
-    void hydrateSettings();
-    void hydrateUsers();
-    void hydrateMerch();
-    void hydrateEvents();
-    void hydrateEventForms();
-    void hydrateBookings();
-    void hydrateBoothPage();
-    void hydrateLanding();
-    void hydrateLoyalty();
-    void hydrateBlog();
+    void (async () => {
+      await ensurePublishedCms();
+      await Promise.all([
+        hydrateBranches(),
+        hydrateMenu(),
+        hydrateTables(),
+        hydrateOrders(),
+        hydrateSettings(),
+        hydrateUsers(),
+        hydrateMerch(),
+        hydrateEvents(),
+        hydrateEventForms(),
+        hydrateBookings(),
+        hydrateBoothPage(),
+        hydrateLanding(),
+        hydrateLoyalty(),
+        hydrateBlog(),
+        hydrateSections(),
+        hydrateBoothCatalog(),
+      ]);
+    })();
 
     // Keep auth state in sync with Supabase session events (token refresh,
     // sign-out from another tab, OAuth callback, email confirmation, etc.).

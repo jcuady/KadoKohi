@@ -412,6 +412,28 @@ export const orderingRepo = {
       products: Number(row.products ?? 0),
     };
   },
+
+  async ensureMixMatchCatalog(): Promise<{ cookies: number; mixMatchDrinks: number }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_ensure_mix_match_catalog');
+    if (error) {
+      const msg = error.message ?? '';
+      if (/could not find the function/i.test(msg) || /schema cache/i.test(msg) || error.code === 'PGRST202') {
+        const { data: cookies } = await supabase
+          .from('kk_products')
+          .select('id')
+          .eq('category_id', 'cat_pastries');
+        return { cookies: (cookies ?? []).length, mixMatchDrinks: 0 };
+      }
+      throw error;
+    }
+    const row = (data ?? {}) as { cookies?: number; mix_match_drinks?: number };
+    return {
+      cookies: Number(row.cookies ?? 0),
+      mixMatchDrinks: Number(row.mix_match_drinks ?? 0),
+    };
+  },
+
   async ensureDefaultTables(): Promise<{ tables: number }> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase.rpc('kk_ensure_default_tables');
@@ -839,6 +861,7 @@ export const orderingRepo = {
         product_id: it.productId,
         product_name_snapshot: it.productNameSnapshot,
         item_type: it.itemType ?? 'coffee',
+        mix_match_cookie_id: it.mixMatchCookieId ?? null,
         size_id: it.sizeId ?? null,
         size_label_snapshot: it.sizeLabelSnapshot ?? null,
         milk_id: it.milkId ?? null,
@@ -853,7 +876,7 @@ export const orderingRepo = {
 
   /** Server-validated order insert (replaces direct table INSERT). */
   async placeOrder(o: Order, opts?: { promoCode?: string }): Promise<Order> {
-    if (!supabase) return o;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase.rpc('kk_place_order', {
       payload: orderingRepo.buildPlaceOrderPayload(o, opts?.promoCode),
     });
@@ -1162,5 +1185,55 @@ export const orderingRepo = {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_content: content });
     if (error) throw error;
+  },
+  async fetchHomeSections(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('home_sections')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
+    return (data as { home_sections?: unknown }).home_sections ?? null;
+  },
+  async upsertHomeSections(sections: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .update({ home_sections: sections })
+      .eq('id', true)
+      .select('id')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
+  },
+  async fetchBoothCatalog(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('booth_catalog')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
+    return (data as { booth_catalog?: unknown }).booth_catalog ?? null;
+  },
+  async upsertBoothCatalog(catalog: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .update({ booth_catalog: catalog })
+      .eq('id', true)
+      .select('id')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
   },
 };

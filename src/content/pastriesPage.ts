@@ -7,7 +7,7 @@ export const PASTRIES_PAGE = {
     eyebrow: 'Kukidō x Kado Kohi',
     headlineTop: 'Mix',
     headlineBottom: '& Match',
-    subhead: 'Choose one Kado Kohi drink and one Kukidō handcrafted cookie — 10% off your bundle.',
+    subhead: 'Choose a Kado Kohi drink, a Kukidō cookie, or both — 10% off when you pair them.',
     badge: '10% off on your bundle',
     badgeNote: 'Bundle discount applied at checkout',
   },
@@ -51,7 +51,7 @@ export const PASTRIES_PAGE = {
   ],
   cta: {
     title: 'Build your bundle',
-    body: 'Select a drink and a cookie below — your 10% bundle discount is applied when you add to cart.',
+    body: 'Pick a drink, a cookie, or both — bundle discount applies when you add a pair.',
   },
 } as const;
 

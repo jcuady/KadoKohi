@@ -11,9 +11,10 @@ export interface CartLineVariant {
 
 export interface CartLine {
   key: string;
-  itemType: 'coffee' | 'merch';
+  itemType: 'coffee' | 'merch' | 'mix-match';
   productId: string;
   productNameSnapshot: string;
+  mixMatchCookieId?: string;
   qty: number;
   milkId?: string;
   milkLabelSnapshot?: string;

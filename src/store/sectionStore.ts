@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { newId } from '../lib/id';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import type { CustomSection, SectionType } from '../types/domain';
 
 export type { CustomSection, SectionType };
 
-const SEED_SECTIONS: CustomSection[] = [
+export const SEED_SECTIONS: CustomSection[] = [
   {
     id: 'sec_faq',
     page: 'home',
@@ -28,8 +28,18 @@ const SEED_SECTIONS: CustomSection[] = [
   },
 ];
 
+function normalizeSections(raw: unknown): CustomSection[] {
+  if (!Array.isArray(raw)) return SEED_SECTIONS;
+  return raw.filter((row): row is CustomSection => row && typeof row === 'object' && 'id' in row && 'type' in row);
+}
+
 export interface SectionStore {
   sections: CustomSection[];
+  saveError: string | null;
+  saving: boolean;
+  hydrated: boolean;
+  hydrateFromRemote: () => Promise<void>;
+  saveToRemote: () => Promise<void>;
   addSection: (input: Omit<CustomSection, 'id'> & { id?: string }) => void;
   updateSection: (id: string, patch: Partial<CustomSection>) => void;
   removeSection: (id: string) => void;
@@ -37,29 +47,51 @@ export interface SectionStore {
   seed: () => void;
 }
 
-export const useSectionStore = create<SectionStore>()(
-  persist(
-    (set, get) => ({
-      sections: SEED_SECTIONS,
+export const useSectionStore = create<SectionStore>()((set, get) => ({
+  sections: SEED_SECTIONS,
+  saveError: null,
+  saving: false,
+  hydrated: false,
 
-      addSection: (input) => {
-        const s: CustomSection = { id: input.id ?? newId(), ...input } as CustomSection;
-        if (!s.id) s.id = newId();
-        set({ sections: [...get().sections, s] });
-      },
+  hydrateFromRemote: async () => {
+    try {
+      const remote = await orderingRepo.fetchHomeSections();
+      if (Array.isArray(remote) && remote.length > 0) {
+        set({ sections: normalizeSections(remote), saveError: null, hydrated: true });
+      } else {
+        set({ hydrated: true });
+      }
+    } catch {
+      set({ hydrated: true });
+    }
+  },
 
-      updateSection: (id, patch) =>
-        set({ sections: get().sections.map((s) => (s.id === id ? { ...s, ...patch } : s)) }),
+  saveToRemote: async () => {
+    set({ saving: true, saveError: null });
+    try {
+      await orderingRepo.upsertHomeSections(get().sections);
+      set({ saving: false, saveError: null });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not save custom sections.';
+      set({ saving: false, saveError: message });
+      throw err;
+    }
+  },
 
-      removeSection: (id) => set({ sections: get().sections.filter((s) => s.id !== id) }),
+  addSection: (input) => {
+    const s: CustomSection = { id: input.id ?? newId(), ...input } as CustomSection;
+    set({ sections: [...get().sections, s] });
+  },
 
-      visibleSections: (page) =>
-        get()
-          .sections.filter((s) => s.page === page && s.visible)
-          .sort((a, b) => a.order - b.order),
+  updateSection: (id, patch) =>
+    set({ sections: get().sections.map((s) => (s.id === id ? { ...s, ...patch } : s)) }),
 
-      seed: () => set({ sections: SEED_SECTIONS }),
-    }),
-    { name: 'kado-sections-v1' },
-  ),
-);
+  removeSection: (id) => set({ sections: get().sections.filter((s) => s.id !== id) }),
+
+  visibleSections: (page) =>
+    get()
+      .sections.filter((s) => s.page === page && s.visible)
+      .sort((a, b) => a.order - b.order),
+
+  seed: () => set({ sections: SEED_SECTIONS, saveError: null }),
+}));

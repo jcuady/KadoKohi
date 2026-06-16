@@ -4,6 +4,7 @@ import { CalendarHeart, Users, Clock3, BadgeCheck, ArrowDown } from 'lucide-reac
 import BookingSteps from '../components/booking/BookingSteps';
 import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
+import { useBoothCatalogStore } from '../store/boothCatalogStore';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import CmsStyledText from '../components/cms/CmsStyledText';
 import { boothChipKey } from '../lib/boothPageContent';
@@ -14,11 +15,13 @@ export default function BookBooth() {
   const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
   const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
   const hydrateFromRemote = useBoothShowcaseStore((s) => s.hydrateFromRemote);
+  const hydrateCatalog = useBoothCatalogStore((s) => s.hydrateFromRemote);
   const [, setWizardStage] = useState<BookingWizardStage>('form');
 
   useEffect(() => {
     void hydrateFromRemote();
-  }, [hydrateFromRemote]);
+    void hydrateCatalog();
+  }, [hydrateFromRemote, hydrateCatalog]);
 
   const showcaseMedia = useMemo(
     () =>

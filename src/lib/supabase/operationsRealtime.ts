@@ -16,6 +16,8 @@ import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBlogStore } from '../../store/blogStore';
+import { useSectionStore } from '../../store/sectionStore';
+import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -60,6 +62,8 @@ const refresh = {
     void useSettingsStore.getState().hydrateFromRemote();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
+    void useSectionStore.getState().hydrateFromRemote();
+    void useBoothCatalogStore.getState().hydrateFromRemote();
   }, 300),
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
@@ -140,6 +144,9 @@ export async function refreshOperationsData(): Promise<void> {
     useEventFormStore.getState().hydrateFromRemote(),
     useBoothBookingStore.getState().hydrateFromRemote(),
     useLandingContentStore.getState().hydrateFromRemote(),
+    useBoothShowcaseStore.getState().hydrateFromRemote(),
+    useSectionStore.getState().hydrateFromRemote(),
+    useBoothCatalogStore.getState().hydrateFromRemote(),
     useBlogStore.getState().hydrateFromRemote(),
   ]);
 }
