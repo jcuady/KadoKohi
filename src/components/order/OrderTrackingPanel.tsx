@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle, Wallet } from 'lucide-react';
 import type { OrderStatus } from '../../types/domain';
 import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
-import { canGuestCancelOrder } from '../../lib/orderStatus';
+import { canGuestCancelOrder, canGuestSwitchToCash } from '../../lib/orderStatus';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
@@ -78,6 +78,10 @@ export default function OrderTrackingPanel({
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const openCancelConfirm = () => {
+    setCancelError('');
+    setCancelOpen(true);
+  };
 
   const gcash = tracked?.paymentMethod === 'gcash-qr';
   const steps =
@@ -100,6 +104,27 @@ export default function OrderTrackingPanel({
     canGuestCancelOrder({ status: tracked.status, channel: tracked.channel }) &&
     !isCancelled &&
     !isCompleted;
+  const canSwitchToCash =
+    tracked != null &&
+    canGuestSwitchToCash({
+      status: tracked.status,
+      channel: tracked.channel,
+      paymentMethod: tracked.paymentMethod,
+      paymentStatus,
+    }) &&
+    !isCancelled &&
+    !isCompleted;
+
+  const handleSwitchToCash = async () => {
+    await orderingRepo.switchGuestOrderToCash(orderId);
+    void broadcastGuestOrderUpdate(orderId, {
+      status: tracked?.status ?? 'pending',
+      paymentStatus: 'paid',
+      updatedAt: new Date().toISOString(),
+      shortCode: tracked?.shortCode,
+    });
+    await refresh();
+  };
 
   const handleCancel = async () => {
     setCancelBusy(true);
@@ -183,6 +208,9 @@ export default function OrderTrackingPanel({
             paymentStatus={paymentStatus}
             onViewQr={() => setGcashModalOpen(true)}
             onProofSubmitted={() => void refresh()}
+            canSwitchToCash={canSwitchToCash}
+            onSwitchToCash={handleSwitchToCash}
+            onRequestCancel={canCancel ? openCancelConfirm : undefined}
           />
         )}
 
@@ -205,41 +233,46 @@ export default function OrderTrackingPanel({
                 const rank = ORDER_RANK[step.status];
                 const done = isCompleted || currentRank > rank;
                 const active = !isCompleted && currentRank === rank;
-                const StepIcon = done ? Check : step.Icon;
                 const last = i === steps.length - 1;
                 return (
-                  <li key={step.status} className="flex gap-3">
+                  <li key={step.status} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3">
                     <div className="flex flex-col items-center">
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                           done
                             ? 'bg-emerald-500 text-white'
                             : active
-                              ? 'bg-kado-red text-white ring-4 ring-kado-red/15'
+                              ? 'bg-kado-red text-white shadow-[0_0_0_4px_rgba(158,24,29,0.12)]'
                               : 'bg-kado-dark/8 text-kado-dark/35'
                         }`}
                       >
-                        <StepIcon className="w-4 h-4" />
+                        {done ? (
+                          <Check className="w-4 h-4 shrink-0 stroke-[3]" aria-hidden />
+                        ) : (
+                          <step.Icon className="w-4 h-4 shrink-0" aria-hidden />
+                        )}
                       </div>
                       {!last && (
                         <div
-                          className={`w-0.5 flex-1 min-h-[20px] my-0.5 ${
+                          className={`w-0.5 flex-1 min-h-[1.25rem] my-0.5 ${
                             done ? 'bg-emerald-500/50' : 'bg-kado-dark/10'
                           }`}
                         />
                       )}
                     </div>
-                    <div className="pb-4 pt-1.5">
+                    <div className={`min-w-0 ${last ? 'pb-0' : 'pb-4'} pt-1.5`}>
                       <p
-                        className={`text-sm font-bold leading-tight ${
+                        className={`text-sm font-bold leading-snug ${
                           active ? 'text-kado-red' : done ? 'text-kado-dark' : 'text-kado-dark/40'
                         }`}
                       >
                         {step.label}
                       </p>
                       {active && (
-                        <p className="text-[11px] text-kado-dark/45 mt-0.5">
-                          {awaitingGcash && step.status === 'pending' ? 'Awaiting GCash payment…' : 'In progress…'}
+                        <p className="text-[11px] text-kado-dark/45 mt-0.5 leading-relaxed">
+                          {awaitingGcash && step.status === 'pending'
+                            ? 'Awaiting GCash payment…'
+                            : 'In progress…'}
                         </p>
                       )}
                     </div>
@@ -290,19 +323,21 @@ export default function OrderTrackingPanel({
         {canCancel && (
           <div className="mb-3">
             {!cancelOpen ? (
-              <button
-                type="button"
-                onClick={() => setCancelOpen(true)}
-                className="w-full min-h-[44px] rounded-2xl border border-red-200 bg-white text-red-700 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors touch-manipulation"
-              >
-                <XCircle className="w-4 h-4" />
-                Cancel order
-              </button>
+              !gcash ? (
+                <button
+                  type="button"
+                  onClick={openCancelConfirm}
+                  className="w-full min-h-[44px] rounded-2xl border border-red-200 bg-white text-red-700 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors touch-manipulation"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel order
+                </button>
+              ) : null
             ) : (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
                 <p className="text-sm font-bold text-red-900 mb-1">Cancel this order?</p>
                 <p className="text-xs text-red-800/80 mb-3 leading-relaxed">
-                  You can cancel until our team accepts your order. This cannot be undone.
+                  You can cancel while your order is still at &ldquo;Order received.&rdquo; This cannot be undone.
                 </p>
                 {cancelError ? (
                   <p className="text-xs font-semibold text-red-700 mb-3">{cancelError}</p>

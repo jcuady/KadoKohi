@@ -32,21 +32,9 @@ type Props = {
   ctaLabel?: string;
 };
 
-function ChipCheck({ visible, tone }: { visible: boolean; tone: 'default' | 'hot' | 'iced' }) {
-  if (!visible) return null;
-  const isIced = tone === 'iced';
-  return (
-    <span
-      className={`absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-        isIced
-          ? 'border-[var(--qr-chip-iced-text)] bg-[var(--qr-chip-iced-text)] text-[var(--qr-chip-iced-bg)]'
-          : 'border-[var(--qr-chip-hot-text)] bg-[var(--qr-chip-hot-text)] text-[var(--qr-chip-hot-bg)]'
-      }`}
-      aria-hidden
-    >
-      <Check className="h-3 w-3 stroke-[3]" />
-    </span>
-  );
+function ChipSelectedMark({ active }: { active: boolean }) {
+  if (!active) return null;
+  return <Check className="h-3.5 w-3.5 shrink-0 stroke-[3]" aria-hidden />;
 }
 
 export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Add to table order' }: Props) {
@@ -159,13 +147,16 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                             onClick={() => setMilkId(m.id)}
                             className={qrChipClass(active, 'default')}
                           >
-                            <ChipCheck visible={active} tone="default" />
-                            {m.label}
-                            {m.priceDelta > 0 && (
-                              <span className={`ml-1 ${active ? 'opacity-90' : 'opacity-70'}`}>
-                                +{formatPhp(m.priceDelta)}
-                              </span>
-                            )}
+                            <ChipSelectedMark active={active} />
+                            <span>
+                              {m.label}
+                              {m.priceDelta > 0 && (
+                                <span className={active ? 'opacity-90' : 'opacity-70'}>
+                                  {' '}
+                                  +{formatPhp(m.priceDelta)}
+                                </span>
+                              )}
+                            </span>
                           </button>
                         );
                       })}
@@ -189,7 +180,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                             onClick={() => setTemp(t)}
                             className={`${qrChipClass(active, t)} uppercase tracking-wider`}
                           >
-                            <ChipCheck visible={active} tone={t} />
+                            <ChipSelectedMark active={active} />
                             {t === 'hot' ? 'Hot' : 'Iced'}
                           </button>
                         );

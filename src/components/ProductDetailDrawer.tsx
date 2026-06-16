@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn, Check } from 'lucide-react';
 import type { Product, MerchProduct } from '../types/domain';
 import { useCartStore, type CartLineVariant } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
@@ -277,18 +277,28 @@ export default function ProductDetailDrawer({
                   <div className="mb-2">
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-dark/50 mb-3">Milk Option</p>
                     <div className="flex flex-wrap gap-2">
-                      {getOrderableMilks(coffeeProduct).map((m) => (
+                      {getOrderableMilks(coffeeProduct).map((m) => {
+                        const active = selectedMilkId === m.id;
+                        return (
                         <button key={m.id} type="button" onClick={() => setSelectedMilkId(m.id)}
-                          className={`px-5 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all duration-200 ${
-                            selectedMilkId === m.id
+                          className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
+                            active
                               ? 'bg-kado-red text-white border-kado-red shadow-md shadow-kado-red/20'
                               : 'bg-white border-kado-dark/10 text-kado-dark/65 hover:border-kado-red/50 hover:text-kado-red'
                           }`}
                         >
-                          {m.label}
-                          {m.priceDelta > 0 && <span className="ml-1.5 font-bold text-[10px] opacity-80">+₱{m.priceDelta}</span>}
+                          {active ? <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" aria-hidden /> : null}
+                          <span>
+                            {m.label}
+                            {m.priceDelta > 0 && (
+                              <span className={`font-bold text-[10px] ${active ? 'opacity-90' : 'opacity-80'}`}>
+                                {' '}+{formatPhp(m.priceDelta)}
+                              </span>
+                            )}
+                          </span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

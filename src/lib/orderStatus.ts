@@ -193,3 +193,14 @@ export function defaultFieldsForNewOrder(paymentMethod?: PaymentMethod): {
 export function canGuestCancelOrder(order: Pick<Order, 'status' | 'channel'>): boolean {
   return (order.channel === 'dine-in' || order.channel === 'takeout') && order.status === 'pending';
 }
+
+/** Switch GCash → pay at counter while the order is still pending (order received only). */
+export function canGuestSwitchToCash(
+  order: Pick<Order, 'status' | 'channel' | 'paymentMethod' | 'paymentStatus'>,
+): boolean {
+  return (
+    canGuestCancelOrder(order) &&
+    order.paymentMethod === 'gcash-qr' &&
+    order.paymentStatus !== 'paid'
+  );
+}

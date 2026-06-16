@@ -920,6 +920,17 @@ export const orderingRepo = {
       throw error;
     }
   },
+  async switchGuestOrderToCash(orderId: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_guest_switch_to_cash', { p_order_id: orderId });
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'PGRST202') {
+        throw new Error('Pay-at-counter is not available yet. Please ask staff for help.');
+      }
+      throw error;
+    }
+  },
   async deleteOrder(id: string): Promise<void> {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.rpc('kk_admin_delete_order', { p_order_id: id });

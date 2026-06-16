@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   LayoutDashboard,
   MapPin,
@@ -23,6 +23,9 @@ import {
   Sun,
   Moon,
   ExternalLink,
+  ChevronDown,
+  Layers,
+  PenLine,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
@@ -32,34 +35,138 @@ import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/
 import { useBranchStore } from '../store/branchStore';
 import AdminKioskBranchModal from '../components/admin/AdminKioskBranchModal';
 
-const SIDEBAR_W = 'w-56'; /* 14rem — keep in sync with main margin */
+const SIDEBAR_W = 'w-56';
 const MAIN_OFFSET = 'ml-56';
 
-const nav = [
-  { to: '/admin', label: 'Overview', end: true, icon: LayoutDashboard },
-  { to: '/admin/branches', label: 'Branches', icon: MapPin },
-  { to: '/admin/pos', label: 'POS', icon: ShoppingCart },
-  { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/admin/menu', label: 'Menu', icon: Coffee },
-  { to: '/admin/booth-bookings', label: 'Booth Bookings', icon: CalendarClock },
-  { to: '/admin/booth-catalog', label: 'Booth Catalog', icon: CalendarClock },
-  { to: '/admin/booth-content', label: 'Booth Content', icon: CalendarClock },
-  { to: '/admin/merch', label: 'Merch', icon: Package },
-  { to: '/admin/loyalty', label: 'Loyalty', icon: Gift },
-  { to: '/admin/stamps', label: 'Stamps', icon: Stamp },
-  { to: '/admin/vouchers', label: 'Vouchers', icon: Tag },
-  { to: '/admin/events', label: 'Kado Events', icon: CalendarDays },
-  { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
-  { to: '/admin/landing', label: 'Homepage', icon: Image },
-  { to: '/admin/blog', label: 'Blog', icon: Newspaper },
-  { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
+type NavIcon = ComponentType<{ className?: string; strokeWidth?: number }>;
+
+type NavLinkItem = {
+  type: 'link';
+  to: string;
+  label: string;
+  icon: NavIcon;
+  end?: boolean;
+};
+
+type NavGroupItem = {
+  type: 'group';
+  id: string;
+  label: string;
+  icon: NavIcon;
+  children: Omit<NavLinkItem, 'type'>[];
+};
+
+type NavEntry = NavLinkItem | NavGroupItem;
+
+const NAV: NavEntry[] = [
+  { type: 'link', to: '/admin', label: 'Overview', end: true, icon: LayoutDashboard },
+  {
+    type: 'group',
+    id: 'operations',
+    label: 'Operations',
+    icon: ShoppingCart,
+    children: [
+      { to: '/admin/pos', label: 'POS', icon: ShoppingCart },
+      { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
+      { to: '/admin/stamps', label: 'Stamps', icon: Stamp },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'catalog',
+    label: 'Catalog',
+    icon: Coffee,
+    children: [
+      { to: '/admin/menu', label: 'Menu', icon: Coffee },
+      { to: '/admin/merch', label: 'Merch', icon: Package },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'booth',
+    label: 'Coffee booth',
+    icon: CalendarClock,
+    children: [
+      { to: '/admin/booth-bookings', label: 'Bookings', icon: CalendarClock },
+      { to: '/admin/booth-catalog', label: 'Catalog', icon: Layers },
+      { to: '/admin/booth-content', label: 'Page content', icon: PenLine },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'loyalty',
+    label: 'Loyalty',
+    icon: Gift,
+    children: [
+      { to: '/admin/loyalty', label: 'Program', icon: Gift },
+      { to: '/admin/vouchers', label: 'Vouchers', icon: Tag },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'events',
+    label: 'Events & QR',
+    icon: CalendarDays,
+    children: [
+      { to: '/admin/events', label: 'Kado Events', icon: CalendarDays },
+      { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'website',
+    label: 'Website',
+    icon: Image,
+    children: [
+      { to: '/admin/landing', label: 'Homepage', icon: Image },
+      { to: '/admin/blog', label: 'Blog', icon: Newspaper },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'administration',
+    label: 'Administration',
+    icon: Settings,
+    children: [
+      { to: '/admin/branches', label: 'Branches', icon: MapPin },
+      { to: '/admin/users', label: 'Users', icon: Users },
+      { to: '/admin/audit', label: 'Audit log', icon: ScrollText },
+      { to: '/admin/settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
 
-const KIOSK_NAV = { label: 'KIOSK', icon: Monitor };
+const KIOSK_NAV = { label: 'Kiosk', icon: Monitor };
 
-/** Shared footer control — same visual weight; sign-out uses hover danger */
+function pathMatchesNav(to: string, pathname: string, end?: boolean) {
+  if (end) return pathname === to;
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+function groupIsActive(group: NavGroupItem, pathname: string) {
+  return group.children.some((child) => pathMatchesNav(child.to, pathname, child.end));
+}
+
+function linkClass(isActive: boolean, nested = false) {
+  return [
+    'flex items-center gap-2.5 rounded-lg font-semibold transition-colors duration-150',
+    nested ? 'px-3 py-1.5 text-[12px]' : 'px-3 py-2 text-[13px]',
+    isActive
+      ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
+      : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+  ].join(' ');
+}
+
+function groupHeaderClass(isActive: boolean, isOpen: boolean) {
+  return [
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+    isActive
+      ? 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text)]'
+      : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+    isOpen && !isActive ? 'text-[var(--color-dash-text)]' : '',
+  ].join(' ');
+}
+
 function sidebarFooterBtnClass() {
   return [
     'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium',
@@ -78,12 +185,39 @@ export default function AdminLayout() {
   const setAdminPosBranchId = useBranchStore((s) => s.setAdminPosBranchId);
   const [kioskBranchOpen, setKioskBranchOpen] = useState(false);
 
-  // Ensure live sync is active whenever an admin session is in this shell.
+  const defaultOpenGroups = useMemo(() => {
+    const open: Record<string, boolean> = {};
+    for (const entry of NAV) {
+      if (entry.type === 'group' && groupIsActive(entry, location.pathname)) {
+        open[entry.id] = true;
+      }
+    }
+    return open;
+  }, [location.pathname]);
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(defaultOpenGroups);
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const entry of NAV) {
+        if (entry.type === 'group' && groupIsActive(entry, location.pathname)) {
+          next[entry.id] = true;
+        }
+      }
+      return next;
+    });
+  }, [location.pathname]);
+
   useEffect(() => {
     if (user?.role !== 'admin') return;
     startOperationsRealtime();
     void refreshOperationsData();
   }, [user?.id, user?.role]);
+
+  const toggleGroup = (id: string) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const handleLogout = () => {
     logout();
@@ -92,7 +226,6 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-dash-bg)', color: 'var(--color-dash-text)' }}>
-      {/* Fixed sidebar — stays in view; nav scrolls independently */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-screen ${SIDEBAR_W} shrink-0 flex-col border-r shadow-[2px_0_24px_rgba(0,0,0,0.04)]`}
         style={{ background: 'var(--color-dash-sidebar)', borderColor: 'var(--color-dash-border)' }}
@@ -126,38 +259,89 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain px-2 py-3">
-          {nav.map(({ to, label, end, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                [
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
-                  isActive
-                    ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
-                    : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
-                ].join(' ')
-              }
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 py-3">
+          {NAV.map((entry) => {
+            if (entry.type === 'link') {
+              const Icon = entry.icon;
+              return (
+                <NavLink
+                  key={entry.to}
+                  to={entry.to}
+                  end={entry.end}
+                  className={({ isActive }) => linkClass(isActive)}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+                  <span className="truncate">{entry.label}</span>
+                </NavLink>
+              );
+            }
+
+            const active = groupIsActive(entry, location.pathname);
+            const isOpen = openGroups[entry.id] ?? false;
+            const GroupIcon = entry.icon;
+
+            return (
+              <div key={entry.id} className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(entry.id)}
+                  className={groupHeaderClass(active, isOpen)}
+                  aria-expanded={isOpen}
+                >
+                  <GroupIcon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+                  <span className="flex-1 truncate text-left">{entry.label}</span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {isOpen ? (
+                  <div
+                    className="ml-3 space-y-0.5 border-l pl-2"
+                    style={{ borderColor: 'var(--color-dash-border)' }}
+                  >
+                    {entry.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      return (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          end={child.end}
+                          className={({ isActive }) => linkClass(isActive, true)}
+                        >
+                          <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} />
+                          <span className="truncate">{child.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+
+          <div className="pt-2">
+            <p
+              className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--color-dash-text-muted)' }}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
-              <span className="truncate">{label}</span>
-            </NavLink>
-          ))}
-          <button
-            type="button"
-            onClick={() => setKioskBranchOpen(true)}
-            className={[
-              'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
-              location.pathname === '/barista/kiosk'
-                ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
-                : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
-            ].join(' ')}
-          >
-            <KIOSK_NAV.icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
-            <span className="truncate">{KIOSK_NAV.label}</span>
-          </button>
+              In-store
+            </p>
+            <button
+              type="button"
+              onClick={() => setKioskBranchOpen(true)}
+              className={[
+                'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+                location.pathname === '/barista/kiosk'
+                  ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
+                  : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+              ].join(' ')}
+            >
+              <KIOSK_NAV.icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+              <span className="truncate">{KIOSK_NAV.label}</span>
+            </button>
+          </div>
         </nav>
 
         <div
@@ -190,7 +374,6 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main column — offset for fixed sidebar */}
       <div className={`flex min-h-screen min-w-0 flex-1 flex-col ${MAIN_OFFSET}`}>
         <header
           className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b bg-[var(--color-dash-surface)]/95 px-6 backdrop-blur-sm"

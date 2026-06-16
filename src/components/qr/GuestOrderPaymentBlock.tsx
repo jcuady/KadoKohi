@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { QrCode, ImageIcon, ExternalLink } from 'lucide-react';
+import { QrCode, ImageIcon, ExternalLink, Banknote, XCircle } from 'lucide-react';
 import type { Order, OrderChannel, PaymentMethod } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { isGcashOrder } from '../../lib/orderStatus';
@@ -20,6 +20,9 @@ type Props = {
   proofPreview?: string | null;
   onProofSubmitted?: () => void;
   onViewQr: () => void;
+  canSwitchToCash?: boolean;
+  onSwitchToCash?: () => Promise<void>;
+  onRequestCancel?: () => void;
 };
 
 const actionBtn =
@@ -37,10 +40,14 @@ export default function GuestOrderPaymentBlock({
   proofPreview,
   onProofSubmitted,
   onViewQr,
+  canSwitchToCash = false,
+  onSwitchToCash,
+  onRequestCancel,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [localProof, setLocalProof] = useState<string | null>(proofPreview ?? null);
   const proofRef = localProof ?? proofPreview;
   const { url: proofDisplayUrl } = usePaymentProofDisplayUrl(proofRef);
@@ -183,6 +190,44 @@ export default function GuestOrderPaymentBlock({
       )}
 
       {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+
+      {(canSwitchToCash || onRequestCancel) && paymentStatus !== 'paid' && (
+        <div className="border-t border-kado-dark/8 pt-3 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-kado-dark/45">
+            Changed your mind?
+          </p>
+          {canSwitchToCash && onSwitchToCash ? (
+            <button
+              type="button"
+              disabled={switching || uploading}
+              onClick={() => {
+                setError(null);
+                setSwitching(true);
+                void onSwitchToCash()
+                  .catch((err) => {
+                    setError(err instanceof Error ? err.message : 'Could not switch to cash.');
+                  })
+                  .finally(() => setSwitching(false));
+              }}
+              className="w-full min-h-[44px] rounded-xl border border-kado-dark/15 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
+            >
+              <Banknote className="w-4 h-4 shrink-0" />
+              {switching ? 'Switching…' : 'Pay with cash at counter'}
+            </button>
+          ) : null}
+          {onRequestCancel ? (
+            <button
+              type="button"
+              disabled={switching || uploading}
+              onClick={onRequestCancel}
+              className="w-full min-h-[40px] rounded-xl text-red-700 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors touch-manipulation disabled:opacity-50"
+            >
+              <XCircle className="w-4 h-4 shrink-0" />
+              Cancel order
+            </button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
