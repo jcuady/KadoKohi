@@ -1134,11 +1134,15 @@ export const orderingRepo = {
     return (data as { landing_content?: unknown }).landing_content ?? null;
   },
   async upsertLandingContent(content: unknown) {
-    if (!supabase) return;
-    const { error } = await supabase
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
       .from('kk_app_settings')
-      .upsert({ id: true, landing_content: content });
+      .update({ landing_content: content })
+      .eq('id', true)
+      .select('id')
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
   },
   async fetchBoothPageContent(): Promise<unknown | null> {
     if (!supabase) return null;
