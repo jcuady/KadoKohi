@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, ExternalLink } from 'lucide-react';
 import {
   useLandingContentStore,
   useLandingDraftContent,
@@ -7,26 +7,24 @@ import {
 } from '../../store/landingContentStore';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
-import LandingPreviewFrame from '../../components/admin/LandingPreviewFrame';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import LandingCmsSectionCard from '../../components/admin/LandingCmsSectionCard';
+import CmsReorderList from '../../components/admin/CmsReorderList';
 import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
-import { LANDING_CMS_TABS, isLandingTabId, type LandingTabId } from '../../lib/landingCmsTabs';
-import { LANDING_SECTION_IDS } from '../../lib/landingSectionAnchors';
+import { LANDING_CMS_TABS } from '../../lib/landingCmsTabs';
 import CmsTextField from '../../components/admin/CmsTextField';
 import type { CmsText } from '../../lib/cmsTypography';
 import { collabPastries, findPastriesCategory } from '../../lib/pastriesCategory';
+import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const HERO_CARD_SLOTS = 4;
 const TRUSTED_BRAND_SLOTS = 5;
 const SPONSOR_SLOTS = 8;
-const TAB_STORAGE_KEY = 'kado-landing-cms-tab';
 
 export default function AdminLandingContent() {
   const content = useLandingDraftContent();
   const initDraft = useLandingContentStore((s) => s.initDraft);
-  const isPreviewMode = useLandingContentStore((s) => s.isPreviewMode);
   const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
   const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
@@ -42,6 +40,7 @@ export default function AdminLandingContent() {
   const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
   const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
+  const reorderOrderingSteps = useLandingContentStore((s) => s.reorderOrderingSteps);
   const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
@@ -59,23 +58,15 @@ export default function AdminLandingContent() {
   const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<LandingTabId>(() => {
-    if (typeof window === 'undefined') return 'hero';
-    const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
-    return saved && isLandingTabId(saved) ? saved : 'hero';
-  });
-
-  const activeTabMeta = LANDING_CMS_TABS.find((tab) => tab.id === activeTab) ?? LANDING_CMS_TABS[0];
-  const previewSectionId = LANDING_SECTION_IDS[activeTab];
 
   useEffect(() => {
     initDraft();
-    return () => useLandingContentStore.getState().setPreviewMode(false);
   }, [initDraft]);
 
-  useEffect(() => {
-    sessionStorage.setItem(TAB_STORAGE_KEY, activeTab);
-  }, [activeTab]);
+  const openFullPreview = () => {
+    const { draft, published } = useLandingContentStore.getState();
+    writeLandingPreviewDraft(draft ?? published);
+  };
 
   const onPickImage = async (onDone: (dataUrl: string) => void, fileList: FileList | null) => {
     const file = fileList?.[0];
@@ -97,56 +88,42 @@ export default function AdminLandingContent() {
       <div className="mb-6">
         <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Homepage content</h1>
         <p className="dash-muted text-sm mt-1">
-          Use the tabs below to edit each homepage section. Layout order is fixed — change text and images only, then
-          preview or publish. Product names/prices come from Menu; event details from Kado Events admin; branch rows
-          from Branches.
+          Each section shows a live preview first. Click Edit to change text and images inline or in the panel below.
+          Layout order is fixed. Product, event, and branch data still come from their admin pages.
         </p>
         {uploadError ? <p className="mt-2 text-sm text-red-600 font-medium">{uploadError}</p> : null}
       </div>
 
-      <LandingEditorToolbar />
-      <LandingPreviewFrame active={isPreviewMode} scrollToSectionId={previewSectionId} />
+      <LandingEditorToolbar onOpenFullPreview={openFullPreview} />
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          if (isLandingTabId(value)) setActiveTab(value);
-        }}
-        className="mt-6 space-y-4"
+      <nav
+        aria-label="Jump to section"
+        className="mt-4 flex flex-wrap gap-2 rounded-2xl border dash-border dash-card p-3"
       >
-        <div className="sticky top-0 z-20 -mx-1 rounded-2xl border dash-border dash-card px-2 py-2 sm:px-3 sm:py-3 backdrop-blur-md">
-          <label className="mb-2 block sm:hidden">
-            <span className="sr-only">Jump to section</span>
-            <select
-              value={activeTab}
-              onChange={(e) => {
-                if (isLandingTabId(e.target.value)) setActiveTab(e.target.value);
-              }}
-              className="w-full rounded-xl dash-input border px-3 py-2.5 text-sm font-semibold"
-            >
-              {LANDING_CMS_TABS.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <TabsList className="scrollbar-hide hidden h-auto w-full min-h-10 flex-nowrap items-stretch justify-start gap-1 overflow-x-auto p-1 sm:flex sm:flex-wrap">
-            {LANDING_CMS_TABS.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="min-h-[36px] shrink-0 whitespace-nowrap px-2.5 py-2 text-[9px] sm:px-3 sm:text-[10px]"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <p className="mt-2 px-1 text-xs dash-muted leading-relaxed">{activeTabMeta.hint}</p>
-        </div>
+        {LANDING_CMS_TABS.map((tab) => (
+          <a
+            key={tab.id}
+            href={`#cms-section-${tab.id}`}
+            className="rounded-lg border dash-border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 hover:text-kado-red"
+          >
+            {tab.label}
+          </a>
+        ))}
+        <a
+          href="/?preview=1"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={openFullPreview}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Full page
+        </a>
+      </nav>
 
-        {activeTab === 'hero' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Hero">
+      <div className="mt-6 space-y-6">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[0]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero — Labels & CTAs</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -258,10 +235,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'story' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Brand story">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[1]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Brand story (SEO intro)</h2>
           <p className="text-xs dash-muted mb-4">
@@ -347,10 +324,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'menu-seo' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Menu SEO">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[2]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Menu SEO pillars</h2>
           <p className="text-xs dash-muted mb-4">
@@ -430,10 +407,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'featured' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Featured products">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[3]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -534,10 +511,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'ordering' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="How to order">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[4]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -554,10 +531,13 @@ export default function AdminLandingContent() {
               onChange={(v) => updateOrdering({ subtitleMobile: v })}
             />
           </div>
-          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Carousel steps (4 fixed)</p>
-          <div className="space-y-4">
-            {content.ordering.steps.map((step, si) => (
-              <article key={step.id} className="rounded-xl border dash-border p-4 space-y-3">
+          <p className="text-xs font-bold uppercase dash-muted mt-6 mb-3">Carousel steps (4 fixed) — drag to reorder</p>
+          <CmsReorderList
+            items={content.ordering.steps}
+            onReorder={reorderOrderingSteps}
+            keyFn={(step) => step.id}
+            renderItem={(step, si) => (
+              <div className="space-y-3">
                 <p className="text-xs font-bold dash-muted">Step {si + 1}</p>
                 <div className="grid md:grid-cols-2 gap-3">
                   <CmsField
@@ -574,15 +554,15 @@ export default function AdminLandingContent() {
                   onChange={(v) => updateOrderingStep(si, { description: v })}
                   multiline
                 />
-              </article>
-            ))}
-          </div>
+              </div>
+            )}
+          />
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'schedule' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Mix and Match">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[5]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match (homepage)</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -650,10 +630,10 @@ export default function AdminLandingContent() {
           </p>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'events' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Kado Events">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[6]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -679,10 +659,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'branches' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Branches">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -704,10 +684,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'testimonials' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Testimonials">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -789,10 +769,10 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
+        </LandingCmsSectionCard>
 
-        {activeTab === 'kado-circle' ? (
-          <div className="space-y-6" role="tabpanel" aria-label="Kado Circle">
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[9]} onUploadError={setUploadError}>
+          <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -891,8 +871,8 @@ export default function AdminLandingContent() {
           </div>
         </section>
           </div>
-        ) : null}
-      </Tabs>
+        </LandingCmsSectionCard>
+      </div>
     </div>
   );
 }

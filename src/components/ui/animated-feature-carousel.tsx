@@ -532,9 +532,11 @@ export type KadoOrderingCarouselCopy = OrderingCopy;
 export function KadoOrderingCarousel({
   className,
   copy,
+  cmsEditMode: _cmsEditMode,
 }: {
   className?: string;
   copy?: KadoOrderingCarouselCopy;
+  cmsEditMode?: boolean;
 }) {
   const INTERVAL = 6000;
   const steps = buildSteps(copy?.steps);

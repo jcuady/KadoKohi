@@ -84,8 +84,9 @@ export default function OrderTrackingPanel({
   };
 
   const gcash = tracked?.paymentMethod === 'gcash-qr';
+  const flowChannel = (tracked?.channel === 'takeout' ? 'takeout' : channel) as Channel;
   const steps =
-    channel === 'takeout'
+    flowChannel === 'takeout'
       ? gcash
         ? GCASH_TAKEOUT_STEPS
         : TAKEOUT_STEPS
@@ -152,7 +153,7 @@ export default function OrderTrackingPanel({
       ? 'Order complete'
       : awaitingGcash
         ? 'Complete GCash payment'
-        : channel === 'takeout'
+        : flowChannel === 'takeout'
           ? 'Takeout order placed!'
           : 'Order sent!';
 
@@ -160,7 +161,7 @@ export default function OrderTrackingPanel({
     ? 'This order was cancelled. Please ask our staff if you need help.'
     : awaitingGcash
       ? 'Scan the GCash QR, pay the total, then upload your receipt below.'
-      : channel === 'takeout'
+      : flowChannel === 'takeout'
         ? <>We&apos;ll call out <strong>{contextLabel}</strong> when it&apos;s ready for pickup.</>
         : <>Your dine-in order for <strong>{contextLabel}</strong> is with the barista.</>;
 
@@ -203,7 +204,7 @@ export default function OrderTrackingPanel({
             orderId={orderId}
             shortCode={tracked.shortCode}
             total={tracked.total}
-            channel={channel}
+            channel={flowChannel}
             paymentMethod={tracked.paymentMethod}
             paymentStatus={paymentStatus}
             onViewQr={() => setGcashModalOpen(true)}

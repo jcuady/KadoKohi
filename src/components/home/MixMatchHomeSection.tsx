@@ -21,9 +21,10 @@ import { cmsTextPlain } from '../../lib/cmsTypography';
 
 interface Props {
   copy?: MixMatchSectionCopy;
+  cmsEditMode?: boolean;
 }
 
-export default function MixMatchHomeSection({ copy }: Props) {
+export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }: Props) {
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
   const hydrateFromRemote = useMenuStore((s) => s.hydrateFromRemote);

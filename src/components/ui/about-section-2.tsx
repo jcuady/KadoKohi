@@ -60,12 +60,12 @@ const linkClass = 'font-semibold text-kado-red underline-offset-4 hover:underlin
 const pillarCard =
   'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[260px] lg:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
 
-type Props = { copy: BrandStoryCopy };
+type Props = { copy: BrandStoryCopy; cmsEditMode?: boolean };
 
 /**
  * Homepage brand story — editorial pillars + crawlable local SEO copy.
  */
-export default function AboutSection2({ copy }: Props) {
+export default function AboutSection2({ copy, cmsEditMode: _cmsEditMode }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
   const { rating, reviewCount } = KADO_GOOGLE_LISTING;
 

@@ -40,6 +40,8 @@ type Props = {
   onPlaceOrder: () => void;
   placeDisabled: boolean;
   placeButtonLabel: string;
+  /** Stable accessible name for place-order (e2e + screen readers). */
+  placeOrderAriaLabel: string;
   emptyCartTitle: string;
   beforePlaceButton?: ReactNode;
 };
@@ -62,6 +64,7 @@ export default function QrStickyCart({
   onPlaceOrder,
   placeDisabled,
   placeButtonLabel,
+  placeOrderAriaLabel,
   emptyCartTitle,
   beforePlaceButton,
 }: Props) {
@@ -237,6 +240,7 @@ export default function QrStickyCart({
                 type="button"
                 onClick={onPlaceOrder}
                 disabled={placeDisabled}
+                aria-label={placeOrderAriaLabel}
                 className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream text-xs font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors touch-manipulation"
               >
                 {submitting ? 'Sending…' : placeButtonLabel}

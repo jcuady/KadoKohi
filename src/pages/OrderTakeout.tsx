@@ -63,6 +63,7 @@ export default function OrderTakeout() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
   const [trackedLabel, setTrackedLabel] = useState('');
   const [orderError, setOrderError] = useState('');
@@ -90,6 +91,7 @@ export default function OrderTakeout() {
       setOrderError(formatOrderError(err));
     } finally {
       setSyncing(false);
+      setBootstrapped(true);
     }
   }, []);
 
@@ -214,7 +216,7 @@ export default function OrderTakeout() {
 
   const mainPaddingBottom = guestOrderMainPadding(cartExpanded, cart.length > 0);
 
-  if (!menuReady) {
+  if (!menuReady || !bootstrapped) {
     return (
       <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
@@ -432,6 +434,7 @@ export default function OrderTakeout() {
           (cartExpanded && cartTotals.lines.length === 0)
         }
         placeButtonLabel={placeLabel}
+        placeOrderAriaLabel="Place takeout order"
         emptyCartTitle="Your takeout bag"
         beforePlaceButton={
           cart.length > 0 && !pickupName.trim() ? (

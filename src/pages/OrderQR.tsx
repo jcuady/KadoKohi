@@ -64,6 +64,7 @@ export default function OrderQR() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function OrderQR() {
       setOrderError(formatOrderError(err));
     } finally {
       setSyncing(false);
+      setBootstrapped(true);
     }
   }, []);
 
@@ -210,7 +212,7 @@ export default function OrderQR() {
 
   const mainPaddingBottom = guestOrderMainPadding(cartExpanded, cart.length > 0);
 
-  if (!tablesHydrated || !menuReady) {
+  if (!tablesHydrated || !menuReady || !bootstrapped) {
     return (
       <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
@@ -423,6 +425,7 @@ export default function OrderQR() {
           (cartExpanded && cartTotals.lines.length === 0)
         }
         placeButtonLabel={placeLabel}
+        placeOrderAriaLabel="Place dine-in order"
         emptyCartTitle="Your table cart"
       />
 
@@ -430,6 +433,7 @@ export default function OrderQR() {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAdd={addLine}
+        ctaLabel="Add to order"
       />
     </div>
   );

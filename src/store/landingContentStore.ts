@@ -212,6 +212,7 @@ interface LandingContentStore {
   updateSchedule: (patch: Partial<ScheduleCopy>) => void;
   updateOrdering: (patch: Partial<OrderingCopy>) => void;
   updateOrderingStep: (index: number, patch: Partial<OrderingStepCopy>) => void;
+  reorderOrderingSteps: (fromIndex: number, toIndex: number) => void;
   updateBranchesStrip: (patch: Partial<BranchesStripCopy>) => void;
   updateKadoCircle: (patch: Partial<KadoCircleCopy>) => void;
   seed: () => void;
@@ -946,6 +947,15 @@ export const useLandingContentStore = create<LandingContentStore>()(
           const steps = [...d.ordering.steps];
           if (!steps[index]) return d;
           steps[index] = { ...steps[index], ...patch, id: steps[index].id };
+          return { ...d, ordering: { ...d.ordering, steps: clampOrderingSteps(steps) } };
+        }),
+
+      reorderOrderingSteps: (fromIndex, toIndex) =>
+        patchDraft(set, get, (d) => {
+          const steps = [...d.ordering.steps];
+          const [moved] = steps.splice(fromIndex, 1);
+          if (!moved) return d;
+          steps.splice(toIndex, 0, moved);
           return { ...d, ordering: { ...d.ordering, steps: clampOrderingSteps(steps) } };
         }),
 

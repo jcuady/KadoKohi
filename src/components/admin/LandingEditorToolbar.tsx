@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Eye, RotateCcw, Save } from 'lucide-react';
+import { ExternalLink, RotateCcw, Save } from 'lucide-react';
 import { useLandingContentStore } from '../../store/landingContentStore';
 
-export default function LandingEditorToolbar() {
+type Props = {
+  onOpenFullPreview?: () => void;
+};
+
+export default function LandingEditorToolbar({ onOpenFullPreview }: Props) {
   const published = useLandingContentStore((s) => s.published);
   const draft = useLandingContentStore((s) => s.draft);
-  const isPreviewMode = useLandingContentStore((s) => s.isPreviewMode);
   const publishDraft = useLandingContentStore((s) => s.publishDraft);
   const publishError = useLandingContentStore((s) => s.publishError);
   const clearPublishError = useLandingContentStore((s) => s.clearPublishError);
   const discardDraft = useLandingContentStore((s) => s.discardDraft);
-  const setPreviewMode = useLandingContentStore((s) => s.setPreviewMode);
   const initDraft = useLandingContentStore((s) => s.initDraft);
   const [publishing, setPublishing] = useState(false);
 
@@ -20,18 +22,11 @@ export default function LandingEditorToolbar() {
     return JSON.stringify(draft) !== JSON.stringify(published);
   }, [draft, published]);
 
-  const startPreview = () => {
-    if (!draft) initDraft();
-    setPreviewMode(true);
-  };
-
-  const stopPreview = () => setPreviewMode(false);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="sticky top-0 z-20 mb-6 rounded-2xl border dash-border dash-card p-4 shadow-sm"
+      className="sticky top-0 z-20 mb-2 rounded-2xl border dash-border dash-card p-4 shadow-sm"
     >
       <motion.div
         className="flex flex-col lg:flex-row lg:items-center gap-4"
@@ -39,9 +34,9 @@ export default function LandingEditorToolbar() {
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold dash-heading">Homepage content</p>
+          <p className="text-sm font-bold dash-heading">Homepage CMS</p>
           <p className="text-xs dash-muted mt-0.5">
-            Layout is fixed. Edit text and images only, then preview (Zustand draft) or publish to go live.
+            Preview each section, click Edit for inline text/images or the options panel. Publish when ready.
           </p>
           {publishError ? (
             <p className="text-xs text-red-700 font-semibold mt-1" role="alert">
@@ -54,21 +49,18 @@ export default function LandingEditorToolbar() {
           )}
         </div>
         <motion.div className="flex flex-wrap gap-2" layout>
-          <button
-            type="button"
-            onClick={() => {
-              if (isPreviewMode) stopPreview();
-              else startPreview();
-            }}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-colors ${
-              isPreviewMode
-                ? 'bg-amber-500 border-amber-600 text-kado-dark'
-                : 'dash-card-alt dash-border hover:border-kado-red/40'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            {isPreviewMode ? 'Preview on' : 'Preview'}
-          </button>
+          {onOpenFullPreview ? (
+            <a
+              href="/?preview=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onOpenFullPreview}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider border dash-border hover:border-kado-red/40"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Full page
+            </a>
+          ) : null}
           <button
             type="button"
             onClick={() => {

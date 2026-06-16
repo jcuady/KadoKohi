@@ -24,6 +24,7 @@ type KadoCircleCTAProps = {
   className?: string;
   /** When provided (e.g. from landing content store), overrides default copy and sponsor list. */
   copy?: KadoCircleCopy;
+  cmsEditMode?: boolean;
 };
 
 /**

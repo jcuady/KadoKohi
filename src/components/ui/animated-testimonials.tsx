@@ -34,6 +34,7 @@ export interface AnimatedTestimonialsProps {
   trustedCompaniesTitle?: CmsText
   googleListing?: GoogleReviewsListing
   className?: string
+  cmsEditMode?: boolean
 }
 
 function formatReviewText(text: string) {

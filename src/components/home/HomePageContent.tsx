@@ -25,14 +25,23 @@ import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
 import type { EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import type { LandingTabId } from '../../lib/landingCmsTabs';
 
 type Props = {
   landing: LandingContentState;
   /** Shown when rendering admin preview iframe */
   previewBanner?: boolean;
+  /** Render only one homepage section (admin CMS preview). */
+  sectionOnly?: LandingTabId;
+  /** Enables inline text/image editing in the preview. */
+  cmsEditMode?: boolean;
 };
 
-export default function HomePageContent({ landing, previewBanner }: Props) {
+function showSection(id: LandingTabId, sectionOnly?: LandingTabId) {
+  return !sectionOnly || sectionOnly === id;
+}
+
+export default function HomePageContent({ landing, previewBanner, sectionOnly, cmsEditMode }: Props) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -49,49 +58,70 @@ export default function HomePageContent({ landing, previewBanner }: Props) {
           Preview mode — unpublished changes only
         </motion.div>
       ) : null}
-      <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} />
-      <div id="landing-story">
-        <HomeSeoIntro copy={landing.storySeo} />
-      </div>
-      <div id="landing-menu-seo">
-        <HomePageSeoSection copy={landing.menuSeo} />
-      </div>
-      <div id="landing-featured">
-        <FeaturedCoffeesSection copy={landing.featured} />
-      </div>
-      <div id="landing-ordering">
-        <KadoOrderingCarousel copy={landing.ordering} />
-      </div>
-      <div id="landing-schedule">
-        <MixMatchHomeSection copy={landing.schedule} />
-      </div>
-      <div id="landing-events">
-        <EventsSection copy={landing.events} />
-      </div>
-      <div id="landing-testimonials">
-        <AnimatedTestimonials
-          badgeText={landing.testimonials.badge}
-          title={landing.testimonials.title}
-          subtitle={landing.testimonials.subtitle}
-          trustedCompaniesTitle={landing.testimonials.trustedTitle}
-          trustedCompanies={landing.trustedBrands}
-          testimonials={landing.testimonialItems}
-          googleListing={KADO_GOOGLE_LISTING}
-        />
-      </div>
-      <div id="landing-branches">
-        <BranchesStrip copy={landing.branchesStrip} />
-      </div>
-      <div id="landing-kado-circle">
-        <KadoCircleCTA copy={landing.kadoCircle} />
-      </div>
+      {showSection('hero', sectionOnly) ? (
+        <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} cmsEditMode={cmsEditMode} />
+      ) : null}
+      {showSection('story', sectionOnly) ? (
+        <div id="landing-story">
+          <HomeSeoIntro copy={landing.storySeo} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('menu-seo', sectionOnly) ? (
+        <div id="landing-menu-seo">
+          <HomePageSeoSection copy={landing.menuSeo} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('featured', sectionOnly) ? (
+        <div id="landing-featured">
+          <FeaturedCoffeesSection copy={landing.featured} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('ordering', sectionOnly) ? (
+        <div id="landing-ordering">
+          <KadoOrderingCarousel copy={landing.ordering} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('schedule', sectionOnly) ? (
+        <div id="landing-schedule">
+          <MixMatchHomeSection copy={landing.schedule} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('events', sectionOnly) ? (
+        <div id="landing-events">
+          <EventsSection copy={landing.events} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('testimonials', sectionOnly) ? (
+        <div id="landing-testimonials">
+          <AnimatedTestimonials
+            badgeText={landing.testimonials.badge}
+            title={landing.testimonials.title}
+            subtitle={landing.testimonials.subtitle}
+            trustedCompaniesTitle={landing.testimonials.trustedTitle}
+            trustedCompanies={landing.trustedBrands}
+            testimonials={landing.testimonialItems}
+            googleListing={KADO_GOOGLE_LISTING}
+            cmsEditMode={cmsEditMode}
+          />
+        </div>
+      ) : null}
+      {showSection('branches', sectionOnly) ? (
+        <div id="landing-branches">
+          <BranchesStrip copy={landing.branchesStrip} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('kado-circle', sectionOnly) ? (
+        <div id="landing-kado-circle">
+          <KadoCircleCTA copy={landing.kadoCircle} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
     </motion.div>
   );
 }
 
 const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1200&auto=format&fit=crop';
 
-function EventsSection({ copy }: { copy: EventsCopy }) {
+function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; cmsEditMode?: boolean }) {
   const events = useEventStore((s) => s.events);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
 
@@ -273,7 +303,7 @@ function EventsSection({ copy }: { copy: EventsCopy }) {
   );
 }
 
-function BranchesStrip({ copy }: { copy: BranchesStripCopy }) {
+function BranchesStrip({ copy, cmsEditMode: _cmsEditMode }: { copy: BranchesStripCopy; cmsEditMode?: boolean }) {
   const branches = useBranchStore((s) => s.branches);
 
   const fmt = (hours: { day: string; open: string; close: string }[]) => {

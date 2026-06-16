@@ -3,25 +3,30 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { HomeHeroSlide } from '../../data/homeHeroMedia';
-import type { HeroChrome } from '../../store/landingContentStore';
+import { useLandingContentStore, type HeroChrome } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
 
 interface Props {
   slides: HomeHeroSlide[];
   chrome?: HeroChrome;
+  cmsEditMode?: boolean;
 }
 
-export default function HomeHeroSlider({ slides, chrome }: Props) {
+export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
   const safeSlides = useMemo(() => slides, [slides]);
   const [index, setIndex] = useState(0);
+  const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
+  const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
+  const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
 
   useEffect(() => {
-    if (safeSlides.length < 2) return;
+    if (cmsEditMode || safeSlides.length < 2) return;
     const id = window.setInterval(() => {
       setIndex((n) => (n + 1) % safeSlides.length);
     }, 5500);
     return () => window.clearInterval(id);
-  }, [safeSlides.length]);
+  }, [safeSlides.length, cmsEditMode]);
 
   useEffect(() => {
     setIndex(0);
@@ -31,6 +36,22 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
 
   const current = safeSlides[index] ?? safeSlides[0];
   const c = chrome;
+  const slideIndex = index;
+  const cms = cmsEditMode;
+
+  const textProps = (
+    field: string,
+    label: string,
+    value: Parameters<typeof CmsStyledText>[0]['value'],
+    onChange: (v: Parameters<typeof CmsStyledText>[0]['value']) => void,
+  ) =>
+    cms
+      ? {
+          cmsField: field,
+          cmsLabel: label,
+          onCmsChange: onChange,
+        }
+      : {};
 
   return (
     <section
@@ -38,16 +59,28 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
       className="relative h-[calc(100svh-3.5rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
     >
       <AnimatePresence mode="wait">
-        <motion.img
-          key={current.id}
-          src={current.image}
-          alt={current.imageAlt}
-          className="absolute inset-0 h-full w-full object-cover"
-          initial={{ opacity: 0.32, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0.2, scale: 1.02 }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
-        />
+        {cms ? (
+          <div key={current.id} className="absolute inset-0">
+            <CmsEditableImage
+              cmsField={`hero.slide.${slideIndex}.image`}
+              src={current.image}
+              alt={current.imageAlt}
+              className="h-full w-full"
+              onImageChange={(url) => updateHeroSlide(slideIndex, { image: url })}
+            />
+          </div>
+        ) : (
+          <motion.img
+            key={current.id}
+            src={current.image}
+            alt={current.imageAlt}
+            className="absolute inset-0 h-full w-full object-cover"
+            initial={{ opacity: 0.32, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0.2, scale: 1.02 }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+          />
+        )}
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/88 via-[#141414]/60 to-[#141414]/38" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/18" />
@@ -59,12 +92,21 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
             as="p"
             className="kado-label mb-3 drop-shadow-md"
             defaultColorClass="text-kado-cream/85"
+            {...textProps('hero.chrome.locationBadge', 'Location badge', c?.locationBadge ?? 'Kado Kohi · Marikina', (v) =>
+              updateHeroChrome({ locationBadge: v }),
+            )}
           />
           <CmsStyledText
             value={c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
             as="h1"
             className="kado-h1 kado-h1-hero drop-shadow-lg"
             defaultColorClass="text-white"
+            {...textProps(
+              'hero.chrome.mainHeadline',
+              'Main headline',
+              c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me',
+              (v) => updateHeroChrome({ mainHeadline: v }),
+            )}
           />
           <CmsStyledText
             value={current.title}
@@ -72,6 +114,9 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
             className="mt-3 drop-shadow-md"
             defaultSizeClass="kado-h2"
             defaultColorClass="text-kado-cream/95"
+            {...textProps(`hero.slide.${slideIndex}.title`, 'Slide title', current.title, (v) =>
+              updateHeroSlide(slideIndex, { title: v }),
+            )}
           />
           <CmsStyledText
             value={current.subtitle}
@@ -79,6 +124,9 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
             className="mt-4 sm:mt-5 max-w-2xl md:text-base leading-relaxed drop-shadow-md"
             defaultSizeClass="kado-body"
             defaultColorClass="text-kado-cream/90"
+            {...textProps(`hero.slide.${slideIndex}.subtitle`, 'Slide subtitle', current.subtitle, (v) =>
+              updateHeroSlide(slideIndex, { subtitle: v }),
+            )}
           />
 
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
@@ -86,22 +134,44 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
               to={c?.primaryCtaPath ?? '/menu'}
               className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-sm bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-kado-red-hover shadow-lg shadow-kado-red/30"
             >
-              <CmsStyledText value={c?.primaryCtaLabel ?? 'Explore Menu'} as="span" /> <ArrowRight className="h-4 w-4 shrink-0" />
+              <CmsStyledText
+                value={c?.primaryCtaLabel ?? 'Explore Menu'}
+                as="span"
+                {...textProps('hero.chrome.primaryCtaLabel', 'Primary CTA', c?.primaryCtaLabel ?? 'Explore Menu', (v) =>
+                  updateHeroChrome({ primaryCtaLabel: v }),
+                )}
+              />{' '}
+              <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>
             <Link
               to={c?.secondaryCtaPath ?? '/merch'}
               className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:border-white/80 hover:bg-white/10"
             >
-              <CmsStyledText value={c?.secondaryCtaLabel ?? 'Shop Merch'} as="span" />
+              <CmsStyledText
+                value={c?.secondaryCtaLabel ?? 'Shop Merch'}
+                as="span"
+                {...textProps(
+                  'hero.chrome.secondaryCtaLabel',
+                  'Secondary CTA',
+                  c?.secondaryCtaLabel ?? 'Shop Merch',
+                  (v) => updateHeroChrome({ secondaryCtaLabel: v }),
+                )}
+              />
             </Link>
           </div>
-          
+
           <div className="mt-8 hidden md:block">
             <CmsStyledText
               value={c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
               as="p"
               className="inline-flex rounded-full border border-white/20 bg-black/35 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md"
               defaultColorClass="text-kado-cream/85"
+              {...textProps(
+                'hero.chrome.imageCredit',
+                'Image credit',
+                c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina',
+                (v) => updateHeroChrome({ imageCredit: v }),
+              )}
             />
           </div>
         </div>
@@ -116,21 +186,64 @@ export default function HomeHeroSlider({ slides, chrome }: Props) {
               className="overflow-hidden rounded-xl border border-white/15 bg-black/35 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
             >
               <div className="aspect-[3/4] w-full overflow-hidden">
-                <img
-                  src={card.src}
-                  alt={card.alt}
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
-                  loading="lazy"
-                />
+                {cms ? (
+                  <CmsEditableImage
+                    cmsField={`hero.slide.${slideIndex}.card.${i}.src`}
+                    src={card.src}
+                    alt={card.alt}
+                    className="h-full w-full"
+                    onImageChange={(url) => updateHeroCard(slideIndex, i, { src: url })}
+                  />
+                ) : (
+                  <img
+                    src={card.src}
+                    alt={card.alt}
+                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="lazy"
+                  />
+                )}
               </div>
               <div className="flex items-center justify-between px-2.5 py-2 border-t border-white/10">
-                <CmsStyledText value={card.title} as="p" className="truncate text-[9px] font-bold uppercase tracking-[0.12em]" defaultColorClass="text-kado-cream/85" />
-                <CmsStyledText value={card.tag} as="span" className="shrink-0 ml-1 text-[8px] font-bold uppercase tracking-wider bg-kado-red/15 px-1.5 py-0.5 rounded-sm" defaultColorClass="text-kado-red/80" />
+                <CmsStyledText
+                  value={card.title}
+                  as="p"
+                  className="truncate text-[9px] font-bold uppercase tracking-[0.12em]"
+                  defaultColorClass="text-kado-cream/85"
+                  {...textProps(`hero.slide.${slideIndex}.card.${i}.title`, `Card ${i + 1} title`, card.title, (v) =>
+                    updateHeroCard(slideIndex, i, { title: v }),
+                  )}
+                />
+                <CmsStyledText
+                  value={card.tag}
+                  as="span"
+                  className="shrink-0 ml-1 text-[8px] font-bold uppercase tracking-wider bg-kado-red/15 px-1.5 py-0.5 rounded-sm"
+                  defaultColorClass="text-kado-red/80"
+                  {...textProps(`hero.slide.${slideIndex}.card.${i}.tag`, `Card ${i + 1} tag`, card.tag, (v) =>
+                    updateHeroCard(slideIndex, i, { tag: v }),
+                  )}
+                />
               </div>
             </motion.article>
           ))}
         </div>
       </div>
+
+      {cms ? (
+        <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-2">
+          {safeSlides.map((slide, i) => (
+            <button
+              key={slide.id}
+              type="button"
+              onClick={() => setIndex(i)}
+              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                i === index ? 'bg-white text-kado-dark' : 'bg-black/50 text-white border border-white/30'
+              }`}
+            >
+              Slide {i + 1}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="absolute bottom-5 left-5 right-5 z-20 flex flex-row items-end justify-between md:hidden">
         <div className="flex flex-col gap-3">

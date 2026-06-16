@@ -137,9 +137,9 @@ function DrinkCard({
   );
 }
 
-type Props = { copy: FeaturedCopy };
+type Props = { copy: FeaturedCopy; cmsEditMode?: boolean };
 
-export default function FeaturedCoffeesSection({ copy }: Props) {
+export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
