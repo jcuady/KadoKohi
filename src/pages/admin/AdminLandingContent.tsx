@@ -25,6 +25,7 @@ const SPONSOR_SLOTS = 8;
 export default function AdminLandingContent() {
   const content = useLandingDraftContent();
   const initDraft = useLandingContentStore((s) => s.initDraft);
+  const hydrateFromRemote = useLandingContentStore((s) => s.hydrateFromRemote);
   const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
   const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
@@ -60,8 +61,14 @@ export default function AdminLandingContent() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
-    initDraft();
-  }, [initDraft]);
+    let cancelled = false;
+    void hydrateFromRemote().finally(() => {
+      if (!cancelled) initDraft();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrateFromRemote, initDraft]);
 
   const openFullPreview = () => {
     const { draft, published } = useLandingContentStore.getState();

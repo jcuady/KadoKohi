@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { ExternalLink, RotateCcw, Save } from 'lucide-react';
+import { ExternalLink, RotateCcw, Save, Undo2, Redo2 } from 'lucide-react';
 import { useLandingContentStore } from '../../store/landingContentStore';
 
 type Props = {
@@ -15,7 +15,12 @@ export default function LandingEditorToolbar({ onOpenFullPreview }: Props) {
   const clearPublishError = useLandingContentStore((s) => s.clearPublishError);
   const discardDraft = useLandingContentStore((s) => s.discardDraft);
   const initDraft = useLandingContentStore((s) => s.initDraft);
+  const undoDraft = useLandingContentStore((s) => s.undoDraft);
+  const redoDraft = useLandingContentStore((s) => s.redoDraft);
+  const canUndo = useLandingContentStore((s) => s.undoStack.length > 0);
+  const canRedo = useLandingContentStore((s) => s.redoStack.length > 0);
   const [publishing, setPublishing] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const hasChanges = useMemo(() => {
     if (!draft) return false;
@@ -36,19 +41,43 @@ export default function LandingEditorToolbar({ onOpenFullPreview }: Props) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold dash-heading">Homepage CMS</p>
           <p className="text-xs dash-muted mt-0.5">
-            Preview each section, click Edit for inline text/images or the options panel. Publish when ready.
+            Edit sections below, then save to push changes to the live site database.
           </p>
           {publishError ? (
             <p className="text-xs text-red-700 font-semibold mt-1" role="alert">
-              Publish failed: {publishError}
+              Save failed: {publishError}
+            </p>
+          ) : lastSavedAt ? (
+            <p className="text-xs text-green-700 font-semibold mt-1">
+              Saved to database · {new Date(lastSavedAt).toLocaleTimeString()}
             </p>
           ) : hasChanges ? (
-            <p className="text-xs text-amber-700 font-semibold mt-1">Unpublished changes in draft</p>
+            <p className="text-xs text-amber-700 font-semibold mt-1">Unsaved changes in draft</p>
           ) : (
             <p className="text-xs text-green-700/80 font-medium mt-1">Matches live site</p>
           )}
         </div>
         <motion.div className="flex flex-wrap gap-2" layout>
+          <button
+            type="button"
+            onClick={() => undoDraft()}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider border dash-border disabled:opacity-40 hover:border-kado-red/30"
+          >
+            <Undo2 className="w-4 h-4" />
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={() => redoDraft()}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider border dash-border disabled:opacity-40 hover:border-kado-red/30"
+          >
+            <Redo2 className="w-4 h-4" />
+            Redo
+          </button>
           {onOpenFullPreview ? (
             <a
               href="/?preview=1"
@@ -72,20 +101,26 @@ export default function LandingEditorToolbar({ onOpenFullPreview }: Props) {
             className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider border dash-border disabled:opacity-40 hover:border-kado-red/30"
           >
             <RotateCcw className="w-4 h-4" />
-            Revert
+            Revert all
           </button>
           <button
             type="button"
             onClick={() => {
               clearPublishError();
               setPublishing(true);
-              void publishDraft().finally(() => setPublishing(false));
+              void publishDraft()
+                .then(() => {
+                  if (!useLandingContentStore.getState().publishError) {
+                    setLastSavedAt(Date.now());
+                  }
+                })
+                .finally(() => setPublishing(false));
             }}
             disabled={!draft || !hasChanges || publishing}
             className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-40 transition-colors"
           >
             <Save className="w-4 h-4" />
-            {publishing ? 'Publishing…' : 'Publish'}
+            {publishing ? 'Saving…' : 'Save to site'}
           </button>
         </motion.div>
       </motion.div>

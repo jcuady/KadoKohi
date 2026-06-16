@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { LandingTabId } from '../../lib/landingCmsTabs';
 import HomePageContent from '../home/HomePageContent';
 import { LandingCmsEditProvider } from '../../contexts/LandingCmsEditContext';
+import LandingCmsFormatToolbar from './LandingCmsFormatToolbar';
 import { readImageDataUrl } from '../../lib/readImageDataUrl';
 import { useLandingDraftContent, useLandingContentStore, type LandingContentState } from '../../store/landingContentStore';
 
@@ -9,13 +10,21 @@ type Props = {
   sectionId: LandingTabId;
   editing?: boolean;
   onUploadError?: (message: string) => void;
+  onAdvancedSettings?: () => void;
+  advancedOpen?: boolean;
 };
 
-export default function LandingSectionPreview({ sectionId, editing = false, onUploadError }: Props) {
+export default function LandingSectionPreview({
+  sectionId,
+  editing = false,
+  onUploadError,
+  onAdvancedSettings,
+  advancedOpen,
+}: Props) {
   const landing = useLandingDraftContent();
   const ctx = useMemo(() => landing, [landing]);
 
-  const onPickImage = async (fieldId: string, file: File) => {
+  const onPickImage = useCallback(async (fieldId: string, file: File) => {
     const res = await readImageDataUrl(file);
     if (res.ok === false) {
       onUploadError?.(res.error);
@@ -24,7 +33,7 @@ export default function LandingSectionPreview({ sectionId, editing = false, onUp
     const provider = useLandingContentStore.getState();
     const draft = provider.draft ?? provider.published;
     applyImageField(fieldId, res.dataUrl, draft, provider);
-  };
+  }, [onUploadError]);
 
   return (
     <LandingCmsEditProvider editing={editing} onPickImage={onPickImage}>
@@ -35,9 +44,16 @@ export default function LandingSectionPreview({ sectionId, editing = false, onUp
         ].join(' ')}
       >
         {editing ? (
-          <div className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
-            Click text or images in the preview to edit inline
-          </div>
+          <>
+            <LandingCmsFormatToolbar
+              onAdvancedSettings={onAdvancedSettings}
+              advancedOpen={advancedOpen}
+            />
+            <div className="border-b border-amber-100 bg-amber-50/80 px-3 py-1.5 text-[10px] leading-snug text-amber-900/90">
+              Click to edit text or images. Highlight words for partial color, underline, or font. Use{' '}
+              <strong>Save to site</strong> above to write changes to the database.
+            </div>
+          </>
         ) : null}
         <div className="max-h-[min(52vh,640px)] overflow-y-auto overflow-x-hidden scroll-smooth [transform-origin:top_center]">
           <HomePageContent landing={ctx} sectionOnly={sectionId} cmsEditMode={editing} />

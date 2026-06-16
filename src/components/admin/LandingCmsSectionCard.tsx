@@ -19,6 +19,12 @@ type Props = {
 export default function LandingCmsSectionCard({ tab, children, onUploadError }: Props) {
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  const stopEditing = () => {
+    setEditing(false);
+    setAdvancedOpen(false);
+  };
 
   return (
     <article
@@ -44,7 +50,7 @@ export default function LandingCmsSectionCard({ tab, children, onUploadError }: 
           {editing ? (
             <button
               type="button"
-              onClick={() => setEditing(false)}
+              onClick={stopEditing}
               className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-amber-900"
             >
               <X className="h-3.5 w-3.5" />
@@ -77,21 +83,27 @@ export default function LandingCmsSectionCard({ tab, children, onUploadError }: 
             className="overflow-hidden"
           >
             <div className="space-y-0 p-4 sm:p-5">
-              <LandingSectionPreview sectionId={tab.id} editing={editing} onUploadError={onUploadError} />
+              <LandingSectionPreview
+                sectionId={tab.id}
+                editing={editing}
+                onUploadError={onUploadError}
+                onAdvancedSettings={() => setAdvancedOpen((v) => !v)}
+                advancedOpen={advancedOpen}
+              />
 
               <AnimatePresence initial={false}>
-                {editing ? (
+                {editing && advancedOpen ? (
                   <motion.div
-                    key="editor"
+                    key="advanced"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-5 border-t dash-border pt-5">
+                    <div className="mt-4 rounded-xl border dash-border bg-[var(--color-dash-surface)] p-4 sm:p-5">
                       <p className="mb-4 text-xs font-bold uppercase tracking-wider dash-muted">
-                        Section options — text &amp; images only
+                        Section settings — links, products, slides &amp; structure
                       </p>
                       {children}
                     </div>

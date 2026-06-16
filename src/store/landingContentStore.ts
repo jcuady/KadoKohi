@@ -184,6 +184,9 @@ interface LandingContentStore {
   published: LandingContentState;
   /** Working copy while editing in admin (not persisted). */
   draft: LandingContentState | null;
+  /** Undo/redo snapshots (draft JSON); not persisted across reloads. */
+  undoStack: string[];
+  redoStack: string[];
   /** When true, home + ?preview=1 read from draft. */
   isPreviewMode: boolean;
 
@@ -191,6 +194,10 @@ interface LandingContentStore {
   initDraft: () => void;
   discardDraft: () => void;
   publishDraft: () => Promise<void>;
+  undoDraft: () => void;
+  redoDraft: () => void;
+  canUndoDraft: () => boolean;
+  canRedoDraft: () => boolean;
   publishError: string | null;
   clearPublishError: () => void;
   setPreviewMode: (active: boolean) => void;
@@ -721,15 +728,31 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
   };
 }
 
+const MAX_UNDO = 50;
+
 function cloneContent(state: LandingContentState): LandingContentState {
   return JSON.parse(JSON.stringify(state)) as LandingContentState;
+}
+
+function pushUndoSnapshot(
+  set: (fn: (s: LandingContentStore) => Partial<LandingContentStore> | LandingContentStore) => void,
+  get: () => LandingContentStore,
+) {
+  const { draft, published } = get();
+  const snapshot = JSON.stringify(cloneContent(draft ?? published));
+  set((s) => ({
+    undoStack: [...s.undoStack, snapshot].slice(-MAX_UNDO),
+    redoStack: [],
+  }));
 }
 
 function patchDraft(
   set: (fn: (s: LandingContentStore) => Partial<LandingContentStore> | LandingContentStore) => void,
   get: () => LandingContentStore,
   patcher: (draft: LandingContentState) => LandingContentState,
+  options?: { skipHistory?: boolean },
 ) {
+  if (!options?.skipHistory) pushUndoSnapshot(set, get);
   const { draft, published, isPreviewMode } = get();
   const base = draft ?? published;
   const next = patcher(cloneContent(base));
@@ -744,6 +767,8 @@ export const useLandingContentStore = create<LandingContentStore>()(
     (set, get) => ({
       published: SEED_CONTENT,
       draft: null,
+      undoStack: [],
+      redoStack: [],
       isPreviewMode: false,
       publishError: null,
 
@@ -761,13 +786,41 @@ export const useLandingContentStore = create<LandingContentStore>()(
 
       initDraft: () => {
         const draft = cloneContent(get().published);
-        set({ draft });
+        set({ draft, undoStack: [], redoStack: [] });
       },
       discardDraft: () => {
         clearLandingPreviewDraft();
-        set({ draft: null, isPreviewMode: false });
+        set({ draft: null, isPreviewMode: false, undoStack: [], redoStack: [] });
       },
       clearPublishError: () => set({ publishError: null }),
+      canUndoDraft: () => get().undoStack.length > 0,
+      canRedoDraft: () => get().redoStack.length > 0,
+      undoDraft: () => {
+        const { undoStack, redoStack, draft, published } = get();
+        if (undoStack.length === 0) return;
+        const current = JSON.stringify(cloneContent(draft ?? published));
+        const previous = undoStack[undoStack.length - 1]!;
+        const nextDraft = JSON.parse(previous) as LandingContentState;
+        set({
+          draft: nextDraft,
+          undoStack: undoStack.slice(0, -1),
+          redoStack: [...redoStack, current].slice(-MAX_UNDO),
+        });
+        writeLandingPreviewDraft(nextDraft);
+      },
+      redoDraft: () => {
+        const { undoStack, redoStack, draft, published } = get();
+        if (redoStack.length === 0) return;
+        const current = JSON.stringify(cloneContent(draft ?? published));
+        const next = redoStack[redoStack.length - 1]!;
+        const nextDraft = JSON.parse(next) as LandingContentState;
+        set({
+          draft: nextDraft,
+          undoStack: [...undoStack, current].slice(-MAX_UNDO),
+          redoStack: redoStack.slice(0, -1),
+        });
+        writeLandingPreviewDraft(nextDraft);
+      },
       publishDraft: async () => {
         const { draft } = get();
         if (!draft) return;
@@ -776,7 +829,14 @@ export const useLandingContentStore = create<LandingContentStore>()(
         try {
           await orderingRepo.upsertLandingContent(nextPublished);
           clearLandingPreviewDraft();
-          set({ published: nextPublished, draft: null, isPreviewMode: false, publishError: null });
+          set({
+            published: nextPublished,
+            draft: null,
+            isPreviewMode: false,
+            publishError: null,
+            undoStack: [],
+            redoStack: [],
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Could not save homepage content to the database.';
           set({ publishError: message });
@@ -976,7 +1036,8 @@ export const useLandingContentStore = create<LandingContentStore>()(
           },
         })),
 
-      seed: () => set({ published: SEED_CONTENT, draft: null, isPreviewMode: false }),
+      seed: () =>
+        set({ published: SEED_CONTENT, draft: null, isPreviewMode: false, undoStack: [], redoStack: [] }),
     }),
     {
       name: 'kado-landing-content-v5',

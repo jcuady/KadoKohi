@@ -5,47 +5,44 @@ import { useLandingCmsEditOptional } from '../../contexts/LandingCmsEditContext'
 
 type Props = {
   cmsField?: string;
+  cmsLabel?: string;
   src: string;
   alt: string;
   className?: string;
   onImageChange?: (url: string) => void;
 };
 
-export default function CmsEditableImage({ cmsField, src, alt, className, onImageChange }: Props) {
+export default function CmsEditableImage({
+  cmsField,
+  cmsLabel,
+  src,
+  alt,
+  className,
+  onImageChange,
+}: Props) {
   const ctx = useLandingCmsEditOptional();
   const inputId = useId();
-  const registered = useRef(false);
+  const onImageChangeRef = useRef(onImageChange);
+  onImageChangeRef.current = onImageChange;
 
-  const binding = cmsField && ctx?.editing ? ctx.getField(cmsField) : undefined;
-  const editable = Boolean(cmsField && ctx?.editing && binding?.type === 'image');
-
-  useEffect(() => {
-    if (!cmsField || !ctx?.editing || !onImageChange) return;
-    if (registered.current) return;
-    registered.current = true;
-    ctx.registerField(cmsField, {
-      type: 'image',
-      label: binding?.type === 'image' ? binding.label : cmsField,
-      value: src,
-      onChange: onImageChange,
-    });
-    return () => {
-      registered.current = false;
-      ctx.unregisterField(cmsField);
-    };
-  }, [cmsField, ctx, onImageChange, src, binding]);
+  const editable = Boolean(cmsField && ctx?.editing && onImageChange);
+  const registerField = ctx?.registerField;
+  const unregisterField = ctx?.unregisterField;
 
   useEffect(() => {
-    if (!cmsField || !ctx?.editing || !onImageChange) return;
-    ctx.registerField(cmsField, {
+    if (!editable || !cmsField || !registerField || !unregisterField) return;
+    const onChange = (url: string) => onImageChangeRef.current?.(url);
+    registerField(cmsField, {
       type: 'image',
-      label: binding?.type === 'image' ? binding.label : cmsField,
+      label: cmsLabel ?? cmsField,
       value: src,
-      onChange: onImageChange,
+      onChange,
     });
-  }, [src, cmsField, ctx, onImageChange, binding]);
+    return () => unregisterField(cmsField);
+  }, [editable, cmsField, cmsLabel, src, registerField, unregisterField]);
 
   const active = editable && ctx?.activeFieldId === cmsField;
+  const fieldLabel = cmsLabel ?? cmsField ?? alt;
 
   const openPicker = () => {
     if (!cmsField || !ctx) return;
@@ -66,7 +63,7 @@ export default function CmsEditableImage({ cmsField, src, alt, className, onImag
         active ? 'ring-2 ring-amber-400 ring-offset-2' : 'hover:ring-2 hover:ring-amber-400/70 hover:ring-offset-1',
         className,
       )}
-      aria-label={`Edit image: ${binding?.type === 'image' ? binding.label : alt}`}
+      aria-label={`Edit image: ${fieldLabel}`}
     >
       <img src={src} alt={alt} className="h-full w-full object-cover" />
       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/35">
