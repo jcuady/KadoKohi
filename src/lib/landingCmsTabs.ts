@@ -12,6 +12,11 @@ export const LANDING_CMS_TABS = [
     label: 'Branches',
     hint: 'Branches strip badge, title, and CTA — branch rows come from Branches admin.',
   },
+  {
+    id: 'faq',
+    label: 'FAQ',
+    hint: 'Good-to-know accordion — ordering, loyalty, booth booking, and site policies.',
+  },
   { id: 'kado-circle', label: 'Kado Circle', hint: 'Newsletter CTA, marquee partners, and stats row.' },
 ] as const;
 

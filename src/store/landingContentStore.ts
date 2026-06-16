@@ -5,7 +5,7 @@ import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '..
 import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
-import { supabase } from '../lib/supabase/client';
+import { SEED_HOME_FAQ_ITEMS } from '../data/homeFaqSeed';
 
 export type { CmsText };
 
@@ -162,6 +162,20 @@ export interface MenuSeoCopy {
   exploreHeading: CmsText;
 }
 
+export interface FaqItemCopy {
+  question: CmsText;
+  answer: CmsText;
+}
+
+export interface FaqCopy {
+  eyebrow: CmsText;
+  title: CmsText;
+  subtitle: CmsText;
+  items: FaqItemCopy[];
+  footerText: CmsText;
+  contactCtaLabel: CmsText;
+}
+
 /** Fixed homepage layout — only text/images inside each slot are editable. */
 export interface LandingContentState {
   heroSlides: HomeHeroSlide[];
@@ -176,6 +190,7 @@ export interface LandingContentState {
   schedule: ScheduleCopy;
   ordering: OrderingCopy;
   branchesStrip: BranchesStripCopy;
+  faq: FaqCopy;
   kadoCircle: KadoCircleCopy;
 }
 
@@ -221,6 +236,8 @@ interface LandingContentStore {
   updateOrderingStep: (index: number, patch: Partial<OrderingStepCopy>) => void;
   reorderOrderingSteps: (fromIndex: number, toIndex: number) => void;
   updateBranchesStrip: (patch: Partial<BranchesStripCopy>) => void;
+  updateFaq: (patch: Partial<FaqCopy>) => void;
+  updateFaqItem: (index: number, patch: Partial<FaqItemCopy>) => void;
   updateKadoCircle: (patch: Partial<KadoCircleCopy>) => void;
   seed: () => void;
 }
@@ -433,6 +450,14 @@ export const SEED_CONTENT: LandingContentState = {
     title: 'Find us.',
     ctaLabel: 'All branches',
   },
+  faq: {
+    eyebrow: '角 Good to know',
+    title: 'Common questions.',
+    subtitle: 'Everything you need before you pull up a chair — ordering, loyalty, events, and policies.',
+    items: SEED_HOME_FAQ_ITEMS.map((item) => ({ ...item })),
+    footerText: 'Still have questions? Our team is happy to help.',
+    contactCtaLabel: 'Contact us',
+  },
   kadoCircle: {
     badge: 'The Inner Circle',
     titleBefore: 'Join the',
@@ -633,6 +658,23 @@ function clampCmsSection<S extends object>(
   return out;
 }
 
+function clampFaqItems(saved: FaqItemCopy[] | undefined, seed: FaqItemCopy[]): FaqItemCopy[] {
+  return seed.map((fallback, i) => {
+    const item = saved?.[i];
+    return {
+      question: clampCmsTextField(item?.question, fallback.question),
+      answer: clampCmsTextField(item?.answer, fallback.answer),
+    };
+  });
+}
+
+function clampFaq(raw: Partial<FaqCopy> | undefined, seed: FaqCopy): FaqCopy {
+  return {
+    ...clampCmsSection(seed, raw, ['eyebrow', 'title', 'subtitle', 'footerText', 'contactCtaLabel']),
+    items: clampFaqItems(raw?.items, seed.items),
+  };
+}
+
 export function normalizeLandingContent(raw: Partial<LandingContentState> | undefined): LandingContentState {
   if (!raw || typeof raw !== 'object') return SEED_CONTENT;
 
@@ -705,6 +747,7 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
       steps: clampOrderingSteps(raw.ordering?.steps),
     },
     branchesStrip: clampCmsSection(SEED_CONTENT.branchesStrip, raw.branchesStrip, ['badge', 'title', 'ctaLabel']),
+    faq: clampFaq(raw.faq, SEED_CONTENT.faq),
     kadoCircle: {
       ...clampCmsSection(SEED_CONTENT.kadoCircle, raw.kadoCircle, [
         'badge',
@@ -773,7 +816,6 @@ export const useLandingContentStore = create<LandingContentStore>()(
       publishError: null,
 
       hydrateFromRemote: async () => {
-        if (!supabase) return;
         try {
           const remote = await orderingRepo.fetchLandingContent();
           if (remote && typeof remote === 'object') {
@@ -1021,6 +1063,24 @@ export const useLandingContentStore = create<LandingContentStore>()(
 
       updateBranchesStrip: (patch) =>
         patchDraft(set, get, (d) => ({ ...d, branchesStrip: { ...d.branchesStrip, ...patch } })),
+
+      updateFaq: (patch) =>
+        patchDraft(set, get, (d) => ({
+          ...d,
+          faq: {
+            ...d.faq,
+            ...patch,
+            items: patch.items !== undefined ? clampFaqItems(patch.items, d.faq.items) : d.faq.items,
+          },
+        })),
+
+      updateFaqItem: (index, patch) =>
+        patchDraft(set, get, (d) => {
+          const items = [...d.faq.items];
+          if (!items[index]) return d;
+          items[index] = { ...items[index], ...patch };
+          return { ...d, faq: { ...d.faq, items: clampFaqItems(items, SEED_CONTENT.faq.items) } };
+        }),
 
       updateKadoCircle: (patch) =>
         patchDraft(set, get, (d) => ({

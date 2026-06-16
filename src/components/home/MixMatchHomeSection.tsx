@@ -17,14 +17,18 @@ import MixMatchBundlePicker from '../mix-match/MixMatchBundlePicker';
 import type { Product } from '../../types/domain';
 import { PASTRIES_PAGE, MIX_MATCH_BLUE } from '../../content/pastriesPage';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
 import { cmsTextPlain } from '../../lib/cmsTypography';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { useLandingContentStore } from '../../store/landingContentStore';
 
 interface Props {
   copy?: MixMatchSectionCopy;
   cmsEditMode?: boolean;
 }
 
-export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }: Props) {
+export default function MixMatchHomeSection({ copy, cmsEditMode }: Props) {
+  const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
   const hydrateFromRemote = useMenuStore((s) => s.hydrateFromRemote);
@@ -63,15 +67,28 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
       <div className="mx-auto w-full max-w-[1200px]">
         <div className="mb-8 grid items-center gap-6 sm:mb-10 sm:gap-8 lg:grid-cols-[1fr_0.85fr]">
           <div className="min-w-0 text-center lg:text-left">
-            <CmsStyledText value={badge} as="p" className="kado-label mb-2 text-kado-red sm:mb-3" />
+            <CmsStyledText
+              value={badge}
+              as="p"
+              className="kado-label mb-2 text-kado-red sm:mb-3"
+              {...cmsTextProps(cmsEditMode, 'schedule.badge', 'Badge', (v) => updateSchedule({ badge: v }))}
+            />
             <h2 className="text-balance font-display text-3xl font-black uppercase leading-[0.95] tracking-tight sm:text-4xl md:text-5xl">
               <CmsStyledText
                 value={titleTop}
                 as="span"
                 style={titleTopColor ? { color: titleTopColor } : undefined}
+                {...cmsTextProps(cmsEditMode, 'schedule.titleTop', 'Title top', (v) => updateSchedule({ titleTop: v }))}
               />
               <br />
-              <CmsStyledText value={titleBottom} as="span" defaultColorClass="text-kado-red" />
+              <CmsStyledText
+                value={titleBottom}
+                as="span"
+                defaultColorClass="text-kado-red"
+                {...cmsTextProps(cmsEditMode, 'schedule.titleBottom', 'Title bottom', (v) =>
+                  updateSchedule({ titleBottom: v }),
+                )}
+              />
             </h2>
             <CmsStyledText
               value={description}
@@ -79,6 +96,9 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
               className="mx-auto mt-3 max-w-md sm:mt-4 lg:mx-0"
               defaultSizeClass="kado-body"
               defaultColorClass="text-kado-dark/70"
+              {...cmsTextProps(cmsEditMode, 'schedule.description', 'Description', (v) =>
+                updateSchedule({ description: v }),
+              )}
             />
             <span
               className="mt-4 inline-flex w-full max-w-xs flex-col items-center justify-center gap-1 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg sm:mt-5 sm:w-auto sm:px-5 sm:text-xs"
@@ -86,7 +106,13 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
             >
               <span className="inline-flex items-center gap-2">
                 <Percent className="h-4 w-4 shrink-0" aria-hidden />
-                <CmsStyledText value={offerBadge} as="span" />
+                <CmsStyledText
+                  value={offerBadge}
+                  as="span"
+                  {...cmsTextProps(cmsEditMode, 'schedule.offerBadge', 'Offer badge', (v) =>
+                    updateSchedule({ offerBadge: v }),
+                  )}
+                />
               </span>
               {offerNotePlain ? (
                 <CmsStyledText
@@ -94,17 +120,31 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
                   as="span"
                   className="text-[9px] font-semibold normal-case tracking-normal opacity-90"
                   defaultSizeClass="kado-subtext"
+                  {...cmsTextProps(cmsEditMode, 'schedule.offerNote', 'Offer note', (v) =>
+                    updateSchedule({ offerNote: v }),
+                  )}
                 />
               ) : null}
             </span>
           </div>
-          <img
-            src={posterImage}
-            alt="Kukidō x Kado Kohi Mix and Match"
-            className="mx-auto w-full max-w-md rounded-[1rem] border border-kado-dark/10 shadow-lg sm:max-w-none sm:rounded-[1.25rem] lg:mx-0"
-            loading="lazy"
-            decoding="async"
-          />
+          {cmsEditMode ? (
+            <CmsEditableImage
+              cmsField="schedule.poster"
+              cmsLabel="Mix & Match poster"
+              src={posterImage}
+              alt="Kukidō x Kado Kohi Mix and Match"
+              className="mx-auto w-full max-w-md rounded-[1rem] border border-kado-dark/10 shadow-lg sm:max-w-none sm:rounded-[1.25rem] lg:mx-0"
+              onImageChange={(url) => updateSchedule({ posterImageUrl: url })}
+            />
+          ) : (
+            <img
+              src={posterImage}
+              alt="Kukidō x Kado Kohi Mix and Match"
+              className="mx-auto w-full max-w-md rounded-[1rem] border border-kado-dark/10 shadow-lg sm:max-w-none sm:rounded-[1.25rem] lg:mx-0"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
         </div>
 
         <MixMatchBundlePicker
@@ -140,7 +180,14 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
                   className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-5 kado-label text-kado-cream touch-manipulation hover:bg-kado-dark sm:w-auto"
                 >
                   <ShoppingBag className="h-4 w-4 shrink-0" />
-                  <CmsStyledText value={featuredCtaLabel} as="span" className="truncate" />
+                  <CmsStyledText
+                    value={featuredCtaLabel}
+                    as="span"
+                    className="truncate"
+                    {...cmsTextProps(cmsEditMode, 'schedule.featuredCtaLabel', 'Featured CTA', (v) =>
+                      updateSchedule({ featuredCtaLabel: v }),
+                    )}
+                  />
                 </button>
               ) : null}
             </div>
@@ -151,7 +198,11 @@ export default function MixMatchHomeSection({ copy, cmsEditMode: _cmsEditMode }:
           to="/pastries"
           className="mt-6 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-kado-dark/15 px-5 kado-label text-kado-dark touch-manipulation hover:border-kado-red hover:text-kado-red sm:mt-8 sm:inline-flex sm:w-auto"
         >
-          <CmsStyledText value={ctaLabel} as="span" />
+          <CmsStyledText
+            value={ctaLabel}
+            as="span"
+            {...cmsTextProps(cmsEditMode, 'schedule.ctaLabel', 'Section CTA', (v) => updateSchedule({ ctaLabel: v }))}
+          />
           <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
         </Link>
       </div>

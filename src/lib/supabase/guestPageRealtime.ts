@@ -7,7 +7,6 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useBlogStore } from '../../store/blogStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
-import { useSectionStore } from '../../store/sectionStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 
 const GUEST_TABLES = [
@@ -40,7 +39,6 @@ const refresh = {
     void useSettingsStore.getState().hydrateFromRemote();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
-    void useSectionStore.getState().hydrateFromRemote();
     void useBoothCatalogStore.getState().hydrateFromRemote();
   }, 300),
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),

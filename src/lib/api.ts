@@ -14,7 +14,6 @@ import { useMenuStore } from '../store/menuStore';
 import { useOrderStore } from '../store/orderStore';
 import { useEventStore } from '../store/eventStore';
 import { useTableStore } from '../store/tableStore';
-import { useSectionStore } from '../store/sectionStore';
 import { useUserStore } from '../store/userStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useCartStore } from '../store/cartStore';
@@ -92,15 +91,6 @@ export const api = {
     update: useTableStore.getState().updateTable,
     remove: useTableStore.getState().removeTable,
     toggleActive: useTableStore.getState().toggleActive,
-  },
-
-  /* ───── Custom Sections ───── */
-  sections: {
-    list: () => useSectionStore.getState().sections,
-    visible: (page: 'home') => useSectionStore.getState().visibleSections(page),
-    create: useSectionStore.getState().addSection,
-    update: useSectionStore.getState().updateSection,
-    remove: useSectionStore.getState().removeSection,
   },
 
   /* ───── Users ───── */
@@ -249,7 +239,6 @@ export const api = {
     useOrderStore.getState().seed();
     useEventStore.getState().seed();
     useTableStore.getState().seed();
-    useSectionStore.getState().seed();
     useUserStore.getState().seed();
     useSettingsStore.getState().seed();
     useMerchStore.getState().seed();

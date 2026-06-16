@@ -26,7 +26,6 @@ import {
   ChevronDown,
   Layers,
   PenLine,
-  LayoutGrid,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
@@ -120,7 +119,6 @@ const NAV: NavEntry[] = [
     icon: Image,
     children: [
       { to: '/admin/landing', label: 'Homepage', icon: Image },
-      { to: '/admin/sections', label: 'Custom sections', icon: LayoutGrid },
       { to: '/admin/blog', label: 'Blog', icon: Newspaper },
     ],
   },

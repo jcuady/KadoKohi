@@ -18,7 +18,6 @@ import { useBoothShowcaseStore } from './store/boothShowcaseStore';
 import { useLandingContentStore } from './store/landingContentStore';
 import { useLoyaltyStore } from './store/loyaltyStore';
 import { useBlogStore } from './store/blogStore';
-import { useSectionStore } from './store/sectionStore';
 import { useBoothCatalogStore } from './store/boothCatalogStore';
 import { ensurePublishedCms } from './lib/cmsBootstrap';
 import { supabase } from './lib/supabase/client';
@@ -42,7 +41,6 @@ function Bootstrap() {
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
   const hydrateLoyalty = useLoyaltyStore((s) => s.hydrateFromRemote);
   const hydrateBlog = useBlogStore((s) => s.hydrateFromRemote);
-  const hydrateSections = useSectionStore((s) => s.hydrateFromRemote);
   const hydrateBoothCatalog = useBoothCatalogStore((s) => s.hydrateFromRemote);
 
   useEffect(() => {
@@ -64,7 +62,6 @@ function Bootstrap() {
         hydrateLanding(),
         hydrateLoyalty(),
         hydrateBlog(),
-        hydrateSections(),
         hydrateBoothCatalog(),
       ]);
     })();

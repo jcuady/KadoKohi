@@ -20,6 +20,8 @@ import {
 import type { OrderingCopy } from '../../store/landingContentStore';
 import type { CmsText } from '../../lib/cmsTypography';
 import CmsStyledText from '../cms/CmsStyledText';
+import { useLandingContentStore } from '../../store/landingContentStore';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -328,10 +330,14 @@ function FeatureCard({
   children,
   step,
   steps,
+  cmsEditMode,
+  onStepPatch,
 }: {
   children: ReactNode;
   step: number;
   steps: Step[];
+  cmsEditMode?: boolean;
+  onStepPatch?: (index: number, patch: Partial<Pick<Step, 'eyebrow' | 'title' | 'description'>>) => void;
 }) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -392,6 +398,9 @@ function FeatureCard({
                     as="span"
                     className="text-[10px] font-black uppercase tracking-[0.25em]"
                     defaultColorClass="text-kado-red"
+                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.eyebrow`, `Step ${step + 1} eyebrow`, (v) =>
+                      onStepPatch?.(step, { eyebrow: v }),
+                    )}
                   />
                 </motion.div>
 
@@ -401,7 +410,15 @@ function FeatureCard({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <CmsStyledText value={steps[step].title} as="span" defaultSizeClass="kado-h3" defaultColorClass="text-kado-dark" />
+                  <CmsStyledText
+                    value={steps[step].title}
+                    as="span"
+                    defaultSizeClass="kado-h3"
+                    defaultColorClass="text-kado-dark"
+                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.title`, `Step ${step + 1} title`, (v) =>
+                      onStepPatch?.(step, { title: v }),
+                    )}
+                  />
                 </motion.div>
 
                 <motion.div
@@ -415,6 +432,9 @@ function FeatureCard({
                     as="p"
                     defaultSizeClass="kado-body"
                     defaultColorClass="text-kado-dark/65"
+                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.description`, `Step ${step + 1} body`, (v) =>
+                      onStepPatch?.(step, { description: v }),
+                    )}
                   />
                 </motion.div>
               </motion.div>
@@ -532,12 +552,14 @@ export type KadoOrderingCarouselCopy = OrderingCopy;
 export function KadoOrderingCarousel({
   className,
   copy,
-  cmsEditMode: _cmsEditMode,
+  cmsEditMode,
 }: {
   className?: string;
   copy?: KadoOrderingCarouselCopy;
   cmsEditMode?: boolean;
 }) {
+  const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
+  const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
   const INTERVAL = 6000;
   const steps = buildSteps(copy?.steps);
   const { current, setStep } = useNumberCycler(steps.length, INTERVAL);
@@ -554,8 +576,18 @@ export function KadoOrderingCarousel({
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
           <div>
-            <CmsStyledText value={copy?.badge ?? 'How it works'} as="span" className="kado-label mb-3 block text-kado-red" />
-            <CmsStyledText value={copy?.title ?? 'Order your way.'} as="h2" className="kado-h2 text-kado-dark" />
+            <CmsStyledText
+              value={copy?.badge ?? 'How it works'}
+              as="span"
+              className="kado-label mb-3 block text-kado-red"
+              {...cmsTextProps(cmsEditMode, 'ordering.badge', 'Badge', (v) => updateOrdering({ badge: v }))}
+            />
+            <CmsStyledText
+              value={copy?.title ?? 'Order your way.'}
+              as="h2"
+              className="kado-h2 text-kado-dark"
+              {...cmsTextProps(cmsEditMode, 'ordering.title', 'Title', (v) => updateOrdering({ title: v }))}
+            />
           </div>
           <CmsStyledText
             value={
@@ -566,6 +598,9 @@ export function KadoOrderingCarousel({
             className="hidden max-w-sm md:block"
             defaultSizeClass="kado-body"
             defaultColorClass="text-kado-dark/55"
+            {...cmsTextProps(cmsEditMode, 'ordering.subtitleDesktop', 'Subtitle (desktop)', (v) =>
+              updateOrdering({ subtitleDesktop: v }),
+            )}
           />
         </div>
         <CmsStyledText
@@ -574,13 +609,21 @@ export function KadoOrderingCarousel({
           className="-mt-2 md:hidden"
           defaultSizeClass="kado-body"
           defaultColorClass="text-kado-dark/55"
+          {...cmsTextProps(cmsEditMode, 'ordering.subtitleMobile', 'Subtitle (mobile)', (v) =>
+            updateOrdering({ subtitleMobile: v }),
+          )}
         />
 
         {/* Progress */}
         <ProgressBar step={current} total={steps.length} interval={INTERVAL} />
 
         {/* Card */}
-        <FeatureCard step={current} steps={steps}>
+        <FeatureCard
+          step={current}
+          steps={steps}
+          cmsEditMode={cmsEditMode}
+          onStepPatch={(index, patch) => updateOrderingStep(index, patch)}
+        >
           {steps[current].visual}
         </FeatureCard>
 

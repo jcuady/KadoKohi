@@ -1,6 +1,5 @@
 import { SEED_BOOTH_ADDONS, SEED_BOOTH_PACKAGES, SEED_BOOKING_SHOWCASE_GALLERY } from '../data/seed';
 import { SEED_CONTENT } from '../store/landingContentStore';
-import { SEED_SECTIONS } from '../store/sectionStore';
 import { DEFAULT_BOOTH_PAGE_COPY } from './boothPageContent';
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
@@ -10,10 +9,9 @@ export async function ensurePublishedCms(): Promise<void> {
   if (!supabase) return;
 
   try {
-    const [landing, booth, sections, catalog] = await Promise.all([
+    const [landing, booth, catalog] = await Promise.all([
       orderingRepo.fetchLandingContent(),
       orderingRepo.fetchBoothPageContent(),
-      orderingRepo.fetchHomeSections(),
       orderingRepo.fetchBoothCatalog(),
     ]);
 
@@ -30,10 +28,6 @@ export async function ensurePublishedCms(): Promise<void> {
           showcase: SEED_BOOKING_SHOWCASE_GALLERY,
         }),
       );
-    }
-
-    if (!Array.isArray(sections) || sections.length === 0) {
-      writes.push(orderingRepo.upsertHomeSections(SEED_SECTIONS));
     }
 
     const hasCatalog =

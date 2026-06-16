@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
-import CustomSectionRenderer from '../CustomSectionRenderer';
+import HomeFaqSection from './HomeFaqSection';
 import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
@@ -25,6 +25,9 @@ import {
 import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
 import type { EventsCopy, BranchesStripCopy, LandingContentState } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { useLandingContentStore } from '../../store/landingContentStore';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import type { LandingTabId } from '../../lib/landingCmsTabs';
 
@@ -111,7 +114,9 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
           <BranchesStrip copy={landing.branchesStrip} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
-      {!sectionOnly ? <CustomSectionRenderer /> : null}
+      {showSection('faq', sectionOnly) ? (
+        <HomeFaqSection copy={landing.faq} cmsEditMode={cmsEditMode} />
+      ) : null}
       {showSection('kado-circle', sectionOnly) ? (
         <div id="landing-kado-circle">
           <KadoCircleCTA copy={landing.kadoCircle} cmsEditMode={cmsEditMode} />
@@ -123,7 +128,8 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
 
 const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1200&auto=format&fit=crop';
 
-function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; cmsEditMode?: boolean }) {
+function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: boolean }) {
+  const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const events = useEventStore((s) => s.events);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
 
@@ -144,6 +150,7 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
   }, [ev, lifecycle, signupPhase]);
   const countdown = useCountdown(countdownTarget);
   const heroImage = copy.coverImageOverride?.trim() || (ev ? eventImages(ev)[0] : '') || FALLBACK_EVENT_IMG;
+  const coverSrc = copy.coverImageOverride?.trim() || heroImage;
   const durationLabel = ev ? eventDurationLabel(ev) : null;
   const ctaHref = ev && signupPhase === 'open' ? `/events?event=${encodeURIComponent(ev.id)}#event-${ev.id}` : '/events';
   const ctaLabel =
@@ -173,10 +180,19 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
           className="text-center mb-12 sm:mb-16 md:mb-20"
         >
           <span className="inline-flex items-center gap-2 kado-label text-kado-red bg-kado-red/10 px-3 sm:px-4 py-2 rounded-full border border-kado-red/20 shadow-sm">
-            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> <CmsStyledText value={copy.badge} as="span" />
+            <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />{' '}
+            <CmsStyledText
+              value={copy.badge}
+              as="span"
+              {...cmsTextProps(cmsEditMode, 'events.badge', 'Badge', (v) => updateEvents({ badge: v }))}
+            />
           </span>
           <h2 className="kado-h2 text-kado-dark leading-[1.08] px-1">
-            <CmsStyledText value={copy.title} as="span" />
+            <CmsStyledText
+              value={copy.title}
+              as="span"
+              {...cmsTextProps(cmsEditMode, 'events.title', 'Title', (v) => updateEvents({ title: v }))}
+            />
           </h2>
           <CmsStyledText
             value={copy.subtitle}
@@ -184,6 +200,7 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
             className="font-medium mx-auto max-w-3xl mt-5 sm:mt-6 px-1 sm:px-4 md:px-0 md:text-base"
             defaultSizeClass="kado-body"
             defaultColorClass="text-kado-dark/80"
+            {...cmsTextProps(cmsEditMode, 'events.subtitle', 'Subtitle', (v) => updateEvents({ subtitle: v }))}
           />
         </motion.div>
 
@@ -196,13 +213,24 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
             transition={{ duration: 0.55 }}
           >
             <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group cursor-pointer border border-[#2A2626]/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:h-[750px] w-full">
-              <motion.img
-                src={heroImage}
-                alt={ev.title}
-                className="w-full h-full object-cover brightness-[0.7] contrast-[1.1]"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 2, ease: 'easeOut' }}
-              />
+              {cmsEditMode ? (
+                <CmsEditableImage
+                  cmsField="events.cover"
+                  cmsLabel="Events cover image"
+                  src={coverSrc}
+                  alt={ev.title}
+                  className="absolute inset-0 h-full w-full"
+                  onImageChange={(url) => updateEvents({ coverImageOverride: url })}
+                />
+              ) : (
+                <motion.img
+                  src={heroImage}
+                  alt={ev.title}
+                  className="w-full h-full object-cover brightness-[0.7] contrast-[1.1]"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 2, ease: 'easeOut' }}
+                />
+              )}
               <motion.div
                 className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/95 opacity-90"
                 initial={{ opacity: 0.85 }}
@@ -294,9 +322,23 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
         ) : (
           <div className="text-center py-16">
             <CalendarDays className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
-            <CmsStyledText value={copy.noEventBody} as="p" className="text-sm" defaultColorClass="text-kado-dark/50" />
+            <CmsStyledText
+              value={copy.noEventBody}
+              as="p"
+              className="text-sm"
+              defaultColorClass="text-kado-dark/50"
+              {...cmsTextProps(cmsEditMode, 'events.noEventBody', 'No events message', (v) =>
+                updateEvents({ noEventBody: v }),
+              )}
+            />
             <Link to="/events" className="mt-4 inline-block text-kado-red font-bold text-sm hover:underline">
-              <CmsStyledText value={copy.noEventBrowseLabel} as="span" />
+              <CmsStyledText
+                value={copy.noEventBrowseLabel}
+                as="span"
+                {...cmsTextProps(cmsEditMode, 'events.noEventBrowseLabel', 'No events CTA', (v) =>
+                  updateEvents({ noEventBrowseLabel: v }),
+                )}
+              />
             </Link>
           </div>
         )}
@@ -305,7 +347,8 @@ function EventsSection({ copy, cmsEditMode: _cmsEditMode }: { copy: EventsCopy; 
   );
 }
 
-function BranchesStrip({ copy, cmsEditMode: _cmsEditMode }: { copy: BranchesStripCopy; cmsEditMode?: boolean }) {
+function BranchesStrip({ copy, cmsEditMode }: { copy: BranchesStripCopy; cmsEditMode?: boolean }) {
+  const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const branches = useBranchStore((s) => s.branches);
 
   const fmt = (hours: { day: string; open: string; close: string }[]) => {
@@ -330,14 +373,32 @@ function BranchesStrip({ copy, cmsEditMode: _cmsEditMode }: { copy: BranchesStri
           className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12"
         >
           <div>
-            <CmsStyledText value={copy.badge} as="span" className="kado-label mb-3 block" defaultColorClass="text-kado-red" />
-            <CmsStyledText value={copy.title} as="h2" className="kado-h2" defaultColorClass="text-kado-cream" />
+            <CmsStyledText
+              value={copy.badge}
+              as="span"
+              className="kado-label mb-3 block"
+              defaultColorClass="text-kado-red"
+              {...cmsTextProps(cmsEditMode, 'branches.badge', 'Badge', (v) => updateBranchesStrip({ badge: v }))}
+            />
+            <CmsStyledText
+              value={copy.title}
+              as="h2"
+              className="kado-h2"
+              defaultColorClass="text-kado-cream"
+              {...cmsTextProps(cmsEditMode, 'branches.title', 'Title', (v) => updateBranchesStrip({ title: v }))}
+            />
           </div>
           <Link
             to="/branches"
             className="kado-label text-kado-cream/60 hover:text-white flex items-center gap-1 transition-colors"
           >
-            <CmsStyledText value={copy.ctaLabel} as="span" /> <ArrowRight className="w-4 h-4" />
+            <CmsStyledText
+              value={copy.ctaLabel}
+              as="span"
+              {...cmsTextProps(cmsEditMode, 'branches.ctaLabel', 'CTA label', (v) =>
+                updateBranchesStrip({ ctaLabel: v }),
+              )}
+            /> <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
 

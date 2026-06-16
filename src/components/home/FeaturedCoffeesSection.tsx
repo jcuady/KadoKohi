@@ -9,7 +9,10 @@ import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
 import type { FeaturedCopy } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
 import { formatPhp } from '../../lib/money';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { useLandingContentStore } from '../../store/landingContentStore';
 import ResilientImage from '../ui/ResilientImage';
 import {
   getMenuProductImageUrl,
@@ -47,6 +50,9 @@ type CardProps = {
   index: number;
   hero?: boolean;
   imageOverride?: string;
+  cmsEditMode?: boolean;
+  cardIndex?: number;
+  onImageOverride?: (url: string) => void;
   sectionRef: RefObject<HTMLElement | null>;
   onSelect: (p: Product) => void;
   orderHint: string;
@@ -58,6 +64,9 @@ function DrinkCard({
   index,
   hero,
   imageOverride,
+  cmsEditMode,
+  cardIndex,
+  onImageOverride,
   sectionRef,
   onSelect,
   orderHint,
@@ -87,12 +96,23 @@ function DrinkCard({
           : 'aspect-[4/5] max-h-[20rem] lg:aspect-auto lg:max-h-none lg:min-h-[18rem]',
       ].join(' ')}
     >
-      <ResilientImage
-        src={image}
-        fallbackSrc={image !== menuImage ? menuImage : undefined}
-        alt={drink.name}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-      />
+      {cmsEditMode && cardIndex !== undefined && onImageOverride ? (
+        <CmsEditableImage
+          cmsField={`featured.card.${cardIndex}.image`}
+          cmsLabel={`Featured card ${cardIndex + 1} image`}
+          src={image}
+          alt={drink.name}
+          className="absolute inset-0 h-full w-full"
+          onImageChange={onImageOverride}
+        />
+      ) : (
+        <ResilientImage
+          src={image}
+          fallbackSrc={image !== menuImage ? menuImage : undefined}
+          alt={drink.name}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/15" />
       <div className="absolute inset-0 bg-gradient-to-br from-kado-red/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
@@ -139,7 +159,13 @@ function DrinkCard({
 
 type Props = { copy: FeaturedCopy; cmsEditMode?: boolean };
 
-export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode }: Props) {
+export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
+  const updateFeatured = useLandingContentStore((s) => s.updateFeatured);
+  const setCardImage = (index: number, url: string) => {
+    const next = [...copy.cardImageOverrides] as [string, string, string];
+    next[index] = url;
+    updateFeatured({ cardImageOverrides: next });
+  };
   const sectionRef = useRef<HTMLElement>(null);
   const products = useMenuStore((s) => s.products);
   const categories = useMenuStore((s) => s.categories);
@@ -201,7 +227,13 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kado-red font-display text-base font-black text-kado-cream shadow-md sm:h-11 sm:w-11 sm:text-lg">
                 角
               </span>
-              <CmsStyledText value={copy.badge} as="span" className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label" defaultColorClass="text-kado-red" />
+              <CmsStyledText
+                value={copy.badge}
+                as="span"
+                className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label"
+                defaultColorClass="text-kado-red"
+                {...cmsTextProps(cmsEditMode, 'featured.badge', 'Badge', (v) => updateFeatured({ badge: v }))}
+              />
             </TimelineContent>
 
             <TimelineContent
@@ -211,7 +243,12 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
               timelineRef={sectionRef}
               className="kado-h2 text-kado-dark"
             >
-              <CmsStyledText value={copy.title} as="span" className="kado-h2 text-kado-dark" />
+              <CmsStyledText
+                value={copy.title}
+                as="span"
+                className="kado-h2 text-kado-dark"
+                {...cmsTextProps(cmsEditMode, 'featured.title', 'Title', (v) => updateFeatured({ title: v }))}
+              />
             </TimelineContent>
 
             <TimelineContent
@@ -220,8 +257,24 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
               timelineRef={sectionRef}
               className="mt-3 max-w-xl kado-body text-kado-dark/70 sm:mt-4"
             >
-              <span className="hidden md:inline"><CmsStyledText value={copy.subtitleDesktop} as="span" /></span>
-              <span className="md:hidden"><CmsStyledText value={copy.subtitleMobile} as="span" /></span>
+              <span className="hidden md:inline">
+                <CmsStyledText
+                  value={copy.subtitleDesktop}
+                  as="span"
+                  {...cmsTextProps(cmsEditMode, 'featured.subtitleDesktop', 'Subtitle (desktop)', (v) =>
+                    updateFeatured({ subtitleDesktop: v }),
+                  )}
+                />
+              </span>
+              <span className="md:hidden">
+                <CmsStyledText
+                  value={copy.subtitleMobile}
+                  as="span"
+                  {...cmsTextProps(cmsEditMode, 'featured.subtitleMobile', 'Subtitle (mobile)', (v) =>
+                    updateFeatured({ subtitleMobile: v }),
+                  )}
+                />
+              </span>
             </TimelineContent>
           </div>
 
@@ -235,14 +288,26 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
               to={copy.shopCtaPath || '/menu'}
               className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-kado-red px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
             >
-              <CmsStyledText value={copy.shopCtaLabel || 'View Shop'} as="span" />
+              <CmsStyledText
+                value={copy.shopCtaLabel || 'View Shop'}
+                as="span"
+                {...cmsTextProps(cmsEditMode, 'featured.shopCtaLabel', 'Shop CTA', (v) =>
+                  updateFeatured({ shopCtaLabel: v }),
+                )}
+              />
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
             <Link
               to="/menu"
               className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full border border-kado-dark/15 bg-kado-offwhite/90 px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-dark transition-colors hover:border-kado-red/40 hover:text-kado-red sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
             >
-              <CmsStyledText value={copy.menuCtaLabel} as="span" />
+              <CmsStyledText
+                value={copy.menuCtaLabel}
+                as="span"
+                {...cmsTextProps(cmsEditMode, 'featured.menuCtaLabel', 'Menu CTA', (v) =>
+                  updateFeatured({ menuCtaLabel: v }),
+                )}
+              />
             </Link>
           </TimelineContent>
         </div>
@@ -281,6 +346,9 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
                         index={i}
                         hero={i === 0}
                         imageOverride={copy.cardImageOverrides[i]}
+                        cmsEditMode={cmsEditMode}
+                        cardIndex={i}
+                        onImageOverride={(url) => setCardImage(i, url)}
                         sectionRef={sectionRef}
                         onSelect={setSelectedProduct}
                         orderHint={orderHint}
@@ -306,6 +374,9 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
                       index={0}
                       hero
                       imageOverride={copy.cardImageOverrides[0]}
+                      cmsEditMode={cmsEditMode}
+                      cardIndex={0}
+                      onImageOverride={(url) => setCardImage(0, url)}
                       sectionRef={sectionRef}
                       onSelect={setSelectedProduct}
                       orderHint={orderHint}
@@ -319,6 +390,9 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode: _cmsEditMode
                       categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
                       index={i + 1}
                       imageOverride={copy.cardImageOverrides[i + 1]}
+                      cmsEditMode={cmsEditMode}
+                      cardIndex={i + 1}
+                      onImageOverride={(url) => setCardImage(i + 1, url)}
                       sectionRef={sectionRef}
                       onSelect={setSelectedProduct}
                       orderHint={orderHint}

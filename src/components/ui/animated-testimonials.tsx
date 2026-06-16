@@ -1,6 +1,9 @@
 import type { CmsText } from '../../lib/cmsTypography';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
 import { cmsTextPlain } from '../../lib/cmsTypography';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { useLandingContentStore } from '../../store/landingContentStore';
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
 import { Separator } from "./separator"
 import { ExternalLink, Quote, Star } from "lucide-react"
@@ -37,10 +40,6 @@ export interface AnimatedTestimonialsProps {
   cmsEditMode?: boolean
 }
 
-function formatReviewText(text: string) {
-  return text.replace(/\s+/g, " ").replace(/…+/g, "…").trim()
-}
-
 export function AnimatedTestimonials({
   title = "Loved by the community",
   subtitle = "Don't just take our word for it. Hear from our regulars.",
@@ -51,7 +50,11 @@ export function AnimatedTestimonials({
   trustedCompaniesTitle = "Uses trusted brands worldwide",
   googleListing,
   className,
+  cmsEditMode,
 }: AnimatedTestimonialsProps) {
+  const updateTestimonials = useLandingContentStore((s) => s.updateTestimonials);
+  const updateTestimonialItem = useLandingContentStore((s) => s.updateTestimonialItem);
+  const updateTrustedBrand = useLandingContentStore((s) => s.updateTrustedBrand);
   const [activeIndex, setActiveIndex] = useState(0)
 
   const sectionRef = useRef(null)
@@ -111,11 +114,24 @@ export function AnimatedTestimonials({
               {badgeText && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full kado-label bg-kado-red/10 text-kado-red">
                   <Star className="h-3 w-3 fill-kado-red" />
-                  <CmsStyledText value={badgeText} as="span" />
+                  <CmsStyledText
+                    value={badgeText}
+                    as="span"
+                    {...cmsTextProps(cmsEditMode, 'testimonials.badge', 'Badge', (v) =>
+                      updateTestimonials({ badge: v }),
+                    )}
+                  />
                 </div>
               )}
 
-              <CmsStyledText value={title} as="h2" className="kado-h2 text-kado-dark" />
+              <CmsStyledText
+                value={title}
+                as="h2"
+                className="kado-h2 text-kado-dark"
+                {...cmsTextProps(cmsEditMode, 'testimonials.title', 'Title', (v) =>
+                  updateTestimonials({ title: v }),
+                )}
+              />
 
               <CmsStyledText
                 value={subtitle}
@@ -123,6 +139,9 @@ export function AnimatedTestimonials({
                 className="max-w-[520px] md:text-base text-kado-dark/60"
                 defaultSizeClass="kado-body"
                 defaultColorClass="text-kado-dark/60"
+                {...cmsTextProps(cmsEditMode, 'testimonials.subtitle', 'Subtitle', (v) =>
+                  updateTestimonials({ subtitle: v }),
+                )}
               />
 
               {googleListing ? (
@@ -209,7 +228,15 @@ export function AnimatedTestimonials({
                   <div className="relative mb-6 flex-1">
                     <Quote className="absolute -top-1 -left-1 h-7 w-7 text-kado-red/15 rotate-180" />
                     <p className="relative z-10 text-kado-dark text-base leading-relaxed font-medium">
-                      &ldquo;{formatReviewText(cmsTextPlain(testimonial.content))}&rdquo;
+                      &ldquo;
+                      <CmsStyledText
+                        value={testimonial.content}
+                        as="span"
+                        {...cmsTextProps(cmsEditMode, `testimonials.item.${index}.content`, `Quote ${index + 1}`, (v) =>
+                          updateTestimonialItem(index, { content: v }),
+                        )}
+                      />
+                      &rdquo;
                     </p>
                   </div>
 
@@ -219,11 +246,31 @@ export function AnimatedTestimonials({
                   <div className="flex items-center gap-3">
                     <Avatar className="h-11 w-11 border border-kado-dark/10">
                       {testimonial.avatar?.trim() ? (
-                        <AvatarImage
-                          src={testimonial.avatar}
+                        cmsEditMode ? (
+                          <CmsEditableImage
+                            cmsField={`testimonials.item.${index}.avatar`}
+                            cmsLabel={`Avatar ${index + 1}`}
+                            src={testimonial.avatar}
+                            alt={cmsTextPlain(testimonial.name)}
+                            className="h-11 w-11 rounded-full"
+                            onImageChange={(url) => updateTestimonialItem(index, { avatar: url })}
+                          />
+                        ) : (
+                          <AvatarImage
+                            src={testimonial.avatar}
+                            alt={cmsTextPlain(testimonial.name)}
+                            referrerPolicy="no-referrer"
+                            className="object-cover"
+                          />
+                        )
+                      ) : cmsEditMode ? (
+                        <CmsEditableImage
+                          cmsField={`testimonials.item.${index}.avatar`}
+                          cmsLabel={`Avatar ${index + 1}`}
+                          src="/logo/Logo1.png"
                           alt={cmsTextPlain(testimonial.name)}
-                          referrerPolicy="no-referrer"
-                          className="object-cover"
+                          className="h-11 w-11 rounded-full"
+                          onImageChange={(url) => updateTestimonialItem(index, { avatar: url })}
                         />
                       ) : null}
                       <AvatarFallback delayMs={testimonial.avatar?.trim() ? 600 : 0}>
@@ -231,10 +278,38 @@ export function AnimatedTestimonials({
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CmsStyledText value={testimonial.name} as="p" className="font-semibold text-sm" defaultColorClass="text-kado-dark" />
+                      <CmsStyledText
+                        value={testimonial.name}
+                        as="p"
+                        className="font-semibold text-sm"
+                        defaultColorClass="text-kado-dark"
+                        {...cmsTextProps(cmsEditMode, `testimonials.item.${index}.name`, `Name ${index + 1}`, (v) =>
+                          updateTestimonialItem(index, { name: v }),
+                        )}
+                      />
                       <p className="text-xs text-kado-dark/50">
-                        {cmsTextPlain(testimonial.role)}
-                        {cmsTextPlain(testimonial.company) ? ` · ${cmsTextPlain(testimonial.company)}` : ""}
+                        <CmsStyledText
+                          value={testimonial.role}
+                          as="span"
+                          {...cmsTextProps(cmsEditMode, `testimonials.item.${index}.role`, `Role ${index + 1}`, (v) =>
+                            updateTestimonialItem(index, { role: v }),
+                          )}
+                        />
+                        {cmsTextPlain(testimonial.company) ? (
+                          <>
+                            {' · '}
+                            <CmsStyledText
+                              value={testimonial.company}
+                              as="span"
+                              {...cmsTextProps(
+                                cmsEditMode,
+                                `testimonials.item.${index}.company`,
+                                `Area ${index + 1}`,
+                                (v) => updateTestimonialItem(index, { company: v }),
+                              )}
+                            />
+                          </>
+                        ) : null}
                       </p>
                     </div>
                   </div>
@@ -261,27 +336,44 @@ export function AnimatedTestimonials({
               as="p"
               className="text-xs font-semibold tracking-widest uppercase mb-8"
               defaultColorClass="text-kado-dark/40"
+              {...cmsTextProps(cmsEditMode, 'testimonials.trustedTitle', 'Trusted row title', (v) =>
+                updateTestimonials({ trustedTitle: v }),
+              )}
             />
             <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6">
               {trustedCompanies
                 .filter((c) => cmsTextPlain(c.label).trim() || c.imageUrl?.trim())
-                .map((company) => (
+                .map((company, bi) => (
                   <div
                     key={`${cmsTextPlain(company.label)}-${company.imageUrl ?? 'text'}`}
                     className="flex items-center justify-center min-h-[2.5rem]"
                   >
                     {company.imageUrl?.trim() ? (
-                      <img
-                        src={company.imageUrl}
-                        alt={cmsTextPlain(company.label)}
-                        className="h-8 md:h-10 w-auto max-w-[120px] object-contain opacity-70 hover:opacity-100 transition-opacity"
-                      />
+                      cmsEditMode ? (
+                        <CmsEditableImage
+                          cmsField={`testimonials.trustedBrand.${bi}.image`}
+                          cmsLabel={`Brand ${bi + 1} logo`}
+                          src={company.imageUrl}
+                          alt={cmsTextPlain(company.label)}
+                          className="h-8 md:h-10 w-auto max-w-[120px] object-contain opacity-70 hover:opacity-100 transition-opacity"
+                          onImageChange={(url) => updateTrustedBrand(bi, { imageUrl: url })}
+                        />
+                      ) : (
+                        <img
+                          src={company.imageUrl}
+                          alt={cmsTextPlain(company.label)}
+                          className="h-8 md:h-10 w-auto max-w-[120px] object-contain opacity-70 hover:opacity-100 transition-opacity"
+                        />
+                      )
                     ) : (
                       <CmsStyledText
                         value={company.label}
                         as="span"
                         className="font-display text-lg font-bold tracking-tight opacity-70 hover:opacity-100 transition-opacity duration-200"
                         defaultColorClass="text-kado-dark/25"
+                        {...cmsTextProps(cmsEditMode, `testimonials.trustedBrand.${bi}.label`, `Brand ${bi + 1}`, (v) =>
+                          updateTrustedBrand(bi, { label: v }),
+                        )}
                       />
                     )}
                   </div>

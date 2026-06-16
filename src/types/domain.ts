@@ -224,21 +224,6 @@ export interface TakeoutQr {
   qrPayload: string;
 }
 
-export type SectionType = 'hero' | 'image-text' | 'gallery' | 'cta' | 'stat' | 'faq';
-
-export interface CustomSection {
-  id: string;
-  page: 'home';
-  type: SectionType;
-  title?: string;
-  body?: string;
-  image?: string;
-  ctaLabel?: string;
-  ctaHref?: string;
-  order: number;
-  visible: boolean;
-}
-
 // ─── Merch ──────────────────────────────────────────────────────────────────
 
 export interface MerchCategory {

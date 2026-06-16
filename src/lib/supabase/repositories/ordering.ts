@@ -1186,31 +1186,6 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_content: content });
     if (error) throw error;
   },
-  async fetchHomeSections(): Promise<unknown | null> {
-    if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('home_sections')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
-    if (!data) return null;
-    return (data as { home_sections?: unknown }).home_sections ?? null;
-  },
-  async upsertHomeSections(sections: unknown) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .update({ home_sections: sections })
-      .eq('id', true)
-      .select('id')
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
-  },
   async fetchBoothCatalog(): Promise<unknown | null> {
     if (!supabase) return null;
     const { data, error } = await supabase

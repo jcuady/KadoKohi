@@ -6,7 +6,10 @@ import { sendInboundEmail } from '../../lib/sendInboundEmail';
 import { HorizontalMarquee } from './marquee';
 import type { BrandMarqueeItem, KadoCircleCopy } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
+import CmsEditableImage from '../cms/CmsEditableImage';
 import { cmsTextPlain } from '../../lib/cmsTypography';
+import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { useLandingContentStore } from '../../store/landingContentStore';
 
 /** Partners & collaborators — default strip when CMS copy is absent. */
 export const KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
@@ -31,7 +34,9 @@ type KadoCircleCTAProps = {
  * “Join the Kado Circle” — dark panel, email capture, horizontal sponsor marquee, stats.
  * Brand: `kado-dark`, `kado-red`, `kado-cream` / white text (see `index.css` @theme).
  */
-export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
+export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCircleCTAProps) {
+  const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
+  const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sent' | 'error'>('idle');
@@ -127,11 +132,28 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
           <div className="max-w-xl">
             <p className="kado-label mb-5 flex items-center gap-2 text-kado-red">
               <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              <CmsStyledText value={copy?.badge ?? 'The Inner Circle'} as="span" />
+              <CmsStyledText
+                value={copy?.badge ?? 'The Inner Circle'}
+                as="span"
+                {...cmsTextProps(cmsEditMode, 'kado-circle.badge', 'Badge', (v) => updateKadoCircle({ badge: v }))}
+              />
             </p>
             <h2 className="kado-h2 mb-4 sm:mb-5 text-white">
-              <CmsStyledText value={copy?.titleBefore ?? 'Join the'} as="span" />{' '}
-              <CmsStyledText value={copy?.titleAccent ?? 'Kado Circle.'} as="span" className="text-kado-red not-italic" />
+              <CmsStyledText
+                value={copy?.titleBefore ?? 'Join the'}
+                as="span"
+                {...cmsTextProps(cmsEditMode, 'kado-circle.titleBefore', 'Title before accent', (v) =>
+                  updateKadoCircle({ titleBefore: v }),
+                )}
+              />{' '}
+              <CmsStyledText
+                value={copy?.titleAccent ?? 'Kado Circle.'}
+                as="span"
+                className="text-kado-red not-italic"
+                {...cmsTextProps(cmsEditMode, 'kado-circle.titleAccent', 'Title accent', (v) =>
+                  updateKadoCircle({ titleAccent: v }),
+                )}
+              />
             </h2>
             <CmsStyledText
               value={
@@ -142,6 +164,7 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
               className="md:text-base"
               defaultSizeClass="kado-body"
               defaultColorClass="text-white/55"
+              {...cmsTextProps(cmsEditMode, 'kado-circle.body', 'Body', (v) => updateKadoCircle({ body: v }))}
             />
           </div>
 
@@ -166,7 +189,15 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
                 disabled={submitting}
                 className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-kado-red-hover transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
               >
-                {submitting ? 'Sending…' : <CmsStyledText value={copy?.submitLabel ?? 'Request access'} as="span" />}{' '}
+                {submitting ? 'Sending…' : (
+                  <CmsStyledText
+                    value={copy?.submitLabel ?? 'Request access'}
+                    as="span"
+                    {...cmsTextProps(cmsEditMode, 'kado-circle.submitLabel', 'Submit button', (v) =>
+                      updateKadoCircle({ submitLabel: v }),
+                    )}
+                  />
+                )}{' '}
                 {!submitting ? <ArrowRight className="w-4 h-4" aria-hidden /> : null}
               </button>
             </form>
@@ -184,7 +215,13 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
               <p className="text-white/45 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
             ) : (
               <p className="text-white/35 text-xs mt-3 text-center lg:text-left">
-                <CmsStyledText value={copy?.disclaimer ?? 'No spam. Unsubscribe any time.'} as="span" />
+                <CmsStyledText
+                  value={copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}
+                  as="span"
+                  {...cmsTextProps(cmsEditMode, 'kado-circle.disclaimer', 'Disclaimer', (v) =>
+                    updateKadoCircle({ disclaimer: v }),
+                  )}
+                />
               </p>
             )}
           </div>
@@ -197,27 +234,44 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             as="p"
             className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-center"
             defaultColorClass="text-white/35"
+            {...cmsTextProps(cmsEditMode, 'kado-circle.marqueeLabel', 'Marquee label', (v) =>
+              updateKadoCircle({ marqueeLabel: v }),
+            )}
           />
           <div ref={marqueeRef} className="relative w-full py-2">
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] py-4 md:py-5">
               <HorizontalMarquee speed={32} pauseOnHover className="w-full">
-                {visibleSponsors.map((item) => (
+                {visibleSponsors.map((item, si) => (
                   <div
                     key={`${cmsTextPlain(item.label)}-${item.imageUrl ?? 'text'}`}
                     className="marquee-item-horizontal flex items-center justify-center px-6 sm:px-10 md:px-14 whitespace-nowrap min-h-[3rem] md:min-h-[4rem]"
                   >
                     {item.imageUrl?.trim() ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={cmsTextPlain(item.label)}
-                        className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
-                      />
+                      cmsEditMode ? (
+                        <CmsEditableImage
+                          cmsField={`kado-circle.sponsor.${si}.image`}
+                          cmsLabel={`Sponsor ${si + 1} logo`}
+                          src={item.imageUrl}
+                          alt={cmsTextPlain(item.label)}
+                          className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
+                          onImageChange={(url) => updateKadoCircleSponsor(si, { imageUrl: url })}
+                        />
+                      ) : (
+                        <img
+                          src={item.imageUrl}
+                          alt={cmsTextPlain(item.label)}
+                          className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
+                        />
+                      )
                     ) : (
                       <CmsStyledText
                         value={item.label}
                         as="span"
                         className="font-display text-lg sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight"
                         defaultColorClass="text-white/90"
+                        {...cmsTextProps(cmsEditMode, `kado-circle.sponsor.${si}.label`, `Sponsor ${si + 1}`, (v) =>
+                          updateKadoCircleSponsor(si, { label: v }),
+                        )}
                       />
                     )}
                   </div>
@@ -236,14 +290,39 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             { num: '50+', label: 'Menu items' },
             { num: '9', label: 'Stamp loyalty' },
             { num: '∞', label: 'Good vibes' },
-          ]).map(({ num, label }) => (
+          ]).map(({ num, label }, statIdx) => (
             <div key={cmsTextPlain(label)}>
-              <CmsStyledText value={num} as="p" className="kado-h3 mb-1" defaultColorClass="text-white" />
+              <CmsStyledText
+                value={num}
+                as="p"
+                className="kado-h3 mb-1"
+                defaultColorClass="text-white"
+                {...cmsTextProps(cmsEditMode, `kado-circle.stat.${statIdx}.num`, `Stat ${statIdx + 1} number`, (v) => {
+                  const stats = [...(copy?.stats?.length ? copy.stats : [
+                    { num: '2+', label: 'Branches' },
+                    { num: '50+', label: 'Menu items' },
+                    { num: '9', label: 'Stamp loyalty' },
+                    { num: '∞', label: 'Good vibes' },
+                  ])];
+                  stats[statIdx] = { ...stats[statIdx], num: v };
+                  updateKadoCircle({ stats });
+                })}
+              />
               <CmsStyledText
                 value={label}
                 as="p"
                 className="text-xs uppercase tracking-widest font-bold"
                 defaultColorClass="text-white/40"
+                {...cmsTextProps(cmsEditMode, `kado-circle.stat.${statIdx}.label`, `Stat ${statIdx + 1} label`, (v) => {
+                  const stats = [...(copy?.stats?.length ? copy.stats : [
+                    { num: '2+', label: 'Branches' },
+                    { num: '50+', label: 'Menu items' },
+                    { num: '9', label: 'Stamp loyalty' },
+                    { num: '∞', label: 'Good vibes' },
+                  ])];
+                  stats[statIdx] = { ...stats[statIdx], label: v };
+                  updateKadoCircle({ stats });
+                })}
               />
             </div>
           ))}
@@ -254,7 +333,13 @@ export default function KadoCircleCTA({ className, copy }: KadoCircleCTAProps) {
             to="/auth/signup"
             className="inline-flex min-h-[44px] items-center justify-center px-2 text-xs font-bold uppercase tracking-wider text-kado-red/90 hover:text-kado-cream transition-colors"
           >
-            <CmsStyledText value={copy?.footerLinkLabel ?? 'Or go straight to create account →'} as="span" />
+            <CmsStyledText
+              value={copy?.footerLinkLabel ?? 'Or go straight to create account →'}
+              as="span"
+              {...cmsTextProps(cmsEditMode, 'kado-circle.footerLinkLabel', 'Footer link', (v) =>
+                updateKadoCircle({ footerLinkLabel: v }),
+              )}
+            />
           </Link>
         </p>
       </div>

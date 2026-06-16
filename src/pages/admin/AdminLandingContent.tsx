@@ -45,6 +45,8 @@ export default function AdminLandingContent() {
   const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
+  const updateFaq = useLandingContentStore((s) => s.updateFaq);
+  const updateFaqItem = useLandingContentStore((s) => s.updateFaqItem);
   const categories = useMenuStore((s) => s.categories);
   const allProducts = useMenuStore((s) => s.products);
   const menuDataSource = useMenuStore((s) => s.dataSource);
@@ -668,7 +670,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
@@ -693,7 +695,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
@@ -779,6 +781,54 @@ export default function AdminLandingContent() {
         </LandingCmsSectionCard>
 
         <LandingCmsSectionCard tab={LANDING_CMS_TABS[9]} onUploadError={setUploadError}>
+          <div className="space-y-6">
+        <section className="rounded-2xl dash-card border p-5 md:p-6">
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">FAQ</h2>
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <CmsField label="Eyebrow" value={content.faq.eyebrow} onChange={(v) => updateFaq({ eyebrow: v })} />
+            <CmsField label="Title" value={content.faq.title} onChange={(v) => updateFaq({ title: v })} />
+            <CmsField
+              label="Subtitle"
+              value={content.faq.subtitle}
+              onChange={(v) => updateFaq({ subtitle: v })}
+              multiline
+            />
+            <CmsField
+              label="Footer text"
+              value={content.faq.footerText}
+              onChange={(v) => updateFaq({ footerText: v })}
+              multiline
+            />
+            <CmsField
+              label="Contact CTA label"
+              value={content.faq.contactCtaLabel}
+              onChange={(v) => updateFaq({ contactCtaLabel: v })}
+            />
+          </div>
+          <p className="text-sm font-bold dash-heading mb-3">Questions & answers ({content.faq.items.length})</p>
+          <div className="space-y-4">
+            {content.faq.items.map((item, fi) => (
+              <div key={`faq-admin-${fi}`} className="rounded-xl border dash-border p-4 space-y-2">
+                <span className="text-xs font-bold dash-muted">FAQ #{fi + 1}</span>
+                <CmsField
+                  label="Question"
+                  value={item.question}
+                  onChange={(v) => updateFaqItem(fi, { question: v })}
+                />
+                <CmsField
+                  label="Answer"
+                  value={item.answer}
+                  onChange={(v) => updateFaqItem(fi, { answer: v })}
+                  multiline
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+          </div>
+        </LandingCmsSectionCard>
+
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[10]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>

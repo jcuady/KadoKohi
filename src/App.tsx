@@ -19,7 +19,6 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminMenu from './pages/admin/AdminMenu';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminTables from './pages/admin/AdminTables';
-import AdminSections from './pages/admin/AdminSections';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAuditLog from './pages/admin/AdminAuditLog';
 import AdminVouchers from './pages/admin/AdminVouchers';
@@ -117,7 +116,6 @@ export default function App() {
             <Route path="booth-content" element={<AdminBoothContent />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="tables" element={<AdminTables />} />
-            <Route path="sections" element={<AdminSections />} />
             <Route path="landing" element={<AdminLandingContent />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="pastries" element={<Navigate to="/admin/menu?tab=pastries" replace />} />
