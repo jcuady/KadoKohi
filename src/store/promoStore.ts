@@ -11,10 +11,17 @@ export interface PromoValidationResult {
   reason?: string;
 }
 
+export interface PromoCartLine {
+  itemType?: string;
+  unitPrice: number;
+  qty: number;
+}
+
 export interface PromoStore {
   /** Admin: all promo codes, sorted newest-first */
   codes: PromoCode[];
   loading: boolean;
+  hydrateError: string | null;
   /** Admin: load / refresh all codes from DB */
   fetchAll: () => Promise<void>;
   /** Admin: create a new code */
@@ -33,6 +40,7 @@ export interface PromoStore {
     codeStr: string,
     cartSubtotal: number,
     branchId?: string,
+    cartLines?: PromoCartLine[],
   ) => Promise<PromoValidationResult>;
   /** Called when an order is placed with a promo code applied. */
   recordClaim: (input: {
@@ -68,14 +76,17 @@ export function computePromoDiscount(code: PromoCode, cartSubtotal: number, cart
 export const usePromoStore = create<PromoStore>()((set, get) => ({
   codes: [],
   loading: false,
+  hydrateError: null,
 
   fetchAll: async () => {
-    set({ loading: true });
+    set({ loading: true, hydrateError: null });
     try {
       const codes = await promoRepo.fetchAll();
-      set({ codes, loading: false });
-    } catch {
-      set({ loading: false });
+      set({ codes, loading: false, hydrateError: null });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not load promo codes.';
+      set({ loading: false, hydrateError: message });
+      throw err;
     }
   },
 
@@ -127,7 +138,7 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
     set({ codes: get().codes.filter((c) => c.id !== id) });
   },
 
-  validateCode: async (codeStr, cartSubtotal, branchId) => {
+  validateCode: async (codeStr, cartSubtotal, branchId, cartLines) => {
     const trimmed = codeStr.trim().toUpperCase();
     if (!trimmed) return { ok: false, discount: 0, reason: 'Enter a promo code.' };
 
@@ -164,7 +175,7 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
       }
     }
 
-    const discount = computePromoDiscount(code, cartSubtotal);
+    const discount = computePromoDiscount(code, cartSubtotal, cartLines);
     if (discount <= 0) {
       return { ok: false, discount: 0, reason: 'This code cannot be applied to your cart.' };
     }

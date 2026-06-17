@@ -28,7 +28,7 @@ export interface MenuStore {
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
   updateProduct: (id: string, patch: Partial<Product>) => void;
   setProductInStock: (id: string, inStock: boolean) => Promise<void>;
-  removeProduct: (id: string) => void;
+  removeProduct: (id: string) => Promise<void>;
   productsByCategory: (categoryId: string) => Product[];
   reorderCategories: (fromIndex: number, toIndex: number) => void;
   reorderProductsInCategory: (categoryId: string, fromIndex: number, toIndex: number) => void;
@@ -244,12 +244,15 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         }
       },
 
-      removeProduct: (id) => {
+      removeProduct: async (id) => {
         const prev = get().products;
         set({ products: prev.filter((pr) => pr.id !== id), hydrateError: null });
-        void orderingRepo.deleteProduct(id).catch(() => {
+        try {
+          await orderingRepo.deleteProduct(id);
+        } catch (err) {
           set({ products: prev, hydrateError: 'Could not delete product.' });
-        });
+          throw err;
+        }
       },
 
       productsByCategory: (categoryId) =>

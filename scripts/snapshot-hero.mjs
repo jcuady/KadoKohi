@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 
-const base = 'http://127.0.0.1:3000/';
+const base = 'http://127.0.0.1:5174/';
 const out = 'screenshots';
 
 await mkdir(out, { recursive: true });

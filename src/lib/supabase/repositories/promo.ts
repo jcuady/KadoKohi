@@ -25,7 +25,7 @@ function mapRow(r: Record<string, unknown>): PromoCode {
 export const promoRepo = {
   /** Admin: fetch all codes with usage counts. */
   async fetchAll(): Promise<PromoCode[]> {
-    if (!supabase) return [];
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase
       .from('kk_promo_codes')
       .select('*')
@@ -49,7 +49,7 @@ export const promoRepo = {
 
   /** Admin: upsert a promo code. */
   async upsert(p: Omit<PromoCode, 'uses' | 'createdAt' | 'updatedAt'> & { createdBy?: string }): Promise<void> {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_promo_codes').upsert({
       id: p.id,
       code: p.code.toUpperCase().trim(),
@@ -71,7 +71,7 @@ export const promoRepo = {
 
   /** Admin: hard-delete a promo code. */
   async remove(id: string): Promise<void> {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_promo_codes').delete().eq('id', id);
     if (error) throw error;
   },

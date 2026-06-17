@@ -1,8 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import dns from 'node:dns';
 import path from 'path';
 import {defineConfig} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+// Prefer IPv4 for localhost — avoids browser hitting ::1 while Vite listens on 127.0.0.1.
+dns.setDefaultResultOrder('ipv4first');
+
+/** Local dev: http://127.0.0.1:5174 (Vite alt port; 3000/3333 often taken on Windows). */
+const DEV_HOST = '127.0.0.1';
+const DEV_PORT = 5174;
+const PREVIEW_PORT = 4173;
 
 export default defineConfig(() => {
   return {
@@ -10,6 +19,9 @@ export default defineConfig(() => {
       react(),
       tailwindcss(),
       VitePWA({
+        devOptions: {
+          enabled: false,
+        },
         registerType: 'autoUpdate',
         includeAssets: [
           'favicon.ico',
@@ -66,17 +78,15 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 3000,
-      host: true,
-      // With --host=0.0.0.0 the browser must connect HMR websocket to localhost explicitly.
-      hmr:
-        process.env.DISABLE_HMR === 'true'
-          ? false
-          : {
-              host: 'localhost',
-              port: 3000,
-              clientPort: 3000,
-            },
+      host: DEV_HOST,
+      port: DEV_PORT,
+      strictPort: true,
+      open: `http://${DEV_HOST}:${DEV_PORT}/`,
+    },
+    preview: {
+      host: DEV_HOST,
+      port: PREVIEW_PORT,
+      strictPort: true,
     },
   };
 });

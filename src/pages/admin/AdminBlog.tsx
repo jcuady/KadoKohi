@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { BlogPost } from '../../types/domain';
 import { useBlogStore } from '../../store/blogStore';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { blogRepo } from '../../lib/supabase/repositories/blog';
+import { newId } from '../../lib/id';
 import { slugify } from '../../lib/slugify';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Loader2 } from 'lucide-react';
 
 type BlogFormData = {
   title: string;
@@ -56,8 +57,15 @@ function formatListDate(iso: string) {
   });
 }
 
+function isInlineDataUrl(url: string): boolean {
+  return url.trim().startsWith('data:');
+}
+
 export default function AdminBlog() {
   const posts = useBlogStore((s) => s.posts);
+  const loading = useBlogStore((s) => s.loading);
+  const hydrated = useBlogStore((s) => s.hydrated);
+  const hydrateError = useBlogStore((s) => s.hydrateError);
   const hydrateFromRemote = useBlogStore((s) => s.hydrateFromRemote);
   const addPost = useBlogStore((s) => s.addPost);
   const updatePost = useBlogStore((s) => s.updatePost);
@@ -67,6 +75,8 @@ export default function AdminBlog() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<BlogFormData>(emptyForm);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -75,16 +85,33 @@ export default function AdminBlog() {
     void hydrateFromRemote();
   }, [hydrateFromRemote]);
 
+  useEffect(() => {
+    if (!pendingImageFile) {
+      setPreviewObjectUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(pendingImageFile);
+    setPreviewObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingImageFile]);
+
   const sortedPosts = useMemo(
     () => [...posts].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
     [posts],
   );
 
+  const coverPreview = previewObjectUrl ?? (form.imageUrl.trim() || null);
+
+  const resetImageState = () => {
+    setPendingImageFile(null);
+    setImageError('');
+  };
+
   const startAdd = () => {
     setEditingId(null);
     setForm(emptyForm);
     setSlugTouched(false);
-    setImageError('');
+    resetImageState();
     setSaveError('');
     setShowForm(true);
   };
@@ -104,7 +131,7 @@ export default function AdminBlog() {
       visible: post.visible,
     });
     setSlugTouched(true);
-    setImageError('');
+    resetImageState();
     setSaveError('');
     setShowForm(true);
   };
@@ -112,6 +139,7 @@ export default function AdminBlog() {
   const cancelForm = () => {
     setShowForm(false);
     setEditingId(null);
+    resetImageState();
     setSaveError('');
   };
 
@@ -123,15 +151,30 @@ export default function AdminBlog() {
     }));
   };
 
-  const onImagePick = async (file: File | null) => {
+  const onImagePick = (file: File | null) => {
     if (!file) return;
     setImageError('');
-    try {
-      const dataUrl = await readImageDataUrl(file);
-      setForm((f) => ({ ...f, imageUrl: dataUrl }));
-    } catch {
-      setImageError('Could not read image. Try a smaller JPG or PNG.');
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please choose an image file (PNG, JPG, WebP, etc.).');
+      return;
     }
+    if (file.size > 5_242_880) {
+      setImageError('Cover image must be 5 MB or smaller.');
+      return;
+    }
+    setPendingImageFile(file);
+  };
+
+  const resolveCoverUrl = async (postId: string): Promise<string> => {
+    if (pendingImageFile) {
+      return blogRepo.uploadCoverImage(pendingImageFile, postId);
+    }
+    const trimmed = form.imageUrl.trim();
+    if (!trimmed) return '';
+    if (isInlineDataUrl(trimmed)) {
+      throw new Error('Pick the cover image again — inline data URLs cannot be saved to the database.');
+    }
+    return trimmed;
   };
 
   const submit = async (e: FormEvent) => {
@@ -158,21 +201,25 @@ export default function AdminBlog() {
       return;
     }
 
-    const payload = {
-      slug,
-      title,
-      excerpt: form.excerpt.trim(),
-      category: form.category.trim() || 'General',
-      publishedAt: new Date(`${form.publishedAt}T12:00:00`).toISOString(),
-      readMinutes,
-      imageUrl: form.imageUrl.trim(),
-      imageAlt: form.imageAlt.trim() || title,
-      body,
-      visible: form.visible,
-    };
+    const postId = editingId ?? newId();
 
     setSaving(true);
     try {
+      const imageUrl = await resolveCoverUrl(postId);
+      const payload = {
+        id: postId,
+        slug,
+        title,
+        excerpt: form.excerpt.trim(),
+        category: form.category.trim() || 'General',
+        publishedAt: new Date(`${form.publishedAt}T12:00:00`).toISOString(),
+        readMinutes,
+        imageUrl,
+        imageAlt: form.imageAlt.trim() || title,
+        body,
+        visible: form.visible,
+      };
+
       if (editingId) {
         await updatePost(editingId, payload);
       } else {
@@ -180,8 +227,7 @@ export default function AdminBlog() {
       }
       cancelForm();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not save post.';
-      setSaveError(msg);
+      setSaveError(err instanceof Error ? err.message : 'Could not save post.');
     } finally {
       setSaving(false);
     }
@@ -194,8 +240,7 @@ export default function AdminBlog() {
       await removePost(post.id);
       if (editingId === post.id) cancelForm();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not delete post.';
-      setSaveError(msg);
+      setSaveError(err instanceof Error ? err.message : 'Could not delete post.');
     }
   };
 
@@ -208,6 +253,11 @@ export default function AdminBlog() {
           <p className="dash-muted mt-1 text-sm max-w-xl">
             Create and manage stories for the public <code className="text-xs">/blog</code> page. Drafts stay hidden when visibility is off.
           </p>
+          {hydrated ? (
+            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+              Synced with Supabase · {posts.length} post{posts.length === 1 ? '' : 's'}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -219,19 +269,20 @@ export default function AdminBlog() {
         </button>
       </div>
 
+      {hydrateError ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          Could not load blog posts from Supabase: {hydrateError}
+        </p>
+      ) : null}
+
       {saveError && !showForm ? (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{saveError}</p>
       ) : null}
 
       {showForm ? (
-        <form
-          onSubmit={submit}
-          className="dash-card rounded-2xl border p-6 space-y-5"
-        >
+        <form onSubmit={submit} className="dash-card rounded-2xl border p-6 space-y-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="dash-heading font-display text-lg font-bold">
-              {editingId ? 'Edit post' : 'New post'}
-            </h2>
+            <h2 className="dash-heading font-display text-lg font-bold">{editingId ? 'Edit post' : 'New post'}</h2>
             <button type="button" onClick={cancelForm} className="dash-muted text-sm hover:text-kado-red">
               Cancel
             </button>
@@ -306,19 +357,33 @@ export default function AdminBlog() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="block space-y-1.5">
-              <span className="dash-muted text-xs font-bold uppercase tracking-wider">Cover image</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => void onImagePick(e.target.files?.[0] ?? null)}
-                className="dash-input w-full rounded-xl border px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-kado-cream file:px-3 file:py-1.5 file:text-xs file:font-bold"
-              />
+            <div className="space-y-3">
+              <label className="block space-y-1.5">
+                <span className="dash-muted text-xs font-bold uppercase tracking-wider">Cover image file</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => onImagePick(e.target.files?.[0] ?? null)}
+                  className="dash-input w-full rounded-xl border px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-kado-cream file:px-3 file:py-1.5 file:text-xs file:font-bold"
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="dash-muted text-xs font-bold uppercase tracking-wider">Or image URL</span>
+                <input
+                  value={form.imageUrl}
+                  onChange={(e) => {
+                    setPendingImageFile(null);
+                    setForm((f) => ({ ...f, imageUrl: e.target.value }));
+                  }}
+                  placeholder="/images/hero-coffee.png or https://…"
+                  className="dash-input w-full rounded-xl border px-4 py-2.5 text-sm font-mono"
+                />
+              </label>
               {imageError ? <p className="text-xs text-red-600">{imageError}</p> : null}
-              {form.imageUrl ? (
-                <img src={form.imageUrl} alt="" className="mt-2 h-28 w-full rounded-xl object-cover border dash-border" />
+              {coverPreview ? (
+                <img src={coverPreview} alt="" className="h-28 w-full rounded-xl object-cover border dash-border" />
               ) : null}
-            </label>
+            </div>
             <label className="block space-y-1.5">
               <span className="dash-muted text-xs font-bold uppercase tracking-wider">Image alt text</span>
               <input
@@ -354,8 +419,9 @@ export default function AdminBlog() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-kado-dark px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-kado-red disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-kado-dark px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-kado-red disabled:opacity-50"
             >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {saving ? 'Saving…' : editingId ? 'Save changes' : 'Publish post'}
             </button>
             {editingId && form.visible ? (
@@ -374,7 +440,13 @@ export default function AdminBlog() {
       ) : null}
 
       <div className="space-y-3">
-        {sortedPosts.length === 0 ? (
+        {loading && !hydrated ? (
+          <p className="dash-muted inline-flex items-center gap-2 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading posts from database…
+          </p>
+        ) : null}
+        {!loading && sortedPosts.length === 0 ? (
           <p className="dash-muted text-sm">No posts yet. Create your first story.</p>
         ) : (
           sortedPosts.map((post) => (

@@ -121,7 +121,12 @@ export default function CartDrawer() {
     setPromoLoading(true);
     setPromoMsg(null);
     const subtotal = items.reduce((s, i) => s + i.lineTotal, 0);
-    const result = await validateCode(promoInput, subtotal, branchId);
+    const cartLines = items.map((line) => ({
+      itemType: line.itemType,
+      unitPrice: line.unitPrice,
+      qty: line.qty,
+    }));
+    const result = await validateCode(promoInput, subtotal, branchId, cartLines);
     if (result.ok && result.code) {
       setAppliedPromoCode(result.code, result.discount);
       setPromoMsg({ ok: true, text: `"${result.code.code}" applied — saves ₱${result.discount.toFixed(2)}` });
@@ -191,13 +196,16 @@ export default function CartDrawer() {
         modifiersTotal: 0,
         tax: totals.tax,
         total: totals.total,
-        loyaltyVoucherId: selectedVoucher?.id,
-        loyaltyVoucherCode: selectedVoucher?.code,
-        loyaltyDiscountTotal: totals.discount > 0 ? totals.discount : undefined,
+        loyaltyVoucherId: appliedPromoCode ? undefined : selectedVoucher?.id,
+        loyaltyVoucherCode: appliedPromoCode ? undefined : selectedVoucher?.code,
+        loyaltyDiscountTotal:
+          !appliedPromoCode && selectedVoucher && voucherCalc.discount > 0
+            ? voucherCalc.discount
+            : undefined,
         promoCode: appliedPromoCode?.code,
       });
 
-      if (selectedVoucher) {
+      if (!appliedPromoCode && selectedVoucher) {
         redeemVoucher(selectedVoucher.id, order.id);
       }
 

@@ -70,7 +70,7 @@ type FormState = typeof EMPTY_FORM;
 export default function AdminVouchers() {
   const branches = useBranchStore((s) => s.branches);
   const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
-  const { codes, loading, fetchAll, createCode, updateCode, toggleCode, removeCode } = usePromoStore();
+  const { codes, loading, hydrateError, fetchAll, createCode, updateCode, toggleCode, removeCode } = usePromoStore();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -195,6 +195,13 @@ export default function AdminVouchers() {
           New code
         </button>
       </div>
+
+      {hydrateError && (
+        <div className="mb-6 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{hydrateError}</span>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BlogPost } from '../types/domain';
 import { newId } from '../lib/id';
-import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { blogRepo } from '../lib/supabase/repositories/blog';
 import { supabase } from '../lib/supabase/client';
 
 const SEED_BLOG_POSTS: BlogPost[] = [
@@ -66,8 +66,17 @@ const SEED_BLOG_POSTS: BlogPost[] = [
   },
 ];
 
+function formatBlogError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message);
+  return 'Blog request failed.';
+}
+
 export interface BlogStore {
   posts: BlogPost[];
+  hydrated: boolean;
+  loading: boolean;
+  hydrateError: string | null;
   hydrateFromRemote: () => Promise<void>;
   addPost: (input: Omit<BlogPost, 'id' | 'sortOrder'> & { id?: string; sortOrder?: number }) => Promise<void>;
   updatePost: (id: string, patch: Partial<BlogPost>) => Promise<void>;
@@ -80,14 +89,24 @@ export const useBlogStore = create<BlogStore>()(
   persist(
     (set, get) => ({
       posts: SEED_BLOG_POSTS,
+      hydrated: false,
+      loading: false,
+      hydrateError: null,
 
       hydrateFromRemote: async () => {
-        if (!supabase) return;
+        if (!supabase) {
+          set({ hydrateError: 'Supabase is not configured.', hydrated: false });
+          return;
+        }
+        set({ loading: true, hydrateError: null });
         try {
-          const posts = await orderingRepo.fetchBlogPosts();
-          set({ posts });
-        } catch {
-          // Keep cached seed when remote fetch fails.
+          const posts = await blogRepo.fetchAll();
+          set({ posts, hydrated: true, loading: false, hydrateError: null });
+        } catch (err) {
+          set({
+            loading: false,
+            hydrateError: formatBlogError(err),
+          });
         }
       },
 
@@ -97,21 +116,27 @@ export const useBlogStore = create<BlogStore>()(
           id: input.id ?? newId(),
           sortOrder: input.sortOrder ?? get().posts.length,
         };
-        await orderingRepo.upsertBlogPost(post);
-        set({ posts: [...get().posts, post] });
+        await blogRepo.upsert(post);
+        set({ posts: [...get().posts.filter((p) => p.id !== post.id), post], hydrateError: null });
       },
 
       updatePost: async (id, patch) => {
         const current = get().posts.find((p) => p.id === id);
-        if (!current) return;
+        if (!current) throw new Error('Post not found.');
         const updated = { ...current, ...patch };
-        await orderingRepo.upsertBlogPost(updated);
-        set({ posts: get().posts.map((p) => (p.id === id ? updated : p)) });
+        await blogRepo.upsert(updated);
+        set({
+          posts: get().posts.map((p) => (p.id === id ? updated : p)),
+          hydrateError: null,
+        });
       },
 
       removePost: async (id) => {
-        await orderingRepo.deleteBlogPost(id);
-        set({ posts: get().posts.filter((p) => p.id !== id) });
+        await blogRepo.remove(id);
+        set({
+          posts: get().posts.filter((p) => p.id !== id),
+          hydrateError: null,
+        });
       },
 
       visiblePosts: () =>
@@ -124,6 +149,9 @@ export const useBlogStore = create<BlogStore>()(
         return post?.visible ? post : undefined;
       },
     }),
-    { name: 'kado-blog-v1' },
+    {
+      name: 'kado-blog-v1',
+      partialize: (state) => ({ posts: state.posts }),
+    },
   ),
 );

@@ -15,7 +15,7 @@ import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { clampText } from '../../lib/validation';
 import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check } from 'lucide-react';
-import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import { orderingRepo, formatMenuProductCrudError } from '../../lib/supabase/repositories/ordering';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
   describeMenuImageOnSave,
@@ -166,6 +166,8 @@ export default function AdminMenu() {
   const [pastryKind, setPastryKind] = useState<PastryKind>('mix-match');
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
+  const [deleteConfirmProductId, setDeleteConfirmProductId] = useState<string | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const handleInitializeCatalog = async () => {
     setInitCatalogError(null);
@@ -373,6 +375,25 @@ export default function AdminMenu() {
 
   const activeCategoryCount = useMemo(() => categories.filter((cat) => cat.visible).length, [categories]);
 
+  const handleDeleteProduct = async (id: string) => {
+    if (deleteConfirmProductId !== id) {
+      setDeleteConfirmProductId(id);
+      return;
+    }
+    setDeletingProductId(id);
+    try {
+      await removeProduct(id);
+      setDeleteConfirmProductId(null);
+      if (editingProduct === id) cancelForm();
+    } catch (err) {
+      useMenuStore.setState({
+        hydrateError: formatMenuProductCrudError(err, 'delete'),
+      });
+    } finally {
+      setDeletingProductId(null);
+    }
+  };
+
   const submitProduct = async (e: FormEvent) => {
     e.preventDefault();
     setProductFormError('');
@@ -495,7 +516,7 @@ export default function AdminMenu() {
       }));
       cancelForm();
     } catch (err) {
-      setProductFormError(err instanceof Error ? err.message : 'Could not save product.');
+      setProductFormError(formatMenuProductCrudError(err, 'save'));
     } finally {
       setSavingProduct(false);
     }
@@ -864,8 +885,14 @@ export default function AdminMenu() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeProduct(p.id)}
-                        className="text-red-400 hover:text-red-600 p-1"
+                        onClick={() => void handleDeleteProduct(p.id)}
+                        disabled={deletingProductId === p.id}
+                        className={`p-1 transition-colors ${
+                          deleteConfirmProductId === p.id
+                            ? 'text-red-600 font-bold'
+                            : 'text-red-400 hover:text-red-600'
+                        } disabled:opacity-50`}
+                        title={deleteConfirmProductId === p.id ? 'Click again to confirm delete' : 'Delete product'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -1,7 +1,6 @@
 import type { EventFormTemplate } from '../../eventForms';
 import { parseFormFields } from '../../eventForms';
 import type {
-  BlogPost,
   BoothBooking,
   BoothBookingStatus,
   Branch,
@@ -50,6 +49,23 @@ export function formatTableCrudError(err: unknown, action: 'add' | 'update' | 'd
     return blob.trim();
   }
   return message || details || `Could not ${action} table.`;
+}
+
+export function formatMenuProductCrudError(err: unknown, action: 'save' | 'delete'): string {
+  const { message, code, details } = pgErrorFields(err);
+  const blob = `${message} ${details} ${code}`;
+  if (/row-level security|permission denied|jwt|not authorized/i.test(blob)) {
+    return 'Admin access is required to manage menu products.';
+  }
+  if (/Bucket not found|storage/i.test(blob)) {
+    return 'Menu image storage is not configured. Run migration 0034_menu_product_images_storage.';
+  }
+  if (code === '23503' || /foreign key|violates.*constraint/i.test(blob)) {
+    return action === 'delete'
+      ? 'This product is linked to other records and cannot be deleted.'
+      : message || details;
+  }
+  return message || details || `Could not ${action} product.`;
 }
 
 /** Public-safe order status returned by the kk_track_order RPC (guest-readable). */
@@ -207,30 +223,6 @@ function mapEventRegistration(row: any): EventRegistration {
     customAnswers:
       row.custom_answers && typeof row.custom_answers === 'object' ? row.custom_answers : undefined,
     createdAt: row.created_at,
-  };
-}
-
-function parseBlogBody(row: { body?: unknown }): string[] {
-  if (Array.isArray(row.body)) {
-    return row.body.map((p) => String(p)).filter(Boolean);
-  }
-  return [];
-}
-
-function mapBlogPost(row: Record<string, unknown>): BlogPost {
-  return {
-    id: String(row.id),
-    slug: String(row.slug),
-    title: String(row.title),
-    excerpt: String(row.excerpt ?? ''),
-    category: String(row.category ?? ''),
-    publishedAt: String(row.published_at),
-    readMinutes: Number(row.read_minutes ?? 3),
-    imageUrl: String(row.image_url ?? ''),
-    imageAlt: String(row.image_alt ?? ''),
-    body: parseBlogBody(row),
-    visible: Boolean(row.visible),
-    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
@@ -454,7 +446,7 @@ export const orderingRepo = {
     return { tables: Number(row.tables ?? 0) };
   },
   async upsertCategory(c: MenuCategory) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_menu_categories').upsert({
       id: c.id,
       branch_id: c.branchId ?? null,
@@ -465,18 +457,18 @@ export const orderingRepo = {
     if (error) throw error;
   },
   async deleteCategory(id: string) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     await supabase.from('kk_products').delete().eq('category_id', id);
     const { error } = await supabase.from('kk_menu_categories').delete().eq('id', id);
     if (error) throw error;
   },
   async deleteProduct(id: string) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_products').delete().eq('id', id);
     if (error) throw error;
   },
   async upsertProduct(p: Product) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_products').upsert({
       id: p.id,
       category_id: p.categoryId,
@@ -493,6 +485,7 @@ export const orderingRepo = {
       visible: p.visible,
       in_stock: p.inStock !== false,
       sort_order: p.order,
+      updated_at: p.updatedAt ?? new Date().toISOString(),
     });
     if (error) throw error;
   },
@@ -716,38 +709,6 @@ export const orderingRepo = {
   async deleteEvent(id: string) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_events').delete().eq('id', id);
-    if (error) throw error;
-  },
-  async fetchBlogPosts(): Promise<BlogPost[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('kk_blog_posts')
-      .select('*')
-      .order('published_at', { ascending: false });
-    if (error) throw error;
-    return (data ?? []).map((row) => mapBlogPost(row as Record<string, unknown>));
-  },
-  async upsertBlogPost(post: BlogPost) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.from('kk_blog_posts').upsert({
-      id: post.id,
-      slug: post.slug,
-      title: post.title,
-      excerpt: post.excerpt ?? '',
-      category: post.category ?? '',
-      published_at: new Date(post.publishedAt).toISOString(),
-      read_minutes: post.readMinutes,
-      image_url: post.imageUrl || null,
-      image_alt: post.imageAlt ?? '',
-      body: post.body ?? [],
-      visible: post.visible,
-      sort_order: post.sortOrder,
-    });
-    if (error) throw error;
-  },
-  async deleteBlogPost(id: string) {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.from('kk_blog_posts').delete().eq('id', id);
     if (error) throw error;
   },
   async fetchEventCalendar(year: number, month: number): Promise<{ blockouts: string[]; booked: string[] }> {
