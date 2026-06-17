@@ -15,6 +15,7 @@ type Props = {
   shortCode: string;
   total: number;
   channel: OrderChannel;
+  branchId?: string;
   paymentMethod?: PaymentMethod;
   paymentStatus: Order['paymentStatus'];
   proofPreview?: string | null;
@@ -35,6 +36,7 @@ export default function GuestOrderPaymentBlock({
   shortCode,
   total,
   channel,
+  branchId,
   paymentMethod,
   paymentStatus,
   proofPreview,
@@ -67,7 +69,7 @@ export default function GuestOrderPaymentBlock({
       id: orderId,
       shortCode,
       channel,
-      branchId: '',
+      branchId: branchId ?? '',
       status: 'pending',
       paymentStatus: 'proof_submitted',
       items: [],

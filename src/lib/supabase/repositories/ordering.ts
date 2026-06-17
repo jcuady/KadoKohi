@@ -68,6 +68,15 @@ export function formatMenuProductCrudError(err: unknown, action: 'save' | 'delet
   return message || details || `Could not ${action} product.`;
 }
 
+export function formatBaristaOrderError(err: unknown, action: 'update' | 'load'): string {
+  const { message, code, details } = pgErrorFields(err);
+  const blob = `${message} ${details} ${code}`;
+  if (/row-level security|permission denied|jwt|not authorized/i.test(blob)) {
+    return 'Staff access is required to manage orders.';
+  }
+  return message || details || (action === 'load' ? 'Could not load orders.' : 'Could not update order.');
+}
+
 /** Public-safe order status returned by the kk_track_order RPC (guest-readable). */
 export type TrackedOrderStatus = {
   id: string;
@@ -86,13 +95,11 @@ import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '
 import { prepareGuestPaymentProof } from '../../compressPaymentProof';
 import {
   PAYMENT_PROOF_BUCKET,
-  customerProofObjectPath,
   dataUrlToBlob,
   formatProofStorageRef,
   guestProofObjectPath,
 } from '../../paymentProofStorage';
 import { supabase } from '../client';
-import { authRepo } from './auth';
 import { profileBranchId } from '../../roles';
 
 function mapBranch(row: any): Branch {
@@ -927,7 +934,7 @@ export const orderingRepo = {
     }
   },
   async patchOrder(id: string, patch: Partial<Order>) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const dbPatch: any = {};
     if (patch.status) dbPatch.status = patch.status;
     if (patch.paymentStatus) dbPatch.payment_status = patch.paymentStatus;
@@ -942,32 +949,11 @@ export const orderingRepo = {
     if (error) throw error;
   },
   /**
-   * Upload customer GCash proof to private storage. Returns a stable proof-storage: ref
-   * (not a signed URL — those expire and cause 404s in admin/barista previews).
+   * Upload customer GCash proof to private storage. Uses the guest/{orderId}/ path so the
+   * kk_submit_guest_payment_proof RPC accepts the proof-storage ref.
    */
   async uploadPaymentProof(orderId: string, file: File): Promise<string> {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const session = await authRepo.session();
-    const userId = session?.user?.id;
-    if (!userId) throw new Error('Sign in required for payment proof upload.');
-
-    const prepared = await prepareGuestPaymentProof(file);
-    if (prepared.ok === false) throw new Error(prepared.error);
-
-    const path = customerProofObjectPath(userId, orderId);
-    const blob = dataUrlToBlob(prepared.dataUrl);
-    const upload = await supabase.storage.from(PAYMENT_PROOF_BUCKET).upload(path, blob, {
-      upsert: true,
-      contentType: 'image/jpeg',
-    });
-    if (upload.error) throw upload.error;
-
-    const { data: meta, error: metaErr } = await supabase.storage.from(PAYMENT_PROOF_BUCKET).info(path);
-    if (metaErr || !meta) {
-      throw new Error('Proof upload could not be verified. Please try again.');
-    }
-
-    return formatProofStorageRef(path);
+    return this.uploadGuestPaymentProof(orderId, file);
   },
 
   /** Anonymous guest proof via storage (fallback when data URL would be too large for RPC). */

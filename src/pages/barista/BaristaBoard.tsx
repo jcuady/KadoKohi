@@ -5,7 +5,7 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { compareOrdersNewestFirst, formatOrderTimestamp } from '../../lib/orderTime';
-import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
+import { kioskColumnKey, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_BADGE } from '../../lib/orderStatus';
 import { Clock, ChefHat, CheckCircle2, Wallet, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
@@ -31,8 +31,8 @@ const COLUMNS: BoardColumn[] = [
 export default function BaristaBoard() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
-  const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
-  const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
+  const hydrateError = useOrderStore((s) => s.hydrateError);
+  const updateOrderFields = useOrderStore((s) => s.updateOrderFields);
   const branches = useBranchStore((s) => s.branches);
 
   const visible = useMemo(() => {
@@ -54,13 +54,10 @@ export default function BaristaBoard() {
   const applyPatch = async (patch: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     if (!editingOrder) return;
     setPatchError(null);
-    if (patch.status) {
-      const err = await updateOrderStatus(editingOrder.id, patch.status);
-      if (err) { setPatchError(err); return; }
-    }
-    if (patch.paymentStatus) {
-      const payErr = await updatePaymentStatus(editingOrder.id, patch.paymentStatus);
-      if (payErr) { setPatchError(payErr); return; }
+    const err = await updateOrderFields(editingOrder.id, patch);
+    if (err) {
+      setPatchError(err);
+      return;
     }
     setEditingOrder(null);
   };
@@ -78,6 +75,13 @@ export default function BaristaBoard() {
           </p>
         </div>
       </div>
+
+      {hydrateError && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{hydrateError}</span>
+        </div>
+      )}
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
         {COLUMNS.map((col) => {
@@ -129,7 +133,7 @@ export default function BaristaBoard() {
                         <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/15 px-2 py-0.5 rounded">
                           {o.channel}
                         </span>
-                        <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/10">
+                        <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${PAYMENT_STATUS_BADGE[o.paymentStatus]}`}>
                           {PAYMENT_STATUS_LABELS[o.paymentStatus]}
                         </span>
                         <OrderTableBadge order={o} variant="dash" />

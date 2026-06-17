@@ -4,6 +4,7 @@ import type { Order } from '../types/domain';
 import { formatPhp } from '../lib/money';
 import { isGcashOrder } from '../lib/orderStatus';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { prepareGuestPaymentProof, GUEST_PROOF_MAX_DATA_URL_CHARS } from '../lib/compressPaymentProof';
 import { usePaymentProofDisplayUrl } from '../hooks/usePaymentProofDisplayUrl';
 import { formatOrderError } from '../lib/validation';
 
@@ -38,7 +39,15 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
     setError(null);
     setUploading(true);
     try {
-      const proofRef = await orderingRepo.uploadPaymentProof(order.id, file);
+      const prepared = await prepareGuestPaymentProof(file);
+      if (prepared.ok === false) {
+        setError(prepared.error);
+        return;
+      }
+      let proofRef = prepared.dataUrl;
+      if (prepared.dataUrl.length > GUEST_PROOF_MAX_DATA_URL_CHARS) {
+        proofRef = await orderingRepo.uploadPaymentProof(order.id, file);
+      }
       await onUploadProof(proofRef);
     } catch (err) {
       setError(formatOrderError(err));

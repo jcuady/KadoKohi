@@ -40,6 +40,8 @@ export default function BaristaPOS() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [configuring, setConfiguring] = useState<Product | null>(null);
   const [editingLineKey, setEditingLineKey] = useState<string | null>(null);
+  const [posError, setPosError] = useState<string | null>(null);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -131,19 +133,28 @@ export default function BaristaPOS() {
     return { lines, subtotal, modifiers, tax, total };
   }, [cart, products, taxRate]);
 
-  const placeOrder = () => {
-    if (!branch || !user || cartTotals.lines.length === 0) return;
-    void createOrder({
-      channel: 'pos',
-      branchId: branch.id,
-      staffId: user.id,
-      status: 'pending',
-      items: cartTotals.lines,
-      subtotal: cartTotals.subtotal,
-      modifiersTotal: cartTotals.modifiers,
-      tax: cartTotals.tax,
-      total: cartTotals.total,
-    }).then(() => setCart([]));
+  const placeOrder = async () => {
+    if (!branch || !user || cartTotals.lines.length === 0 || placingOrder) return;
+    setPosError(null);
+    setPlacingOrder(true);
+    try {
+      await createOrder({
+        channel: 'pos',
+        branchId: branch.id,
+        staffId: user.id,
+        status: 'pending',
+        items: cartTotals.lines,
+        subtotal: cartTotals.subtotal,
+        modifiersTotal: cartTotals.modifiers,
+        tax: cartTotals.tax,
+        total: cartTotals.total,
+      });
+      setCart([]);
+    } catch (err) {
+      setPosError(err instanceof Error ? err.message : 'Could not place POS order.');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   if (!branch) {
@@ -263,13 +274,16 @@ export default function BaristaPOS() {
                 <div className="flex justify-between font-display font-bold dash-heading pt-1"><span>Total</span><span className="text-kado-red">{formatPhp(cartTotals.total)}</span></div>
               </div>
             )}
+            {posError && (
+              <p className="mb-2 text-xs font-semibold text-red-600" role="alert">{posError}</p>
+            )}
             <button
               type="button"
-              disabled={!cart.length}
-              onClick={placeOrder}
+              disabled={!cart.length || placingOrder}
+              onClick={() => void placeOrder()}
               className="w-full rounded-xl bg-kado-red text-kado-cream py-3 text-xs font-bold uppercase tracking-wider disabled:opacity-40"
             >
-              Place order
+              {placingOrder ? 'Placing…' : 'Place order'}
             </button>
           </div>
         </div>

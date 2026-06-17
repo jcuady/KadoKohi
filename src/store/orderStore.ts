@@ -3,7 +3,7 @@ import type { Order, OrderStatus, PaymentStatus } from '../types/domain';
 import { newId } from '../lib/id';
 import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
 import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS } from '../lib/orderStatus';
-import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { orderingRepo, formatBaristaOrderError } from '../lib/supabase/repositories/ordering';
 import { logAudit } from '../lib/audit';
 import {
   notifyCustomerOrderStatus,
@@ -29,6 +29,7 @@ function normalizeOrder(o: Order): Order {
 
 export interface OrderStore {
   orders: Order[];
+  hydrateError: string | null;
   hydrateFromRemote: () => Promise<void>;
   createOrder: (
     order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
@@ -36,6 +37,10 @@ export interface OrderStore {
   ) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
   updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
+  updateOrderFields: (
+    id: string,
+    patch: { status?: OrderStatus; paymentStatus?: PaymentStatus },
+  ) => Promise<string | null>;
   updateOrderPaymentProof: (id: string, proofImage: string) => Promise<string | null>;
   deleteOrder: (id: string) => Promise<string | null>;
   ordersForBranch: (branchId: string, channels?: Order['channel'][]) => Order[];
@@ -46,11 +51,14 @@ export interface OrderStore {
 /** Orders are sourced from Supabase; no localStorage cache (prevents stale order boards). */
 export const useOrderStore = create<OrderStore>()((set, get) => ({
       orders: [],
+      hydrateError: null,
       hydrateFromRemote: async () => {
         try {
           const orders = await orderingRepo.fetchOrders();
-          set({ orders: orders.map((o) => normalizeOrder(o)) });
+          set({ orders: orders.map((o) => normalizeOrder(o)), hydrateError: null });
         } catch (err) {
+          const message = formatBaristaOrderError(err, 'load');
+          set({ hydrateError: message });
           console.error('orderStore.hydrateFromRemote failed', err);
           throw err;
         }
@@ -201,6 +209,70 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         });
         if (paymentStatus === 'paid' && prev.status === 'pending') {
           notifyCustomerOrderStatus(next, 'accepted');
+        }
+        if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
+          void broadcastGuestOrderUpdate(id, {
+            status: next.status,
+            paymentStatus: next.paymentStatus,
+            updatedAt: next.updatedAt,
+            shortCode: next.shortCode,
+          });
+        }
+        return null;
+      },
+
+      updateOrderFields: async (id, patch) => {
+        const prev = get().orders.find((o) => o.id === id);
+        if (!prev) return 'Order not found.';
+
+        let status = patch.status ?? prev.status;
+        let paymentStatus = patch.paymentStatus ?? prev.paymentStatus;
+        if (patch.paymentStatus === 'paid' && status === 'pending') {
+          status = 'accepted';
+        }
+
+        let next: Order = { ...prev, status, paymentStatus, updatedAt: new Date().toISOString() };
+        const justCompleted = patch.status === 'completed' && prev.status !== 'completed';
+        if (justCompleted) {
+          next = applyLoyaltyStampsForCompletedOrder(next);
+        }
+
+        set({ orders: get().orders.map((o) => (o.id === id ? next : o)) });
+
+        try {
+          await orderingRepo.patchOrder(id, {
+            status: next.status,
+            paymentStatus: next.paymentStatus,
+            ...(justCompleted ? { loyaltyStampsAwarded: next.loyaltyStampsAwarded } : {}),
+          });
+        } catch (err) {
+          set({ orders: get().orders.map((o) => (o.id === id ? prev : o)) });
+          return formatBaristaOrderError(err, 'update');
+        }
+
+        if (patch.status && patch.status !== prev.status) {
+          logAudit({
+            action: 'order.status_changed',
+            entityType: 'order',
+            entityId: id,
+            branchId: next.branchId,
+            summary: `${next.shortCode}: ${ORDER_STATUS_LABELS[prev.status]} → ${ORDER_STATUS_LABELS[patch.status]}`,
+            metadata: { from: prev.status, to: patch.status, channel: next.channel },
+          });
+          notifyCustomerOrderStatus(next, patch.status);
+        }
+        if (patch.paymentStatus && patch.paymentStatus !== prev.paymentStatus) {
+          logAudit({
+            action: 'order.payment_status_changed',
+            entityType: 'order',
+            entityId: id,
+            branchId: prev.branchId,
+            summary: `${prev.shortCode}: payment → ${patch.paymentStatus}`,
+            metadata: { from: prev.paymentStatus, to: patch.paymentStatus },
+          });
+          if (patch.paymentStatus === 'paid' && prev.status === 'pending') {
+            notifyCustomerOrderStatus(next, 'accepted');
+          }
         }
         if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
           void broadcastGuestOrderUpdate(id, {
