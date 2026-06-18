@@ -7,6 +7,7 @@ import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
+import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
 
 const DEFAULT_IMAGE =
   'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop';
@@ -14,6 +15,8 @@ const DEFAULT_IMAGE =
 export default function Merch() {
   const categories = useMerchStore((s) => s.categories);
   const products = useMerchStore((s) => s.products);
+  const remoteLoaded = useMerchStore((s) => s.remoteLoaded);
+  const catalogLoading = !remoteLoaded;
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -94,6 +97,10 @@ export default function Merch() {
           </div>
         </section>
 
+        {catalogLoading ? (
+          <CatalogPageSkeleton variant="merch" />
+        ) : (
+          <>
         <section className="px-6 md:px-8 lg:px-16 pb-5 pt-4 md:pt-6 sticky top-14 md:top-[3.75rem] z-[35] bg-white/95 backdrop-blur-md border-b border-kado-dark/5">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-nowrap md:flex-wrap items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
@@ -144,6 +151,8 @@ export default function Merch() {
                       <img
                         src={product.image ?? DEFAULT_IMAGE}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
@@ -173,6 +182,8 @@ export default function Merch() {
             <ProductGridPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </section>
+          </>
+        )}
       </div>
 
       <PageSeoBlurb />

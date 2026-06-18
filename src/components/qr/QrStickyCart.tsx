@@ -3,7 +3,7 @@ import type { PaymentMethod, Product } from '../../types/domain';
 import type { QrCartLine } from '../../lib/qrOrderCart';
 import { formatPhp } from '../../lib/money';
 import QrPaymentSelector from './QrPaymentSelector';
-import { getProductImageUrl } from '../../lib/productImage';
+import MenuProductImage from '../catalog/MenuProductImage';
 import {
   ShoppingBag,
   ChevronUp,
@@ -133,11 +133,11 @@ export default function QrStickyCart({
                         key={line.key}
                         className="flex gap-2 items-center rounded-xl bg-[#FAF7F2] border border-kado-dark/5 p-2.5"
                       >
-                        <img
-                          src={getProductImageUrl(p)}
+                        <MenuProductImage
+                          product={p}
                           alt=""
+                          loading="lazy"
                           className="w-14 h-14 rounded-lg object-cover shrink-0"
-                          referrerPolicy="no-referrer"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-kado-dark truncate">{p.name}</p>

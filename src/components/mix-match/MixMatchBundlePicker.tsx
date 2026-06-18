@@ -8,7 +8,7 @@ import {
   pastryHasPrice,
 } from '../../lib/pastriesCategory';
 import { formatPhp } from '../../lib/money';
-import { getMenuProductImageUrl } from '../../lib/menuCatalog';
+import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import { useCartStore } from '../../store/cartStore';
 import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
@@ -314,11 +314,12 @@ export default function MixMatchBundlePicker({
                     >
                       <SelectionRing selected={selected} tone="red" />
                       {product.image?.trim() ? (
-                        <img
-                          src={getMenuProductImageUrl(product, { pastriesCategoryId })}
+                        <MenuProductImage
+                          product={product}
                           alt=""
-                          className="h-9 w-9 shrink-0 rounded-lg object-cover sm:h-10 sm:w-10"
+                          pastriesCategoryId={pastriesCategoryId}
                           loading="lazy"
+                          className="h-9 w-9 shrink-0 rounded-lg object-cover sm:h-10 sm:w-10"
                         />
                       ) : (
                         <Cookie className="h-4 w-4 shrink-0 text-kado-red" aria-hidden />

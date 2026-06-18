@@ -9,7 +9,8 @@ import { useTableStore } from '../store/tableStore';
 import { useBranchStore } from '../store/branchStore';
 import { formatPhp } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
-import { getProductDescription, getProductImageUrl } from '../lib/productImage';
+import { getProductDescription } from '../lib/productImage';
+import MenuProductImage from '../components/catalog/MenuProductImage';
 import { isProductInStock } from '../lib/productStock';
 import { newId } from '../lib/id';
 import { clampText, formatOrderError } from '../lib/validation';
@@ -346,7 +347,6 @@ export default function OrderQR() {
         ) : (
           <div className="guest-order-product-grid">
             {list.map((p, i) => {
-              const image = getProductImageUrl(p);
               const tag = p.tags?.[0];
               const inStock = isProductInStock(p);
               return (
@@ -365,12 +365,11 @@ export default function OrderQR() {
                   }`}
                 >
                   <div className="relative aspect-[4/3] bg-kado-dark/5 shrink-0">
-                    <img
-                      src={image}
+                    <MenuProductImage
+                      product={p}
                       alt={p.name}
+                      loading={i < 6 ? 'eager' : 'lazy'}
                       className="w-full h-full object-cover"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
                     />
                     {!inStock ? (
                       <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-amber-600 text-white px-1.5 py-0.5 rounded-full">

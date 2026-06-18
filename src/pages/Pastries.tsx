@@ -16,10 +16,12 @@ import MixMatchBundlePicker from '../components/mix-match/MixMatchBundlePicker';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { PASTRIES_PAGE, MIX_MATCH_BLUE } from '../content/pastriesPage';
+import Skeleton from '../components/ui/Skeleton';
 
 export default function Pastries() {
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
+  const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const hydrateFromRemote = useMenuStore((s) => s.hydrateFromRemote);
   const [selected, setSelected] = useState<Product | null>(null);
 
@@ -77,14 +79,32 @@ export default function Pastries() {
       <section className="px-4 py-10 sm:px-6 sm:py-12 md:px-12 md:py-16">
         <div className="mx-auto w-full max-w-5xl">
           <p className="mb-5 text-center kado-label text-kado-red sm:mb-6">{cta.title}</p>
+          {!remoteLoaded ? (
+            <div
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4"
+              aria-busy="true"
+              aria-label="Loading pastries"
+            >
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="overflow-hidden rounded-xl border border-kado-dark/10 bg-white">
+                  <Skeleton className="aspect-square w-full rounded-none" />
+                  <div className="space-y-2 p-3">
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <MixMatchBundlePicker
             categories={categories}
             products={products}
             pastriesCategoryId={pastriesCategory?.id}
           />
+          )}
         </div>
 
-        {featured ? (
+        {remoteLoaded && featured ? (
           <div className="mx-auto mt-10 w-full max-w-5xl sm:mt-14">
             <h2 className="mb-4 text-center kado-label text-kado-red sm:mb-5">Takeover exclusive</h2>
             <article className="overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-white shadow-[0_20px_60px_rgba(25,25,25,0.08)] sm:rounded-[1.5rem] lg:grid lg:grid-cols-2">

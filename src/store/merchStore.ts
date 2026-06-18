@@ -7,6 +7,7 @@ import { orderingRepo } from '../lib/supabase/repositories/ordering';
 export interface MerchStore {
   categories: MerchCategory[];
   products: MerchProduct[];
+  remoteLoaded: boolean;
   hydrateFromRemote: () => Promise<void>;
   setCategories: (c: MerchCategory[]) => void;
   setProducts: (p: MerchProduct[]) => void;
@@ -25,6 +26,7 @@ export interface MerchStore {
 export const useMerchStore = create<MerchStore>()((set, get) => ({
       categories: SEED_MERCH_CATEGORIES,
       products: SEED_MERCH_PRODUCTS,
+      remoteLoaded: false,
       hydrateFromRemote: async () => {
         try {
           const remote = await orderingRepo.fetchMerch();
@@ -32,11 +34,14 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
             set({
               categories: remote.categories,
               products: remote.products,
+              remoteLoaded: true,
             });
+            return;
           }
         } catch {
           // Keep seed fallback when remote fetch fails.
         }
+        set({ remoteLoaded: true });
       },
 
       setCategories: (categories) => set({ categories }),

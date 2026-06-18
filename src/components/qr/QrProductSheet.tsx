@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, ShoppingBag, Check } from 'lucide-react';
 import type { Product } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
-import { getProductDescription, getProductImageUrl } from '../../lib/productImage';
+import { getProductDescription } from '../../lib/productImage';
+import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import { qrChipClass } from '../../lib/qrGuestTheme';
 import {
@@ -60,7 +61,6 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
   if (!product) return null;
 
   const inStock = isProductInStock(product);
-  const image = getProductImageUrl(product);
   const showTemp = showTemperatureChoice(product);
   const orderableMilks = getOrderableMilks(product);
   const showMilk = showMilkChoice(product);
@@ -113,11 +113,11 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
 
             <div className="flex-1 overflow-y-auto overscroll-contain">
               <div className="aspect-[16/10] sm:aspect-[2/1] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] bg-[var(--qr-surface)] relative shrink-0">
-                <img
-                  src={image}
+                <MenuProductImage
+                  product={product}
                   alt={product.name}
+                  loading="eager"
                   className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
                 />
               </div>
 

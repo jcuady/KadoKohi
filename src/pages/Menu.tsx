@@ -5,8 +5,9 @@ import { useMenuStore } from '../store/menuStore';
 import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
+import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
+import MenuProductImage from '../components/catalog/MenuProductImage';
 import type { Product } from '../types/domain';
-import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { isIcedOnlyDrink, productFallbackDescription } from '../lib/menuProductModifiers';
@@ -35,6 +36,8 @@ function categoryShortLabel(categoryId: string, fullName: string): string {
 export default function Menu() {
   const categories = useMenuStore((s) => s.categories);
   const productsByCategory = useMenuStore((s) => s.productsByCategory);
+  const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
+  const catalogLoading = !remoteLoaded;
 
   const sortedCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
@@ -122,6 +125,10 @@ export default function Menu() {
         </section>
 
         {/* Category tabs — one control: 2×2 grid on mobile, wrapped pills on md+ */}
+        {catalogLoading ? (
+          <CatalogPageSkeleton variant="menu" />
+        ) : (
+          <>
         <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-4 backdrop-blur-md sm:px-6 sm:pt-5 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 md:pb-5 md:pt-0 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
           <div className="mx-auto max-w-6xl min-w-0">
             <div
@@ -158,6 +165,11 @@ export default function Menu() {
         {/* Product grid */}
         <section className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16">
           <div className="mx-auto min-w-0 max-w-6xl">
+            {paginatedItems.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 text-center">
+                <p className="text-sm font-semibold text-kado-dark/50">No drinks in this category yet.</p>
+              </div>
+            ) : (
             <motion.div
               key={`${activeCategoryId}-${safePage}`}
               initial={{ opacity: 0, y: 10 }}
@@ -166,7 +178,6 @@ export default function Menu() {
               className="grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4"
             >
               {paginatedItems.map((product, i) => {
-                const image = getMenuProductImageUrl(product);
                 const tag = isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0];
                 const inStock = isProductInStock(product);
                 const desc = productFallbackDescription(product);
@@ -188,11 +199,11 @@ export default function Menu() {
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
-                      <img
-                        src={image}
+                      <MenuProductImage
+                        product={product}
                         alt={product.name}
+                        loading={i < 4 ? 'eager' : 'lazy'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
-                        referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -234,6 +245,7 @@ export default function Menu() {
                 );
               })}
             </motion.div>
+            )}
 
             <ProductGridPagination
               page={safePage}
@@ -242,6 +254,8 @@ export default function Menu() {
             />
           </div>
         </section>
+          </>
+        )}
 
         {/* Loyalty card */}
         <section className="px-4 sm:px-6 md:px-8 lg:px-16 pb-[max(6rem,calc(5rem+env(safe-area-inset-bottom)))] mt-auto [@media(orientation:landscape)_and_(max-height:30rem)]:pb-16">

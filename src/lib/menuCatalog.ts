@@ -15,7 +15,7 @@ const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
 const PASTRY_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=700&auto=format&fit=crop';
 
-const DEFAULT_MENU_PRODUCT_IMAGE =
+export const DEFAULT_MENU_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=700&auto=format&fit=crop';
 
 export function isMerchCategoryName(name: string | undefined): boolean {
@@ -36,6 +36,29 @@ export function getMenuProductImageUrl(
     return PASTRY_FALLBACK_IMAGE;
   }
   return DEFAULT_MENU_PRODUCT_IMAGE;
+}
+
+/** Ordered URLs to try when a product image fails to load (product → category → default). */
+export function getMenuProductImageFallbackChain(
+  product: Pick<Product, 'image' | 'categoryId'>,
+  options?: { pastriesCategoryId?: string },
+): string[] {
+  const urls: string[] = [];
+  const push = (url: string) => {
+    if (url && !urls.includes(url)) urls.push(url);
+  };
+
+  const fromProduct = product.image?.trim();
+  if (fromProduct) push(normalizeExternalMenuImageUrl(fromProduct));
+
+  if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
+    push(FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]);
+  }
+  if (options?.pastriesCategoryId && product.categoryId === options.pastriesCategoryId) {
+    push(PASTRY_FALLBACK_IMAGE);
+  }
+  push(DEFAULT_MENU_PRODUCT_IMAGE);
+  return urls;
 }
 
 export function listVisibleCoffeeProducts(

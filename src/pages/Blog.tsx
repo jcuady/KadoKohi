@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, CalendarDays, Clock } from 'lucide-react';
 import { useBlogStore } from '../store/blogStore';
+import BlogGridSkeleton from '../components/catalog/BlogGridSkeleton';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 
 function formatDate(iso: string) {
@@ -15,6 +16,8 @@ function formatDate(iso: string) {
 export default function Blog() {
   const hydrateFromRemote = useBlogStore((s) => s.hydrateFromRemote);
   const posts = useBlogStore((s) => s.visiblePosts());
+  const loading = useBlogStore((s) => s.loading);
+  const hydrated = useBlogStore((s) => s.hydrated);
 
   useEffect(() => {
     void hydrateFromRemote();
@@ -33,7 +36,9 @@ export default function Blog() {
       </section>
 
       <section className="px-6 py-16 md:py-24">
-        {posts.length === 0 ? (
+        {loading && !hydrated ? (
+          <BlogGridSkeleton />
+        ) : posts.length === 0 ? (
           <p className="mx-auto max-w-md text-center kado-body text-kado-dark/55">
             New stories are on the way. Check back soon.
           </p>
