@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Branch, BranchStatus } from '../../types/domain';
 import { useBranchStore } from '../../store/branchStore';
+import { formatBranchCrudError } from '../../lib/supabase/repositories/ordering';
 import { MapPin, Pencil, Trash2, Plus, Navigation, ExternalLink, Loader2 } from 'lucide-react';
 
 const emptyForm: Omit<Branch, 'id' | 'createdAt' | 'updatedAt' | 'hours'> & { hoursNote: string } = {
@@ -79,6 +80,24 @@ export default function AdminBranches() {
     if (!form.slug.trim() || !form.name.trim()) return;
 
     const normalizedSlug = form.slug.trim().toLowerCase().replace(/\s+/g, '-');
+    const slugTaken = branches.some(
+      (b) => b.slug === normalizedSlug && b.id !== editingId,
+    );
+    if (slugTaken) {
+      setSaveError('That slug is already used by another branch. Pick a unique URL slug.');
+      return;
+    }
+
+    if (
+      editingId &&
+      branches.find((b) => b.id === editingId)?.slug !== normalizedSlug &&
+      !confirm(
+        'Changing the slug updates takeout QR links immediately. Printed dine-in table codes keep their old prefix — reprint table QRs from Tables & QR if needed. Continue?',
+      )
+    ) {
+      return;
+    }
+
     setSaving(true);
     setSaveError('');
     setSaveOk('');
@@ -109,12 +128,16 @@ export default function AdminBranches() {
           lng: form.lng,
         });
         setSaveOk(
-          `"${created.name}" is live — 4 dine-in tables + takeout QR seeded. Assign barista/staff in Users, then open Tables & QR.`,
+          created.status === 'active'
+            ? `"${created.name}" is live — 4 dine-in tables + takeout QR seeded. Assign barista/staff in Users, then open Tables & QR.`
+            : `"${created.name}" saved as coming soon — tables are seeded but guests cannot order until status is Active.`,
         );
       }
       reset();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save branch.');
+      setSaveError(
+        formatBranchCrudError(err, editingId ? 'update' : 'create'),
+      );
     } finally {
       setSaving(false);
     }
@@ -323,7 +346,7 @@ export default function AdminBranches() {
                           )
                         ) {
                           void removeBranch(b.id).catch((err) =>
-                            setSaveError(err instanceof Error ? err.message : 'Could not remove branch.'),
+                            setSaveError(formatBranchCrudError(err, 'delete')),
                           );
                         }
                       }}

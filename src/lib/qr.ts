@@ -37,8 +37,42 @@ export async function downloadQrPng(scanUrl: string, filename: string, size = 51
   await downloadBrandedQrCard({ layout: 'table', title: 'Kado Kohi', scanUrl }, filename);
 }
 
-/** Short human-readable code derived from the branch slug + table label, e.g. 'mrk-t03'. */
+/** Short human-readable code derived from the branch slug + table label, e.g. 'mar-t03'. */
 export function buildTableCode(branchSlug: string, tableNumber: number): string {
   const prefix = branchSlug.slice(0, 3).toLowerCase();
   return `${prefix}-t${String(tableNumber).padStart(2, '0')}`;
+}
+
+function normalizeSlugForCode(slug: string): string {
+  return slug.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+/** Candidate codes in preference order — kk_tables.code is globally unique. */
+export function tableCodeCandidates(branchSlug: string, tableNumber: number): string[] {
+  const n = String(tableNumber).padStart(2, '0');
+  const full = normalizeSlugForCode(branchSlug);
+  const short = full.slice(0, 3);
+  const out: string[] = [];
+  const push = (code: string) => {
+    if (code && !out.includes(code)) out.push(code);
+  };
+  push(`${short}-t${n}`);
+  if (full.length > 3) push(`${full}-t${n}`);
+  if (full.length > 6) push(`${full.slice(0, 6)}-t${n}`);
+  return out;
+}
+
+/** Pick the first unused table code (avoids collisions when slugs share a 3-char prefix). */
+export function pickUniqueTableCode(
+  branchSlug: string,
+  tableNumber: number,
+  usedCodes: Iterable<string>,
+): string {
+  const used = new Set([...usedCodes].map((c) => c.trim().toLowerCase()));
+  for (const candidate of tableCodeCandidates(branchSlug, tableNumber)) {
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  throw new Error(
+    `Could not allocate a unique table code for "${branchSlug}". Try a different branch slug.`,
+  );
 }

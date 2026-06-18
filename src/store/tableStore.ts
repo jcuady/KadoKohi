@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Table } from '../types/domain';
 import { newId } from '../lib/id';
-import { buildTableCode, tableQrUrl } from '../lib/qr';
+import { pickUniqueTableCode, tableQrUrl } from '../lib/qr';
 import { PRODUCTION_SITE_URL } from '../lib/siteUrl';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 
@@ -70,7 +70,11 @@ export const useTableStore = create<TableStore>()((set, get) => ({
   addTable: async (branchId, label, branchSlug) => {
     const slug = branchSlug ?? branchId.replace('branch_', '');
     const tableNum = nextTableNumberForBranch(get().tables, branchId, slug);
-    const code = buildTableCode(slug, tableNum);
+    const code = pickUniqueTableCode(
+      slug,
+      tableNum,
+      get().tables.map((t) => t.code),
+    );
     const t: Table = {
       id: newId(),
       branchId,

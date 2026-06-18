@@ -59,20 +59,38 @@ export const useBranchStore = create<BranchStore>()(
           updatedAt: t,
         };
 
-        await orderingRepo.upsertBranch(b);
-
         const tableStore = useTableStore.getState();
-        for (let i = 1; i <= 4; i++) {
-          await tableStore.addTable(b.id, `Table ${i}`, b.slug);
+        const seededTableIds: string[] = [];
+        let branchPersisted = false;
+
+        try {
+          await orderingRepo.upsertBranch(b);
+          branchPersisted = true;
+
+          for (let i = 1; i <= 4; i++) {
+            const table = await tableStore.addTable(b.id, `Table ${i}`, b.slug);
+            seededTableIds.push(table.id);
+          }
+
+          const next = [...get().branches, b];
+          set({
+            branches: next,
+            adminPosBranchId: get().adminPosBranchId ?? b.id,
+          });
+
+          return b;
+        } catch (err) {
+          for (const tableId of [...seededTableIds].reverse()) {
+            await tableStore.removeTable(tableId).catch(() => undefined);
+          }
+          if (branchPersisted) {
+            await orderingRepo.deleteBranch(b.id).catch(() => undefined);
+          }
+          set({
+            branches: get().branches.filter((br) => br.id !== b.id),
+          });
+          throw err;
         }
-
-        const next = [...get().branches, b];
-        set({
-          branches: next,
-          adminPosBranchId: get().adminPosBranchId ?? b.id,
-        });
-
-        return b;
       },
 
       updateBranch: async (id, patch) => {

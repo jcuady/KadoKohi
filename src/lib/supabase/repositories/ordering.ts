@@ -31,6 +31,23 @@ function pgErrorFields(err: unknown): { message: string; code: string; details: 
   return { message: err instanceof Error ? err.message : String(err ?? ''), code: '', details: '' };
 }
 
+export function formatBranchCrudError(err: unknown, action: 'create' | 'update' | 'delete'): string {
+  const { message, code, details } = pgErrorFields(err);
+  const blob = `${message} ${details} ${code}`;
+  if (/row-level security|permission denied|jwt|not authorized/i.test(blob)) {
+    return 'Admin access is required to manage branches.';
+  }
+  if (code === '23505' || /kk_branches_slug_key|duplicate key.*slug/i.test(blob)) {
+    return 'That branch slug is already in use. Pick a different URL slug.';
+  }
+  if (code === '23503' || /foreign key|violates.*constraint/i.test(blob)) {
+    return action === 'delete'
+      ? 'This branch still has linked orders, staff, or bookings. Remove or reassign them first.'
+      : message || details;
+  }
+  return message || details || `Could not ${action} branch.`;
+}
+
 export function formatTableCrudError(err: unknown, action: 'add' | 'update' | 'delete' | 'toggle'): string {
   const { message, code, details } = pgErrorFields(err);
   const blob = `${message} ${details} ${code}`;

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Trash2, QrCode, ToggleLeft, ToggleRight, Pencil, Check, X, Download, Loader2 } from 'lucide-react';
@@ -29,8 +29,11 @@ export default function AdminTables() {
   const branches = useBranchStore((s) => s.branches);
   const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
 
-  const activeBranches = branches.filter((b) => b.status === 'active');
-  const [selectedBranch, setSelectedBranch] = useState(activeBranches[0]?.id ?? '');
+  const qrBranches = useMemo(
+    () => [...branches].sort((a, b) => a.name.localeCompare(b.name)),
+    [branches],
+  );
+  const [selectedBranch, setSelectedBranch] = useState(qrBranches[0]?.id ?? '');
 
   useEffect(() => {
     void hydrateBranches();
@@ -38,11 +41,11 @@ export default function AdminTables() {
   }, [hydrateBranches, hydrateTables]);
 
   useEffect(() => {
-    if (!activeBranches.length) return;
-    if (!activeBranches.some((b) => b.id === selectedBranch)) {
-      setSelectedBranch(activeBranches[activeBranches.length - 1]?.id ?? activeBranches[0].id);
+    if (!qrBranches.length) return;
+    if (!qrBranches.some((b) => b.id === selectedBranch)) {
+      setSelectedBranch(qrBranches[qrBranches.length - 1]?.id ?? qrBranches[0].id);
     }
-  }, [activeBranches, selectedBranch]);
+  }, [qrBranches, selectedBranch]);
 
   const [newLabel, setNewLabel] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -157,9 +160,9 @@ export default function AdminTables() {
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading tables from Supabase…
         </p>
-      ) : activeBranches.length === 0 ? (
+      ) : qrBranches.length === 0 ? (
         <p className="text-sm dash-muted rounded-2xl dash-card border p-8 text-center">
-          Add an active branch first under Admin → Branches.
+          Add a branch first under Admin → Branches.
         </p>
       ) : (
         <>
@@ -170,9 +173,10 @@ export default function AdminTables() {
               onChange={(e) => setSelectedBranch(e.target.value)}
               className="rounded-xl dash-input px-4 py-2.5 text-sm font-semibold max-w-xs"
             >
-              {activeBranches.map((b) => (
+              {qrBranches.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
+                  {b.status === 'coming_soon' ? ' (coming soon)' : ''}
                 </option>
               ))}
             </select>
