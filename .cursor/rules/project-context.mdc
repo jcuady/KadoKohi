@@ -1,0 +1,34 @@
+---
+description: Kado Kohi full-stack context — read PROJECT_CONTEXT.md before implementing features or debugging flows.
+alwaysApply: true
+---
+
+# Kado Kohi — agent bootstrap
+
+**Read first:** `PROJECT_CONTEXT.md` at the repo root (routes, roles, orders, Supabase, branches, payments).
+
+## Quick facts
+
+| Item | Value |
+|------|--------|
+| Stack | React 19 + Vite + TypeScript + Tailwind + Zustand + Supabase |
+| Production site | `https://www.kadokohi.com` |
+| Supabase project | `idwtlujcdfnnndxmlaco` |
+| Orders | Always via `kk_place_order` RPC — never direct INSERT |
+| Branches (active) | `branch_marikina` / `marikina`, `branch_greenhills` / `greenhills` |
+| Internal login | `/management-portal` (admin, barista, staff) |
+| Customer login | `/auth/login` |
+
+## Before you ship
+
+```bash
+npm run lint && npm run build
+```
+
+Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills_branch.py`
+
+## Rules
+
+- Follow `.cursor/rules/karpathy-guidelines.mdc` (surgical, verifiable changes).
+- Match existing patterns in `src/store/*`, `src/lib/supabase/repositories/ordering.ts`.
+- Do not commit secrets (`.env`, service role keys).
