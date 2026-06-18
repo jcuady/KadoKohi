@@ -96,7 +96,11 @@ export const useBranchStore = create<BranchStore>()(
       updateBranch: async (id, patch) => {
         const updated = get().branches.find((br) => br.id === id);
         if (!updated) return;
-        const next: Branch = { ...updated, ...patch, updatedAt: new Date().toISOString() };
+        const normalizedPatch = { ...patch };
+        if (typeof normalizedPatch.slug === 'string') {
+          normalizedPatch.slug = normalizedPatch.slug.trim().toLowerCase().replace(/\s+/g, '-');
+        }
+        const next: Branch = { ...updated, ...normalizedPatch, updatedAt: new Date().toISOString() };
         await orderingRepo.upsertBranch(next);
         set({
           branches: get().branches.map((br) => (br.id === id ? next : br)),
@@ -105,6 +109,7 @@ export const useBranchStore = create<BranchStore>()(
 
       removeBranch: async (id) => {
         const tableStore = useTableStore.getState();
+        await tableStore.hydrateFromRemote().catch(() => undefined);
         for (const table of tableStore.tables.filter((t) => t.branchId === id)) {
           await tableStore.removeTable(table.id);
         }

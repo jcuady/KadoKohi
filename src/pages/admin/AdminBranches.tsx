@@ -36,12 +36,19 @@ export default function AdminBranches() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState('');
   const [saveOk, setSaveOk] = useState('');
 
   useEffect(() => {
     void hydrateBranches();
   }, [hydrateBranches]);
+
+  useEffect(() => {
+    if (!saveOk) return;
+    const timer = window.setTimeout(() => setSaveOk(''), 8000);
+    return () => window.clearTimeout(timer);
+  }, [saveOk]);
 
   const reset = () => {
     setForm(emptyForm);
@@ -339,21 +346,34 @@ export default function AdminBranches() {
                     </button>
                     <button
                       type="button"
+                      disabled={deletingId === b.id || saving}
                       onClick={() => {
                         if (
-                          confirm(
+                          !confirm(
                             `Remove branch "${b.name}"? Its tables will be removed. This may fail if orders still reference this branch.`,
                           )
                         ) {
-                          void removeBranch(b.id).catch((err) =>
-                            setSaveError(formatBranchCrudError(err, 'delete')),
-                          );
+                          return;
                         }
+                        setSaveError('');
+                        setDeletingId(b.id);
+                        void removeBranch(b.id)
+                          .then(() => {
+                            setSaveOk(`"${b.name}" removed.`);
+                          })
+                          .catch((err) =>
+                            setSaveError(formatBranchCrudError(err, 'delete')),
+                          )
+                          .finally(() => setDeletingId(null));
                       }}
-                      className="p-2.5 rounded-xl border border-kado-red/20 text-kado-red hover:bg-kado-red/10"
+                      className="p-2.5 rounded-xl border border-kado-red/20 text-kado-red hover:bg-kado-red/10 disabled:opacity-50"
                       aria-label="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === b.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
