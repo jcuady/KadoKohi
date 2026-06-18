@@ -4,6 +4,14 @@ const SUPABASE_MENU_BUCKET_PATH = /\/storage\/v1\/object\/public\/kado-menu-imag
 
 /** Max upload size for menu product photos (matches storage bucket). */
 export const MENU_PRODUCT_IMAGE_MAX_BYTES = 5_242_880;
+export const MENU_PRODUCT_IMAGE_MAX_LABEL = '5 MB';
+
+/** Reject raw picks far above what compression can reasonably handle. */
+const MENU_PRODUCT_IMAGE_MAX_INPUT_BYTES = 20_971_520; // 20 MB
+
+export type PrepareMenuProductImageResult =
+  | { ok: true; file: File }
+  | { ok: false; error: string };
 
 export type MenuImageSource = 'none' | 'url' | 'upload';
 
@@ -130,4 +138,103 @@ export function isValidMenuImageUrl(url: string): boolean {
   } catch {
     return normalized.startsWith('/');
   }
+}
+
+function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read that image.'));
+    };
+    img.src = url;
+  });
+}
+
+function canvasToJpegBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+  });
+}
+
+function menuImageTooLargeError(sizeBytes: number): string {
+  const shown =
+    sizeBytes >= 1_048_576
+      ? `${(sizeBytes / 1_048_576).toFixed(1)} MB`
+      : `${Math.round(sizeBytes / 1024)} KB`;
+  return `Image is too large (${shown}). Maximum is ${MENU_PRODUCT_IMAGE_MAX_LABEL}.`;
+}
+
+function isMenuImageFile(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(name);
+}
+
+/**
+ * Ensure a menu product image fits the 5 MB storage limit.
+ * Compresses oversized phone photos client-side before upload.
+ */
+export async function prepareMenuProductImage(file: File): Promise<PrepareMenuProductImageResult> {
+  if (!isMenuImageFile(file)) {
+    return { ok: false, error: 'Please choose an image file (PNG, JPG, WebP, etc.).' };
+  }
+  if (file.size > MENU_PRODUCT_IMAGE_MAX_INPUT_BYTES) {
+    return {
+      ok: false,
+      error: `Image is too large to process. Choose a file under 20 MB or crop it first.`,
+    };
+  }
+  if (file.size <= MENU_PRODUCT_IMAGE_MAX_BYTES) {
+    return { ok: true, file };
+  }
+
+  try {
+    const img = await loadImageFromFile(file);
+    const maxSide = 2400;
+    const baseScale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight, 1));
+    const baseW = Math.max(1, Math.round(img.naturalWidth * baseScale));
+    const baseH = Math.max(1, Math.round(img.naturalHeight * baseScale));
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return { ok: false, error: 'Could not process this image on your device.' };
+    }
+
+    for (let dimScale = 1; dimScale >= 0.45; dimScale -= 0.15) {
+      canvas.width = Math.max(1, Math.round(baseW * dimScale));
+      canvas.height = Math.max(1, Math.round(baseH * dimScale));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      for (let q = 0.92; q >= 0.5; q -= 0.06) {
+        const blob = await canvasToJpegBlob(canvas, q);
+        if (!blob) continue;
+        if (blob.size <= MENU_PRODUCT_IMAGE_MAX_BYTES) {
+          const baseName = file.name.replace(/\.[^.]+$/, '') || 'menu-product';
+          return {
+            ok: true,
+            file: new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' }),
+          };
+        }
+      }
+    }
+
+    return { ok: false, error: menuImageTooLargeError(file.size) };
+  } catch {
+    return {
+      ok: false,
+      error: 'Could not process this photo. Try saving as JPG from your gallery.',
+    };
+  }
+}
+
+export function menuImageUploadSizeError(sizeBytes?: number): string {
+  if (sizeBytes != null && sizeBytes > 0) return menuImageTooLargeError(sizeBytes);
+  return `Image must be ${MENU_PRODUCT_IMAGE_MAX_LABEL} or smaller.`;
 }

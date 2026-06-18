@@ -21,7 +21,8 @@ import {
   describeMenuImageOnSave,
   inferMenuImageSource,
   isGoogleDriveUrl,
-  MENU_PRODUCT_IMAGE_MAX_BYTES,
+  MENU_PRODUCT_IMAGE_MAX_LABEL,
+  prepareMenuProductImage,
   previewUrlForMenuImageSource,
   resolveMenuImageSaveIntent,
   type MenuImageSource,
@@ -163,6 +164,7 @@ export default function AdminMenu() {
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
   const [savingProduct, setSavingProduct] = useState(false);
+  const [preparingImage, setPreparingImage] = useState(false);
   const [pastryKind, setPastryKind] = useState<PastryKind>('mix-match');
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
@@ -340,24 +342,24 @@ export default function AdminMenu() {
     }));
   };
 
-  const handleImageFilePick = (file: File | null) => {
+  const handleImageFilePick = async (file: File | null) => {
     if (!file) return;
     setProductFormError('');
-    if (!file.type.startsWith('image/')) {
-      setProductFormError('Please choose an image file (PNG, JPG, WebP, etc.).');
-      return;
+    setPreparingImage(true);
+    try {
+      const prepared = await prepareMenuProductImage(file);
+      if (prepared.ok === false) {
+        setProductFormError(prepared.error);
+        return;
+      }
+      if (uploadPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadPreviewUrl);
+      setPendingImageFile(prepared.file);
+      setUploadPreviewLabel(prepared.file.name);
+      setUploadPreviewUrl(URL.createObjectURL(prepared.file));
+      setImageSource('upload');
+    } finally {
+      setPreparingImage(false);
     }
-    if (file.size > MENU_PRODUCT_IMAGE_MAX_BYTES) {
-      setProductFormError(
-        `Image is too large (${Math.round(file.size / 1024)} KB). Max ${Math.round(MENU_PRODUCT_IMAGE_MAX_BYTES / 1024)} KB.`,
-      );
-      return;
-    }
-    if (uploadPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadPreviewUrl);
-    setPendingImageFile(file);
-    setUploadPreviewLabel(file.name);
-    setUploadPreviewUrl(URL.createObjectURL(file));
-    setImageSource('upload');
   };
 
   const beginCategoryRename = (category: MenuCategory) => {
@@ -1100,16 +1102,16 @@ export default function AdminMenu() {
                       Upload image
                     </label>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark/5">
+                      <label className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider ${preparingImage || savingProduct ? 'opacity-60 pointer-events-none' : 'cursor-pointer hover:bg-kado-dark/5'}`}>
                         <Upload className="h-4 w-4 shrink-0" aria-hidden />
-                        Choose file
+                        {preparingImage ? 'Preparing…' : 'Choose file'}
                         <input
                           type="file"
                           accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
-                          disabled={savingProduct}
+                          disabled={savingProduct || preparingImage}
                           className="hidden"
                           onChange={(e) => {
-                            handleImageFilePick(e.target.files?.[0] ?? null);
+                            void handleImageFilePick(e.target.files?.[0] ?? null);
                             e.target.value = '';
                           }}
                         />
@@ -1133,6 +1135,7 @@ export default function AdminMenu() {
                     ) : null}
                     <p className="mt-1.5 text-[11px] font-semibold text-kado-red">
                       Saving uploads to Kado storage (external URLs are ignored while Upload file is selected).
+                      {' '}Max {MENU_PRODUCT_IMAGE_MAX_LABEL} per image — larger files are compressed automatically.
                     </p>
                   </div>
                 ) : null}

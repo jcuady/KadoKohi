@@ -60,6 +60,9 @@ export function formatMenuProductCrudError(err: unknown, action: 'save' | 'delet
   if (/Bucket not found|storage/i.test(blob)) {
     return 'Menu image storage is not configured. Run migration 0034_menu_product_images_storage.';
   }
+  if (/file size|too large|payload|413|entity too large/i.test(blob)) {
+    return 'Image must be 5 MB or smaller.';
+  }
   if (code === '23503' || /foreign key|violates.*constraint/i.test(blob)) {
     return action === 'delete'
       ? 'This product is linked to other records and cannot be deleted.'
@@ -93,6 +96,11 @@ export type TrackedOrderStatus = {
 };
 import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
 import { prepareGuestPaymentProof } from '../../compressPaymentProof';
+import {
+  MENU_PRODUCT_IMAGE_MAX_BYTES,
+  menuImageUploadSizeError,
+  prepareMenuProductImage,
+} from '../../menuProductImage';
 import {
   PAYMENT_PROOF_BUCKET,
   dataUrlToBlob,
@@ -1044,21 +1052,29 @@ export const orderingRepo = {
   async uploadMenuProductImage(file: File, productId: string): Promise<string> {
     if (!supabase) throw new Error('Supabase is not configured.');
     if (!productId.trim()) throw new Error('Product id is required before uploading an image.');
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Please choose an image file (PNG, JPG, WebP, etc.).');
+
+    const prepared = await prepareMenuProductImage(file);
+    if (prepared.ok === false) throw new Error(prepared.error);
+    const uploadFile = prepared.file;
+
+    if (uploadFile.size > MENU_PRODUCT_IMAGE_MAX_BYTES) {
+      throw new Error(menuImageUploadSizeError(uploadFile.size));
     }
-    if (file.size > 5_242_880) {
-      throw new Error('Image must be 5 MB or smaller.');
-    }
-    const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+
+    const ext = uploadFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
     const safeExt = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'].includes(ext) ? ext : 'jpg';
     const path = `products/${productId}.${safeExt}`;
-    const { error } = await supabase.storage.from('kado-menu-images').upload(path, file, {
+    const { error } = await supabase.storage.from('kado-menu-images').upload(path, uploadFile, {
       upsert: true,
-      contentType: file.type || 'image/jpeg',
+      contentType: uploadFile.type || 'image/jpeg',
       cacheControl: '3600',
     });
-    if (error) throw error;
+    if (error) {
+      if (/file size|too large|payload|413|entity too large/i.test(error.message)) {
+        throw new Error(menuImageUploadSizeError(uploadFile.size));
+      }
+      throw error;
+    }
     const { data } = supabase.storage.from('kado-menu-images').getPublicUrl(path);
     const url = data.publicUrl;
     if (!url) throw new Error('Could not get public URL for menu product image.');
