@@ -161,6 +161,7 @@ export const SEO_INTERNAL_LINKS = [
   { to: '/events', label: 'Events & tambayan' },
   { to: '/book/coffee-cart', label: 'Coffee cart bookings' },
   { to: '/book/matcha-bar', label: 'Matcha bar bookings' },
+  { to: '/careers', label: 'Careers & collaborations' },
   { to: '/merch', label: 'Merch' },
   { to: '/about', label: 'About Kado Kohi' },
   { to: '/contact', label: 'Contact' },
@@ -237,6 +238,13 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
     keywords: routeKeywords('matcha bar booking marikina', 'event matcha bar'),
   },
   {
+    path: '/careers',
+    title: 'Careers at Kado Kohi | Kickstart Your Career in Marikina',
+    description:
+      'Join Kado Kohi in Marikina — barista roles, content creator partnerships, and brand collaborations at our Japanese-inspired specialty cafe tambayan.',
+    keywords: routeKeywords('kado kohi careers', 'barista jobs marikina', 'coffee shop hiring marikina'),
+  },
+  {
     path: '/pastries',
     title: 'Kado Coffee Pastries | Fresh Bakes Marikina',
     description:
@@ -289,6 +297,7 @@ export const SEO_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/events', name: 'Events' },
   { path: '/book/coffee-cart', name: 'Coffee Cart Bookings' },
   { path: '/book/matcha-bar', name: 'Matcha Bar Bookings' },
+  { path: '/careers', name: 'Careers' },
   { path: '/blog', name: 'Blog' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About' },
@@ -301,6 +310,7 @@ export const SEO_SITEMAP_PATHS: Array<{ path: string; changefreq: string; priori
   { path: '/events', changefreq: 'daily', priority: '0.9' },
   { path: '/book/coffee-cart', changefreq: 'weekly', priority: '0.85' },
   { path: '/book/matcha-bar', changefreq: 'weekly', priority: '0.85' },
+  { path: '/careers', changefreq: 'weekly', priority: '0.75' },
   { path: '/merch', changefreq: 'weekly', priority: '0.8' },
   { path: '/pastries', changefreq: 'weekly', priority: '0.75' },
   { path: '/blog', changefreq: 'weekly', priority: '0.75' },

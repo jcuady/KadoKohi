@@ -15,6 +15,8 @@ import { useEventStore } from './store/eventStore';
 import { useEventFormStore } from './store/eventFormStore';
 import { useBoothBookingStore } from './store/boothBookingStore';
 import { useBoothShowcaseStore } from './store/boothShowcaseStore';
+import { useMatchaShowcaseStore } from './store/matchaShowcaseStore';
+import { useCareersStore } from './store/careersStore';
 import { useLandingContentStore } from './store/landingContentStore';
 import { useLoyaltyStore } from './store/loyaltyStore';
 import { useBlogStore } from './store/blogStore';
@@ -38,6 +40,8 @@ function Bootstrap() {
   const hydrateEventForms = useEventFormStore((s) => s.hydrateFromRemote);
   const hydrateBookings = useBoothBookingStore((s) => s.hydrateFromRemote);
   const hydrateBoothPage = useBoothShowcaseStore((s) => s.hydrateFromRemote);
+  const hydrateMatchaPage = useMatchaShowcaseStore((s) => s.hydrateFromRemote);
+  const hydrateCareers = useCareersStore((s) => s.hydrateFromRemote);
   const hydrateLanding = useLandingContentStore((s) => s.hydrateFromRemote);
   const hydrateLoyalty = useLoyaltyStore((s) => s.hydrateFromRemote);
   const hydrateBlog = useBlogStore((s) => s.hydrateFromRemote);
@@ -59,6 +63,8 @@ function Bootstrap() {
         hydrateEventForms(),
         hydrateBookings(),
         hydrateBoothPage(),
+        hydrateMatchaPage(),
+        hydrateCareers(),
         hydrateLanding(),
         hydrateLoyalty(),
         hydrateBlog(),

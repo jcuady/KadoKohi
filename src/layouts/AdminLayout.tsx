@@ -84,7 +84,7 @@ const NAV: NavEntry[] = [
   {
     type: 'group',
     id: 'booth',
-    label: 'Coffee booth',
+    label: 'Bookings',
     icon: CalendarClock,
     children: [
       { to: '/admin/booth-bookings', label: 'Bookings', icon: CalendarClock },
@@ -120,6 +120,7 @@ const NAV: NavEntry[] = [
     children: [
       { to: '/admin/landing', label: 'Homepage', icon: Image },
       { to: '/admin/blog', label: 'Blog', icon: Newspaper },
+      { to: '/admin/careers', label: 'Careers', icon: PenLine },
     ],
   },
   {

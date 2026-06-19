@@ -1,6 +1,8 @@
 import { SEED_BOOTH_ADDONS, SEED_BOOTH_PACKAGES, SEED_BOOKING_SHOWCASE_GALLERY } from '../data/seed';
 import { SEED_CONTENT } from '../store/landingContentStore';
 import { DEFAULT_BOOTH_PAGE_COPY } from './boothPageContent';
+import { DEFAULT_MATCHA_PAGE_COPY, SEED_MATCHA_SHOWCASE_GALLERY } from './matchaPageContent';
+import { DEFAULT_CAREERS_PAGE_COPY, SEED_CAREER_LISTINGS } from './careersPageContent';
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
 
@@ -9,9 +11,11 @@ export async function ensurePublishedCms(): Promise<void> {
   if (!supabase) return;
 
   try {
-    const [landing, booth, catalog] = await Promise.all([
+    const [landing, booth, matcha, careers, catalog] = await Promise.all([
       orderingRepo.fetchLandingContent(),
       orderingRepo.fetchBoothPageContent(),
+      orderingRepo.fetchMatchaPageContent(),
+      orderingRepo.fetchCareersContent(),
       orderingRepo.fetchBoothCatalog(),
     ]);
 
@@ -26,6 +30,24 @@ export async function ensurePublishedCms(): Promise<void> {
         orderingRepo.upsertBoothPageContent({
           copy: DEFAULT_BOOTH_PAGE_COPY,
           showcase: SEED_BOOKING_SHOWCASE_GALLERY,
+        }),
+      );
+    }
+
+    if (!matcha || typeof matcha !== 'object') {
+      writes.push(
+        orderingRepo.upsertMatchaPageContent({
+          copy: DEFAULT_MATCHA_PAGE_COPY,
+          showcase: SEED_MATCHA_SHOWCASE_GALLERY,
+        }),
+      );
+    }
+
+    if (!careers || typeof careers !== 'object') {
+      writes.push(
+        orderingRepo.upsertCareersContent({
+          copy: DEFAULT_CAREERS_PAGE_COPY,
+          listings: SEED_CAREER_LISTINGS,
         }),
       );
     }

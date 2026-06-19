@@ -5,6 +5,7 @@ import { Check, Mail, PartyPopper, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
+import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { buildBookingEstimate } from '../../store/bookingEstimateStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -17,7 +18,6 @@ import { formatPhp } from '../../lib/money';
 import {
   BOOKING_PAGE_PATHS,
   BOOKING_SERVICE_TAGS,
-  MATCHA_BAR_PAGE_COPY,
   type BookingPageKind,
 } from '../../lib/bookingPageKinds';
 import {
@@ -47,8 +47,9 @@ interface BookingWizardProps {
 export default function BookingWizard({ onStageChange, bookingKind = 'coffee-cart' }: BookingWizardProps) {
   const user = useAuthStore((s) => s.user);
   const contactEmail = useSettingsStore((s) => s.settings.contactEmail);
-  const cmsPageCopy = useBoothShowcaseStore((s) => s.pageCopy);
-  const pageCopy = bookingKind === 'matcha-bar' ? MATCHA_BAR_PAGE_COPY : cmsPageCopy;
+  const coffeePageCopy = useBoothShowcaseStore((s) => s.pageCopy);
+  const matchaPageCopy = useMatchaShowcaseStore((s) => s.pageCopy);
+  const pageCopy = bookingKind === 'matcha-bar' ? matchaPageCopy : coffeePageCopy;
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
   const allPackages = useBoothCatalogStore((s) => s.packages);

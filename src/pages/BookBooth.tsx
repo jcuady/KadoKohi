@@ -4,78 +4,97 @@ import { CalendarHeart, Users, Clock3, BadgeCheck, ArrowDown, Leaf } from 'lucid
 import BookingSteps from '../components/booking/BookingSteps';
 import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
+import { useMatchaShowcaseStore } from '../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../store/boothCatalogStore';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import CmsStyledText from '../components/cms/CmsStyledText';
 import { boothChipKey } from '../lib/boothPageContent';
-import {
-  BOOKING_PAGE_LABELS,
-  MATCHA_BAR_HERO_IMAGES,
-  MATCHA_BAR_PAGE_COPY,
-  type BookingPageKind,
-} from '../lib/bookingPageKinds';
+import { BOOKING_PAGE_LABELS, type BookingPageKind } from '../lib/bookingPageKinds';
 
 const COFFEE_CART_CHIP_ICONS = [CalendarHeart, Users, Clock3, BadgeCheck] as const;
 const MATCHA_BAR_CHIP_ICONS = [Leaf, Users, Clock3, BadgeCheck] as const;
 
+const BOOTH_HERO_IMAGES = [
+  { src: '/booth-photos/booth-1.jpg', alt: 'Kado Kohi coffee cart event' },
+  { src: '/booth-photos/booth-2.jpg', alt: 'Kado Kohi coffee cart setup' },
+  { src: '/booth-photos/booth-3.jpg', alt: 'Kado Kohi coffee cart guests' },
+  { src: '/booth-photos/booth-4.jpg', alt: 'Kado Kohi event drinks' },
+  { src: '/booth-photos/booth-5.jpg', alt: 'Kado Kohi event venue' },
+  { src: '/booth-photos/booth-1.jpg', alt: 'Kado Kohi coffee cart' },
+] as const;
+
+const MATCHA_HERO_IMAGES = [
+  { src: '/social/matcha-series.png', alt: 'Kado Kohi matcha bar setup' },
+  { src: '/social/matcha-latte.png', alt: 'Matcha drinks at Kado Kohi events' },
+  { src: '/booth-photos/booth-3.jpg', alt: 'Guests at a Kado Kohi event bar' },
+] as const;
+
 type Props = { kind?: BookingPageKind };
 
 export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
-  const usesCms = kind === 'coffee-cart';
-  const showcaseMediaRaw = useBoothShowcaseStore((s) => s.media);
-  const cmsPageCopy = useBoothShowcaseStore((s) => s.pageCopy);
-  const hydrateFromRemote = useBoothShowcaseStore((s) => s.hydrateFromRemote);
+  const isMatcha = kind === 'matcha-bar';
+  const coffeeMedia = useBoothShowcaseStore((s) => s.media);
+  const coffeePageCopy = useBoothShowcaseStore((s) => s.pageCopy);
+  const hydrateCoffee = useBoothShowcaseStore((s) => s.hydrateFromRemote);
+  const matchaMedia = useMatchaShowcaseStore((s) => s.media);
+  const matchaPageCopy = useMatchaShowcaseStore((s) => s.pageCopy);
+  const hydrateMatcha = useMatchaShowcaseStore((s) => s.hydrateFromRemote);
   const hydrateCatalog = useBoothCatalogStore((s) => s.hydrateFromRemote);
   const [, setWizardStage] = useState<BookingWizardStage>('form');
 
-  const pageCopy = usesCms ? cmsPageCopy : MATCHA_BAR_PAGE_COPY;
-  const chipIcons = usesCms ? COFFEE_CART_CHIP_ICONS : MATCHA_BAR_CHIP_ICONS;
+  const pageCopy = isMatcha ? matchaPageCopy : coffeePageCopy;
+  const showcaseMediaRaw = isMatcha ? matchaMedia : coffeeMedia;
+  const chipIcons = isMatcha ? MATCHA_BAR_CHIP_ICONS : COFFEE_CART_CHIP_ICONS;
+  const heroImages = isMatcha ? MATCHA_HERO_IMAGES : BOOTH_HERO_IMAGES;
 
   useEffect(() => {
     void hydrateCatalog();
-    if (usesCms) void hydrateFromRemote();
-  }, [hydrateCatalog, hydrateFromRemote, usesCms]);
+    if (isMatcha) void hydrateMatcha();
+    else void hydrateCoffee();
+  }, [hydrateCatalog, hydrateCoffee, hydrateMatcha, isMatcha]);
 
-  const showcaseMedia = useMemo(() => {
-    if (!usesCms) return [];
-    return [...showcaseMediaRaw]
-      .filter((item) => item.visible)
-      .sort((a, b) => a.order - b.order);
-  }, [usesCms, showcaseMediaRaw]);
+  const showcaseMedia = useMemo(
+    () =>
+      [...showcaseMediaRaw]
+        .filter((item) => item.visible)
+        .sort((a, b) => a.order - b.order),
+    [showcaseMediaRaw],
+  );
 
   return (
     <div className="w-full bg-[#FAF7F2] min-h-screen">
       <section className="relative w-full overflow-hidden bg-kado-dark" style={{ minHeight: 'min(92svh, 680px)' }}>
-        {usesCms ? (
-          <div className="absolute inset-0 grid grid-cols-12 grid-rows-6 gap-0.5 opacity-60">
-            <div className="col-span-4 row-span-3 overflow-hidden">
-              <img src="/booth-photos/booth-1.jpg" alt="Kado Kohi coffee cart event" className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-            <div className="col-span-5 row-span-4 overflow-hidden">
-              <img src="/booth-photos/booth-2.jpg" alt="Kado Kohi coffee cart setup" className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-            <div className="col-span-3 row-span-2 overflow-hidden">
-              <img src="/booth-photos/booth-3.jpg" alt="Kado Kohi coffee cart guests" className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-            <div className="col-span-4 row-span-3 overflow-hidden">
-              <img src="/booth-photos/booth-4.jpg" alt="Kado Kohi event drinks" className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-            <div className="col-span-3 row-span-2 overflow-hidden">
-              <img src="/booth-photos/booth-5.jpg" alt="Kado Kohi event venue" className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-            <div className="col-span-5 row-span-2 overflow-hidden">
-              <img src="/booth-photos/booth-1.jpg" alt="Kado Kohi coffee cart" className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-[3s] ease-out" />
-            </div>
-          </div>
-        ) : (
-          <div className="absolute inset-0 grid grid-cols-2 lg:grid-cols-3 gap-0.5 opacity-60">
-            {MATCHA_BAR_HERO_IMAGES.map((img) => (
-              <div key={img.src} className="overflow-hidden min-h-[12rem] lg:min-h-0">
-                <img src={img.src} alt={img.alt} className="w-full h-full min-h-[inherit] object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className={`absolute inset-0 gap-0.5 opacity-60 ${isMatcha ? 'grid grid-cols-2 lg:grid-cols-3' : 'grid grid-cols-12 grid-rows-6'}`}>
+          {isMatcha
+            ? heroImages.map((img) => (
+                <div key={img.src} className="overflow-hidden min-h-[12rem] lg:min-h-0">
+                  <img src={img.src} alt={img.alt} className="w-full h-full min-h-[inherit] object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
+                </div>
+              ))
+            : heroImages.map((img, i) => {
+                const gridClass =
+                  i === 0
+                    ? 'col-span-4 row-span-3'
+                    : i === 1
+                      ? 'col-span-5 row-span-4'
+                      : i === 2
+                        ? 'col-span-3 row-span-2'
+                        : i === 3
+                          ? 'col-span-4 row-span-3'
+                          : i === 4
+                            ? 'col-span-3 row-span-2'
+                            : 'col-span-5 row-span-2';
+                return (
+                  <div key={`${img.src}-${i}`} className={`${gridClass} overflow-hidden`}>
+                    <img
+                      src={img.src}
+                      alt={img.alt}
+                      className={`w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out ${i === 5 ? 'object-top' : ''}`}
+                    />
+                  </div>
+                );
+              })}
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-r from-kado-dark/95 via-kado-dark/75 to-kado-dark/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-kado-dark/80 via-transparent to-transparent" />
@@ -87,43 +106,26 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="max-w-2xl"
           >
-            {!usesCms ? (
-              <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] mb-4 text-kado-red">
-                {BOOKING_PAGE_LABELS[kind]}
-              </p>
-            ) : (
-              <CmsStyledText
-                value={pageCopy.heroEyebrow}
-                as="p"
-                className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] mb-4"
-                defaultColorClass="text-kado-red"
-              />
+            <CmsStyledText
+              value={pageCopy.heroEyebrow}
+              as="p"
+              className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] mb-4"
+              defaultColorClass="text-kado-red"
+            />
+            {!isMatcha ? null : (
+              <p className="sr-only">{BOOKING_PAGE_LABELS[kind]}</p>
             )}
             <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] font-black leading-[0.95] tracking-tight uppercase mb-5 drop-shadow-lg">
-              {usesCms ? (
-                <>
-                  <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-white" />
-                  <br />
-                  <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-white" />
-                </>
-              ) : (
-                <>
-                  <span className="text-white">{pageCopy.heroTitleLine1}</span>
-                  <br />
-                  <span className="text-white">{pageCopy.heroTitleLine2}</span>
-                </>
-              )}
+              <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-white" />
+              <br />
+              <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-white" />
             </h1>
-            {usesCms ? (
-              <CmsStyledText
-                value={pageCopy.heroDescription}
-                as="p"
-                className="text-base sm:text-lg leading-relaxed max-w-xl mb-8"
-                defaultColorClass="text-kado-cream/85"
-              />
-            ) : (
-              <p className="text-base sm:text-lg leading-relaxed max-w-xl mb-8 text-kado-cream/85">{pageCopy.heroDescription}</p>
-            )}
+            <CmsStyledText
+              value={pageCopy.heroDescription}
+              as="p"
+              className="text-base sm:text-lg leading-relaxed max-w-xl mb-8"
+              defaultColorClass="text-kado-cream/85"
+            />
 
             <div className="flex flex-wrap gap-3 mb-8">
               {pageCopy.chips.map((label, i) => {
@@ -134,7 +136,7 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90"
                   >
                     <Icon className="w-3 h-3 text-kado-red shrink-0" />
-                    {usesCms ? <CmsStyledText value={label} as="span" /> : <span>{label}</span>}
+                    <CmsStyledText value={label} as="span" />
                   </span>
                 );
               })}
@@ -144,8 +146,7 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
               href="#booking-form"
               className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
             >
-              {usesCms ? <CmsStyledText value={pageCopy.heroCtaLabel} as="span" /> : <span>{pageCopy.heroCtaLabel}</span>}{' '}
-              <ArrowDown className="w-4 h-4 shrink-0" />
+              <CmsStyledText value={pageCopy.heroCtaLabel} as="span" /> <ArrowDown className="w-4 h-4 shrink-0" />
             </a>
           </motion.div>
         </div>

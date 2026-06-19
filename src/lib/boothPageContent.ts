@@ -61,8 +61,10 @@ export const DEFAULT_BOOTH_PAGE_COPY: BoothPageCopy = {
     'Submitting saves your request and opens your email to our events team. We\'ll follow up to discuss pricing — nothing is confirmed until we agree together.',
 };
 
-function clampChipTuple(raw: unknown[] | undefined): [CmsText, CmsText, CmsText, CmsText] {
-  const base = DEFAULT_BOOTH_PAGE_COPY.chips;
+function clampChipTuple(
+  raw: unknown[] | undefined,
+  base: [CmsText, CmsText, CmsText, CmsText] = DEFAULT_BOOTH_PAGE_COPY.chips,
+): [CmsText, CmsText, CmsText, CmsText] {
   if (!Array.isArray(raw) || raw.length < 4) return [...base];
   return [0, 1, 2, 3].map((i) => clampCmsTextField(raw[i], base[i])) as [
     CmsText,
@@ -74,8 +76,8 @@ function clampChipTuple(raw: unknown[] | undefined): [CmsText, CmsText, CmsText,
 
 function clampHowItWorksSteps(
   raw: Partial<BoothHowItWorksStep>[] | undefined,
+  base: [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep] = DEFAULT_BOOTH_PAGE_COPY.howItWorksSteps,
 ): [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep] {
-  const base = DEFAULT_BOOTH_PAGE_COPY.howItWorksSteps;
   if (!Array.isArray(raw) || raw.length < 3) return [...base];
   return [0, 1, 2].map((i) => ({
     title: clampCmsTextField(raw[i]?.title, base[i].title),
@@ -83,27 +85,27 @@ function clampHowItWorksSteps(
   })) as [BoothHowItWorksStep, BoothHowItWorksStep, BoothHowItWorksStep];
 }
 
-function clampCopyField(raw: unknown, key: keyof BoothPageCopy): CmsText {
-  return clampCmsTextField(raw, DEFAULT_BOOTH_PAGE_COPY[key] as CmsText);
+function clampCopyField(raw: unknown, key: keyof BoothPageCopy, base: BoothPageCopy): CmsText {
+  return clampCmsTextField(raw, base[key] as CmsText);
 }
 
-export function normalizeBoothPageCopy(raw?: Partial<BoothPageCopy>): BoothPageCopy {
-  const base = DEFAULT_BOOTH_PAGE_COPY;
+export function normalizeBoothPageCopy(raw?: Partial<BoothPageCopy>, defaults: BoothPageCopy = DEFAULT_BOOTH_PAGE_COPY): BoothPageCopy {
+  const base = defaults;
   if (!raw) return { ...base, chips: [...base.chips], howItWorksSteps: [...base.howItWorksSteps] };
   return {
-    heroEyebrow: clampCopyField(raw.heroEyebrow, 'heroEyebrow'),
-    heroTitleLine1: clampCopyField(raw.heroTitleLine1, 'heroTitleLine1'),
-    heroTitleLine2: clampCopyField(raw.heroTitleLine2, 'heroTitleLine2'),
-    heroDescription: clampCopyField(raw.heroDescription, 'heroDescription'),
-    heroCtaLabel: clampCopyField(raw.heroCtaLabel, 'heroCtaLabel'),
-    chips: clampChipTuple(raw.chips),
-    howItWorksEyebrow: clampCopyField(raw.howItWorksEyebrow, 'howItWorksEyebrow'),
-    howItWorksTitle: clampCopyField(raw.howItWorksTitle, 'howItWorksTitle'),
-    howItWorksSteps: clampHowItWorksSteps(raw.howItWorksSteps),
-    proposalTitle: clampCopyField(raw.proposalTitle, 'proposalTitle'),
-    proposalDescription: clampCopyField(raw.proposalDescription, 'proposalDescription'),
-    proposalCtaLabel: clampCopyField(raw.proposalCtaLabel, 'proposalCtaLabel'),
-    proposalEmailNote: clampCopyField(raw.proposalEmailNote, 'proposalEmailNote'),
+    heroEyebrow: clampCopyField(raw.heroEyebrow, 'heroEyebrow', base),
+    heroTitleLine1: clampCopyField(raw.heroTitleLine1, 'heroTitleLine1', base),
+    heroTitleLine2: clampCopyField(raw.heroTitleLine2, 'heroTitleLine2', base),
+    heroDescription: clampCopyField(raw.heroDescription, 'heroDescription', base),
+    heroCtaLabel: clampCopyField(raw.heroCtaLabel, 'heroCtaLabel', base),
+    chips: clampChipTuple(raw.chips, base.chips),
+    howItWorksEyebrow: clampCopyField(raw.howItWorksEyebrow, 'howItWorksEyebrow', base),
+    howItWorksTitle: clampCopyField(raw.howItWorksTitle, 'howItWorksTitle', base),
+    howItWorksSteps: clampHowItWorksSteps(raw.howItWorksSteps, base.howItWorksSteps),
+    proposalTitle: clampCopyField(raw.proposalTitle, 'proposalTitle', base),
+    proposalDescription: clampCopyField(raw.proposalDescription, 'proposalDescription', base),
+    proposalCtaLabel: clampCopyField(raw.proposalCtaLabel, 'proposalCtaLabel', base),
+    proposalEmailNote: clampCopyField(raw.proposalEmailNote, 'proposalEmailNote', base),
   };
 }
 

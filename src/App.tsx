@@ -31,7 +31,7 @@ import Merch from './pages/Merch';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Pastries from './pages/Pastries';
-import BookBooth from './pages/BookBooth';
+import Careers from './pages/Careers';
 import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import AdminMerch from './pages/admin/AdminMerch';
@@ -41,6 +41,8 @@ import AdminBoothBookings from './pages/admin/AdminBoothBookings';
 import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
 import AdminBoothContent from './pages/admin/AdminBoothContent';
 import AdminLandingContent from './pages/admin/AdminLandingContent';
+import BookBooth from './pages/BookBooth';
+import AdminCareers from './pages/admin/AdminCareers';
 import AdminBlog from './pages/admin/AdminBlog';
 import StaffLayout from './layouts/StaffLayout';
 import StaffMerchOrders from './pages/staff/StaffMerchOrders';
@@ -91,6 +93,7 @@ export default function App() {
           <Route path="/pastries" element={<Pastries />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/careers" element={<Careers />} />
           <Route path="/book/coffee-cart" element={<BookBooth />} />
           <Route path="/book/matcha-bar" element={<BookBooth kind="matcha-bar" />} />
           <Route path="/book/booth" element={<Navigate to="/book/coffee-cart" replace />} />
@@ -120,6 +123,7 @@ export default function App() {
             <Route path="tables" element={<AdminTables />} />
             <Route path="landing" element={<AdminLandingContent />} />
             <Route path="blog" element={<AdminBlog />} />
+            <Route path="careers" element={<AdminCareers />} />
             <Route path="pastries" element={<Navigate to="/admin/menu?tab=pastries" replace />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="audit" element={<AdminAuditLog />} />

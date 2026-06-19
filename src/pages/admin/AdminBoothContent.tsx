@@ -1,80 +1,24 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import CmsTextField from '../../components/admin/CmsTextField';
-import { boothChipKey } from '../../lib/boothPageContent';
+import { useState } from 'react';
+import { cn } from '../../lib/utils';
+import BoothPageContentForm from '../../components/admin/BoothPageContentForm';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 
-type MediaForm = {
-  title: string;
-  caption: string;
-  image: string;
-  visible: boolean;
-};
-
-const EMPTY_MEDIA_FORM: MediaForm = { title: '', caption: '', image: '', visible: true };
+type BookingTab = 'coffee-cart' | 'matcha-bar';
 
 export default function AdminBoothContent() {
-  const media = useBoothShowcaseStore((s) => s.media);
-  const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
-  const updatePageCopy = useBoothShowcaseStore((s) => s.updatePageCopy);
-  const updateHowItWorksStep = useBoothShowcaseStore((s) => s.updateHowItWorksStep);
-  const updateChip = useBoothShowcaseStore((s) => s.updateChip);
-  const addMedia = useBoothShowcaseStore((s) => s.addMedia);
-  const updateMedia = useBoothShowcaseStore((s) => s.updateMedia);
-  const removeMedia = useBoothShowcaseStore((s) => s.removeMedia);
-  const saveToRemote = useBoothShowcaseStore((s) => s.saveToRemote);
-  const saving = useBoothShowcaseStore((s) => s.saving);
-  const saveError = useBoothShowcaseStore((s) => s.saveError);
-
-  const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
-  const [showMediaModal, setShowMediaModal] = useState(false);
-  const [mediaForm, setMediaForm] = useState<MediaForm>(EMPTY_MEDIA_FORM);
+  const [tab, setTab] = useState<BookingTab>('coffee-cart');
   const [savedMsg, setSavedMsg] = useState('');
 
-  const sortedMedia = useMemo(() => [...media].sort((a, b) => a.order - b.order), [media]);
-
-  const openNewMedia = () => {
-    setEditingMediaId(null);
-    setMediaForm(EMPTY_MEDIA_FORM);
-    setShowMediaModal(true);
-  };
-
-  const openEditMedia = (id: string) => {
-    const item = sortedMedia.find((m) => m.id === id);
-    if (!item) return;
-    setEditingMediaId(id);
-    setMediaForm({
-      title: item.title,
-      caption: item.caption ?? '',
-      image: item.image,
-      visible: item.visible,
-    });
-    setShowMediaModal(true);
-  };
-
-  const submitMedia = (e: FormEvent) => {
-    e.preventDefault();
-    if (!mediaForm.title.trim() || !mediaForm.image.trim()) return;
-    const payload = {
-      title: mediaForm.title.trim(),
-      caption: mediaForm.caption.trim() || undefined,
-      image: mediaForm.image.trim(),
-      visible: mediaForm.visible,
-      tags: [],
-    };
-    if (editingMediaId) {
-      updateMedia(editingMediaId, payload);
-    } else {
-      addMedia({ ...payload, order: sortedMedia.length });
-    }
-    setShowMediaModal(false);
-  };
+  const coffee = useBoothShowcaseStore();
+  const matcha = useMatchaShowcaseStore();
+  const active = tab === 'coffee-cart' ? coffee : matcha;
 
   const handlePublish = async () => {
     setSavedMsg('');
     try {
-      await saveToRemote();
-      setSavedMsg('Booth page published.');
+      await active.saveToRemote();
+      setSavedMsg(tab === 'coffee-cart' ? 'Coffee cart page published.' : 'Matcha bar page published.');
     } catch {
       // saveError set in store
     }
@@ -84,145 +28,67 @@ export default function AdminBoothContent() {
     <div className="max-w-6xl dash-page">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booth Page Content</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booking Page Content</h1>
           <p className="dash-muted text-sm">
-            Edit hero copy, how-it-works steps, proposal form text, and showcase gallery for /book/coffee-cart. Publish to save
-            to the database.
+            Edit hero copy, how-it-works steps, proposal form text, and showcase gallery for coffee cart and matcha bar
+            booking pages. Publish to save to the database.
           </p>
         </div>
         <button
           type="button"
           onClick={() => void handlePublish()}
-          disabled={saving}
+          disabled={active.saving}
           className="shrink-0 rounded-xl bg-kado-red text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-60"
         >
-          {saving ? 'Publishing…' : 'Publish booth page'}
+          {active.saving ? 'Publishing…' : tab === 'coffee-cart' ? 'Publish coffee cart' : 'Publish matcha bar'}
         </button>
       </div>
 
-      {saveError ? <p className="mb-4 text-sm text-red-600 font-medium">{saveError}</p> : null}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {(
+          [
+            { id: 'coffee-cart' as const, label: 'Coffee cart', path: '/book/coffee-cart' },
+            { id: 'matcha-bar' as const, label: 'Matcha bar', path: '/book/matcha-bar' },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              setTab(item.id);
+              setSavedMsg('');
+            }}
+            className={cn(
+              'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-colors',
+              tab === item.id
+                ? 'bg-kado-dark text-kado-cream border-kado-dark'
+                : 'dash-border dash-muted hover:border-kado-red/40',
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs dash-muted mb-4">
+        Public page:{' '}
+        <a href={tab === 'coffee-cart' ? '/book/coffee-cart' : '/book/matcha-bar'} className="text-kado-red underline-offset-2 hover:underline" target="_blank" rel="noreferrer">
+          {tab === 'coffee-cart' ? '/book/coffee-cart' : '/book/matcha-bar'}
+        </a>
+      </p>
+
+      {active.saveError ? <p className="mb-4 text-sm text-red-600 font-medium">{active.saveError}</p> : null}
       {savedMsg ? <p className="mb-4 text-sm text-emerald-700 font-medium">{savedMsg}</p> : null}
 
-      <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">Hero</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          <CmsTextField label="Eyebrow" value={pageCopy.heroEyebrow} onChange={(v) => updatePageCopy({ heroEyebrow: v })} />
-          <CmsTextField label="CTA label" value={pageCopy.heroCtaLabel} onChange={(v) => updatePageCopy({ heroCtaLabel: v })} />
-          <CmsTextField label="Title line 1" value={pageCopy.heroTitleLine1} onChange={(v) => updatePageCopy({ heroTitleLine1: v })} />
-          <CmsTextField label="Title line 2" value={pageCopy.heroTitleLine2} onChange={(v) => updatePageCopy({ heroTitleLine2: v })} />
-        </div>
-        <CmsTextField label="Description" value={pageCopy.heroDescription} onChange={(v) => updatePageCopy({ heroDescription: v })} multiline />
-        <div className="grid md:grid-cols-2 gap-4">
-          {pageCopy.chips.map((chip, i) => (
-            <div key={boothChipKey(chip, i)}>
-              <CmsTextField label={`Chip ${i + 1}`} value={chip} onChange={(v) => updateChip(i, v)} />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">How it works</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          <CmsTextField label="Eyebrow" value={pageCopy.howItWorksEyebrow} onChange={(v) => updatePageCopy({ howItWorksEyebrow: v })} />
-          <CmsTextField label="Section title" value={pageCopy.howItWorksTitle} onChange={(v) => updatePageCopy({ howItWorksTitle: v })} />
-        </div>
-        {pageCopy.howItWorksSteps.map((step, i) => (
-          <div key={boothChipKey(step.title, i)} className="rounded-xl border dash-border p-4 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider dash-muted">Step {i + 1}</p>
-            <CmsTextField label="Title" value={step.title} onChange={(v) => updateHowItWorksStep(i, { title: v })} />
-            <CmsTextField label="Body" value={step.body} onChange={(v) => updateHowItWorksStep(i, { body: v })} multiline />
-          </div>
-        ))}
-      </section>
-
-      <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">Proposal form</h2>
-        <CmsTextField label="Form title" value={pageCopy.proposalTitle} onChange={(v) => updatePageCopy({ proposalTitle: v })} />
-        <CmsTextField label="Form description" value={pageCopy.proposalDescription} onChange={(v) => updatePageCopy({ proposalDescription: v })} multiline />
-        <CmsTextField label="Submit button" value={pageCopy.proposalCtaLabel} onChange={(v) => updatePageCopy({ proposalCtaLabel: v })} />
-        <CmsTextField label="Footer note" value={pageCopy.proposalEmailNote} onChange={(v) => updatePageCopy({ proposalEmailNote: v })} multiline />
-        <p className="text-xs dash-muted">Proposal emails use Contact Email from Settings.</p>
-      </section>
-
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-xl font-bold dash-heading">Showcase Gallery</h2>
-          <button
-            type="button"
-            onClick={openNewMedia}
-            className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" /> Media
-          </button>
-        </div>
-        <div className="space-y-2.5">
-          {sortedMedia.map((item) => (
-            <article key={item.id} className="rounded-2xl dash-card border p-4 flex items-start gap-4">
-              <img src={item.image} alt={item.title} className="w-28 h-20 rounded-xl object-cover border dash-border" />
-              <div className="flex-1">
-                <p className="font-display font-bold dash-heading">{item.title}</p>
-                {item.caption && <p className="text-sm dash-muted">{item.caption}</p>}
-              </div>
-              <div className="flex gap-1.5">
-                <button type="button" onClick={() => openEditMedia(item.id)} className="p-1.5 dash-muted hover:text-kado-red">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button type="button" onClick={() => removeMedia(item.id)} className="p-1.5 text-red-400 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {showMediaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={submitMedia} className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
-            <h3 className="font-display text-xl font-bold dash-heading">{editingMediaId ? 'Edit Media' : 'New Media'}</h3>
-            <Field label="Title" value={mediaForm.title} onChange={(v) => setMediaForm((s) => ({ ...s, title: v }))} required />
-            <Field label="Caption" value={mediaForm.caption} onChange={(v) => setMediaForm((s) => ({ ...s, caption: v }))} />
-            <Field label="Image URL" value={mediaForm.image} onChange={(v) => setMediaForm((s) => ({ ...s, image: v }))} required />
-            <label className="text-xs dash-muted flex items-center gap-2">
-              <input type="checkbox" checked={mediaForm.visible} onChange={(e) => setMediaForm((s) => ({ ...s, visible: e.target.checked }))} />
-              Visible
-            </label>
-            <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => setShowMediaModal(false)} className="rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted">
-                Cancel
-              </button>
-              <button type="submit" className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider">
-                {editingMediaId ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        required={required}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+      <BoothPageContentForm
+        media={active.media}
+        pageCopy={active.pageCopy}
+        updatePageCopy={active.updatePageCopy}
+        updateHowItWorksStep={active.updateHowItWorksStep}
+        updateChip={active.updateChip}
+        addMedia={active.addMedia}
+        updateMedia={active.updateMedia}
+        removeMedia={active.removeMedia}
       />
     </div>
   );

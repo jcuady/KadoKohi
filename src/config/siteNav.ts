@@ -1,5 +1,3 @@
-import { LEGAL_CONTACT_EMAIL } from '../content/customerLegal';
-
 export type NavRouteItem = {
   label: string;
   path: string;
@@ -36,8 +34,6 @@ export function isNavRouteItem(item: NavDropdownItem): item is NavRouteItem {
   return 'path' in item;
 }
 
-const CAREERS_MAILTO = `mailto:${LEGAL_CONTACT_EMAIL}?subject=${encodeURIComponent('Careers Application — Kado Kohi')}&body=${encodeURIComponent('Hi Kado Kohi team,\n\nI would like to apply for a position at Kado Kohi.\n\nName:\nRole interested in:\nPhone:\n\n(Please attach your resume.)\n\nThank you.')}`;
-
 /** Public marketing header — dropdown groups match site IA. */
 export const PUBLIC_SITE_NAV: NavItem[] = [
   { kind: 'link', label: 'Home', path: '/' },
@@ -63,7 +59,7 @@ export const PUBLIC_SITE_NAV: NavItem[] = [
       { label: 'Matcha Bar Bookings', path: '/book/matcha-bar' },
     ],
   },
-  { kind: 'external', label: 'Careers', href: CAREERS_MAILTO },
+  { kind: 'link', label: 'Careers', path: '/careers' },
   {
     kind: 'dropdown',
     label: 'About Us',

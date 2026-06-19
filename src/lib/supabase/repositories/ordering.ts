@@ -1167,6 +1167,44 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_content: content });
     if (error) throw error;
   },
+  async fetchMatchaPageContent(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('matcha_content')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
+    return (data as { matcha_content?: unknown }).matcha_content ?? null;
+  },
+  async upsertMatchaPageContent(content: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, matcha_content: content });
+    if (error) throw error;
+  },
+  async fetchCareersContent(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('careers_content')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
+    return (data as { careers_content?: unknown }).careers_content ?? null;
+  },
+  async upsertCareersContent(content: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, careers_content: content });
+    if (error) throw error;
+  },
   async fetchBoothCatalog(): Promise<unknown | null> {
     if (!supabase) return null;
     const { data, error } = await supabase

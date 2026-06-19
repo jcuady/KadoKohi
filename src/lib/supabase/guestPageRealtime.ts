@@ -7,7 +7,9 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useBlogStore } from '../../store/blogStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
+import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
+import { useCareersStore } from '../../store/careersStore';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -39,7 +41,9 @@ const refresh = {
     void useSettingsStore.getState().hydrateFromRemote();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
+    void useMatchaShowcaseStore.getState().hydrateFromRemote();
     void useBoothCatalogStore.getState().hydrateFromRemote();
+    void useCareersStore.getState().hydrateFromRemote();
   }, 300),
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
 };

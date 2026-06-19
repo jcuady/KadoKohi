@@ -13,10 +13,12 @@ import { useEventStore } from '../../store/eventStore';
 import { useEventFormStore } from '../../store/eventFormStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
+import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBlogStore } from '../../store/blogStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
+import { useCareersStore } from '../../store/careersStore';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -61,7 +63,9 @@ const refresh = {
     void useSettingsStore.getState().hydrateFromRemote();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
+    void useMatchaShowcaseStore.getState().hydrateFromRemote();
     void useBoothCatalogStore.getState().hydrateFromRemote();
+    void useCareersStore.getState().hydrateFromRemote();
   }, 300),
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
@@ -143,6 +147,8 @@ export async function refreshOperationsData(): Promise<void> {
     useBoothBookingStore.getState().hydrateFromRemote(),
     useLandingContentStore.getState().hydrateFromRemote(),
     useBoothShowcaseStore.getState().hydrateFromRemote(),
+    useMatchaShowcaseStore.getState().hydrateFromRemote(),
+    useCareersStore.getState().hydrateFromRemote(),
     useBoothCatalogStore.getState().hydrateFromRemote(),
     useBlogStore.getState().hydrateFromRemote(),
   ]);
