@@ -13,11 +13,6 @@ import type { OrderItem } from '../types/domain';
 export async function ensureOrderReadiness(): Promise<void> {
   if (!supabase) return;
 
-  // Best-effort: RPC may still be warming up in PostgREST schema cache — don't block.
-  await orderingRepo.ensureMenuCatalog().catch(() => undefined);
-  await orderingRepo.ensureMixMatchCatalog().catch(() => undefined);
-  await orderingRepo.ensureDefaultTables().catch(() => undefined);
-
   await Promise.all([
     useBranchStore.getState().hydrateFromRemote(),
     useMenuStore.getState().hydrateFromRemote(),
@@ -25,10 +20,19 @@ export async function ensureOrderReadiness(): Promise<void> {
   ]);
 
   const menu = useMenuStore.getState();
-  if (menu.dataSource !== 'remote' || coffeeMenuIsEmpty(menu.categories, menu.products)) {
+  const menuMissing =
+    !menu.remoteLoaded || menu.dataSource !== 'remote' || coffeeMenuIsEmpty(menu.categories, menu.products);
+
+  // ponytail: only seed catalog when empty — kk_ensure_menu_catalog used to wipe uploaded images on every QR visit.
+  if (menuMissing) {
+    await orderingRepo.ensureMenuCatalog().catch(() => undefined);
+    await orderingRepo.ensureMixMatchCatalog().catch(() => undefined);
     await useMenuStore.getState().ensureCatalogInDatabase().catch(() => undefined);
     await useMenuStore.getState().hydrateFromRemote();
   }
+
+  await orderingRepo.ensureDefaultTables().catch(() => undefined);
+  await useTableStore.getState().hydrateFromRemote();
 
   pruneStaleCartLines();
 }

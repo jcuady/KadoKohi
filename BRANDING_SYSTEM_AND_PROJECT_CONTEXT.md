@@ -75,74 +75,54 @@ From current image assets (`hero-coffee`, `hero-interior`) and collateral refere
 
 ## 3) Current Project Context (What Exists Now)
 
+> **Synced June 2026.** For full architecture, routes, and order flows see **`PROJECT_CONTEXT.md`**. This section covers brand implementation status only.
+
 ### Stack and architecture
-- React + TypeScript + Vite
-- Tailwind CSS v4 tokenized with `@theme`
-- Motion library for animation (`motion/react`)
-- React Router with routes:
-  - `/` Home
-  - `/menu` Menu
-  - `/about` About
-  - `/contact` Contact
+- React 19 + TypeScript + Vite 6 + React Router 7
+- Tailwind CSS v4 with `@theme` tokens in `src/index.css`
+- Zustand client caches synced to **Supabase** (Auth, Postgres, Storage, Realtime, RPCs, Edge Functions)
+- Motion (`motion/react`) + GSAP on select sections
+- Multi-surface platform: public site, customer account, barista kiosk, staff portal, admin SaaS, QR/takeout ordering
 
-### Current UI foundation
-- Pages and major sections are already built and visually rich.
-- Brand-colored theme tokens exist in CSS:
-  - `--color-kado-cream: #EFE6D5`
-  - `--color-kado-red: #9B2B2C`
-  - `--color-kado-dark: #2A2A2A`
-- Reusable structure exists (`Navbar`, `Footer`, `SectionHeader`).
-- Voice and copy already lean toward "urban tambayan + premium craft."
+### Brand tokens in code (implemented)
+Canonical values live in `src/lib/brandTokens.ts` and `src/index.css`:
+- `--color-kado-cream: #F1DFBA`
+- `--color-kado-red: #9E181D`
+- `--color-kado-dark: #191919`
+- `--color-kado-offwhite: #FAF9F6`
+- `--font-display: "Zalando Sans Expanded", …`
+- `--font-sans: "M PLUS 1", …`
 
-### Major alignment gaps vs fixed brand system
-1. **Typography mismatch**
-   - Current web fonts are `Space Grotesk`, `Inter`, and `Playfair Display`.
-   - Brand system requires `Zalando Sans Expanded` + `M Plus 1`.
+Fonts are loaded from Google Fonts in `index.css`. Logo paths are centralized in `brandTokens.ts` (`LOGO.wordmark`, `LOGO.hybridMark`, etc.).
 
-2. **Color token drift**
-   - Current colors are close, but not exact to brand guideline values.
-   - Should normalize to fixed palette (`#F1DFBA`, `#9E181D`, `#191919`, `#FAF9F6`).
-
-3. **Logo usage inconsistency**
-   - Navbar/footer currently use a text treatment + kanji box.
-   - Official lockups in `public/logo` and `public/Branding` are not yet fully integrated.
-
-4. **Image sourcing mismatch**
-   - Most page imagery still loads from Unsplash URLs.
-   - Brand-ready local assets already exist in `public/Branding`, `public/logo`, and `public/images`.
-
-5. **Collateral style not fully transferred to web**
-   - The high-energy Japanese overlay treatment from social collaterals is only partially reflected in web sections.
+### Remaining alignment gaps vs fixed brand system
+1. **Logo usage inconsistency** — some nav/footer surfaces still use a text + kanji box instead of official lockups in `public/logo/`.
+2. **Image sourcing** — mix of local brand assets (`public/images`, `public/Branding`) and external stock URLs on some sections.
+3. **Collateral style on web** — high-energy Japanese overlay treatment from social collaterals is only partially reflected.
+4. **Hero viewport** — client wants 8–10vh peek of the next section below hero (`kado-kohi-revisions.md`); hero is still near full viewport.
 
 ## 4) Project Progress Status
 
 ### Already strong
-- Multi-page site structure is complete.
-- Motion and section storytelling are implemented.
-- Product/menu and contact journey are functional.
-- Location/hours/contact details are present and coherent.
+- Canonical color and typography tokens deployed in CSS and `brandTokens.ts`.
+- Full multi-page + operations platform (not just a landing page).
+- Data-driven menu, merch, events, blog, and landing CMS.
+- QR ordering, loyalty, and admin tooling on production Supabase.
 
 ### Not yet finished for full brand lock
-- Exact typography implementation
-- Exact color calibration
-- Official mark system deployment across all key surfaces
-- Local asset replacement for external stock dependencies
-- Consistent treatment rules for Japanese overlays and campaign art
+- Official mark system on every key surface (header, footer, auth, internal portals).
+- Replace remaining external stock imagery with approved local photography.
+- Consistent Japanese overlay / campaign block patterns on marketing sections.
+- Hero height adjustment per client revision.
 
 ## 5) Practical Guidance for Next Iterations
 
-Use this order when continuing implementation:
+Use this order when continuing brand work:
 
-1. **Brand tokens first**
-   - Update global color and font tokens in one pass.
-2. **Header/footer logo standardization**
-   - Replace temporary text mark with official lockups.
-3. **Hero and key sections**
-   - Swap external images with approved local brand imagery where available.
-4. **Type hierarchy enforcement**
-   - Map H1/H2/H3/body/subtext classes to the fixed type scale.
-5. **Collateral consistency**
-   - Introduce reusable patterns for kanji overlays and campaign block compositions.
+1. **Header/footer logo standardization** — use `LOGO` constants from `brandTokens.ts` everywhere.
+2. **Hero and key sections** — swap external images for approved local assets; implement 8–10vh next-section peek.
+3. **Type hierarchy enforcement** — map H1/H2/H3/body classes to the fixed type scale from §1.
+4. **Collateral consistency** — reusable patterns for kanji overlays and campaign block compositions.
 
 ## 6) Asset Inventory Snapshot
 
@@ -158,6 +138,12 @@ Use this order when continuing implementation:
 ### Photography assets
 - `public/images/hero-coffee.png`
 - `public/images/hero-interior.png`
+- `public/mix-match/` — Kukidō collab cookie/drink images
+
+### Related documentation
+- **`PROJECT_CONTEXT.md`** — full platform architecture, routes, Supabase, stores, env vars, scripts
+- **`AGENTS.md`** — AI agent bootstrap
+- **`README.md`** — local dev quickstart
 
 ---
 

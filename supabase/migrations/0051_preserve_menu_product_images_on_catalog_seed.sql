@@ -1,0 +1,153 @@
+-- ponytail: catalog seed RPCs must never wipe admin-uploaded kk_products.image.
+-- kk_ensure_menu_catalog previously DELETE+d re-inserted coffee rows (null image) on every call.
+-- kk_ensure_mix_match_catalog previously overwrote image on every ON CONFLICT.
+
+CREATE OR REPLACE FUNCTION public.kk_ensure_menu_catalog()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_categories int;
+  v_products int;
+BEGIN
+  INSERT INTO public.kk_menu_categories (id, branch_id, name, sort_order, visible)
+  VALUES
+    ('cat_classics', null, 'Espresso Based Classics', 0, true),
+    ('cat_signatures', null, 'Espresso Based Signatures', 1, true),
+    ('cat_matcha', null, 'Matcha & Hojicha', 2, true),
+    ('cat_yuzu', null, 'Yuzu Soda', 3, true),
+    ('cat_hidden_merch', null, 'Merch (Hidden)', 9999, false)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    sort_order = EXCLUDED.sort_order,
+    visible = EXCLUDED.visible,
+    updated_at = now();
+
+  INSERT INTO public.kk_products (
+    id, category_id, branch_id, name, description, base_price, image,
+    temperature, sizes, milks, tags, custom_fields, visible, sort_order
+  ) VALUES
+    ('prod_amerikado', 'cat_classics', null, 'AmeriKADO', null, 130, null, 'both', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 0),
+    ('prod_cafe_latte', 'cat_classics', null, 'Cafe Latte', null, 160, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 1),
+    ('prod_cappuccino', 'cat_classics', null, 'Cappucinno', null, 160, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 2),
+    ('prod_flat_white', 'cat_classics', null, 'Flat White', null, 150, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 3),
+    ('prod_moka_latte', 'cat_classics', null, 'Moka Latte', null, 170, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 4),
+    ('prod_karamel_latte', 'cat_classics', null, 'Karamel Latte', null, 170, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 5),
+    ('prod_spanish_latte', 'cat_classics', null, 'Spanish Latte', null, 170, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 6),
+    ('prod_kado_latte', 'cat_signatures', null, 'KADO Latte', null, 195, null, 'iced', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 0),
+    ('prod_ube_shio', 'cat_signatures', null, 'Ube Shio Karamel Latte', null, 195, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 1),
+    ('prod_yuzu_amerikado', 'cat_signatures', null, 'Yuzu AmeriKado', null, 195, null, 'iced', '[]'::jsonb,
+      '[]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 2),
+    ('prod_nori_salted', 'cat_signatures', null, 'Nori Salted Cream Latte', null, 195, null, 'iced', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 3),
+    ('prod_matcha_oat', 'cat_matcha', null, 'Matcha Oat Latte', null, 170, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 0),
+    ('prod_dirty_matcha', 'cat_matcha', null, 'Dirty Matcha Oat Latte', null, 200, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 1),
+    ('prod_matcha_straw', 'cat_matcha', null, 'Matcha Strawberry Oat Latte', null, 180, null, 'iced', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 2),
+    ('prod_hojicha_oat', 'cat_matcha', null, 'Hojicha Oat Latte', null, 200, null, 'both', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, 3),
+    ('prod_salted_hojicha', 'cat_matcha', null, 'Salted Cream Hojicha Oat Latte', null, 210, null, 'iced', '[]'::jsonb,
+      '[{"id":"milk_regular","label":"Milk","priceDelta":0},{"id":"milk_oat","label":"Oat","priceDelta":40}]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 4),
+    ('prod_yuzu_lime', 'cat_yuzu', null, 'Yuzu Lime Soda', null, 140, null, 'iced', '[]'::jsonb,
+      '[]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 0),
+    ('prod_yuzu_straw', 'cat_yuzu', null, 'Yuzu Strawberry Soda', null, 140, null, 'iced', '[]'::jsonb,
+      '[]'::jsonb, '["iced-only"]'::jsonb, '[]'::jsonb, true, 1)
+  ON CONFLICT (id) DO UPDATE SET
+    category_id = EXCLUDED.category_id,
+    name = EXCLUDED.name,
+    base_price = EXCLUDED.base_price,
+    temperature = EXCLUDED.temperature,
+    milks = EXCLUDED.milks,
+    tags = EXCLUDED.tags,
+    visible = EXCLUDED.visible,
+    sort_order = EXCLUDED.sort_order,
+    updated_at = now();
+
+  SELECT count(*)::int INTO v_categories
+  FROM public.kk_menu_categories
+  WHERE id IN ('cat_classics', 'cat_signatures', 'cat_matcha', 'cat_yuzu');
+
+  SELECT count(*)::int INTO v_products
+  FROM public.kk_products
+  WHERE category_id IN ('cat_classics', 'cat_signatures', 'cat_matcha', 'cat_yuzu');
+
+  RETURN jsonb_build_object('categories', v_categories, 'products', v_products);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.kk_ensure_mix_match_catalog()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_cookies int;
+  v_tagged int;
+BEGIN
+  INSERT INTO public.kk_menu_categories (id, branch_id, name, sort_order, visible)
+  VALUES ('cat_pastries', null, 'Pastries', 4, true)
+  ON CONFLICT (id) DO UPDATE
+  SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order, visible = EXCLUDED.visible, updated_at = now();
+
+  INSERT INTO public.kk_products (
+    id, category_id, branch_id, name, description, base_price, image,
+    temperature, sizes, milks, tags, custom_fields, visible, sort_order, in_stock
+  ) VALUES
+    ('cookie_klassic', 'cat_pastries', null, 'Klassic Kuki', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 98, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 10, true),
+    ('cookie_campfire', 'cat_pastries', null, 'Campfire', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 108, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 11, true),
+    ('cookie_double_dark', 'cat_pastries', null, 'Double Dark', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 118, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 12, true),
+    ('cookie_birthday', 'cat_pastries', null, 'Birthday Bake', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 118, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 13, true),
+    ('cookie_blondie', 'cat_pastries', null, 'Blondie', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 105, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 14, true),
+    ('cookie_white_walnut', 'cat_pastries', null, 'White Chocolate Walnut', 'Kukidō handcrafted cookie — Mix & Match with any tagged Kado Kohi drink.', 115, '/mix-match/kukido2.jpg', 'both', '[]'::jsonb, '[]'::jsonb, '["mix-match","cookie"]'::jsonb, '[]'::jsonb, true, 15, true),
+    ('pastry_kukilatte', 'cat_pastries', null, 'Kado Kukilatte', 'Kukidō x Kado Kohi takeover exclusive — iced Kado Latte with muscovado brûlée and cookie crumble.', 220, '/mix-match/kukido1.jpg', 'iced', '[]'::jsonb, '[]'::jsonb, '["collab","takeover","exclusive","kukilatte","featured"]'::jsonb, '[]'::jsonb, true, 0, true)
+  ON CONFLICT (id) DO UPDATE SET
+    category_id = EXCLUDED.category_id,
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    base_price = EXCLUDED.base_price,
+    tags = EXCLUDED.tags,
+    visible = EXCLUDED.visible,
+    sort_order = EXCLUDED.sort_order,
+    in_stock = EXCLUDED.in_stock,
+    updated_at = now();
+
+  UPDATE public.kk_products p
+  SET tags = (
+    SELECT coalesce(jsonb_agg(DISTINCT t), '[]'::jsonb)
+    FROM (
+      SELECT jsonb_array_elements_text(coalesce(p.tags, '[]'::jsonb)) AS t
+      UNION ALL
+      SELECT 'mix-match'
+    ) s
+  ),
+  updated_at = now()
+  WHERE p.id IN (
+    'prod_kado_latte', 'prod_ube_shio', 'prod_nori_salted', 'prod_yuzu_amerikado',
+    'prod_matcha_oat', 'prod_matcha_straw', 'prod_hojicha_oat'
+  );
+
+  SELECT count(*)::int INTO v_cookies
+  FROM public.kk_products
+  WHERE category_id = 'cat_pastries' AND public.kk_is_mix_match_cookie(kk_products.*);
+
+  SELECT count(*)::int INTO v_tagged
+  FROM public.kk_products
+  WHERE public.kk_product_has_tag(kk_products.*, 'mix-match')
+    AND category_id <> 'cat_pastries';
+
+  RETURN jsonb_build_object('cookies', v_cookies, 'mix_match_drinks', v_tagged);
+END;
+$$;

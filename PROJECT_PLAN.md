@@ -1,5 +1,7 @@
 # Kado Kohi — Platform Plan (Public Site + Operations Suite)
 
+> **⚠️ Historical document.** This plan was written during the mock Zustand-only phase (local auth, no Supabase, Greenhills "coming soon"). **Most goals are shipped** on production Supabase. For current architecture, routes, and order flows use **`PROJECT_CONTEXT.md`**. For brand identity use **`BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md`** §1–2.
+
 This is the single source of truth for evolving the Kado Kohi landing page into a multi-role platform: public marketing site + customer accounts + barista kiosk + admin SaaS.
 
 This plan follows:

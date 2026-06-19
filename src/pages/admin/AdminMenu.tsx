@@ -100,6 +100,7 @@ export default function AdminMenu() {
   const ensureCatalogInDatabase = useMenuStore((s) => s.ensureCatalogInDatabase);
   const addCategory = useMenuStore((s) => s.addCategory);
   const updateCategory = useMenuStore((s) => s.updateCategory);
+  const updateProduct = useMenuStore((s) => s.updateProduct);
   const removeCategory = useMenuStore((s) => s.removeCategory);
   const removeProduct = useMenuStore((s) => s.removeProduct);
   const reorderCategories = useMenuStore((s) => s.reorderCategories);
@@ -376,6 +377,7 @@ export default function AdminMenu() {
   };
 
   const activeCategoryCount = useMemo(() => categories.filter((cat) => cat.visible).length, [categories]);
+  const hiddenProductCount = useMemo(() => products.filter((p) => !p.visible).length, [products]);
 
   const handleDeleteProduct = async (id: string) => {
     if (deleteConfirmProductId !== id) {
@@ -566,7 +568,8 @@ export default function AdminMenu() {
     <div className="max-w-4xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
       <p className="dash-muted mb-2">
-        {categories.length} categories ({activeCategoryCount} visible) · {products.length} products
+        {categories.length} categories ({activeCategoryCount} on menu) · {products.length} products
+        {hiddenProductCount > 0 ? ` · ${hiddenProductCount} hidden` : ''}
         {dataSource === 'remote' ? ' · synced from Supabase' : ' · offline catalog fallback'}
       </p>
       <p className="text-[10px] dash-muted mb-4">
@@ -782,14 +785,14 @@ export default function AdminMenu() {
                     <Pencil className="w-4 h-4" />
                   </button>
                 )}
-                <label className="flex items-center gap-1.5 text-xs dash-muted shrink-0">
+                <label className="flex items-center gap-1.5 text-xs dash-muted shrink-0" title="Hide entire category from public menu and QR">
                   <input
                     type="checkbox"
-                    checked={cat.visible}
-                    onChange={(e) => updateCategory(cat.id, { visible: e.target.checked })}
+                    checked={!cat.visible}
+                    onChange={(e) => updateCategory(cat.id, { visible: !e.target.checked })}
                     className="rounded"
                   />
-                  Visible
+                  Hide
                 </label>
                 <button
                   type="button"
@@ -878,6 +881,18 @@ export default function AdminMenu() {
                         </div>
                       </div>
                       <MenuProductStockButton product={p} />
+                      <label
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider dash-muted shrink-0"
+                        title="Hide from public menu, pastries page, and QR ordering"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!p.visible}
+                          onChange={() => updateProduct(p.id, { visible: !p.visible })}
+                          className="rounded"
+                        />
+                        Hide
+                      </label>
                       <button
                         type="button"
                         onClick={() => startEditProduct(p)}
@@ -1159,11 +1174,11 @@ export default function AdminMenu() {
                 <label className="flex items-center gap-2 text-sm dash-muted">
                   <input
                     type="checkbox"
-                    checked={form.visible}
-                    onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
+                    checked={!form.visible}
+                    onChange={(e) => setForm((f) => ({ ...f, visible: !e.target.checked }))}
                     className="rounded"
                   />
-                  {isPastryForm ? 'Visible on menu & pastries page' : 'Visible on menu'}
+                  {isPastryForm ? 'Hide from menu, pastries page & QR' : 'Hide from menu & QR'}
                 </label>
                 {isPastryForm && (
                   <label className="flex items-center gap-2 text-sm dash-muted">

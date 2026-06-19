@@ -28,6 +28,11 @@ import { Store } from 'lucide-react';
 import { qrPillClass } from '../lib/qrGuestTheme';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import MixMatchQrSection from '../components/mix-match/MixMatchQrSection';
+import {
+  qrGuestCategoryTabs,
+  qrGuestIsMixMatchSection,
+  qrGuestProductsInCategory,
+} from '../lib/qrGuestMenu';
 
 export default function OrderTakeout() {
   const user = useAuthStore((s) => s.user);
@@ -51,9 +56,9 @@ export default function OrderTakeout() {
 
   const catalogOrderable = isOrderCatalogReady();
 
-  const sortedCategories = useMemo(
-    () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
-    [categories],
+  const categoryTabs = useMemo(
+    () => qrGuestCategoryTabs(categories, products),
+    [categories, products],
   );
 
   const sessionKey = `takeout.${branch?.slug ?? branchSlug ?? 'default'}`;
@@ -102,16 +107,16 @@ export default function OrderTakeout() {
   }, [runSync]);
 
   useEffect(() => {
-    if (!sortedCategories.length) return;
-    if (!activeCat || !sortedCategories.some((c) => c.id === activeCat)) {
-      setActiveCat(sortedCategories[0].id);
+    if (!categoryTabs.length) return;
+    if (!activeCat || !categoryTabs.some((c) => c.id === activeCat)) {
+      setActiveCat(categoryTabs[0].id);
     }
-  }, [sortedCategories, activeCat]);
+  }, [categoryTabs, activeCat]);
 
-  const list = useMemo(
-    () => (activeCat ? productsByCategory(activeCat) : []),
-    [activeCat, productsByCategory],
-  );
+  const list = useMemo(() => {
+    if (!activeCat || qrGuestIsMixMatchSection(activeCat)) return [];
+    return qrGuestProductsInCategory(activeCat, categories, productsByCategory);
+  }, [activeCat, categories, productsByCategory]);
 
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
   const cartTotals = useMemo(
@@ -315,7 +320,7 @@ export default function OrderTakeout() {
 
         <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 pb-3">
           <div className="guest-order-category-rail w-full pb-0.5 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
-            {sortedCategories.map((c) => (
+            {categoryTabs.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -346,9 +351,9 @@ export default function OrderTakeout() {
           />
         </div>
 
-        <MixMatchQrSection categories={categories} products={products} onAdd={addLine} />
-
-        {list.length === 0 ? (
+        {qrGuestIsMixMatchSection(activeCat) ? (
+          <MixMatchQrSection categories={categories} products={products} onAdd={addLine} />
+        ) : list.length === 0 ? (
           <p className="text-center text-sm text-kado-dark/50 py-16">
             No items in this category right now. Check another tab or ask staff.
           </p>

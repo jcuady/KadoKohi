@@ -4,7 +4,22 @@
 >
 > **Last synced with codebase:** June 2026  
 > **Ground truth priority:** `src/App.tsx` → `src/types/domain.ts` → `supabase/migrations/` → git log → this file.  
-> **Stale docs:** `PROJECT_PLAN.md`, `README.md`, and `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md` §3 were written during earlier phases (mock Zustand-only). The live app uses **Supabase production auth, Postgres, Storage, Realtime, and Edge Functions**.
+> **Stale docs:** `PROJECT_PLAN.md` is a historical blueprint (mock Zustand-only phase). For brand identity use `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md` §1–2; §3 was synced June 2026. The live app uses **Supabase production auth, Postgres, Storage, Realtime, and Edge Functions**.
+
+### Section index
+
+| § | Topic |
+|---|-------|
+| 1–3 | Product overview, stack, roles |
+| 4 | Complete route map |
+| 5–8 | Bootstrap, order channels, flows, status machines |
+| 9 | Role-by-role journeys |
+| 10 | Non-order features (events, booth, CMS, blog, mix-match) |
+| 11–12 | Supabase schema, RPCs, storage, edge functions |
+| 13–14 | Brand system, client revisions |
+| 15–16 | Testing, progress vs plan |
+| 17–22 | Domain types, architecture diagram, docs index, gaps, principles, recent changes |
+| 23–30 | **Repo layout, stores, env vars, deploy, E2E, scripts, key modules, tables** |
 
 ---
 
@@ -90,6 +105,9 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 | `/events` | Events | Admin CRUD, signup modals, schema markup |
 | `/order` | Online order (legacy page) | Guest name + simplified cart; primary online flow is **CartDrawer** on menu/merch |
 | `/merch` | Merch catalog | Separate merch channel at checkout |
+| `/pastries` | Pastries catalog | Pastry category slice of menu catalog |
+| `/blog` | Blog index | CMS posts from `kk_blog_posts` |
+| `/blog/:slug` | Blog post | Individual post detail |
 | `/book/booth` | Booth booking wizard | Estimate → admin quote workflow |
 | `/legal/terms` | Terms of Service | Signup consent links here |
 | `/legal/privacy` | Privacy Policy | |
@@ -146,14 +164,16 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 | `/admin/menu` | Menu CRUD + in-stock |
 | `/admin/merch` | Merch catalog CRUD |
 | `/admin/loyalty` | Kado Circle rewards config |
+| `/admin/stamps` | Admin loyalty stamp tools |
 | `/admin/vouchers` | Voucher management |
 | `/admin/booth-bookings` | Booth booking admin |
 | `/admin/booth-catalog` | Booth packages + addons |
 | `/admin/booth-content` | Booth showcase media |
 | `/admin/events` | Kado Events CRUD + form builder |
 | `/admin/tables` | Tables + QR generator |
-| `/admin/sections` | Custom landing sections |
-| `/admin/landing` | Homepage CMS (hero slides, copy) |
+| `/admin/landing` | Homepage CMS (hero slides, copy, custom sections) |
+| `/admin/blog` | Blog post CRUD + cover images |
+| `/admin/pastries` | Redirect → `/admin/menu?tab=pastries` |
 | `/admin/users` | Users + roles (edge function) |
 | `/admin/audit` | Audit log |
 | `/admin/settings` | Tax, hours, GCash QR, site config |
@@ -167,14 +187,14 @@ On app load (`src/main.tsx`):
 1. `recoverStaleAuthSession()` — clears invalid refresh tokens.
 2. `authStore.initFromSupabase()` — restores session, resolves profile, starts role-appropriate sync.
 3. Parallel hydration from Supabase:
-   - branches, menu, tables, orders, settings, users, merch, events, event forms, booth bookings, landing content, loyalty.
+   - branches, menu, tables, orders, settings, users, merch, events, event forms, booth bookings, booth showcase, booth catalog, landing content, loyalty, blog.
 4. PWA service worker registration.
 
 **After login (`authStore`):**
 - **Internal roles** (`admin`, `barista`, `staff`): `startOperationsRealtime()` + `refreshOperationsData()` — live order/menu/settings sync.
 - **Customers**: hydrate own orders, loyalty stamps, branch-scoped vouchers.
 
-**Zustand stores (22 total):** Client caches with `hydrateFromRemote()`. Orders are **not** persisted to localStorage (prevents stale boards). Auth is **not** Zustand-persisted (Supabase session is source of truth).
+**Zustand stores (23 total):** 15 hydrate from Supabase on boot via `hydrateFromRemote()`; `cartStore`, `checkoutStore`, `promoStore`, `voucherStore`, and others are session/UI-scoped. Orders are **not** persisted to localStorage (prevents stale boards). Auth is **not** Zustand-persisted (Supabase session is source of truth).
 
 ---
 
@@ -541,7 +561,20 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 - Hero slides (images, CTAs).
 - Featured product IDs.
 - Section copy: ordering carousel, schedule, events, testimonials, branches strip, Kado Circle.
+- Custom landing sections (replaces legacy `/admin/sections` concept — `0046_cms_sections_and_catalog.sql`).
 - Preview iframe before publish.
+
+### Blog
+- Admin CRUD at `/admin/blog` with cover image upload (`kado-blog-images` bucket).
+- Public `/blog` index and `/blog/:slug` detail pages.
+- Table: `kk_blog_posts` (`0037_blog_posts.sql`).
+
+### Pastries & Mix & Match (Kukidō collab)
+- Public `/pastries` page; admin pastries tab redirects to `/admin/menu?tab=pastries`.
+- **Mix & Match bundle:** tagged drink + Kukidō cookie → **10% off** bundle total; validated server-side in `kk_place_order` (`0042`, `0043`).
+- Cookie catalog seeded via `kk_ensure_mix_match_catalog()` RPC.
+- QR/takeout flows include `MixMatchQrSection` (`src/components/mix-match/*`, `src/lib/mixMatchOrder.ts`).
+- Homepage section: `MixMatchHomeSection`.
 
 ### Promo codes
 - Types: `percent`, `fixed`, `free_drink`, `bogo_drink`.
@@ -566,24 +599,49 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 
 ## 11. Supabase Backend Summary
 
-**35+ migrations** in `supabase/migrations/` (latest: `0050_greenhills_branch.sql`). Key tables (prefix `kk_`):
+**53 migrations** in `supabase/migrations/` (latest: `0050_greenhills_branch.sql`). Key tables (prefix `kk_`):
 - `kk_profiles` — users, roles, branchId, loyalty stamps, phone
 - `kk_branches`, `kk_menu_categories`, `kk_products`
 - `kk_tables`, `kk_orders`, `kk_order_items`
 - `kk_events`, `kk_event_registrations`, `kk_event_forms`
 - `kk_merch_*`, `kk_booth_*`, `kk_loyalty_*`, `kk_vouchers`
 - `kk_app_settings`, `kk_landing_content`, `kk_audit_log`
-- `kk_promo_codes`
+- `kk_promo_codes`, `kk_blog_posts`
 
 **Critical RPCs:**
 | RPC | Purpose |
 |-----|---------|
-| `kk_place_order` | Secure order insert with server-side pricing |
+| `kk_place_order` | Secure order insert with server-side pricing, promo, voucher, mix-match |
 | `kk_track_order` | Guest-safe order status lookup by UUID |
-| `kk_submit_guest_payment_proof` | Guest GCash proof upload |
+| `kk_submit_guest_payment_proof` | Guest GCash proof upload (Storage refs) |
+| `kk_guest_cancel_order` | Guest cancels unpaid order |
+| `kk_guest_switch_to_cash` | Guest switches GCash order to pay-at-store |
 | `kk_ensure_menu_catalog` | Bootstrap KADO MENU V2 if empty |
+| `kk_ensure_mix_match_catalog` | Seed pastries / mix-match cookie catalog |
 | `kk_ensure_default_tables` | Marikina-only table bootstrap (new branches use admin `addBranch`) |
-| `kk_admin_delete_table` | Admin table delete RPC |
+| `kk_ensure_my_profile` | Ensure `kk_profiles` row for authenticated user |
+| `kk_set_product_in_stock` | Barista/admin stock toggle |
+| `kk_register_for_event` | Event signup with dynamic form validation |
+| `kk_place_booth_booking` | Booth booking submission |
+| `kk_fetch_event_calendar` | Public event calendar + blockouts |
+| `kk_admin_toggle_event_blockout` | Admin block booth/event dates |
+| `kk_claim_loyalty_reward` | Customer claims stamp reward → voucher |
+| `kk_compute_loyalty_discount` | Server-side voucher discount |
+| `kk_admin_delete_order` | Admin hard-delete order |
+| `kk_admin_delete_table` | Admin table delete |
+| `increment_promo_uses` | Promo redemption counter (called from `kk_place_order`) |
+
+**Helper functions (internal):** `kk_compute_unit_price`, `kk_compute_promo_discount`, `kk_jsonb_option_delta`, `kk_merch_variant_delta`, `kk_is_mix_match_cookie`, `kk_handle_new_user` (auth trigger).
+
+**Storage buckets:**
+| Bucket | Public | Purpose |
+|--------|--------|---------|
+| `kado-gcash-qr` | Yes | Shop GCash receive QR (admin settings) |
+| `kado-payment-proofs` | No | GCash payment screenshots (`guest/{orderId}/`, `customers/{userId}/{orderId}`) |
+| `kado-menu-images` | Yes | Menu product photos (admin upload) |
+| `kado-blog-images` | Yes | Blog post cover images |
+
+Proof refs stored as `proof-storage:` prefix in DB — resolved via `usePaymentProofDisplayUrl` / `paymentProofStorage.ts`.
 
 **Production branches (June 2026):**
 | ID | Slug | Tables |
@@ -595,7 +653,7 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 
 **Realtime:** `operationsRealtime.ts` for staff; `guestPageRealtime.ts` for QR order pages.
 
-**Storage buckets:** GCash shop QR, payment proofs (private).
+**Storage buckets:** See table above (`kado-gcash-qr`, `kado-payment-proofs`, `kado-menu-images`, `kado-blog-images`).
 
 ---
 
@@ -624,10 +682,12 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 **Fonts:** Zalando Sans Expanded (display/headlines), M Plus 1 (body/UI).  
 **Logo assets:** `public/logo/`, `public/Branding/`.
 
+**Implementation:** Canonical tokens in `src/index.css` (`@theme`) and `src/lib/brandTokens.ts`; fonts loaded via Google Fonts in `index.css`.
+
 **Known brand gaps (June 2026):**
 - Hero still ~full viewport; client wants 8–10vh peek of next section (`kado-kohi-revisions.md`).
-- Some surfaces still use kanji box vs official lockups.
-- `BRANDING` doc §3 "current stack" section is outdated.
+- Some surfaces still use kanji box vs official lockups (`LOGO` constants in `brandTokens.ts` not deployed everywhere).
+- Mixed local vs external (Unsplash) imagery on some marketing sections.
 
 ---
 
@@ -738,14 +798,16 @@ Reference when adding features — types mirror Postgres tables:
 | `AGENTS.md` | Short pointer for AI agents — read `PROJECT_CONTEXT.md` |
 | `.cursor/rules/` | Cursor rules: `karpathy-guidelines.mdc`, `project-context.mdc` |
 | `PROJECT_PLAN.md` | Historical architecture blueprint (partially stale) |
-| `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md` | Brand tokens, typography, colors (identity section current) |
+| `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md` | Brand identity (§1–2); implementation status (§3–5) |
+| `README.md` | Local setup, scripts, env vars |
 | `kado-kohi-revisions.md` | Client UX revision checklist |
 | `legal/TERMS-AND-CONDITIONS-BRIEF-FOR-COUNSEL.txt` | Legal/product facts for counsel |
 | `skills/fullstack-developer.md` | Agent persona for fullstack tasks |
 | `skills/ui-designer.md` | Agent persona for UI tasks |
 | `ux-ui-designer (1).md` | UX design principles persona |
 | `seo-specialist.md` | SEO agent persona |
-| `clientrequest.md` | Empty — no client notes yet |
+| `clientrequest.md` | Client notes (currently empty) |
+| `README.md` | Local dev quickstart |
 
 ---
 
@@ -753,9 +815,10 @@ Reference when adding features — types mirror Postgres tables:
 
 1. **Hero viewport peek** — client revision not fully implemented.
 2. **PayMongo** — type exists in domain; not integrated as live gateway.
-3. **PROJECT_PLAN / README** — need sync with Supabase reality.
+3. **PROJECT_PLAN** — historical; superseded by this file for architecture.
 4. **E2E stability** — admin/barista tests intermittently fail in CI.
 5. **Online orders to barista board** — baristas see all channels including online for their branch; original plan debated whether online should be admin-only.
+6. **Brand asset rollout** — logo lockups and local photography not consistent on all surfaces.
 
 ---
 
@@ -780,7 +843,7 @@ Also enforced via `.cursor/rules/karpathy-guidelines.mdc` (always apply).
 | **Admin menu** | Product CRUD + image upload (5 MB, client compression) |
 | **Barista board** | Atomic order updates; GCash proof via `guest/{orderId}/` storage refs (`0049`) |
 | **Catalog UX** | Skeleton loading on `/menu`, `/merch`, `/blog`, `/pastries` |
-| **Images** | `MenuProductImage` component — lazy load, fallback chain, shared URL normalization |
+| **Menu images** | Admin upload → `kado-menu-images` public bucket; URL on `kk_products.image`. Catalog seed RPCs preserve existing images (`0051`). |
 | **Branches** | Greenhills active + tables (`0050`); unique table codes; transactional create; admin CRUD probe |
 | **Cursor** | Karpathy guidelines + project-context rules in `.cursor/rules/` |
 
@@ -790,4 +853,214 @@ Also enforced via `.cursor/rules/karpathy-guidelines.mdc` (always apply).
 
 ---
 
-*Update this file when adding roles, routes, order channels, payment methods, or major schema changes.*
+## 23. Repository Layout
+
+```
+kado-kohi-landing-page/
+├── src/
+│   ├── App.tsx                 # All routes
+│   ├── main.tsx                # Bootstrap + PWA + auth listener
+│   ├── index.css               # Tailwind @theme brand tokens
+│   ├── types/domain.ts         # Domain types (mirror kk_* tables)
+│   ├── pages/                  # Route pages (public, auth, account, admin, barista, staff)
+│   ├── layouts/                # PublicLayout, AdminLayout, BaristaLayout, StaffLayout, CustomerLayout
+│   ├── components/             # UI by domain (admin/, barista/, qr/, mix-match/, cms/, catalog/, …)
+│   ├── store/                  # 23 Zustand stores (see §24)
+│   ├── lib/                    # Business logic, Supabase client, repos, order/QR/loyalty helpers
+│   │   └── supabase/
+│   │       ├── client.ts
+│   │       ├── operationsRealtime.ts
+│   │       ├── guestPageRealtime.ts
+│   │       └── repositories/   # ordering, auth, loyalty, promo, audit, blog, push
+│   ├── hooks/                  # useOnlineOrderHours, usePaymentProofDisplayUrl, …
+│   └── content/                # Static copy seeds (SEO, legal, about, pastries page)
+├── public/                     # Static assets (logo/, Branding/, images/, icons/, mix-match/)
+├── supabase/
+│   ├── migrations/             # 53 SQL migrations (kk_* schema + RPCs)
+│   └── functions/              # kk-customer-signup, kk-admin-users, kk-send-contact, kk-send-push
+├── e2e/                        # Playwright specs (11 suites)
+├── scripts/                    # Probes, seeds, sitemap, Google reviews sync
+├── PROJECT_CONTEXT.md          # ← This file (system bible)
+├── AGENTS.md                   # AI agent quick pointer
+├── BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md
+├── .env.example                # Env var template (copy to .env.local)
+├── vite.config.ts              # Dev port 5174, PWA, @/ alias
+└── vercel.json                 # SPA rewrites, static deploy config
+```
+
+**Path alias:** `@/` → `src/` (shadcn-style imports).
+
+---
+
+## 24. Zustand Store Catalog (23 stores)
+
+| Store | Boot hydrate? | Purpose |
+|-------|---------------|---------|
+| `authStore` | via `initFromSupabase` | Session, profile, role, operations realtime orchestration |
+| `branchStore` | ✅ | Branch list + CRUD cache |
+| `menuStore` | ✅ | Categories, products, in-stock, catalog bootstrap |
+| `tableStore` | ✅ | Dine-in tables + QR codes |
+| `orderStore` | ✅ | Orders; `createOrder` → `kk_place_order` RPC |
+| `settingsStore` | ✅ | Tax, hours, GCash QR URL, site config |
+| `userStore` | ✅ | Internal users (admin user management) |
+| `merchStore` | ✅ | Merch categories + products |
+| `eventStore` | ✅ | Kado Events |
+| `eventFormStore` | ✅ | Dynamic event registration forms |
+| `eventCalendarStore` | on demand | Event/booth date blockouts |
+| `boothBookingStore` | ✅ | Booth booking pipeline |
+| `boothCatalogStore` | ✅ | Booth packages + addons |
+| `boothShowcaseStore` | ✅ | Booth landing page content |
+| `landingContentStore` | ✅ | Homepage CMS sections |
+| `loyaltyStore` | ✅ | Kado Circle rewards config |
+| `blogStore` | ✅ | Blog posts |
+| `cartStore` | session | Shopping cart lines (menu + merch) |
+| `checkoutStore` | session | Selected voucher at CartDrawer checkout |
+| `promoStore` | session | Promo code validation |
+| `voucherStore` | on login | Customer loyalty vouchers |
+| `auditStore` | on demand | Admin audit log entries |
+| `bookingEstimateStore` | session | Booth wizard estimate state |
+
+**DB-readiness wrapper:** `src/lib/api.ts` mirrors store actions for a future REST swap; most code imports stores directly.
+
+---
+
+## 25. Environment Variables
+
+Copy `.env.example` → `.env.local` (never commit). Full template in repo root.
+
+| Variable | Client? | Purpose |
+|----------|---------|---------|
+| `VITE_SUPABASE_URL` | ✅ | Supabase project URL (`idwtlujcdfnnndxmlaco`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | ✅ | Preferred browser key |
+| `VITE_SUPABASE_ANON_KEY` | ✅ | Legacy anon key fallback |
+| `VITE_SITE_URL` | ✅ | Canonical site URL for QR links (prod: `https://www.kadokohi.com`) |
+| `VITE_VAPID_PUBLIC_KEY` | ✅ | Web push (must match edge function secret) |
+| `SUPABASE_PROJECT_ID` | scripts/MCP | CLI/MCP project id |
+| `SUPABASE_ACCESS_TOKEN` | scripts/MCP | Personal access token |
+| `SUPABASE_SERVICE_ROLE_KEY` | server/scripts only | Never expose via `VITE_*` |
+| `RESEND_API_KEY` | edge function | Contact + Kado Circle email |
+| `RESEND_FROM_EMAIL` | edge function | Outbound sender |
+| `KADO_INBOUND_EMAIL` | edge function | Shop inbox (default `kadocoffeeph@gmail.com`) |
+| `VAPID_*` | edge function | Push notification keys |
+| `GOOGLE_PLACES_API_KEY` | script | `npm run sync:google-reviews` |
+
+**Staging test accounts** (passwords in Supabase Auth only — see comments in `.env.example`):
+- Customer: `customer@kadokohi.com` → `/auth/login`
+- Admin: `admin@kadokohi.com` → `/management-portal`
+- Barista: `barista@kadokohi.com` → `/management-portal`
+- Staff: `staff.flow.8facde69@kadokohi.com` → `/management-portal`
+
+---
+
+## 26. Local Development & Deployment
+
+| Item | Value |
+|------|-------|
+| Dev server | `http://127.0.0.1:5174` (`vite.config.ts`, strict port) |
+| Preview (E2E) | `http://127.0.0.1:4173` |
+| Production site | `https://www.kadokohi.com` (canonical QR URLs) |
+| Legacy host | `kado-kohi.vercel.app` (redirect/legacy references) |
+| Deploy | Vite static build → `dist/`; `vercel.json` SPA rewrites |
+| PWA | `vite-plugin-pwa`; manifest theme `#9E181D`, background `#F1DFBA` |
+
+```bash
+npm install
+npm run dev          # local dev
+npm run lint         # tsc --noEmit
+npm run build        # production bundle
+npm run preview      # serve dist locally
+npm run test:e2e     # Playwright (build + preview first)
+```
+
+---
+
+## 27. E2E Testing
+
+**Config:** `playwright.config.ts` — builds app, serves via `vite preview` on port 4173.
+
+| Suite | File | Notes |
+|-------|------|-------|
+| smoke | `e2e/smoke.spec.ts` | Shell render; no Supabase credentials |
+| admin | `e2e/admin.spec.ts` | Admin routes, user modal |
+| barista | `e2e/barista.spec.ts` | Board, POS, settings |
+| staff | `e2e/staff.spec.ts` | Merch, booth, orders |
+| customer | `e2e/customer.spec.ts` | Account flows |
+| merch | `e2e/merch.spec.ts` | Merch catalog + checkout |
+| order-flows | `e2e/order-flows.spec.ts` | QR/takeout/online paths |
+| transactions | `e2e/transactions.spec.ts` | Payment/status transitions |
+| security | `e2e/security.spec.ts` | Role gate / route protection |
+| auth-validation | `e2e/auth-validation.spec.ts` | Login/signup validation |
+| guest-validation | `e2e/guest-validation.spec.ts` | Guest order validation |
+
+**CI notes:** 1 worker in CI (auth throttling); 2 retries. Known flaky: admin route rendering, add-user modal.
+
+---
+
+## 28. Scripts Reference (`scripts/`)
+
+| Script | Purpose |
+|--------|---------|
+| `probe_branch_crud.py` | Admin branch CRUD smoke test |
+| `probe_greenhills_branch.py` | Greenhills order channels smoke test |
+| `probe_guest_proof.py` | Guest payment proof RPC |
+| `probe_send_contact.py` | Contact edge function |
+| `probe_admin_table_delete.py` | Table delete RPC |
+| `probe_in_stock.py` | Product in-stock toggle |
+| `probe_menu_images_storage.py` | Menu image upload bucket |
+| `probe_prod_tables.py` / `list_prod_tables.py` | Production table inventory |
+| `seed_mix_match_catalog.py` | Mix & match catalog seed |
+| `seed_kado_kukilatte.py` | Kukilatte collab product seed |
+| `sync-google-reviews.mjs` | `npm run sync:google-reviews` |
+| `generate-sitemap.mjs` | `npm run generate:sitemap` |
+| `apply_sql_file.py` / `apply_sql_management.py` | Apply SQL to remote (ops) |
+
+---
+
+## 29. Key Client Modules (quick lookup)
+
+| Concern | Primary files |
+|---------|---------------|
+| Order placement | `store/orderStore.ts`, `lib/supabase/repositories/ordering.ts` |
+| Order readiness | `lib/orderReadiness.ts` |
+| Order status flow | `lib/orderStatus.ts` |
+| QR cart/checkout | `lib/qrOrderCart.ts`, `pages/OrderQR.tsx`, `pages/OrderTakeout.tsx` |
+| Online cart | `components/CartDrawer.tsx`, `store/cartStore.ts`, `store/checkoutStore.ts` |
+| Payment proofs | `lib/compressPaymentProof.ts`, `lib/paymentProofStorage.ts`, `hooks/usePaymentProofDisplayUrl.ts` |
+| Mix & Match | `lib/mixMatchOrder.ts`, `lib/pastriesCategory.ts`, `components/mix-match/*` |
+| Loyalty | `lib/loyaltyStamps.ts`, `store/loyaltyStore.ts`, `lib/supabase/repositories/loyalty.ts` |
+| Realtime | `lib/supabase/operationsRealtime.ts`, `lib/supabase/guestPageRealtime.ts` |
+| Role guards | `components/RoleGate.tsx`, `lib/roles.ts` |
+| Brand tokens | `lib/brandTokens.ts`, `index.css` |
+| Site URL / QR | `lib/siteUrl.ts`, `lib/qr.ts`, `lib/brandedQrCard.ts` |
+| SEO | `components/RouteSeo.tsx`, `content/seo.ts` |
+| CMS | `lib/cmsBootstrap.ts`, `store/landingContentStore.ts`, `contexts/LandingCmsEditContext.tsx` |
+
+---
+
+## 30. Postgres Tables (kk_* prefix)
+
+Core operational tables referenced across migrations:
+
+| Table | Purpose |
+|-------|---------|
+| `kk_profiles` | Users, roles, branchId, loyalty stamps, phone |
+| `kk_branches` | Branch locations, hours, status |
+| `kk_menu_categories`, `kk_products` | Menu catalog (+ tags for mix-match) |
+| `kk_tables` | Dine-in tables with globally unique QR `code` |
+| `kk_orders`, `kk_order_items` | Orders (all channels) |
+| `kk_merch_categories`, `kk_merch_products` | Merch catalog (synced to `kk_products` for ordering) |
+| `kk_events`, `kk_event_registrations`, `kk_event_forms` | Events + signups |
+| `kk_event_date_blockouts` | Booth/event calendar blockouts |
+| `kk_booth_bookings` | Booth booking pipeline |
+| `kk_loyalty_rewards`, `kk_loyalty_vouchers` | Kado Circle |
+| `kk_promo_codes`, `kk_promo_claims` | Promo codes |
+| `kk_app_settings` | Tax, hours, GCash QR, site config (singleton) |
+| `kk_landing_content` | Homepage CMS JSON |
+| `kk_blog_posts` | Blog |
+| `kk_audit_log` | Staff action audit trail |
+
+Booth packages/addons and booth page content tables exist in earlier booth migrations (`0011`, `0040`).
+
+---
+
+*Update this file when adding roles, routes, order channels, payment methods, RPCs, or major schema changes.*

@@ -1084,7 +1084,7 @@ export const orderingRepo = {
     const { error } = await supabase.storage.from('kado-menu-images').upload(path, uploadFile, {
       upsert: true,
       contentType: uploadFile.type || 'image/jpeg',
-      cacheControl: '3600',
+      cacheControl: '31536000',
     });
     if (error) {
       if (/file size|too large|payload|413|entity too large/i.test(error.message)) {
@@ -1095,7 +1095,8 @@ export const orderingRepo = {
     const { data } = supabase.storage.from('kado-menu-images').getPublicUrl(path);
     const url = data.publicUrl;
     if (!url) throw new Error('Could not get public URL for menu product image.');
-    return url;
+    // Bust CDN/browser cache after re-upload to same path; stored permanently on kk_products.image.
+    return `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   },
 
   /** Upload shop GCash QR to public storage; returns HTTPS URL saved in kk_app_settings.gcash_qr_image. */
