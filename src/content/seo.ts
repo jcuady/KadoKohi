@@ -1,4 +1,5 @@
 import { KADO_GOOGLE_LISTING, KADO_GOOGLE_REVIEW_ITEMS } from './kadoGoogleReviews';
+import { menuProductHref } from '../lib/menuProductLink';
 
 /**
  * Search-first brand: guests Google "Kado Coffee" more than "Kado Kohi".
@@ -139,16 +140,19 @@ export const SEO_HOME_H1 = 'Kado Coffee — Best Matcha in Marikina Near Me';
 
 /** Signature drinks for homepage copy & schema (aligned with live menu catalog). */
 export const SEO_SIGNATURE_DRINKS = [
-  { name: 'KADO Latte', category: 'Signatures', keywords: 'signature latte marikina' },
-  { name: 'Matcha Oat Latte', category: 'Matcha & Hojicha', keywords: 'best matcha marikina, matcha oat latte' },
-  { name: 'Dirty Matcha Oat Latte', category: 'Matcha & Hojicha', keywords: 'dirty matcha oat latte marikina' },
-  { name: 'Matcha Strawberry Oat Latte', category: 'Matcha & Hojicha', keywords: 'matcha strawberry oat latte' },
-  { name: 'Hojicha Oat Latte', category: 'Matcha & Hojicha', keywords: 'hojicha oat latte marikina' },
-  { name: 'Salted Cream Hojicha Oat Latte', category: 'Matcha & Hojicha', keywords: 'hojicha marikina' },
-  { name: 'Ube Shio Karamel Latte', category: 'Signatures', keywords: 'ube latte marikina' },
-  { name: 'Yuzu AmeriKado', category: 'Signatures', keywords: 'yuzu coffee marikina' },
-  { name: 'Spanish Latte', category: 'Classics', keywords: 'spanish latte marikina' },
-  { name: 'Yuzu Lime Soda', category: 'Yuzu', keywords: 'yuzu soda marikina' },
+  { name: 'KADO Latte', category: 'Signatures', productId: 'prod_kado_latte', keywords: 'signature latte marikina' },
+  { name: 'Matcha Oat Latte', category: 'Matcha & Hojicha', productId: 'prod_matcha_oat', keywords: 'best matcha marikina, matcha oat latte' },
+  { name: 'Dirty Matcha Oat Latte', category: 'Matcha & Hojicha', productId: 'prod_dirty_matcha', keywords: 'dirty matcha oat latte marikina' },
+  { name: 'Matcha Strawberry Oat Latte', category: 'Matcha & Hojicha', productId: 'prod_matcha_straw', keywords: 'matcha strawberry oat latte' },
+  { name: 'Hojicha Oat Latte', category: 'Matcha & Hojicha', productId: 'prod_hojicha_oat', keywords: 'hojicha oat latte marikina' },
+  { name: 'Salted Cream Hojicha Oat Latte', category: 'Matcha & Hojicha', productId: 'prod_salted_hojicha', keywords: 'hojicha marikina' },
+  { name: 'Ube Shio Karamel Latte', category: 'Signatures', productId: 'prod_ube_shio', keywords: 'ube latte marikina' },
+  { name: 'Yuzu AmeriKado', category: 'Signatures', productId: 'prod_yuzu_amerikado', keywords: 'yuzu coffee marikina' },
+  { name: 'Spanish Latte', category: 'Classics', productId: 'prod_spanish_latte', keywords: 'spanish latte marikina' },
+  { name: 'Moka Latte', category: 'Classics', productId: 'prod_moka_latte', keywords: 'moka latte marikina' },
+  { name: 'Karamel Latte', category: 'Classics', productId: 'prod_karamel_latte', keywords: 'karamel latte marikina' },
+  { name: 'Yuzu Lime Soda', category: 'Yuzu', productId: 'prod_yuzu_lime', keywords: 'yuzu soda marikina' },
+  { name: 'Yuzu Strawberry Soda', category: 'Yuzu', productId: 'prod_yuzu_straw', keywords: 'yuzu strawberry soda marikina' },
 ] as const;
 
 export const SEO_INTERNAL_LINKS = [
@@ -606,7 +610,7 @@ export function buildHomeMenuItemListJsonLd(origin: string) {
         '@type': 'MenuItem',
         name: drink.name,
         description: menuProductSeoDescription(drink.name, drink.category),
-        url: `${origin}/menu`,
+        url: `${origin}${menuProductHref(drink.productId)}`,
       },
     })),
   };

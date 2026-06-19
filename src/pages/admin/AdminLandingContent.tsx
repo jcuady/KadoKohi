@@ -340,7 +340,7 @@ export default function AdminLandingContent() {
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Menu SEO pillars</h2>
           <p className="text-xs dash-muted mb-4">
-            Matcha / signatures / classics pillar cards and visible SEO body copy. Google review count stays live from
+            Matcha / signatures / classics / sodas & yuzu pillar cards and visible SEO body copy. Google review count stays live from
             Maps.
           </p>
           <div className="grid md:grid-cols-2 gap-4 mb-4">

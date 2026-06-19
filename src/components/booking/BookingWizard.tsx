@@ -43,9 +43,18 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
   const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
-  const catalogPackages = useBoothCatalogStore((s) => s.visiblePackages());
-  const catalogAddons = useBoothCatalogStore((s) => s.visibleAddons());
+  const allPackages = useBoothCatalogStore((s) => s.packages);
+  const allAddons = useBoothCatalogStore((s) => s.addons);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
+
+  const catalogPackages = useMemo(
+    () => allPackages.filter((pkg) => pkg.visible).sort((a, b) => a.order - b.order),
+    [allPackages],
+  );
+  const catalogAddons = useMemo(
+    () => allAddons.filter((addon) => addon.visible).sort((a, b) => a.order - b.order),
+    [allAddons],
+  );
 
   const [packageChoice, setPackageChoice] = useState(EVENT_PROPOSAL_PACKAGE_ID);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);

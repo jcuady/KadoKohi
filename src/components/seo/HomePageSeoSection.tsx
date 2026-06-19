@@ -12,6 +12,7 @@ import AccentHeadline from '../ui/AccentHeadline';
 import ResilientImage from '../ui/ResilientImage';
 import CmsEditableImage from '../cms/CmsEditableImage';
 import { drinksForMenuSeoPillar } from '../../lib/menuSeoDrinks';
+import { menuCategoryForSeoPillar, menuCategoryHref, menuProductHref } from '../../lib/menuProductLink';
 import type { MenuSeoCopy } from '../../store/landingContentStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
@@ -22,7 +23,7 @@ const sectionPad =
   'px-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-8';
 
 const pillarCard =
-  'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[260px] lg:min-h-[320px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
+  'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[240px] lg:min-h-[280px] xl:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
 
 type Props = { copy: MenuSeoCopy; cmsEditMode?: boolean };
 
@@ -51,7 +52,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           )}
         />
 
-        <h2 id="home-menu-seo-heading" className="max-w-4xl kado-h2 text-kado-dark">
+        <h2 id="home-menu-seo-heading" className="max-w-4xl kado-h2 text-kado-dark leading-snug">
           <AccentHeadline
             copy={copy.headline}
             cmsEditMode={cmsEditMode}
@@ -82,7 +83,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-2 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
           {copy.pillars.map((pillar, pi) => (
             <article key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`} className={pillarCard}>
               {cmsEditMode ? (
@@ -96,7 +97,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
                 />
               ) : (
                 <Link
-                  to="/menu"
+                  to={menuCategoryHref(menuCategoryForSeoPillar(pillar.drinkCategoryKey))}
                   className="absolute inset-0 z-0 block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2"
                   aria-label={`Browse ${cmsTextPlain(pillar.title)} on the menu`}
                 >
@@ -129,9 +130,9 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
                 />
                 <ul className="mt-2 space-y-1 border-t border-white/10 pt-2 sm:mt-3 sm:space-y-1.5 sm:pt-3">
                   {drinksForMenuSeoPillar(pillar.drinkCategoryKey).map((drink) => (
-                    <li key={drink.name}>
+                    <li key={drink.name} className="leading-snug">
                       <Link
-                        to="/menu"
+                        to={menuProductHref(drink.productId)}
                         className="inline-flex max-w-full items-center gap-1 text-xs font-medium text-kado-cream/85 transition-colors hover:text-kado-cream sm:text-sm"
                       >
                         <span className="truncate">{drink.name}</span>

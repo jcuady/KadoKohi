@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Coffee, Leaf, IceCreamCone, Star, Croissant } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
@@ -34,7 +35,11 @@ function categoryShortLabel(categoryId: string, fullName: string): string {
 }
 
 export default function Menu() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkProductId = searchParams.get('product')?.trim() ?? '';
+  const deepLinkCategoryId = searchParams.get('category')?.trim() ?? '';
   const categories = useMenuStore((s) => s.categories);
+  const products = useMenuStore((s) => s.products);
   const productsByCategory = useMenuStore((s) => s.productsByCategory);
   const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const catalogLoading = !remoteLoaded;
@@ -47,6 +52,8 @@ export default function Menu() {
   const [activeCategoryId, setActiveCategoryId] = useState<string>(
     () => sortedCategories[0]?.id ?? '',
   );
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!sortedCategories.length) return;
@@ -55,8 +62,28 @@ export default function Menu() {
     }
   }, [sortedCategories, activeCategoryId]);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [page, setPage] = useState(1);
+  useEffect(() => {
+    if (!remoteLoaded) return;
+    if (deepLinkCategoryId && sortedCategories.some((c) => c.id === deepLinkCategoryId)) {
+      setActiveCategoryId(deepLinkCategoryId);
+    }
+  }, [remoteLoaded, deepLinkCategoryId, sortedCategories]);
+
+  useEffect(() => {
+    if (!remoteLoaded || !deepLinkProductId) return;
+    const product = products.find((p) => p.id === deepLinkProductId && p.visible);
+    if (!product?.categoryId) return;
+    setActiveCategoryId(product.categoryId);
+    setSelectedProduct(product);
+  }, [remoteLoaded, deepLinkProductId, products]);
+
+  const clearMenuDeepLink = () => {
+    if (!searchParams.has('product') && !searchParams.has('category')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('product');
+    next.delete('category');
+    setSearchParams(next, { replace: true });
+  };
 
   const activeCategory = useMemo(
     () => sortedCategories.find((c) => c.id === activeCategoryId),
@@ -271,7 +298,10 @@ export default function Menu() {
       <ProductDetailDrawer
         product={selectedProduct}
         categoryName={activeCategory?.name}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => {
+          setSelectedProduct(null);
+          clearMenuDeepLink();
+        }}
       />
     </div>
   );

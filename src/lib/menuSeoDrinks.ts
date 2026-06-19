@@ -7,7 +7,11 @@ export function drinksForMenuSeoPillar(key: MenuSeoPillarCategoryKey) {
       return SEO_SIGNATURE_DRINKS.filter((d) => d.category === 'Matcha & Hojicha');
     case 'signatures':
       return SEO_SIGNATURE_DRINKS.filter((d) => d.category === 'Signatures');
-    case 'classics-yuzu':
+    case 'classics':
+      return SEO_SIGNATURE_DRINKS.filter((d) => d.category === 'Classics');
+    case 'sodas-yuzu':
+      return SEO_SIGNATURE_DRINKS.filter((d) => d.category === 'Yuzu');
+    default:
       return SEO_SIGNATURE_DRINKS.filter((d) => d.category === 'Classics' || d.category === 'Yuzu');
   }
 }

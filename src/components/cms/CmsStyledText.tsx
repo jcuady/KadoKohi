@@ -7,7 +7,12 @@ import {
   resolveCmsTextClasses,
   type CmsText,
 } from '../../lib/cmsTypography';
-import { cmsTextHasHtml, getEditorHtml, sanitizeCmsHtml } from '../../lib/cmsRichText';
+import {
+  cmsTextHasHtml,
+  getEditorHtml,
+  plainTextToEditorHtml,
+  sanitizeCmsHtml,
+} from '../../lib/cmsRichText';
 import { useLandingCmsEditOptional } from '../../contexts/LandingCmsEditContext';
 
 type Props = {
@@ -23,17 +28,8 @@ type Props = {
   onCmsChange?: (next: CmsText) => void;
 };
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 function editorHtmlFromValue(value: CmsText): string {
-  const raw = cmsTextRaw(value);
-  if (cmsTextHasHtml(raw)) return sanitizeCmsHtml(raw);
-  return escapeHtml(cmsTextPlain(value));
+  return plainTextToEditorHtml(cmsTextRaw(value));
 }
 
 export default function CmsStyledText({
@@ -138,12 +134,18 @@ export default function CmsStyledText({
         focusedRef.current = false;
         const nextText = getEditorHtml(e.currentTarget);
         const prevRaw = cmsTextRaw(value);
-        if (nextText !== prevRaw && nextText !== sanitizeCmsHtml(prevRaw)) {
+        const prevNormalized = cmsTextPlain(value);
+        if (nextText !== prevRaw && nextText !== sanitizeCmsHtml(prevRaw) && nextText !== prevNormalized) {
           onCmsChangeRef.current?.(patchCmsText(value, { text: nextText }));
         }
         if (cmsField) registerEditor?.(cmsField, null);
       }}
       onKeyDown={(e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.execCommand('insertText', false, ' ');
+          return;
+        }
         if (e.key === 'Enter' && Tag !== 'p' && Tag !== 'div') {
           e.preventDefault();
           (e.target as HTMLElement).blur();

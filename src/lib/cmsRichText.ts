@@ -2,6 +2,7 @@ import {
   CMS_FONT_FAMILIES,
   CMS_TEXT_COLORS,
   CMS_TEXT_SIZES,
+  normalizeCmsPlainText,
   type CmsFontFamily,
   type CmsTextColor,
   type CmsTextSize,
@@ -24,6 +25,16 @@ export type InlineFormat = {
 
 export function cmsTextHasHtml(text: string): boolean {
   return /<[a-z][\s\S]*>/i.test(text);
+}
+
+/** Safe HTML for contentEditable — never double-escapes existing entities like &nbsp;. */
+export function plainTextToEditorHtml(text: string): string {
+  const raw = normalizeCmsPlainText(text);
+  if (cmsTextHasHtml(raw)) return sanitizeCmsHtml(raw);
+  if (typeof document === 'undefined') return raw;
+  const el = document.createElement('div');
+  el.textContent = raw;
+  return el.innerHTML;
 }
 
 function classesForInline(format: InlineFormat): string {
@@ -92,7 +103,9 @@ export function sanitizeCmsHtml(raw: string): string {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const walk = (node: Node): string => {
     if (node.nodeType === Node.TEXT_NODE) {
-      return (node.textContent ?? '').replace(/</g, '').replace(/>/g, '');
+      return normalizeCmsPlainText(node.textContent ?? '')
+        .replace(/</g, '')
+        .replace(/>/g, '');
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
     const el = node as Element;

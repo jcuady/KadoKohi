@@ -136,7 +136,7 @@ export interface HomepagePillarCopy {
   body?: CmsText;
 }
 
-export type MenuSeoPillarCategoryKey = 'matcha' | 'signatures' | 'classics-yuzu';
+export type MenuSeoPillarCategoryKey = 'matcha' | 'signatures' | 'classics' | 'sodas-yuzu';
 
 export interface MenuSeoPillarCopy extends HomepagePillarCopy {
   drinkCategoryKey: MenuSeoPillarCategoryKey;
@@ -157,7 +157,7 @@ export interface MenuSeoCopy {
   locationBadge: CmsText;
   headline: AccentHeadlineCopy;
   locationChipLabel: CmsText;
-  pillars: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
+  pillars: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
   bodyParagraphs: [CmsText, CmsText];
   exploreHeading: CmsText;
 }
@@ -322,7 +322,12 @@ const SEED_STORY_PILLARS: [HomepagePillarCopy, HomepagePillarCopy, HomepagePilla
   },
 ];
 
-const SEED_MENU_SEO_PILLARS: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy] = [
+const SEED_MENU_SEO_PILLARS: [
+  MenuSeoPillarCopy,
+  MenuSeoPillarCopy,
+  MenuSeoPillarCopy,
+  MenuSeoPillarCopy,
+] = [
   {
     title: 'Matcha & hojicha',
     subtitle: 'Best matcha in Marikina',
@@ -338,11 +343,18 @@ const SEED_MENU_SEO_PILLARS: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPilla
     drinkCategoryKey: 'signatures',
   },
   {
-    title: 'Classics & yuzu',
+    title: 'Classics',
     subtitle: 'Hot, iced, or oat milk',
     imageUrl: '/social/cafe-latte.png',
-    imageAlt: 'Classic lattes and yuzu sodas at Kado Kohi',
-    drinkCategoryKey: 'classics-yuzu',
+    imageAlt: 'Classic espresso lattes at Kado Kohi',
+    drinkCategoryKey: 'classics',
+  },
+  {
+    title: 'Sodas & yuzu',
+    subtitle: 'Bright & citrus-forward',
+    imageUrl: '/social/matcha-latte.png',
+    imageAlt: 'Refreshing yuzu sodas at Kado Kohi',
+    drinkCategoryKey: 'sodas-yuzu',
   },
 ];
 
@@ -385,6 +397,7 @@ export const SEED_CONTENT: LandingContentState = {
     },
     locationChipLabel: 'Coffee near me · Sta. Elena',
     pillars: SEED_MENU_SEO_PILLARS.map((p) => ({ ...p })) as [
+      MenuSeoPillarCopy,
       MenuSeoPillarCopy,
       MenuSeoPillarCopy,
       MenuSeoPillarCopy,
@@ -601,17 +614,44 @@ function clampHomepagePillars(
   }) as [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy];
 }
 
+function migrateMenuSeoPillars(saved: MenuSeoPillarCopy[] | undefined): MenuSeoPillarCopy[] | undefined {
+  if (!Array.isArray(saved) || saved.length === 0) return saved;
+  if (saved.length >= 4) return saved;
+  const thirdKey = saved[2]?.drinkCategoryKey as string | undefined;
+  if (saved.length === 3 && thirdKey === 'classics-yuzu') {
+    const legacy = saved[2];
+    return [
+      saved[0],
+      saved[1],
+      {
+        ...legacy,
+        title: clampCmsTextField(legacy.title, SEED_MENU_SEO_PILLARS[2].title),
+        drinkCategoryKey: 'classics',
+      },
+      { ...SEED_MENU_SEO_PILLARS[3] },
+    ];
+  }
+  const out = [...saved];
+  while (out.length < 4) out.push({ ...SEED_MENU_SEO_PILLARS[out.length] });
+  return out;
+}
+
 function clampMenuSeoPillars(
   saved: MenuSeoPillarCopy[] | undefined,
-  seed: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy],
-): [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy] {
-  const keys: MenuSeoPillarCategoryKey[] = ['matcha', 'signatures', 'classics-yuzu'];
+  seed: [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy],
+): [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy] {
+  const keys: MenuSeoPillarCategoryKey[] = ['matcha', 'signatures', 'classics', 'sodas-yuzu'];
+  const migrated = migrateMenuSeoPillars(saved);
   return seed.map((fallback, i) => {
-    const p = saved?.[i];
+    const p = migrated?.[i];
     if (!p || typeof p !== 'object') return { ...fallback };
-    const key = keys.includes(p.drinkCategoryKey as MenuSeoPillarCategoryKey)
-      ? (p.drinkCategoryKey as MenuSeoPillarCategoryKey)
-      : fallback.drinkCategoryKey;
+    const legacyKey = p.drinkCategoryKey as string;
+    const key =
+      keys.includes(p.drinkCategoryKey as MenuSeoPillarCategoryKey)
+        ? (p.drinkCategoryKey as MenuSeoPillarCategoryKey)
+        : legacyKey === 'classics-yuzu' && i === 2
+          ? 'classics'
+          : fallback.drinkCategoryKey;
     return {
       title: clampCmsTextField(p.title, fallback.title),
       subtitle: clampCmsTextField(p.subtitle, fallback.subtitle),
@@ -619,7 +659,7 @@ function clampMenuSeoPillars(
       imageAlt: typeof p.imageAlt === 'string' ? p.imageAlt : fallback.imageAlt,
       drinkCategoryKey: key,
     };
-  }) as [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
+  }) as [MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy, MenuSeoPillarCopy];
 }
 
 function clampBodyParagraphs(

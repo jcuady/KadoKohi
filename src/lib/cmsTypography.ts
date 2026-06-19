@@ -49,6 +49,15 @@ export interface CmsStyledText {
 /** Plain string or styled object. Legacy CMS JSON uses plain strings. */
 export type CmsText = string | CmsStyledText;
 
+/** Normalize nbsp and corrupted entity strings to regular spaces for CMS storage/editing. */
+export function normalizeCmsPlainText(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/\u00A0/g, ' ')
+    .replace(/&amp;nbsp;/gi, ' ')
+    .replace(/&nbsp;/gi, ' ');
+}
+
 const SIZE_IDS = new Set<CmsTextSize>(CMS_TEXT_SIZES.map((s) => s.id));
 const COLOR_IDS = new Set<CmsTextColor>(CMS_TEXT_COLORS.map((c) => c.id));
 
@@ -57,9 +66,9 @@ const FONT_IDS = new Set<CmsFontFamily>(CMS_FONT_FAMILIES.map((f) => f.id));
 export function cmsTextPlain(value: CmsText | undefined | null): string {
   if (value == null) return '';
   const raw = typeof value === 'string' ? value : value.text;
-  if (!/<[a-z][\s\S]*>/i.test(raw)) return raw;
+  if (!/<[a-z][\s\S]*>/i.test(raw)) return normalizeCmsPlainText(raw);
   const doc = new DOMParser().parseFromString(raw, 'text/html');
-  return doc.body.textContent ?? '';
+  return normalizeCmsPlainText(doc.body.textContent ?? '');
 }
 
 /** Raw stored text (may include brand-safe inline HTML). */
@@ -88,23 +97,27 @@ function coerceColor(raw: unknown): CmsTextColor | undefined {
 
 /** Normalize persisted or draft CMS values; keeps plain strings when no style is set. */
 export function normalizeCmsText(raw: unknown, fallback: CmsText): CmsText {
-  const fallbackText = cmsTextPlain(fallback).trim() || cmsTextPlain(fallback);
+  const fallbackText = cmsTextPlain(fallback);
   if (typeof raw === 'string') {
-    const text = raw.trim() || fallbackText;
-    return text;
+    const text = normalizeCmsPlainText(raw);
+    return text.length > 0 ? text : fallbackText;
   }
   if (raw && typeof raw === 'object' && 'text' in raw) {
     const styled = raw as Partial<CmsStyledText>;
-    const text = typeof styled.text === 'string' ? styled.text.trim() || fallbackText : fallbackText;
+    const text =
+      typeof styled.text === 'string'
+        ? normalizeCmsPlainText(styled.text)
+        : fallbackText;
+    const resolvedText = text.length > 0 ? text : fallbackText;
     const size = coerceSize(styled.size);
     const color = coerceColor(styled.color);
     const font = coerceFont(styled.font);
     const bold = styled.bold === true ? true : undefined;
     const italic = styled.italic === true ? true : undefined;
     const underline = styled.underline === true ? true : undefined;
-    if (!size && !color && !font && !bold && !italic && !underline) return text;
+    if (!size && !color && !font && !bold && !italic && !underline) return resolvedText;
     return {
-      text,
+      text: resolvedText,
       ...(size ? { size } : {}),
       ...(color ? { color } : {}),
       ...(font ? { font } : {}),
@@ -128,7 +141,7 @@ export function patchCmsText(
     underline?: boolean;
   },
 ): CmsText {
-  const text = (patch.text ?? cmsTextRaw(value)).trim();
+  const text = normalizeCmsPlainText(patch.text ?? cmsTextRaw(value));
   const prev = typeof value === 'object' ? value : undefined;
   const size = patch.size ?? prev?.size;
   const color = patch.color ?? prev?.color;
