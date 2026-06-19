@@ -1,17 +1,13 @@
-import { MENU_CATEGORIES, MENU_PRODUCTS, filterCoffeeMenu } from '../data/menuCatalog';
+import { MENU_CATEGORIES, filterCoffeeMenu } from '../data/menuCatalog';
 import type { MenuCategory, Product } from '../types/domain';
 import { orderingRepo } from './supabase/repositories/ordering';
 
-/** Push canonical catalog rows via admin RLS (requires admin session). */
+/** Push default category rows only (admin session). Never push seed products — upsert sends image:null and wipes uploads. */
 export async function pushMenuCatalogToRemote(
   categories: MenuCategory[] = MENU_CATEGORIES,
-  products: Product[] = MENU_PRODUCTS,
 ): Promise<void> {
   for (const c of categories) {
     await orderingRepo.upsertCategory(c);
-  }
-  for (const p of products) {
-    await orderingRepo.upsertProduct(p);
   }
 }
 

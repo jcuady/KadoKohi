@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { BlogPost } from '../types/domain';
 import { newId } from '../lib/id';
 import { blogRepo } from '../lib/supabase/repositories/blog';
@@ -85,9 +84,7 @@ export interface BlogStore {
   postBySlug: (slug: string) => BlogPost | undefined;
 }
 
-export const useBlogStore = create<BlogStore>()(
-  persist(
-    (set, get) => ({
+export const useBlogStore = create<BlogStore>()((set, get) => ({
       posts: SEED_BLOG_POSTS,
       hydrated: false,
       loading: false,
@@ -145,13 +142,7 @@ export const useBlogStore = create<BlogStore>()(
           .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
 
       postBySlug: (slug) => {
-        const post = get().posts.find((p) => p.slug === slug);
-        return post?.visible ? post : undefined;
+        const hit = get().posts.find((p) => p.slug === slug);
+        return hit?.visible ? hit : undefined;
       },
-    }),
-    {
-      name: 'kado-blog-v1',
-      partialize: (state) => ({ posts: state.posts }),
-    },
-  ),
-);
+    }));

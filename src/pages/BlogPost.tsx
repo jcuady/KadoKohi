@@ -16,9 +16,12 @@ function formatDate(iso: string) {
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const hydrateFromRemote = useBlogStore((s) => s.hydrateFromRemote);
-  const postBySlug = useBlogStore((s) => s.postBySlug);
+  const post = useBlogStore((s) => {
+    if (!slug) return undefined;
+    const hit = s.posts.find((p) => p.slug === slug);
+    return hit?.visible ? hit : undefined;
+  });
   const [ready, setReady] = useState(false);
-  const post = slug ? postBySlug(slug) : undefined;
 
   useEffect(() => {
     void hydrateFromRemote().finally(() => setReady(true));

@@ -5,7 +5,7 @@ import {
   MENU_PRODUCTS,
   filterCoffeeMenu,
 } from '../data/menuCatalog';
-import { coffeeMenuIsEmpty, pushMenuCatalogToRemote } from '../lib/menuCatalogSync';
+import { coffeeMenuIsEmpty } from '../lib/menuCatalogSync';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -63,17 +63,6 @@ async function bootstrapRemoteCatalog(): Promise<{ categories: MenuCategory[]; p
 
   await orderingRepo.ensureMenuCatalog();
   remote = await loadRemoteMenu();
-  if (!coffeeMenuIsEmpty(remote.categories, remote.products)) {
-    return remote;
-  }
-
-  try {
-    await pushMenuCatalogToRemote();
-    remote = await loadRemoteMenu();
-  } catch {
-    // Admin RLS push may fail for guests; RPC path above is the primary bootstrap.
-  }
-
   return remote;
 }
 
@@ -105,6 +94,12 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           set(applyMenuSnapshot(remote.categories, remote.products, 'remote', null));
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Could not load menu from Supabase.';
+          const prev = get();
+          // ponytail: keep last good remote snapshot — seed fallback has no uploaded images.
+          if (prev.dataSource === 'remote' && prev.products.length > 0) {
+            set({ hydrateError: message, remoteLoaded: true });
+            return;
+          }
           set(applyMenuSnapshot(MENU_CATEGORIES, MENU_PRODUCTS, 'seed', message));
         }
       },

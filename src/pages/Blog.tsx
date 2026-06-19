@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, CalendarDays, Clock } from 'lucide-react';
 import { useBlogStore } from '../store/blogStore';
@@ -15,9 +15,17 @@ function formatDate(iso: string) {
 
 export default function Blog() {
   const hydrateFromRemote = useBlogStore((s) => s.hydrateFromRemote);
-  const posts = useBlogStore((s) => s.visiblePosts());
+  const allPosts = useBlogStore((s) => s.posts);
   const loading = useBlogStore((s) => s.loading);
   const hydrated = useBlogStore((s) => s.hydrated);
+
+  const posts = useMemo(
+    () =>
+      allPosts
+        .filter((p) => p.visible)
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
+    [allPosts],
+  );
 
   useEffect(() => {
     void hydrateFromRemote();
