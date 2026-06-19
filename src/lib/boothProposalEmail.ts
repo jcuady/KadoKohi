@@ -26,6 +26,8 @@ export function buildBoothProposalMailto(params: {
   startTime: string;
   endTime: string;
   message?: string;
+  serviceLabel?: string;
+  submitPath?: string;
 }): string {
   const subject = `[Kado Kohi] Event proposal — ${params.eventName.trim()} (${params.referenceCode})`;
   const body = [
@@ -33,6 +35,7 @@ export function buildBoothProposalMailto(params: {
     '',
     'I would like to submit an event proposal and discuss pricing and details.',
     '',
+    params.serviceLabel ? `Service: ${params.serviceLabel}` : '',
     `Reference: ${params.referenceCode}`,
     `Event: ${params.eventName.trim()}`,
     `Occasion: ${occasionLabel(params.occasion)}`,
@@ -47,7 +50,7 @@ export function buildBoothProposalMailto(params: {
     '',
     params.message?.trim() ? `--- Notes ---\n\n${params.message.trim()}\n` : '',
     '---',
-    'Submitted via kadokohi.com/book/booth',
+    `Submitted via kadokohi.com${params.submitPath ?? '/book/coffee-cart'}`,
   ]
     .filter(Boolean)
     .join('\n');

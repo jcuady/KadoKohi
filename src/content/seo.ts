@@ -159,7 +159,8 @@ export const SEO_INTERNAL_LINKS = [
   { to: '/menu', label: 'Coffee & matcha menu' },
   { to: '/branches', label: 'Location & hours' },
   { to: '/events', label: 'Events & tambayan' },
-  { to: '/book/booth', label: 'Book event coffee booth' },
+  { to: '/book/coffee-cart', label: 'Coffee cart bookings' },
+  { to: '/book/matcha-bar', label: 'Matcha bar bookings' },
   { to: '/merch', label: 'Merch' },
   { to: '/about', label: 'About Kado Kohi' },
   { to: '/contact', label: 'Contact' },
@@ -222,11 +223,18 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
     keywords: routeKeywords('kado coffee events', 'coffee events marikina'),
   },
   {
-    path: '/book/booth',
-    title: 'Kado Coffee Booth Booking | Event Coffee Marikina',
+    path: '/book/coffee-cart',
+    title: 'Coffee Cart Booking | Kado Coffee Events Marikina',
     description:
-      'Book Kado Coffee mobile booth and event coffee for weddings, parties, and corporate events in Marikina, Sta. Elena, and Metro Manila.',
-    keywords: routeKeywords('book kado coffee booth'),
+      'Book the Kado Coffee mobile cart for weddings, parties, and corporate events in Marikina, Sta. Elena, and Metro Manila.',
+    keywords: routeKeywords('book kado coffee cart', 'mobile coffee booth marikina'),
+  },
+  {
+    path: '/book/matcha-bar',
+    title: 'Matcha Bar Booking | Kado Coffee Events Marikina',
+    description:
+      'Book a Kado Kohi matcha bar for weddings, brand activations, and private celebrations in Marikina and Metro Manila.',
+    keywords: routeKeywords('matcha bar booking marikina', 'event matcha bar'),
   },
   {
     path: '/pastries',
@@ -279,7 +287,8 @@ export const SEO_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/merch', name: 'Merch' },
   { path: '/pastries', name: 'Pastries' },
   { path: '/events', name: 'Events' },
-  { path: '/book/booth', name: 'Booth Booking' },
+  { path: '/book/coffee-cart', name: 'Coffee Cart Bookings' },
+  { path: '/book/matcha-bar', name: 'Matcha Bar Bookings' },
   { path: '/blog', name: 'Blog' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About' },
@@ -290,7 +299,8 @@ export const SEO_SITEMAP_PATHS: Array<{ path: string; changefreq: string; priori
   { path: '/', changefreq: 'daily', priority: '1.0' },
   { path: '/menu', changefreq: 'daily', priority: '0.9' },
   { path: '/events', changefreq: 'daily', priority: '0.9' },
-  { path: '/book/booth', changefreq: 'weekly', priority: '0.85' },
+  { path: '/book/coffee-cart', changefreq: 'weekly', priority: '0.85' },
+  { path: '/book/matcha-bar', changefreq: 'weekly', priority: '0.85' },
   { path: '/merch', changefreq: 'weekly', priority: '0.8' },
   { path: '/pastries', changefreq: 'weekly', priority: '0.75' },
   { path: '/blog', changefreq: 'weekly', priority: '0.75' },
@@ -379,7 +389,8 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
     links: [
       { label: 'Full menu', to: '/menu' },
       { label: 'Google Maps', href: KADO_GOOGLE_LISTING.mapsUrl, external: true },
-      { label: 'Book booth', to: '/book/booth' },
+      { label: 'Coffee cart booking', to: '/book/coffee-cart' },
+      { label: 'Matcha bar booking', to: '/book/matcha-bar' },
     ],
   },
   '/menu': {
@@ -389,7 +400,7 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
     ],
     links: [
       { label: 'Branches & hours', to: '/branches' },
-      { label: 'Book event coffee booth', to: '/book/booth' },
+      { label: 'Coffee cart booking', to: '/book/coffee-cart' },
     ],
   },
   '/events': {
@@ -402,12 +413,25 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
       { label: 'Contact for collabs', to: '/contact' },
     ],
   },
-  '/book/booth': {
-    heading: 'Book Kado Coffee booth & event coffee',
+  '/book/coffee-cart': {
+    heading: 'Book Kado Coffee cart & event coffee',
     paragraphs: [
-      'Hire Kado Coffee for mobile booth coffee at weddings, birthdays, corporate events, and parties in Marikina, Sta. Elena, and Metro Manila. Specialty event coffee with on-site baristas.',
+      'Hire Kado Coffee for mobile cart service at weddings, birthdays, corporate events, and parties in Marikina, Sta. Elena, and Metro Manila. Specialty event coffee with on-site baristas.',
     ],
-    links: [{ label: 'Contact the team', to: '/contact' }],
+    links: [
+      { label: 'Matcha bar booking', to: '/book/matcha-bar' },
+      { label: 'Contact the team', to: '/contact' },
+    ],
+  },
+  '/book/matcha-bar': {
+    heading: 'Book a Kado Kohi matcha bar',
+    paragraphs: [
+      'Bring a dedicated matcha bar to weddings, brand activations, and private celebrations in Marikina and Metro Manila. Submit a proposal and our events team will follow up on menu and setup.',
+    ],
+    links: [
+      { label: 'Coffee cart booking', to: '/book/coffee-cart' },
+      { label: 'Contact the team', to: '/contact' },
+    ],
   },
   '/branches': {
     heading: 'Kado Coffee location — Marikina coffee near me',
@@ -432,7 +456,7 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
       'Reach Kado Coffee for booth bookings, collaborations, event coffee, and general questions. Located in Sta. Elena, Marikina City — kadocoffeeph@gmail.com.',
     ],
     links: [
-      { label: 'Book a booth', to: '/book/booth' },
+      { label: 'Coffee cart booking', to: '/book/coffee-cart' },
       { label: 'Facebook', href: SEO_SOCIAL.facebook, external: true },
     ],
   },
@@ -526,7 +550,7 @@ export function buildLocalBusinessJsonLd(origin: string) {
       '@type': 'ReserveAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${origin}/book/booth`,
+        urlTemplate: `${origin}/book/coffee-cart`,
         actionPlatform: [
           'http://schema.org/DesktopWebPlatform',
           'http://schema.org/MobileWebPlatform',

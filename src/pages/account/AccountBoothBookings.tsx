@@ -47,7 +47,7 @@ export default function AccountBoothBookings() {
           </p>
         </div>
         <Link
-          to="/book/booth"
+          to="/book/coffee-cart"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-5 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -62,12 +62,20 @@ export default function AccountBoothBookings() {
           <p className="text-sm text-kado-dark/55 mb-6 max-w-sm mx-auto">
             Plan a celebration at Kado Kohi — submit a proposal and we will follow up by email.
           </p>
-          <Link
-            to="/book/booth"
-            className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
-          >
-            Book a booth
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/book/coffee-cart"
+              className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+            >
+              Coffee cart
+            </Link>
+            <Link
+              to="/book/matcha-bar"
+              className="inline-flex items-center gap-2 rounded-xl border border-kado-dark/15 text-kado-dark px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+            >
+              Matcha bar
+            </Link>
+          </div>
         </div>
       ) : (
         <ul className="space-y-3">

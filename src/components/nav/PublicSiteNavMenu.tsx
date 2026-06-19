@@ -218,19 +218,3 @@ export function PublicSiteNavMobile({ onNavigate }: { onNavigate: () => void }) 
     </nav>
   );
 }
-
-/** Flat links for account-area mobile menu (no dropdown chrome). */
-export function flattenPublicNavLinks(): Array<{ label: string; path: string } | { label: string; href: string }> {
-  const out: Array<{ label: string; path: string } | { label: string; href: string }> = [];
-  for (const item of PUBLIC_SITE_NAV) {
-    if (item.kind === 'link') out.push({ label: item.label, path: item.path });
-    else if (item.kind === 'external') out.push({ label: item.label, href: item.href });
-    else {
-      for (const child of item.items) {
-        if (isNavRouteItem(child)) out.push({ label: child.label, path: child.path });
-        else out.push({ label: child.label, href: child.href });
-      }
-    }
-  }
-  return out;
-}

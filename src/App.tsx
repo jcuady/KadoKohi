@@ -91,7 +91,9 @@ export default function App() {
           <Route path="/pastries" element={<Pastries />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/book/booth" element={<BookBooth />} />
+          <Route path="/book/coffee-cart" element={<BookBooth />} />
+          <Route path="/book/matcha-bar" element={<BookBooth kind="matcha-bar" />} />
+          <Route path="/book/booth" element={<Navigate to="/book/coffee-cart" replace />} />
           <Route path="/legal/terms" element={<TermsOfService />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />

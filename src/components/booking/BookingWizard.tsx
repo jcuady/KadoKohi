@@ -15,6 +15,12 @@ import { buildBoothProposalMailto } from '../../lib/boothProposalEmail';
 import { buildProposalEstimate } from '../../lib/boothProposal';
 import { formatPhp } from '../../lib/money';
 import {
+  BOOKING_PAGE_PATHS,
+  BOOKING_SERVICE_TAGS,
+  MATCHA_BAR_PAGE_COPY,
+  type BookingPageKind,
+} from '../../lib/bookingPageKinds';
+import {
   EVENT_PROPOSAL_PACKAGE_ID,
   EVENT_PROPOSAL_PACKAGE_NAME,
   isDateSelectable,
@@ -35,12 +41,14 @@ export type BookingWizardStage = 'form' | 'submitted';
 
 interface BookingWizardProps {
   onStageChange?: (stage: BookingWizardStage) => void;
+  bookingKind?: BookingPageKind;
 }
 
-export default function BookingWizard({ onStageChange }: BookingWizardProps) {
+export default function BookingWizard({ onStageChange, bookingKind = 'coffee-cart' }: BookingWizardProps) {
   const user = useAuthStore((s) => s.user);
   const contactEmail = useSettingsStore((s) => s.settings.contactEmail);
-  const pageCopy = useBoothShowcaseStore((s) => s.pageCopy);
+  const cmsPageCopy = useBoothShowcaseStore((s) => s.pageCopy);
+  const pageCopy = bookingKind === 'matcha-bar' ? MATCHA_BAR_PAGE_COPY : cmsPageCopy;
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
   const allPackages = useBoothCatalogStore((s) => s.packages);
@@ -186,6 +194,10 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
     const packageBasePriceSnapshot = isProposal ? 0 : selectedPackage!.basePrice;
     const selectedAddons = isProposal ? [] : addonSnapshotsFromEstimate(estimate);
 
+    const serviceTag = BOOKING_SERVICE_TAGS[bookingKind];
+    const noteParts = [serviceTag, message.trim()].filter(Boolean);
+    const specialRequests = noteParts.length > 0 ? noteParts.join(' — ') : undefined;
+
     setSubmitting(true);
     setError('');
     try {
@@ -205,7 +217,7 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
         packageNameSnapshot,
         packageBasePriceSnapshot,
         selectedAddons,
-        specialRequests: message.trim() || undefined,
+        specialRequests,
         estimateSnapshot: { ...estimate, shortCode: 'PENDING' },
         status: 'submitted',
       });
@@ -222,6 +234,8 @@ export default function BookingWizard({ onStageChange }: BookingWizardProps) {
         startTime,
         endTime,
         message: message.trim() || undefined,
+        serviceLabel: serviceTag,
+        submitPath: BOOKING_PAGE_PATHS[bookingKind],
       });
 
       setSubmittedCode(booking.shortCode);

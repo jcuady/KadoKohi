@@ -45,8 +45,11 @@ export default function Footer() {
               <Link to="/blog" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 Blogs
               </Link>
-              <Link to="/book/booth" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
-                Event Booking
+              <Link to="/book/coffee-cart" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
+                Coffee Cart Bookings
+              </Link>
+              <Link to="/book/matcha-bar" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
+                Matcha Bar Bookings
               </Link>
               <Link to="/events" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 Kado Events

@@ -86,7 +86,7 @@ export default function AdminBoothContent() {
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booth Page Content</h1>
           <p className="dash-muted text-sm">
-            Edit hero copy, how-it-works steps, proposal form text, and showcase gallery for /book/booth. Publish to save
+            Edit hero copy, how-it-works steps, proposal form text, and showcase gallery for /book/coffee-cart. Publish to save
             to the database.
           </p>
         </div>

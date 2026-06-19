@@ -53,9 +53,14 @@ export const PUBLIC_SITE_NAV: NavItem[] = [
   {
     kind: 'dropdown',
     label: 'Events',
+    items: [{ label: 'Kado Coffee Event', path: '/events' }],
+  },
+  {
+    kind: 'dropdown',
+    label: 'Bookings',
     items: [
-      { label: 'Book Booth', path: '/book/booth' },
-      { label: 'Kado Coffee Event', path: '/events' },
+      { label: 'Coffee Cart Bookings', path: '/book/coffee-cart' },
+      { label: 'Matcha Bar Bookings', path: '/book/matcha-bar' },
     ],
   },
   { kind: 'external', label: 'Careers', href: CAREERS_MAILTO },
