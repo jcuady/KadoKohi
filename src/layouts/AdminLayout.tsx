@@ -31,7 +31,7 @@ import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 import { hasAllBranchAccess } from '../lib/roles';
 import NotificationToggle from '../components/NotificationToggle';
-import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
+import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 import { useBranchStore } from '../store/branchStore';
 import AdminKioskBranchModal from '../components/admin/AdminKioskBranchModal';
 
@@ -212,8 +212,7 @@ export default function AdminLayout() {
 
   useEffect(() => {
     if (user?.role !== 'admin') return;
-    startOperationsRealtime();
-    void refreshOperationsData();
+    void hydrateOpsPortal();
   }, [user?.id, user?.role]);
 
   const toggleGroup = (id: string) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { OrderChannel, OrderStatus } from '../../types/domain';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
@@ -13,8 +13,18 @@ const ALL_CHANNELS: OrderChannel[] = ['online', 'dine-in', 'takeout', 'pos', 'me
 
 export default function StaffAllOrders() {
   const orders = useOrderStore((s) => s.orders);
+  const hydrateFromRemote = useOrderStore((s) => s.hydrateFromRemote);
   const branches = useBranchStore((s) => s.branches);
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    if (user?.role !== 'staff') return;
+    if (user.branchId) {
+      void hydrateFromRemote({ branchId: user.branchId, limit: 500 });
+      return;
+    }
+    void hydrateFromRemote({ limit: 500 });
+  }, [user?.role, user?.branchId, hydrateFromRemote]);
 
   const [channelFilter, setChannelFilter] = useState<OrderChannel | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');

@@ -4,6 +4,7 @@ import { newId } from '../lib/id';
 import { pickUniqueTableCode, tableQrUrl } from '../lib/qr';
 import { PRODUCTION_SITE_URL } from '../lib/siteUrl';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { logAudit } from '../lib/audit';
 
 function normalizeTableQrPayload(t: Table): Table {
   if (t.qrPayload.startsWith('http://') || t.qrPayload.startsWith('https://')) return t;
@@ -86,6 +87,13 @@ export const useTableStore = create<TableStore>()((set, get) => ({
     await orderingRepo.upsertTable(t);
     pauseTablesHydrate(1500);
     set({ tables: [...get().tables, t] });
+    logAudit({
+      action: 'table.created',
+      entityType: 'table',
+      entityId: t.id,
+      branchId: branchId,
+      summary: `Created table ${t.label} (${t.code})`,
+    });
     return t;
   },
 
@@ -97,12 +105,28 @@ export const useTableStore = create<TableStore>()((set, get) => ({
     set({
       tables: get().tables.map((t) => (t.id === id ? updated : t)),
     });
+    logAudit({
+      action: 'table.updated',
+      entityType: 'table',
+      entityId: id,
+      branchId: current.branchId,
+      summary: `Updated table ${updated.label}`,
+      metadata: { changedKeys: Object.keys(patch) },
+    });
   },
 
   removeTable: async (id) => {
+    const deleted = get().tables.find((t) => t.id === id);
     await orderingRepo.deleteTable(id);
     pauseTablesHydrate(4000);
     set({ tables: get().tables.filter((t) => t.id !== id) });
+    logAudit({
+      action: 'table.deleted',
+      entityType: 'table',
+      entityId: id,
+      branchId: deleted?.branchId,
+      summary: `Deleted table ${deleted?.label ?? id}`,
+    });
   },
 
   toggleActive: async (id) => {
@@ -112,6 +136,14 @@ export const useTableStore = create<TableStore>()((set, get) => ({
     await orderingRepo.upsertTable(updated);
     set({
       tables: get().tables.map((t) => (t.id === id ? updated : t)),
+    });
+    logAudit({
+      action: 'table.toggled',
+      entityType: 'table',
+      entityId: id,
+      branchId: current.branchId,
+      summary: `${updated.label} ${updated.active ? 'enabled' : 'disabled'}`,
+      metadata: { active: updated.active },
     });
   },
 

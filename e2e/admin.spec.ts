@@ -46,12 +46,15 @@ test('add-user modal opens, validates, and cancels cleanly', async ({ page }) =>
   await page.getByRole('button', { name: /add user/i }).click();
   await expect(page.getByRole('heading', { name: /new user/i })).toBeVisible();
 
-  // Choosing barista must surface the required branch selector.
-  await page.locator('select').first().selectOption('barista');
-  await expect(page.getByText(/branch/i).first()).toBeVisible();
+  const modal = page.locator('form').filter({ has: page.getByRole('heading', { name: /new user/i }) });
+  const roleSelect = modal.locator('select').first();
 
-  await page.locator('select').first().selectOption('staff');
-  await expect(page.getByText(/branch/i).first()).toBeVisible();
+  // Choosing barista must surface the required branch selector.
+  await roleSelect.selectOption('barista');
+  await expect(modal.getByText(/^Branch/i)).toBeVisible();
+
+  await roleSelect.selectOption('staff');
+  await expect(modal.getByText(/^Branch/i)).toBeVisible();
 
   await page.getByRole('button', { name: /cancel/i }).click();
   await expect(page.getByRole('heading', { name: /new user/i })).toHaveCount(0);

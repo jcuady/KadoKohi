@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Order, OrderChannel, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
+import { adminOrderScopeFromFilters } from '../../lib/orderFetchScope';
 import { formatPhp } from '../../lib/money';
 import {
   LayoutGrid,
@@ -72,6 +73,8 @@ const KANBAN_STYLE: Record<string, { icon: typeof Clock; color: string; bgCard: 
 
 export default function AdminOrders() {
   const orders = useOrderStore((s) => s.orders);
+  const hydrateForAdmin = useOrderStore((s) => s.hydrateForAdmin);
+  const setAdminFetchScope = useOrderStore((s) => s.setAdminFetchScope);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
   const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
   const deleteOrder = useOrderStore((s) => s.deleteOrder);
@@ -86,6 +89,19 @@ export default function AdminOrders() {
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [patchError, setPatchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const scope = adminOrderScopeFromFilters({
+      branchId: branchFilter,
+      channel: channelFilter,
+      period: periodFilter,
+    });
+    setAdminFetchScope(scope);
+    const timer = window.setTimeout(() => {
+      void hydrateForAdmin(scope);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [branchFilter, channelFilter, periodFilter, hydrateForAdmin, setAdminFetchScope]);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));

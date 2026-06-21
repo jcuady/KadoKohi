@@ -9,7 +9,7 @@ import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useTableStore } from '../../store/tableStore';
 import { useKioskTheme } from '../../hooks/useKioskTheme';
-import { startOperationsRealtime, refreshOperationsData } from '../../lib/supabase/operationsRealtime';
+import { hydrateOpsPortal } from '../../lib/bootstrapHydration';
 import { kioskDisplayColumnKey, type KioskDisplayColumn } from '../../lib/orderStatus';
 import { getKioskOrderTags, type KioskOrderTag } from '../../lib/orderTable';
 
@@ -141,6 +141,7 @@ export default function BaristaKioskDisplay() {
   const { isDark, toggle } = useKioskTheme();
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
+  const hydrateForBarista = useOrderStore((s) => s.hydrateForBarista);
   const tables = useTableStore((s) => s.tables);
   const adminPosBranchId = useBranchStore((s) => s.adminPosBranchId);
   const setAdminPosBranchId = useBranchStore((s) => s.setAdminPosBranchId);
@@ -184,16 +185,19 @@ export default function BaristaKioskDisplay() {
   }, [needsBranchPick]);
 
   const syncData = useCallback(async () => {
-    await refreshOperationsData();
+    if (activeBranchId) {
+      await hydrateForBarista(activeBranchId);
+    }
     setDataReady(true);
     setLive(true);
-  }, []);
+  }, [activeBranchId, hydrateForBarista]);
 
   useEffect(() => {
     if (!user || (user.role !== 'barista' && user.role !== 'admin')) return;
     if (!activeBranchId) return;
 
-    startOperationsRealtime();
+    void hydrateOpsPortal();
+
     void syncData();
 
     const poll = window.setInterval(() => void syncData(), SYNC_POLL_MS);

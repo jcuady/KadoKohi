@@ -18,6 +18,7 @@ import type {
   User,
 } from '../../../types/domain';
 import type { AppSettings } from '../../../store/settingsStore';
+import type { FetchOrdersScope } from '../../orderFetchScope';
 
 function pgErrorFields(err: unknown): { message: string; code: string; details: string } {
   if (err && typeof err === 'object') {
@@ -826,12 +827,19 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_booth_bookings').update(dbPatch).eq('id', id);
     if (error) throw error;
   },
-  async fetchOrders(): Promise<Order[]> {
+  async fetchOrders(scope?: FetchOrdersScope): Promise<Order[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('kk_orders')
-      .select('*, kk_order_items(*)')
-      .order('created_at', { ascending: false });
+    let query = supabase.from('kk_orders').select('*, kk_order_items(*)');
+    if (scope?.branchId) query = query.eq('branch_id', scope.branchId);
+    if (scope?.customerId) query = query.eq('customer_id', scope.customerId);
+    if (scope?.channels?.length) query = query.in('channel', scope.channels);
+    if (scope?.activeOnly) {
+      query = query.not('status', 'in', '("completed","cancelled","served")');
+    }
+    if (scope?.since) query = query.gte('created_at', scope.since);
+    query = query.order('created_at', { ascending: false });
+    if (scope?.limit) query = query.limit(scope.limit);
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map(mapOrder);
   },

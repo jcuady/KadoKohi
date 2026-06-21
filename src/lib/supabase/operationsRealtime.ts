@@ -19,6 +19,8 @@ import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBlogStore } from '../../store/blogStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
+import { useAuthStore } from '../../store/authStore';
+import { defaultAdminOrderScope, orderScopeForUser } from '../orderFetchScope';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -54,13 +56,21 @@ function debounce(fn: () => void, ms: number) {
 }
 
 const refresh = {
-  orders: debounce(() => void useOrderStore.getState().hydrateFromRemote(), 300),
+  orders: debounce(() => {
+    const user = useAuthStore.getState().user;
+    const adminScope = useOrderStore.getState().adminFetchScope ?? undefined;
+    const scope = orderScopeForUser(user, adminScope);
+    if (!scope) return;
+    void useOrderStore.getState().refreshScopedForSession(scope);
+  }, 300),
   menu: debounce(() => void useMenuStore.getState().hydrateFromRemote(), 300),
   users: debounce(() => void useUserStore.getState().hydrateFromRemote(), 300),
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
   settings: debounce(() => {
     void useSettingsStore.getState().hydrateFromRemote();
+  }, 300),
+  settingsCms: debounce(() => {
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
     void useMatchaShowcaseStore.getState().hydrateFromRemote();
@@ -98,7 +108,7 @@ function onTableChange(table: OpsTable) {
       break;
     case 'kk_app_settings':
       refresh.settings();
-      refresh.landing();
+      refresh.settingsCms();
       break;
     case 'kk_audit_logs':
       refresh.audit();
@@ -132,8 +142,11 @@ function onTableChange(table: OpsTable) {
 
 /** Pull the latest operational data (call after auth is ready). */
 export async function refreshOperationsData(): Promise<void> {
+  const user = useAuthStore.getState().user;
+  const adminScope = useOrderStore.getState().adminFetchScope ?? undefined;
+  const orderScope = orderScopeForUser(user, adminScope) ?? defaultAdminOrderScope();
   await Promise.all([
-    useOrderStore.getState().hydrateFromRemote(),
+    useOrderStore.getState().hydrateFromRemote(orderScope),
     useMenuStore.getState().hydrateFromRemote(),
     useUserStore.getState().hydrateFromRemote(),
     useTableStore.getState().hydrateFromRemote(),
@@ -162,11 +175,20 @@ export function startOperationsRealtime(): void {
   if (!supabase || started) return;
   started = true;
 
+  const user = useAuthStore.getState().user;
+  const ordersFilter =
+    user?.role === 'barista' && user.branchId
+      ? `branch_id=eq.${user.branchId}`
+      : undefined;
+
   channel = supabase.channel('kk_ops_live');
   for (const table of OPS_TABLES) {
+    const filter = table === 'kk_orders' ? ordersFilter : undefined;
     channel.on(
       'postgres_changes',
-      { event: '*', schema: 'public', table },
+      filter
+        ? { event: '*', schema: 'public', table, filter }
+        : { event: '*', schema: 'public', table },
       () => onTableChange(table),
     );
   }

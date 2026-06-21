@@ -14,7 +14,7 @@ import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
 import NotificationToggle from '../components/NotificationToggle';
-import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
+import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 
 const SIDEBAR_W = 'w-56';
 const MAIN_OFFSET = 'ml-56';
@@ -47,8 +47,7 @@ export default function StaffLayout() {
 
   useEffect(() => {
     if (user?.role !== 'staff') return;
-    startOperationsRealtime();
-    void refreshOperationsData();
+    void hydrateOpsPortal();
   }, [user?.id, user?.role]);
 
   const handleLogout = () => {

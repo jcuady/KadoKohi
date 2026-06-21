@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '../types/domain';
 import { useUserStore } from './userStore';
-import { useOrderStore } from './orderStore';
 import { authRepo } from '../lib/supabase/repositories/auth';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -12,13 +11,13 @@ import {
   resumeAuthListener,
 } from '../lib/supabase/authSession';
 import {
-  refreshOperationsData,
-  startOperationsRealtime,
+  hydrateCustomerAccount,
+  hydrateOpsPortal,
+} from '../lib/bootstrapHydration';
+import {
   stopOperationsRealtime,
 } from '../lib/supabase/operationsRealtime';
 import { isInternalRole } from '../lib/roles';
-import { useLoyaltyStore } from './loyaltyStore';
-import { useVoucherStore } from './voucherStore';
 
 function normalizeProfile(profile: User): User {
   if (profile.role === 'admin') {
@@ -66,15 +65,11 @@ async function resolveSessionProfile(
 /** After JWT is available, wire live sync for staff surfaces. */
 function syncOperationalSession(profile: User): void {
   if (isInternalRole(profile.role)) {
-    startOperationsRealtime();
-    void refreshOperationsData();
+    void hydrateOpsPortal();
     return;
   }
-  // Customers: refresh their own orders (no full ops channel).
-  void useOrderStore.getState().hydrateFromRemote();
-  void useLoyaltyStore.getState().hydrateFromRemote();
   if (profile.role === 'customer') {
-    void useVoucherStore.getState().hydrateForCustomer(profile.id);
+    void hydrateCustomerAccount(profile.id);
   }
 }
 

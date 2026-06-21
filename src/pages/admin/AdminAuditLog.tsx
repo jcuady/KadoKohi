@@ -9,13 +9,40 @@ const ROLE_BADGE: Record<string, string> = {
   barista: 'bg-blue-100 text-blue-800 border-blue-200',
   staff: 'bg-teal-100 text-teal-800 border-teal-200',
   customer: 'bg-amber-100 text-amber-800 border-amber-200',
+  guest: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 const ACTION_LABEL: Record<string, string> = {
+  'order.created': 'Order placed',
   'order.status_changed': 'Order status',
   'order.payment_status_changed': 'Payment status',
+  'order.proof_submitted': 'Payment proof',
+  'order.cancelled_by_guest': 'Guest cancellation',
+  'order.payment_switched_to_cash': 'Switched to cash',
+  'order.deleted': 'Order deleted',
   'loyalty.stamps_adjusted': 'Stamp adjustment',
+  'user.created': 'User created',
+  'user.updated': 'User updated',
   'user.deleted': 'User deleted',
+  'menu.product_created': 'Menu product created',
+  'menu.product_updated': 'Menu product updated',
+  'menu.product_deleted': 'Menu product deleted',
+  'menu.category_created': 'Menu category created',
+  'menu.category_updated': 'Menu category updated',
+  'menu.category_deleted': 'Menu category deleted',
+  'menu.stock_changed': 'Stock changed',
+  'settings.updated': 'Settings updated',
+  'branch.created': 'Branch created',
+  'branch.updated': 'Branch updated',
+  'branch.deleted': 'Branch deleted',
+  'table.created': 'Table created',
+  'table.updated': 'Table updated',
+  'table.deleted': 'Table deleted',
+  'table.toggled': 'Table toggled',
+  'promo.created': 'Promo created',
+  'promo.updated': 'Promo updated',
+  'promo.toggled': 'Promo toggled',
+  'promo.deleted': 'Promo deleted',
 };
 
 type RoleFilter = 'team' | 'admin' | 'barista' | 'staff' | 'customer' | 'all';
@@ -55,6 +82,7 @@ export default function AdminAuditLog() {
   const refresh = useAuditStore((s) => s.refresh);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('team');
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -161,6 +189,20 @@ export default function AdminAuditLog() {
                 <p className="text-[10px] dash-muted mt-0.5">
                   {log.actorEmail ?? 'unknown'} · {timeAgo(log.createdAt)}
                 </p>
+                {Object.keys(log.metadata ?? {}).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId((id) => (id === log.id ? null : log.id))}
+                    className="mt-1 text-[10px] font-semibold text-kado-red hover:underline"
+                  >
+                    {expandedId === log.id ? 'Hide details' : 'Show details'}
+                  </button>
+                )}
+                {expandedId === log.id && (
+                  <pre className="mt-2 max-h-32 overflow-auto rounded-lg bg-black/5 p-2 text-[10px] dash-muted whitespace-pre-wrap break-all">
+                    {JSON.stringify(log.metadata, null, 2)}
+                  </pre>
+                )}
               </div>
             </li>
           ))}

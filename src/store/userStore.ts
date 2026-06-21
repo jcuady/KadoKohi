@@ -68,6 +68,13 @@ export const useUserStore = create<UserStore>()((set, get) => ({
         };
         set({ users: [...get().users, u] });
         void orderingRepo.upsertUser(u);
+        logAudit({
+          action: 'user.created',
+          entityType: 'user',
+          entityId: u.id,
+          summary: `Created user ${u.name} (${u.email})`,
+          metadata: { role: u.role },
+        });
         return u;
       },
 
@@ -97,6 +104,13 @@ export const useUserStore = create<UserStore>()((set, get) => ({
         await orderingRepo.upsertUser(updated);
         set({
           users: get().users.map((u) => (u.id === id ? updated : u)),
+        });
+        logAudit({
+          action: 'user.updated',
+          entityType: 'user',
+          entityId: id,
+          summary: `Updated user ${updated.name}`,
+          metadata: { changedKeys: Object.keys(patch) },
         });
       },
 

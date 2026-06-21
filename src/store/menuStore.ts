@@ -9,6 +9,7 @@ import { coffeeMenuIsEmpty } from '../lib/menuCatalogSync';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
+import { logAudit } from '../lib/audit';
 
 export type MenuDataSource = 'seed' | 'remote';
 
@@ -131,6 +132,12 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         set({ categories: [...list, c], hydrateError: null });
         try {
           await orderingRepo.upsertCategory(c);
+          logAudit({
+            action: 'menu.category_created',
+            entityType: 'menu_category',
+            entityId: c.id,
+            summary: `Created category ${c.name}`,
+          });
           return c;
         } catch {
           set({
@@ -149,7 +156,15 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           categories: get().categories.map((c) => (c.id === id ? updated : c)),
           hydrateError: null,
         });
-        void orderingRepo.upsertCategory(updated).catch(() => {
+        void orderingRepo.upsertCategory(updated).then(() => {
+          logAudit({
+            action: 'menu.category_updated',
+            entityType: 'menu_category',
+            entityId: id,
+            summary: `Updated category ${updated.name}`,
+            metadata: { changedKeys: Object.keys(patch) },
+          });
+        }).catch(() => {
           set({
             categories: get().categories.map((c) => (c.id === id ? prev : c)),
             hydrateError: 'Could not update category in database.',
@@ -165,7 +180,14 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           products: prevProds.filter((p) => p.categoryId !== id),
           hydrateError: null,
         });
-        void orderingRepo.deleteCategory(id).catch(() => {
+        void orderingRepo.deleteCategory(id).then(() => {
+          logAudit({
+            action: 'menu.category_deleted',
+            entityType: 'menu_category',
+            entityId: id,
+            summary: `Deleted category ${prevCats.find((c) => c.id === id)?.name ?? id}`,
+          });
+        }).catch(() => {
           set({ categories: prevCats, products: prevProds, hydrateError: 'Could not delete category.' });
         });
       },
@@ -192,7 +214,14 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           updatedAt: t,
         };
         set({ products: [...get().products, p], hydrateError: null });
-        void orderingRepo.upsertProduct(p).catch(() => {
+        void orderingRepo.upsertProduct(p).then(() => {
+          logAudit({
+            action: 'menu.product_created',
+            entityType: 'menu_product',
+            entityId: p.id,
+            summary: `Created product ${p.name}`,
+          });
+        }).catch(() => {
           set({
             products: get().products.filter((row) => row.id !== p.id),
             hydrateError: 'Could not save product to database.',
@@ -208,7 +237,15 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           products: get().products.map((pr) => (pr.id === id ? updated : pr)),
           hydrateError: null,
         });
-        void orderingRepo.upsertProduct(updated).catch(() => {
+        void orderingRepo.upsertProduct(updated).then(() => {
+          logAudit({
+            action: 'menu.product_updated',
+            entityType: 'menu_product',
+            entityId: id,
+            summary: `Updated product ${updated.name}`,
+            metadata: { changedKeys: Object.keys(patch) },
+          });
+        }).catch(() => {
           set({
             products: get().products.map((pr) => (pr.id === id ? prev : pr)),
             hydrateError: 'Could not update product in database.',
@@ -226,6 +263,13 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         });
         try {
           await orderingRepo.setProductInStock(id, inStock);
+          logAudit({
+            action: 'menu.stock_changed',
+            entityType: 'menu_product',
+            entityId: id,
+            summary: `${prev.name}: ${inStock ? 'in stock' : 'out of stock'}`,
+            metadata: { inStock },
+          });
         } catch (err) {
           try {
             await orderingRepo.upsertProduct(updated);
@@ -244,6 +288,12 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
         set({ products: prev.filter((pr) => pr.id !== id), hydrateError: null });
         try {
           await orderingRepo.deleteProduct(id);
+          logAudit({
+            action: 'menu.product_deleted',
+            entityType: 'menu_product',
+            entityId: id,
+            summary: `Deleted product ${prev.find((pr) => pr.id === id)?.name ?? id}`,
+          });
         } catch (err) {
           set({ products: prev, hydrateError: 'Could not delete product.' });
           throw err;

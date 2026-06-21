@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { logAudit } from '../lib/audit';
 
 export type DashTheme = 'light' | 'dark';
 
@@ -71,6 +72,13 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
         const settings = { ...get().settings, ...patch };
         await orderingRepo.upsertSettings(settings);
         set({ settings });
+        logAudit({
+          action: 'settings.updated',
+          entityType: 'settings',
+          entityId: 'app',
+          summary: 'App settings updated',
+          metadata: { changedKeys: Object.keys(patch) },
+        });
       },
       toggleDashTheme: async () => {
         const settings = {
@@ -79,6 +87,13 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
         };
         await orderingRepo.upsertSettings(settings);
         set({ settings });
+        logAudit({
+          action: 'settings.updated',
+          entityType: 'settings',
+          entityId: 'app',
+          summary: `Dashboard theme → ${settings.brandMode}`,
+          metadata: { changedKeys: ['brandMode'] },
+        });
       },
       seed: () => set({ settings: DEFAULTS }),
 }));

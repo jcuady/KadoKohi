@@ -16,6 +16,11 @@ import {
   ensureOrderReadiness,
   isOrderCatalogError,
 } from '../lib/orderReadiness';
+import type { FetchOrdersScope } from '../lib/orderFetchScope';
+import {
+  BARISTA_ORDER_CHANNELS,
+  defaultAdminOrderScope,
+} from '../lib/orderFetchScope';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -30,7 +35,13 @@ function normalizeOrder(o: Order): Order {
 export interface OrderStore {
   orders: Order[];
   hydrateError: string | null;
-  hydrateFromRemote: () => Promise<void>;
+  adminFetchScope: FetchOrdersScope | null;
+  hydrateFromRemote: (scope?: FetchOrdersScope) => Promise<void>;
+  hydrateForBarista: (branchId: string) => Promise<void>;
+  hydrateForAdmin: (scope?: FetchOrdersScope) => Promise<void>;
+  hydrateForCustomer: (customerId: string) => Promise<void>;
+  setAdminFetchScope: (scope: FetchOrdersScope) => void;
+  refreshScopedForSession: (scope: FetchOrdersScope) => Promise<void>;
   createOrder: (
     order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
       Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string; promoCode?: string },
@@ -52,9 +63,12 @@ export interface OrderStore {
 export const useOrderStore = create<OrderStore>()((set, get) => ({
       orders: [],
       hydrateError: null,
-      hydrateFromRemote: async () => {
+      adminFetchScope: null,
+
+      hydrateFromRemote: async (scope) => {
+        const resolved = scope ?? defaultAdminOrderScope();
         try {
-          const orders = await orderingRepo.fetchOrders();
+          const orders = await orderingRepo.fetchOrders(resolved);
           set({ orders: orders.map((o) => normalizeOrder(o)), hydrateError: null });
         } catch (err) {
           const message = formatBaristaOrderError(err, 'load');
@@ -63,6 +77,31 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           throw err;
         }
       },
+
+      hydrateForBarista: async (branchId) => {
+        await get().hydrateFromRemote({
+          branchId,
+          channels: BARISTA_ORDER_CHANNELS,
+          activeOnly: true,
+          limit: 300,
+        });
+      },
+
+      hydrateForAdmin: async (scope) => {
+        const resolved = scope ?? get().adminFetchScope ?? defaultAdminOrderScope();
+        if (scope) set({ adminFetchScope: scope });
+        await get().hydrateFromRemote(resolved);
+      },
+
+      hydrateForCustomer: async (customerId) => {
+        await get().hydrateFromRemote({ customerId, limit: 100 });
+      },
+
+      refreshScopedForSession: async (scope) => {
+        await get().hydrateFromRemote(scope);
+      },
+
+      setAdminFetchScope: (scope) => set({ adminFetchScope: scope }),
 
       createOrder: async (input) => {
         const t = new Date().toISOString();
@@ -299,14 +338,6 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           return err instanceof Error ? err.message : 'Failed to delete order.';
         }
 
-        logAudit({
-          action: 'order.deleted',
-          entityType: 'order',
-          entityId: id,
-          branchId: prev.branchId,
-          summary: `Deleted ${prev.shortCode}`,
-          metadata: { channel: prev.channel, status: prev.status, total: prev.total },
-        });
         return null;
       },
 

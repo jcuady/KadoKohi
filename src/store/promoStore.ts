@@ -3,6 +3,7 @@ import type { PromoCode, PromoCodeType } from '../types/domain';
 import { promoRepo } from '../lib/supabase/repositories/promo';
 import { newId } from '../lib/id';
 import { useAuthStore } from './authStore';
+import { logAudit } from '../lib/audit';
 
 export interface PromoValidationResult {
   ok: boolean;
@@ -109,6 +110,13 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
     const adminId = useAuthStore.getState().user?.id;
     await promoRepo.upsert({ ...code, createdBy: adminId });
     await get().fetchAll();
+    logAudit({
+      action: 'promo.created',
+      entityType: 'promo_code',
+      entityId: code.id,
+      branchId: code.branchId ?? undefined,
+      summary: `Created promo ${code.code}`,
+    });
   },
 
   updateCode: async (id, patch) => {
@@ -123,6 +131,14 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
       createdBy: adminId,
     });
     await get().fetchAll();
+    logAudit({
+      action: 'promo.updated',
+      entityType: 'promo_code',
+      entityId: id,
+      branchId: existing.branchId ?? undefined,
+      summary: `Updated promo ${(patch.code ?? existing.code).toUpperCase().trim()}`,
+      metadata: { changedKeys: Object.keys(patch) },
+    });
   },
 
   toggleCode: async (id) => {
@@ -131,11 +147,24 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
     const adminId = useAuthStore.getState().user?.id;
     await promoRepo.upsert({ ...existing, active: !existing.active, createdBy: adminId });
     set({ codes: get().codes.map((c) => (c.id === id ? { ...c, active: !c.active } : c)) });
+    logAudit({
+      action: 'promo.toggled',
+      entityType: 'promo_code',
+      entityId: id,
+      summary: `${existing.code} ${existing.active ? 'deactivated' : 'activated'}`,
+    });
   },
 
   removeCode: async (id) => {
+    const existing = get().codes.find((c) => c.id === id);
     await promoRepo.remove(id);
     set({ codes: get().codes.filter((c) => c.id !== id) });
+    logAudit({
+      action: 'promo.deleted',
+      entityType: 'promo_code',
+      entityId: id,
+      summary: `Deleted promo ${existing?.code ?? id}`,
+    });
   },
 
   validateCode: async (codeStr, cartSubtotal, branchId, cartLines) => {

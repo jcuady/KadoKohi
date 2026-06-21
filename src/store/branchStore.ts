@@ -5,6 +5,7 @@ import { SEED_BRANCHES } from '../data/seed';
 import { newId } from '../lib/id';
 import { useTableStore } from './tableStore';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { logAudit } from '../lib/audit';
 
 export interface BranchStore {
   branches: Branch[];
@@ -78,6 +79,14 @@ export const useBranchStore = create<BranchStore>()(
             adminPosBranchId: get().adminPosBranchId ?? b.id,
           });
 
+          logAudit({
+            action: 'branch.created',
+            entityType: 'branch',
+            entityId: b.id,
+            branchId: b.id,
+            summary: `Created branch ${b.name}`,
+          });
+
           return b;
         } catch (err) {
           for (const tableId of [...seededTableIds].reverse()) {
@@ -105,9 +114,18 @@ export const useBranchStore = create<BranchStore>()(
         set({
           branches: get().branches.map((br) => (br.id === id ? next : br)),
         });
+        logAudit({
+          action: 'branch.updated',
+          entityType: 'branch',
+          entityId: id,
+          branchId: id,
+          summary: `Updated branch ${next.name}`,
+          metadata: { changedKeys: Object.keys(patch) },
+        });
       },
 
       removeBranch: async (id) => {
+        const deleted = get().branches.find((br) => br.id === id);
         const tableStore = useTableStore.getState();
         await tableStore.hydrateFromRemote().catch(() => undefined);
         for (const table of tableStore.tables.filter((t) => t.branchId === id)) {
@@ -119,6 +137,12 @@ export const useBranchStore = create<BranchStore>()(
         const nextPos =
           get().adminPosBranchId === id ? remaining[0]?.id ?? null : get().adminPosBranchId;
         set({ branches: remaining, adminPosBranchId: nextPos });
+        logAudit({
+          action: 'branch.deleted',
+          entityType: 'branch',
+          entityId: id,
+          summary: `Deleted branch ${deleted?.name ?? id}`,
+        });
       },
 
       getBranch: (id) => get().branches.find((br) => br.id === id),

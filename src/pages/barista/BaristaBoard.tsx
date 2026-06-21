@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Order, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useOrderStore } from '../../store/orderStore';
@@ -32,8 +32,15 @@ export default function BaristaBoard() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
   const hydrateError = useOrderStore((s) => s.hydrateError);
+  const hydrateForBarista = useOrderStore((s) => s.hydrateForBarista);
   const updateOrderFields = useOrderStore((s) => s.updateOrderFields);
   const branches = useBranchStore((s) => s.branches);
+
+  useEffect(() => {
+    if (user?.role === 'barista' && user.branchId) {
+      void hydrateForBarista(user.branchId);
+    }
+  }, [user?.role, user?.branchId, hydrateForBarista]);
 
   const visible = useMemo(() => {
     if (user?.role === 'admin') {

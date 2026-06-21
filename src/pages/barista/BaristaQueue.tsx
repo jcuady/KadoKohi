@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Order, OrderStatus, PaymentStatus } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
@@ -15,9 +15,16 @@ const ALL_CHANNELS = ['online', 'dine-in', 'takeout', 'pos', 'merch'] as const;
 export default function BaristaQueue() {
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
+  const hydrateForBarista = useOrderStore((s) => s.hydrateForBarista);
   const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
   const updatePaymentStatus = useOrderStore((s) => s.updatePaymentStatus);
   const branches = useBranchStore((s) => s.branches);
+
+  useEffect(() => {
+    if (user?.role === 'barista' && user.branchId) {
+      void hydrateForBarista(user.branchId);
+    }
+  }, [user?.role, user?.branchId, hydrateForBarista]);
 
   const visible = useMemo(() => {
     const filtered = orders.filter((o) => ALL_CHANNELS.includes(o.channel as (typeof ALL_CHANNELS)[number]));

@@ -1,8 +1,6 @@
+import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
-import AdminLayout from './layouts/AdminLayout';
-import BaristaLayout from './layouts/BaristaLayout';
-import CustomerLayout from './layouts/CustomerLayout';
 import RoleGate from './components/RoleGate';
 import Home from './pages/Home';
 import Menu from './pages/Menu';
@@ -12,17 +10,6 @@ import Branches from './pages/Branches';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import InternalLogin from './pages/auth/InternalLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminBranches from './pages/admin/AdminBranches';
-import AdminPOS from './pages/admin/AdminPOS';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminMenu from './pages/admin/AdminMenu';
-import AdminEvents from './pages/admin/AdminEvents';
-import AdminTables from './pages/admin/AdminTables';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAuditLog from './pages/admin/AdminAuditLog';
-import AdminVouchers from './pages/admin/AdminVouchers';
-import AdminSettings from './pages/admin/AdminSettings';
 import Events from './pages/Events';
 import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
@@ -34,37 +21,68 @@ import Pastries from './pages/Pastries';
 import Careers from './pages/Careers';
 import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
-import AdminMerch from './pages/admin/AdminMerch';
-import AdminLoyalty from './pages/admin/AdminLoyalty';
-import AdminStamps from './pages/admin/AdminStamps';
-import AdminBoothBookings from './pages/admin/AdminBoothBookings';
-import AdminBoothCatalog from './pages/admin/AdminBoothCatalog';
-import AdminBoothContent from './pages/admin/AdminBoothContent';
-import AdminLandingContent from './pages/admin/AdminLandingContent';
 import BookBooth from './pages/BookBooth';
-import AdminCareers from './pages/admin/AdminCareers';
-import AdminBlog from './pages/admin/AdminBlog';
-import StaffLayout from './layouts/StaffLayout';
-import StaffMerchOrders from './pages/staff/StaffMerchOrders';
-import StaffAllOrders from './pages/staff/StaffAllOrders';
-import StaffBoothBookings from './pages/staff/StaffBoothBookings';
-import InternalAccountSettings from './pages/internal/InternalAccountSettings';
-import BaristaBoard from './pages/barista/BaristaBoard';
-import BaristaQueue from './pages/barista/BaristaQueue';
-import BaristaPOS from './pages/barista/BaristaPOS';
-import BaristaMenu from './pages/barista/BaristaMenu';
-import BaristaStamps from './pages/barista/BaristaStamps';
-import BaristaKioskDisplay from './pages/barista/BaristaKioskDisplay';
-import AccountDashboard from './pages/account/AccountDashboard';
-import AccountOrders from './pages/account/AccountOrders';
-import AccountProfile from './pages/account/AccountProfile';
-import AccountBoothBookings from './pages/account/AccountBoothBookings';
-import AccountVouchers from './pages/account/AccountVouchers';
 import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
 import PublicDocumentTheme from './components/PublicDocumentTheme';
 import SiteCookieConsent from './components/SiteCookieConsent';
+
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
+const BaristaLayout = lazy(() => import('./layouts/BaristaLayout'));
+const StaffLayout = lazy(() => import('./layouts/StaffLayout'));
+const CustomerLayout = lazy(() => import('./layouts/CustomerLayout'));
+
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminBranches = lazy(() => import('./pages/admin/AdminBranches'));
+const AdminPOS = lazy(() => import('./pages/admin/AdminPOS'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminMenu = lazy(() => import('./pages/admin/AdminMenu'));
+const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'));
+const AdminTables = lazy(() => import('./pages/admin/AdminTables'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAuditLog = lazy(() => import('./pages/admin/AdminAuditLog'));
+const AdminVouchers = lazy(() => import('./pages/admin/AdminVouchers'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminMerch = lazy(() => import('./pages/admin/AdminMerch'));
+const AdminLoyalty = lazy(() => import('./pages/admin/AdminLoyalty'));
+const AdminStamps = lazy(() => import('./pages/admin/AdminStamps'));
+const AdminBoothBookings = lazy(() => import('./pages/admin/AdminBoothBookings'));
+const AdminBoothCatalog = lazy(() => import('./pages/admin/AdminBoothCatalog'));
+const AdminBoothContent = lazy(() => import('./pages/admin/AdminBoothContent'));
+const AdminLandingContent = lazy(() => import('./pages/admin/AdminLandingContent'));
+const AdminCareers = lazy(() => import('./pages/admin/AdminCareers'));
+const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
+
+const StaffMerchOrders = lazy(() => import('./pages/staff/StaffMerchOrders'));
+const StaffAllOrders = lazy(() => import('./pages/staff/StaffAllOrders'));
+const StaffBoothBookings = lazy(() => import('./pages/staff/StaffBoothBookings'));
+const InternalAccountSettings = lazy(() => import('./pages/internal/InternalAccountSettings'));
+
+const BaristaBoard = lazy(() => import('./pages/barista/BaristaBoard'));
+const BaristaQueue = lazy(() => import('./pages/barista/BaristaQueue'));
+const BaristaPOS = lazy(() => import('./pages/barista/BaristaPOS'));
+const BaristaMenu = lazy(() => import('./pages/barista/BaristaMenu'));
+const BaristaStamps = lazy(() => import('./pages/barista/BaristaStamps'));
+const BaristaKioskDisplay = lazy(() => import('./pages/barista/BaristaKioskDisplay'));
+
+const AccountDashboard = lazy(() => import('./pages/account/AccountDashboard'));
+const AccountOrders = lazy(() => import('./pages/account/AccountOrders'));
+const AccountProfile = lazy(() => import('./pages/account/AccountProfile'));
+const AccountBoothBookings = lazy(() => import('./pages/account/AccountBoothBookings'));
+const AccountVouchers = lazy(() => import('./pages/account/AccountVouchers'));
+
+function RouteChunkFallback() {
+  return (
+    <div className="min-h-[40vh] flex items-center justify-center text-sm text-kado-dark/70">
+      Loading…
+    </div>
+  );
+}
+
+function LazyRoutes({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteChunkFallback />}>{children}</Suspense>;
+}
 
 export default function App() {
   return (
@@ -107,60 +125,95 @@ export default function App() {
         <Route path="/management-portal" element={<InternalLogin />} />
 
         <Route element={<RoleGate allowed={['admin']} />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="branches" element={<AdminBranches />} />
-            <Route path="pos" element={<AdminPOS />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="menu" element={<AdminMenu />} />
-            <Route path="merch" element={<AdminMerch />} />
-            <Route path="loyalty" element={<AdminLoyalty />} />
-            <Route path="stamps" element={<AdminStamps />} />
-            <Route path="booth-bookings" element={<AdminBoothBookings />} />
-            <Route path="booth-catalog" element={<AdminBoothCatalog />} />
-            <Route path="booth-content" element={<AdminBoothContent />} />
-            <Route path="events" element={<AdminEvents />} />
-            <Route path="tables" element={<AdminTables />} />
-            <Route path="landing" element={<AdminLandingContent />} />
-            <Route path="blog" element={<AdminBlog />} />
-            <Route path="careers" element={<AdminCareers />} />
+          <Route
+            path="/admin"
+            element={
+              <LazyRoutes>
+                <AdminLayout />
+              </LazyRoutes>
+            }
+          >
+            <Route index element={<LazyRoutes><AdminDashboard /></LazyRoutes>} />
+            <Route path="branches" element={<LazyRoutes><AdminBranches /></LazyRoutes>} />
+            <Route path="pos" element={<LazyRoutes><AdminPOS /></LazyRoutes>} />
+            <Route path="orders" element={<LazyRoutes><AdminOrders /></LazyRoutes>} />
+            <Route path="menu" element={<LazyRoutes><AdminMenu /></LazyRoutes>} />
+            <Route path="merch" element={<LazyRoutes><AdminMerch /></LazyRoutes>} />
+            <Route path="loyalty" element={<LazyRoutes><AdminLoyalty /></LazyRoutes>} />
+            <Route path="stamps" element={<LazyRoutes><AdminStamps /></LazyRoutes>} />
+            <Route path="booth-bookings" element={<LazyRoutes><AdminBoothBookings /></LazyRoutes>} />
+            <Route path="booth-catalog" element={<LazyRoutes><AdminBoothCatalog /></LazyRoutes>} />
+            <Route path="booth-content" element={<LazyRoutes><AdminBoothContent /></LazyRoutes>} />
+            <Route path="events" element={<LazyRoutes><AdminEvents /></LazyRoutes>} />
+            <Route path="tables" element={<LazyRoutes><AdminTables /></LazyRoutes>} />
+            <Route path="landing" element={<LazyRoutes><AdminLandingContent /></LazyRoutes>} />
+            <Route path="blog" element={<LazyRoutes><AdminBlog /></LazyRoutes>} />
+            <Route path="careers" element={<LazyRoutes><AdminCareers /></LazyRoutes>} />
             <Route path="pastries" element={<Navigate to="/admin/menu?tab=pastries" replace />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="audit" element={<AdminAuditLog />} />
-            <Route path="vouchers" element={<AdminVouchers />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="users" element={<LazyRoutes><AdminUsers /></LazyRoutes>} />
+            <Route path="audit" element={<LazyRoutes><AdminAuditLog /></LazyRoutes>} />
+            <Route path="vouchers" element={<LazyRoutes><AdminVouchers /></LazyRoutes>} />
+            <Route path="settings" element={<LazyRoutes><AdminSettings /></LazyRoutes>} />
           </Route>
         </Route>
 
         <Route element={<RoleGate allowed={['admin', 'barista']} />}>
-          <Route path="/barista/kiosk" element={<BaristaKioskDisplay />} />
-          <Route path="/barista" element={<BaristaLayout />}>
-            <Route index element={<BaristaBoard />} />
-            <Route path="queue" element={<BaristaQueue />} />
-            <Route path="pos" element={<BaristaPOS />} />
-            <Route path="menu" element={<BaristaMenu />} />
-            <Route path="stamps" element={<BaristaStamps />} />
-            <Route path="settings" element={<InternalAccountSettings portalLabel="Barista" />} />
+          <Route
+            path="/barista/kiosk"
+            element={
+              <LazyRoutes>
+                <BaristaKioskDisplay />
+              </LazyRoutes>
+            }
+          />
+          <Route
+            path="/barista"
+            element={
+              <LazyRoutes>
+                <BaristaLayout />
+              </LazyRoutes>
+            }
+          >
+            <Route index element={<LazyRoutes><BaristaBoard /></LazyRoutes>} />
+            <Route path="queue" element={<LazyRoutes><BaristaQueue /></LazyRoutes>} />
+            <Route path="pos" element={<LazyRoutes><BaristaPOS /></LazyRoutes>} />
+            <Route path="menu" element={<LazyRoutes><BaristaMenu /></LazyRoutes>} />
+            <Route path="stamps" element={<LazyRoutes><BaristaStamps /></LazyRoutes>} />
+            <Route path="settings" element={<LazyRoutes><InternalAccountSettings portalLabel="Barista" /></LazyRoutes>} />
           </Route>
         </Route>
 
         <Route element={<RoleGate allowed={['admin', 'staff']} />}>
-          <Route path="/staff" element={<StaffLayout />}>
-            <Route index element={<StaffMerchOrders />} />
-            <Route path="booth-bookings" element={<StaffBoothBookings />} />
-            <Route path="merch-orders" element={<StaffMerchOrders />} />
-            <Route path="orders" element={<StaffAllOrders />} />
-            <Route path="settings" element={<InternalAccountSettings portalLabel="Staff" />} />
+          <Route
+            path="/staff"
+            element={
+              <LazyRoutes>
+                <StaffLayout />
+              </LazyRoutes>
+            }
+          >
+            <Route index element={<LazyRoutes><StaffMerchOrders /></LazyRoutes>} />
+            <Route path="booth-bookings" element={<LazyRoutes><StaffBoothBookings /></LazyRoutes>} />
+            <Route path="merch-orders" element={<LazyRoutes><StaffMerchOrders /></LazyRoutes>} />
+            <Route path="orders" element={<LazyRoutes><StaffAllOrders /></LazyRoutes>} />
+            <Route path="settings" element={<LazyRoutes><InternalAccountSettings portalLabel="Staff" /></LazyRoutes>} />
           </Route>
         </Route>
 
         <Route element={<RoleGate allowed={['customer', 'admin']} />}>
-          <Route path="/account" element={<CustomerLayout />}>
-            <Route index element={<AccountDashboard />} />
-            <Route path="orders" element={<AccountOrders />} />
-            <Route path="booth" element={<AccountBoothBookings />} />
-            <Route path="vouchers" element={<AccountVouchers />} />
-            <Route path="profile" element={<AccountProfile />} />
+          <Route
+            path="/account"
+            element={
+              <LazyRoutes>
+                <CustomerLayout />
+              </LazyRoutes>
+            }
+          >
+            <Route index element={<LazyRoutes><AccountDashboard /></LazyRoutes>} />
+            <Route path="orders" element={<LazyRoutes><AccountOrders /></LazyRoutes>} />
+            <Route path="booth" element={<LazyRoutes><AccountBoothBookings /></LazyRoutes>} />
+            <Route path="vouchers" element={<LazyRoutes><AccountVouchers /></LazyRoutes>} />
+            <Route path="profile" element={<LazyRoutes><AccountProfile /></LazyRoutes>} />
           </Route>
         </Route>
       </Routes>

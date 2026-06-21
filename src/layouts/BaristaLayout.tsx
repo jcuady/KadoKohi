@@ -16,7 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
 import NotificationToggle from '../components/NotificationToggle';
-import { startOperationsRealtime, refreshOperationsData } from '../lib/supabase/operationsRealtime';
+import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 
 const nav = [
   { to: '/barista', label: 'Board', end: true, icon: LayoutGrid },
@@ -48,8 +48,7 @@ export default function BaristaLayout() {
 
   useEffect(() => {
     if (user?.role !== 'barista' && user?.role !== 'admin') return;
-    startOperationsRealtime();
-    void refreshOperationsData();
+    void hydrateOpsPortal();
   }, [user?.id, user?.role]);
 
   const handleLogout = () => {
