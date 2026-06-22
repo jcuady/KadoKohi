@@ -189,6 +189,24 @@ export function defaultFieldsForNewOrder(paymentMethod?: PaymentMethod): {
   return { status: 'pending', paymentStatus: 'paid' };
 }
 
+/** Counter POS: payment is collected before the ticket hits the bar queue. */
+export type PosPaymentChoice = 'cash' | 'gcash';
+
+export function posPaymentToMethod(choice: PosPaymentChoice): PaymentMethod {
+  return choice === 'gcash' ? 'gcash-qr' : 'pay-at-store';
+}
+
+export function formatPosPaymentLabel(choice: PosPaymentChoice): string {
+  return choice === 'gcash' ? 'GCash' : 'Cash';
+}
+
+export function defaultFieldsForPosOrder(): {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+} {
+  return { status: 'pending', paymentStatus: 'paid' };
+}
+
 /** Guest QR / takeout may cancel until staff moves the order past pending. */
 export function canGuestCancelOrder(order: Pick<Order, 'status' | 'channel'>): boolean {
   return (order.channel === 'dine-in' || order.channel === 'takeout') && order.status === 'pending';

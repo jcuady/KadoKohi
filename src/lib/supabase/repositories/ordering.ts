@@ -1079,14 +1079,21 @@ export const orderingRepo = {
   },
   async upsertSettings(settings: AppSettings) {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.from('kk_app_settings').upsert({
-      id: true,
-      tax_rate: settings.taxRate ?? 0,
-      gcash_qr_image: settings.gcashQrImage?.trim() || null,
-      order_hours: siteConfigFromSettings(settings),
-      updated_at: new Date().toISOString(),
-    });
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .update({
+        tax_rate: settings.taxRate ?? 0,
+        gcash_qr_image: settings.gcashQrImage?.trim() || null,
+        order_hours: siteConfigFromSettings(settings),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', true)
+      .select('id')
+      .maybeSingle();
     if (error) throw error;
+    if (!data) {
+      throw new Error('Settings row not found (kk_app_settings.id = true). Run database migrations.');
+    }
   },
   /** Upload menu product photo to public storage; returns HTTPS URL for kk_products.image. */
   async uploadMenuProductImage(file: File, productId: string): Promise<string> {

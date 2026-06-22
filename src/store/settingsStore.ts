@@ -57,6 +57,8 @@ export interface SettingsStore {
 }
 
 /** App settings from Supabase; no localStorage cache (GCash QR etc. must stay current). */
+let persistChain: Promise<void> = Promise.resolve();
+
 export const useSettingsStore = create<SettingsStore>()((set, get) => ({
       settings: DEFAULTS,
       hydrateFromRemote: async () => {
@@ -69,31 +71,41 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
         }
       },
       updateSettings: async (patch) => {
-        const settings = { ...get().settings, ...patch };
-        await orderingRepo.upsertSettings(settings);
-        set({ settings });
-        logAudit({
-          action: 'settings.updated',
-          entityType: 'settings',
-          entityId: 'app',
-          summary: 'App settings updated',
-          metadata: { changedKeys: Object.keys(patch) },
-        });
+        set({ settings: { ...get().settings, ...patch } });
+        persistChain = persistChain
+          .then(async () => {
+            await orderingRepo.upsertSettings(get().settings);
+            logAudit({
+              action: 'settings.updated',
+              entityType: 'settings',
+              entityId: 'app',
+              summary: 'App settings updated',
+              metadata: { changedKeys: Object.keys(patch) },
+            });
+          })
+          .catch((err) => {
+            throw err;
+          });
+        await persistChain;
       },
       toggleDashTheme: async () => {
-        const settings = {
-          ...get().settings,
-          brandMode: (get().settings.brandMode === 'light' ? 'dark' : 'light') as DashTheme,
-        };
-        await orderingRepo.upsertSettings(settings);
-        set({ settings });
-        logAudit({
-          action: 'settings.updated',
-          entityType: 'settings',
-          entityId: 'app',
-          summary: `Dashboard theme → ${settings.brandMode}`,
-          metadata: { changedKeys: ['brandMode'] },
-        });
+        const brandMode = (get().settings.brandMode === 'light' ? 'dark' : 'light') as DashTheme;
+        set({ settings: { ...get().settings, brandMode } });
+        persistChain = persistChain
+          .then(async () => {
+            await orderingRepo.upsertSettings(get().settings);
+            logAudit({
+              action: 'settings.updated',
+              entityType: 'settings',
+              entityId: 'app',
+              summary: `Dashboard theme → ${brandMode}`,
+              metadata: { changedKeys: ['brandMode'] },
+            });
+          })
+          .catch((err) => {
+            throw err;
+          });
+        await persistChain;
       },
       seed: () => set({ settings: DEFAULTS }),
 }));

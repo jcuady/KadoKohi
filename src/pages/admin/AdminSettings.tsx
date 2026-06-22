@@ -1,11 +1,13 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
-import { AlertTriangle, Check, Loader2, Trash2 } from 'lucide-react';
+import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
+import { AlertTriangle, Check, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { clampTaxRate } from '../../lib/validation';
 
 const RESET_PHRASE = 'RESET ALL DATA';
@@ -13,7 +15,10 @@ const RESET_PHRASE = 'RESET ALL DATA';
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const hydrateFromRemote = useSettingsStore((s) => s.hydrateFromRemote);
+  const orderHours = useOnlineOrderHours();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [hydrating, setHydrating] = useState(true);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [gcashSaving, setGcashSaving] = useState(false);
@@ -24,6 +29,10 @@ export default function AdminSettings() {
   const [resetBusy, setResetBusy] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
+
+  useEffect(() => {
+    void hydrateFromRemote().finally(() => setHydrating(false));
+  }, [hydrateFromRemote]);
 
   const flashSaved = () => {
     setSavedFlash(true);
@@ -39,10 +48,6 @@ export default function AdminSettings() {
         setSaveError(err instanceof Error ? err.message : 'Could not save settings to the database.');
       })
       .finally(() => setSettingsSaving(false));
-  };
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
   };
 
   const handleGcashQr = async (file: File | undefined) => {
@@ -100,13 +105,19 @@ export default function AdminSettings() {
     <div className="dash-page max-w-2xl">
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
+          <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">Admin · Administration</p>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Settings</h1>
           <p className="dash-muted text-sm">
             Global shop configuration — synced to Supabase for all devices and customer-facing pages.
           </p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          {settingsSaving && !gcashSaving && (
+          {hydrating && (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider dash-muted">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…
+            </span>
+          )}
+          {settingsSaving && !gcashSaving && !hydrating && (
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider dash-muted">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…
             </span>
@@ -119,7 +130,13 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {saveError && (
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700" role="alert">
+          {saveError}
+        </p>
+      )}
+
+      <div className="space-y-6">
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Store & tax</h2>
@@ -130,8 +147,10 @@ export default function AdminSettings() {
                 type="text"
                 value={settings.shopName}
                 onChange={(e) => patch({ shopName: e.target.value })}
-                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                disabled={hydrating}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
+              <p className="text-[10px] dash-muted mt-1">Stored for branded outputs and internal references.</p>
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Tax rate (%)</label>
@@ -142,7 +161,8 @@ export default function AdminSettings() {
                 step={0.01}
                 value={settings.taxRate}
                 onChange={(e) => patch({ taxRate: clampTaxRate(Number(e.target.value)) })}
-                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                disabled={hydrating}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
               <p className="text-[10px] dash-muted mt-1">Applied to online cart, QR, takeout, and POS totals.</p>
             </div>
@@ -152,9 +172,27 @@ export default function AdminSettings() {
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Online order hours</h2>
           <p className="text-xs dash-muted leading-relaxed">
-            Controls when customers can checkout from the menu cart. Checkout closes{' '}
+            Controls when customers can checkout from the menu cart, QR dine-in, and takeout. Checkout closes{' '}
             <span className="font-semibold text-kado-dark">10 minutes before close</span>.
           </p>
+          <div
+            className={`rounded-xl border px-4 py-3 text-xs ${
+              orderHours.reason === 'invalid_hours'
+                ? 'border-amber-200 bg-amber-50 text-amber-900'
+                : orderHours.isOpen
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-kado-dark/10 bg-kado-cream/40 dash-muted'
+            }`}
+          >
+            <p className="font-bold uppercase tracking-wider text-[10px] mb-1">
+              {orderHours.reason === 'invalid_hours'
+                ? 'Invalid hours'
+                : orderHours.isOpen
+                  ? 'Checkout open now'
+                  : 'Checkout closed now'}
+            </p>
+            <p>{orderHours.message}</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Open</label>
@@ -162,7 +200,8 @@ export default function AdminSettings() {
                 type="time"
                 value={settings.defaultOpenTime}
                 onChange={(e) => patch({ defaultOpenTime: e.target.value })}
-                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                disabled={hydrating}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
             </div>
             <div>
@@ -171,7 +210,8 @@ export default function AdminSettings() {
                 type="time"
                 value={settings.defaultCloseTime}
                 onChange={(e) => patch({ defaultCloseTime: e.target.value })}
-                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                disabled={hydrating}
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
             </div>
           </div>
@@ -181,7 +221,7 @@ export default function AdminSettings() {
           <h2 className="font-display font-bold text-lg dash-heading">GCash QR</h2>
           <p className="text-xs dash-muted">
             Shown on QR dine-in/takeout, online cart, and My Orders. Uploads to Supabase Storage and saves the
-            public URL in <code className="text-[10px]">kk_app_settings.gcash_qr_image</code>.
+            public URL on the settings row.
           </p>
           <input
             ref={fileRef}
@@ -230,13 +270,22 @@ export default function AdminSettings() {
             </button>
           )}
           {uploadError && <p className="text-xs text-red-600 font-medium">{uploadError}</p>}
-          {saveError && <p className="text-xs text-red-600 font-medium">{saveError}</p>}
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
-          <h2 className="font-display font-bold text-lg dash-heading">Contact page & footer</h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="font-display font-bold text-lg dash-heading">Contact page & footer</h2>
+            <a
+              href="/contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-kado-red hover:underline"
+            >
+              Preview <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
           <p className="text-xs dash-muted">
-            Shown on /contact and the site footer.
+            Shown on <Link to="/contact" className="text-kado-red font-semibold hover:underline">/contact</Link> and the site footer.
           </p>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Public email</label>
@@ -355,12 +404,16 @@ export default function AdminSettings() {
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">
           <h2 className="font-display font-bold text-lg dash-heading">Admin dashboard theme</h2>
+          <p className="text-xs dash-muted">
+            Affects the admin, barista, and staff portals only. Customer-facing pages always use brand light mode.
+          </p>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">Brand mode</label>
             <select
               value={settings.brandMode}
               onChange={(e) => patch({ brandMode: e.target.value as DashTheme })}
-              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+              disabled={hydrating}
+              className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
             >
               <option value="light">Light (default)</option>
               <option value="dark">Dark</option>
@@ -459,9 +512,9 @@ export default function AdminSettings() {
 
         <p className="text-xs dash-muted">
           Changes save to Supabase when you edit a field. GCash QR uploads to the <strong>kado-gcash-qr</strong>{' '}
-          storage bucket (public read) and the URL is stored on the settings row.
+          storage bucket (public read). Contact and hours live in the settings row alongside tax rate.
         </p>
-      </form>
+      </div>
     </div>
   );
 }

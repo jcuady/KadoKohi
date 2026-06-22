@@ -59,6 +59,15 @@ function timeAgo(iso: string): string {
     d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+function channelBadge(metadata: Record<string, unknown> | undefined): string | null {
+  const channel = metadata?.channel;
+  if (typeof channel !== 'string') return null;
+  if (channel === 'pos') return 'POS';
+  if (channel === 'dine-in') return 'Dine-in';
+  if (channel === 'takeout') return 'Takeout';
+  return channel;
+}
+
 function matchesAuditSearch(log: AuditLogRow, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -177,6 +186,11 @@ export default function AdminAuditLog() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold text-sm dash-heading">{ACTION_LABEL[log.action] ?? log.action}</span>
+                  {channelBadge(log.metadata) && (
+                    <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-kado-cream text-kado-dark border-kado-dark/15">
+                      {channelBadge(log.metadata)}
+                    </span>
+                  )}
                   <span
                     className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
                       ROLE_BADGE[log.actorRole ?? ''] ?? 'dash-card-alt dash-muted dash-border'
