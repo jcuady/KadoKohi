@@ -2,61 +2,74 @@ import { useRef } from 'react';
 import { motion } from 'motion/react';
 import ResilientImage from '@/components/ui/ResilientImage';
 import { ABOUT_ORIGINS } from '@/content/aboutPage';
-import { AboutSectionHeader, AboutSectionShell } from './AboutUi';
+import { ABOUT_EDITORIAL } from '@/content/aboutPage';
+import { AboutSectionShell } from './AboutUi';
+import {
+  AboutEditorialGrid,
+  EditorialColumns,
+  EditorialHeadline,
+} from './AboutEditorial';
 import { useParallaxY } from './useAboutMotion';
 
 export default function AboutOrigins() {
   const imageWrapRef = useRef<HTMLDivElement>(null);
-  useParallaxY(imageWrapRef, 18);
+  useParallaxY(imageWrapRef, 14);
 
   return (
-    <AboutSectionShell>
-      <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-        <motion.div
-          initial={{ opacity: 0, x: -24 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-8%' }}
-          transition={{ duration: 0.65 }}
-          className="relative min-w-0"
-        >
-          <div
-            ref={imageWrapRef}
-            className="relative overflow-hidden rounded-2xl border border-kado-dark/10 bg-kado-cream shadow-[0_24px_60px_rgba(25,25,25,0.12)]"
+    <AboutSectionShell className="bg-kado-cream" innerClassName="max-w-none">
+      <AboutEditorialGrid className="mx-auto max-w-6xl">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-0">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-8%' }}
+            transition={{ duration: 0.6 }}
+            className="relative lg:col-span-5 lg:pr-8"
           >
-            <div className="aspect-[4/5] max-h-[min(520px,70vh)] lg:max-h-none">
+            <div
+              ref={imageWrapRef}
+              className="relative aspect-[4/5] max-h-[min(520px,65vh)] overflow-hidden border border-kado-dark/10 lg:max-h-none"
+            >
               <ResilientImage
                 src={ABOUT_ORIGINS.imageSrc}
                 fallbackSrc={ABOUT_ORIGINS.imageFallback}
                 alt={ABOUT_ORIGINS.imageAlt}
-                className="h-full w-full object-cover"
+                className="about-editorial-photo h-full w-full object-cover"
               />
             </div>
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-kado-dark/30 via-transparent to-transparent" />
-          </div>
-        </motion.div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-3 -right-3 hidden h-20 w-20 border-2 border-kado-red bg-kado-red/10 lg:block"
+            />
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-8%' }}
-          transition={{ duration: 0.65, delay: 0.08 }}
-          className="min-w-0"
-        >
-          <AboutSectionHeader
-            align="left"
-            eyebrow={ABOUT_ORIGINS.eyebrow}
-            title={ABOUT_ORIGINS.title}
-          />
-          <p className="kado-body mb-6 mt-5 font-semibold text-kado-dark/90">{ABOUT_ORIGINS.lead}</p>
-          <div className="space-y-4">
-            {ABOUT_ORIGINS.paragraphs.map((p) => (
-              <p key={p.slice(0, 48)} className="kado-body text-kado-dark/70">
-                {p}
-              </p>
-            ))}
+          <div className="flex flex-col justify-center lg:col-span-7 lg:border-l lg:border-kado-dark/10 lg:pl-10 xl:pl-14">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.55 }}
+            >
+              <p className="kado-label mb-4 text-kado-red">{ABOUT_ORIGINS.eyebrow}</p>
+              <EditorialHeadline as="h2" lines={ABOUT_EDITORIAL.aboutLines} size="section" className="mb-6" />
+              <p className="kado-body mb-8 font-semibold text-kado-dark/90">{ABOUT_ORIGINS.lead}</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <EditorialColumns>
+                {ABOUT_ORIGINS.paragraphs.map((p) => (
+                  <p key={p.slice(0, 48)}>{p}</p>
+                ))}
+              </EditorialColumns>
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </AboutEditorialGrid>
     </AboutSectionShell>
   );
 }

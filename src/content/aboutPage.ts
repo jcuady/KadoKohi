@@ -4,77 +4,69 @@ export const ABOUT_HERO = {
   eyebrow: 'About Kado Kohi',
   softOpeningLabel: 'Soft Opening',
   softOpeningDate: 'February 15, 2026',
-  headline: 'Coffee culture at the corner.',
+  headline: 'Born at the corner.',
   tagline:
     'A Japanese-inspired urban tambayan where craft coffee, premium matcha, and Marikina community share the same ritual.',
   locationNote: 'J.P. Laurel corner Mt. Everest · Sta. Elena, Marikina City',
-  heroImage: '/featuredmarikina/kadom1.jpg',
-  heroImageFallback: '/social/cafe-latte.png',
-  heroImageAlt: 'Kado Kohi cafe interior — warm light and bar craft in Marikina',
+  heroImageSrc: '/featuredmarikina/kadom2.jpg',
+  heroImageFallback: '/social/matcha-latte.png',
+  heroImageAlt: 'Matcha and craft coffee at Kado Kohi Marikina',
 } as const;
 
-export const ABOUT_PHILOSOPHY = {
-  eyebrow: 'Philosophy',
-  titleLine1: 'Crafted from passion.',
-  titleLine2: 'Poured with purpose.',
-  body:
-    'Kado (角) means corner. Kohi means coffee. We built a minimalist sanctuary where Japanese restraint meets Filipino warmth — and every cup is the bridge between them.',
-} as const;
-
-export const ABOUT_SIGNATURE = {
-  eyebrow: 'Signature Series',
-  title: 'Gallery of pours.',
-  intro: 'Three pillars of the bar — matcha craft, signature latte, and hojicha calm.',
-  drinks: [
-    {
-      name: 'Matcha Oat Latte',
-      tag: 'The Matcha',
-      price: 'from ₱150',
-      image: '/social/matcha-latte.png',
-      to: '/menu',
-    },
-    {
-      name: 'KADO Latte',
-      tag: 'The Signature',
-      price: 'from ₱150',
-      image: '/social/cafe-latte.png',
-      to: '/menu',
-    },
-    {
-      name: 'Hojicha Oat',
-      tag: 'The Hojicha',
-      price: 'from ₱150',
-      image: '/social/matcha-series.png',
-      to: '/menu',
-    },
-  ],
-} as const;
-
-export const ABOUT_WISDOM = {
-  eyebrow: 'The Corner',
-  quote: 'A sip of warmth, a world of flavor.',
-  body:
-    'Premium without pretense — wood, concrete, warm light, and a bar you can watch craft your ritual. This is Marikina’s tambayan for early risers, creatives, and anyone who takes their cup seriously.',
-  imageSrc: '/featuredmarikina/kadom2.jpg',
-  imageFallback: '/social/matcha-latte.png',
-  imageAlt: 'Kado Kohi bar and seating in Sta. Elena, Marikina',
-} as const;
-
-export const ABOUT_GALLERY = {
-  eyebrow: 'Legacy',
-  title: 'A place to feed our corner.',
-  images: [
-    { src: '/booth-photos/booth-1.jpg', fallback: '/social/cafe-latte.png', alt: 'Community at Kado Kohi' },
-    { src: '/booth-photos/booth-2.jpg', fallback: '/social/matcha-latte.png', alt: 'Kado Kohi booth and events' },
-    { src: '/booth-photos/booth-3.jpg', fallback: '/social/matcha-series.png', alt: 'Coffee craft at the bar' },
-    { src: '/mix-match/kukido1.jpg', fallback: '/social/coffee-series.png', alt: 'Collaborations and seasonal specials' },
-  ],
-} as const;
-
-export const ABOUT_VOICES = {
-  eyebrow: 'Voices of the corner',
-  title: 'What neighbors are saying.',
-  intro: '4.9 stars on Google — real guests, real tambayan moments.',
+/** Hatton-style editorial headlines — accent words use kado-red on dark / cream panels. */
+export const ABOUT_EDITORIAL = {
+  heroLines: [
+    [
+      { text: 'Rooted in ', accent: false },
+      { text: 'Matcha', accent: true },
+    ],
+    [
+      { text: 'Reshaping ', accent: false },
+      { text: 'Ritual', accent: true },
+    ],
+  ] as const,
+  aboutLines: [
+    [
+      { text: 'About ', accent: false },
+      { text: 'Kado Kohi', accent: true },
+    ],
+  ] as const,
+  craftLines: [
+    [
+      { text: 'Crafting the ', accent: false },
+      { text: 'Unconventional', accent: true },
+    ],
+  ] as const,
+  futureParts: [
+    { text: 'Crafting the future of ', accent: false },
+    { text: 'coffee', accent: true },
+    { text: ' by blending ', accent: false },
+    { text: 'tradition', accent: true },
+    { text: ' and ', accent: false },
+    { text: 'innovation', accent: true },
+    { text: '.', accent: false },
+  ] as const,
+  commitmentLines: [
+    [
+      { text: 'Our ', accent: false },
+      { text: 'Commitment', accent: true },
+    ],
+  ] as const,
+  philosophyLines: [
+    [
+      { text: 'How we ', accent: false },
+      { text: 'Show Up', accent: true },
+    ],
+  ] as const,
+  journeyLines: [
+    [
+      { text: 'Evolution of a ', accent: false },
+      { text: 'Tambayan', accent: true },
+    ],
+  ] as const,
+  marqueeWords: ['Craft', 'Tambayan', 'Matcha', 'Marikina', 'Kohi', 'Community', 'Ritual', 'Corner'] as const,
+  processLabel: 'From concept to craftsmanship',
+  discoverCta: { label: 'Discover our menu', to: '/menu' },
 } as const;
 
 export const ABOUT_STATS = [

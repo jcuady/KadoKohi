@@ -107,9 +107,11 @@ export function useRevealLines(
 
     const ctx = gsap.context(() => {
       root.querySelectorAll(lineSelector).forEach((line) => {
+        const horizontal = line.classList.contains('commitment-accent-h');
         gsap.from(line, {
-          scaleY: 0,
-          transformOrigin: 'top center',
+          scaleX: horizontal ? 0 : 1,
+          scaleY: horizontal ? 1 : 0,
+          transformOrigin: horizontal ? 'left center' : 'top center',
           duration: 0.8,
           ease: 'power3.out',
           scrollTrigger: {

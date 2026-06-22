@@ -2,42 +2,49 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ABOUT_EXPERIENCE } from '@/content/aboutPage';
-import { AboutSectionHeader, AboutSectionShell } from './AboutUi';
+import { AboutSectionShell } from './AboutUi';
+import { AboutEditorialGrid, EditorialHeadline } from './AboutEditorial';
 
 export default function AboutExperience() {
   return (
     <AboutSectionShell className="bg-[#FAF7F2]">
-      <div className="mb-10 md:mb-12">
-        <AboutSectionHeader
-          eyebrow={ABOUT_EXPERIENCE.eyebrow}
-          title={ABOUT_EXPERIENCE.title}
-        />
-      </div>
+      <AboutEditorialGrid>
+        <div className="mb-10 md:mb-12">
+          <p className="kado-label mb-3 text-kado-red">{ABOUT_EXPERIENCE.eyebrow}</p>
+          <EditorialHeadline
+            as="h2"
+            lines={[[{ text: 'More Than a ', accent: false }, { text: 'Cup', accent: true }]]}
+            size="section"
+          />
+        </div>
 
-      <div className="about-scroll-rail about-scroll-rail--desktop-stack lg:grid lg:grid-cols-3 lg:gap-5">
-        {ABOUT_EXPERIENCE.items.map((item, i) => (
-          <motion.div
-            key={item.title}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: i * 0.08 }}
-            className="w-[min(88vw,20rem)] lg:w-auto"
-          >
-            <article className="flex h-full min-h-[200px] flex-col rounded-2xl border border-kado-dark/8 bg-white p-6 shadow-sm sm:p-7">
-              <h3 className="kado-h3 mb-2 text-kado-dark">{item.title}</h3>
-              <p className="kado-body-sm mb-6 flex-1 text-kado-dark/70">{item.body}</p>
-              <Link
-                to={item.to}
-                className="kado-label inline-flex min-h-[44px] items-center gap-2 text-kado-red transition-colors hover:text-kado-red-hover"
-              >
-                {item.label}
-                <ArrowUpRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </article>
-          </motion.div>
-        ))}
-      </div>
+        <div className="about-scroll-rail about-scroll-rail--desktop-stack lg:grid lg:grid-cols-3 lg:gap-px lg:border lg:border-kado-dark/10 lg:bg-kado-dark/10">
+          {ABOUT_EXPERIENCE.items.map((item, i) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.45, delay: i * 0.07 }}
+              className="w-[min(88vw,20rem)] lg:w-auto"
+            >
+              <article className="flex h-full min-h-[200px] flex-col border border-kado-dark/10 bg-white p-6 lg:border-0 lg:p-8">
+                <h3 className="font-display text-base font-bold uppercase tracking-tight text-kado-dark sm:text-lg">
+                  {item.title}
+                </h3>
+                <p className="kado-body-sm mt-3 mb-6 flex-1 text-kado-dark/70">{item.body}</p>
+                <Link
+                  to={item.to}
+                  className="kado-label inline-flex min-h-[44px] items-center gap-2 text-kado-red transition-colors hover:text-kado-red-hover"
+                >
+                  {item.label}
+                  <ArrowUpRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </article>
+            </motion.div>
+          ))}
+        </div>
+      </AboutEditorialGrid>
     </AboutSectionShell>
   );
 }

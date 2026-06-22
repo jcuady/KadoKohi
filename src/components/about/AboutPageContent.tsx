@@ -1,29 +1,27 @@
 import PageSeoBlurb from '@/components/seo/PageSeoBlurb';
 import AboutHero from './AboutHero';
-import AboutPhilosophy from './AboutPhilosophy';
-import AboutSignatureGallery from './AboutSignatureGallery';
+import AboutOrigins from './AboutOrigins';
+import { AboutMarqueeBand } from './AboutEditorial';
 import AboutCommitment from './AboutCommitment';
-import AboutWisdom from './AboutWisdom';
-import AboutGallery from './AboutGallery';
+import AboutValues from './AboutValues';
 import AboutTimeline from './AboutTimeline';
-import AboutVoices from './AboutVoices';
+import AboutSpace from './AboutSpace';
+import AboutExperience from './AboutExperience';
 import AboutCta from './AboutCta';
 
-/**
- * Museum-gallery About page — editorial arches, parallax, 3D cup, Kado brand tokens.
- * Layout inspired by modern specialty-coffee editorial sites; content is Kado Kohi.
- */
+/** Editorial About page — Hatton-inspired layout, Kado Kohi brand tokens. */
 export default function AboutPageContent() {
   return (
     <div className="flex w-full min-w-0 flex-col bg-kado-cream text-kado-dark">
       <AboutHero />
-      <AboutPhilosophy />
-      <AboutSignatureGallery />
+      <AboutOrigins />
+      <AboutMarqueeBand />
       <AboutCommitment />
-      <AboutWisdom />
-      <AboutGallery />
+      <AboutValues />
+      <AboutMarqueeBand reverse />
       <AboutTimeline />
-      <AboutVoices />
+      <AboutSpace />
+      <AboutExperience />
       <AboutCta />
       <PageSeoBlurb />
     </div>

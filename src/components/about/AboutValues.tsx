@@ -1,119 +1,98 @@
 import { useRef } from 'react';
 import { motion } from 'motion/react';
 import { Coffee, Heart, Sparkles, Users } from 'lucide-react';
-import { ABOUT_VALUES } from '@/content/aboutPage';
-import { AboutKanjiWatermark, AboutSectionHeader, AboutSectionShell } from './AboutUi';
+import ResilientImage from '@/components/ui/ResilientImage';
+import { ABOUT_VALUES, ABOUT_SPACE } from '@/content/aboutPage';
+import { ABOUT_EDITORIAL } from '@/content/aboutPage';
+import { AboutSectionShell } from './AboutUi';
+import {
+  AboutEditorialGrid,
+  EditorialCtaLink,
+  EditorialHeadline,
+} from './AboutEditorial';
 import { useStaggerReveal } from './useAboutMotion';
 import { cn } from '@/lib/utils';
 
 const icons = [Coffee, Heart, Users, Sparkles] as const;
-
-const bentoLayout = [
-  'md:col-span-2 lg:col-span-7 lg:row-span-2',
-  'lg:col-span-5',
-  'lg:col-span-5',
-  'md:col-span-2 lg:col-span-12',
-] as const;
 
 export default function AboutValues() {
   const gridRef = useRef<HTMLDivElement>(null);
   useStaggerReveal(gridRef, '.philosophy-card');
 
   return (
-    <AboutSectionShell className="relative overflow-hidden bg-kado-cream" id="about-philosophy">
-      <AboutKanjiWatermark className="left-[-3rem] top-1/2 -translate-y-1/2 text-[clamp(8rem,28vw,14rem)] text-kado-dark/[0.04]" />
-
-      <div className="relative mb-10 md:mb-14">
-        <AboutSectionHeader
-          eyebrow={ABOUT_VALUES.eyebrow}
-          title={ABOUT_VALUES.title}
-          intro={ABOUT_VALUES.intro}
-        />
-      </div>
-
-      <div
-        ref={gridRef}
-        className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5"
-      >
-        {ABOUT_VALUES.items.map((item, i) => {
-          const Icon = icons[i] ?? Coffee;
-          const featured = i === 0;
-          const strip = i === 3;
-
-          return (
-            <motion.article
-              key={item.title}
-              whileHover={{ y: featured ? -2 : -4 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-              className={cn(
-                'philosophy-card group relative overflow-hidden rounded-2xl border p-6 sm:p-7',
-                bentoLayout[i],
-                featured
-                  ? 'min-h-[240px] border-kado-red/25 bg-gradient-to-br from-kado-red via-kado-red to-[#6d1216] text-kado-cream shadow-[0_24px_60px_rgba(158,24,29,0.28)] sm:min-h-[280px] lg:min-h-[320px] lg:p-9'
-                  : strip
-                    ? 'border-kado-dark/8 bg-white sm:flex sm:items-center sm:justify-between sm:gap-8 lg:p-8'
-                    : 'border-kado-dark/8 bg-white shadow-sm',
-              )}
-            >
-              {!featured ? (
-                <div
-                  aria-hidden
-                  className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-kado-red/[0.04] transition-transform duration-500 group-hover:scale-125"
-                />
-              ) : null}
-
-              <div className={cn('relative', strip && 'sm:max-w-xl')}>
-                <div
-                  className={cn(
-                    'mb-5 flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
-                    featured
-                      ? 'bg-kado-cream/15 text-kado-cream'
-                      : 'bg-kado-cream text-kado-red group-hover:bg-kado-red group-hover:text-kado-cream',
-                  )}
-                >
-                  <Icon className="h-5 w-5" aria-hidden />
+    <>
+      {/* Crafting the unconventional — overlapping type + image */}
+      <AboutSectionShell className="relative overflow-hidden bg-kado-dark p-0 text-kado-cream sm:py-0" innerClassName="max-w-none">
+        <AboutEditorialGrid dark>
+          <div className="relative grid min-h-[min(70vh,36rem)] lg:grid-cols-12">
+            <div className="relative z-10 flex flex-col justify-end px-[max(1rem,env(safe-area-inset-left))] py-14 sm:px-6 sm:py-20 lg:col-span-7 lg:py-24 pr-[max(1rem,env(safe-area-inset-right))]">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <EditorialHeadline as="h2" dark lines={ABOUT_EDITORIAL.craftLines} size="section" />
+                <p className="kado-label mt-6 text-kado-cream/50">{ABOUT_EDITORIAL.processLabel}</p>
+                <div className="mt-8">
+                  <EditorialCtaLink dark to={ABOUT_EDITORIAL.discoverCta.to} label={ABOUT_EDITORIAL.discoverCta.label} />
                 </div>
-                <h3
+              </motion.div>
+            </div>
+            <div className="relative min-h-[40vh] lg:col-span-5 lg:min-h-[inherit]">
+              <ResilientImage
+                src={ABOUT_SPACE.imageSrc}
+                fallbackSrc={ABOUT_SPACE.imageFallback}
+                alt={ABOUT_SPACE.imageAlt}
+                className="about-editorial-photo absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/30 to-transparent lg:bg-gradient-to-r lg:from-kado-dark lg:via-kado-dark/25 lg:to-transparent" />
+            </div>
+          </div>
+        </AboutEditorialGrid>
+      </AboutSectionShell>
+
+      {/* Philosophy grid */}
+      <AboutSectionShell className="bg-[#FAF7F2]" id="about-philosophy">
+        <AboutEditorialGrid>
+          <div className="mb-10 md:mb-14">
+            <p className="kado-label mb-3 text-kado-red">{ABOUT_VALUES.eyebrow}</p>
+            <EditorialHeadline as="h2" lines={ABOUT_EDITORIAL.philosophyLines} size="section" className="mb-4" />
+            <p className="kado-body max-w-2xl text-kado-dark/70">{ABOUT_VALUES.intro}</p>
+          </div>
+
+          <div ref={gridRef} className="grid grid-cols-1 gap-px border border-kado-dark/10 bg-kado-dark/10 sm:grid-cols-2">
+            {ABOUT_VALUES.items.map((item, i) => {
+              const Icon = icons[i] ?? Coffee;
+              return (
+                <motion.article
+                  key={item.title}
+                  whileHover={{ backgroundColor: 'var(--color-kado-cream)' }}
                   className={cn(
-                    'mb-2 font-display font-semibold',
-                    featured ? 'text-2xl sm:text-3xl text-kado-cream' : 'kado-h3 text-kado-dark',
-                    strip && 'sm:mb-1',
+                    'philosophy-card group bg-white p-6 sm:p-8',
+                    i === 0 && 'sm:col-span-2 lg:col-span-1',
                   )}
                 >
-                  {item.title}
-                </h3>
-                <p
-                  className={cn(
-                    'kado-body-sm',
-                    featured ? 'max-w-md text-kado-cream/85' : 'text-kado-dark/70',
-                    strip && 'sm:text-base',
-                  )}
-                >
-                  {item.body}
-                </p>
-              </div>
+                  <Icon className="mb-5 h-5 w-5 text-kado-red" aria-hidden />
+                  <h3 className="font-display text-lg font-bold uppercase tracking-tight text-kado-dark sm:text-xl">
+                    {item.title}
+                  </h3>
+                  <p className="kado-body-sm mt-3 text-kado-dark/70">{item.body}</p>
+                </motion.article>
+              );
+            })}
+          </div>
 
-              {strip ? (
-                <p
-                  aria-hidden
-                  className="mt-4 font-display text-5xl font-black text-kado-red/10 sm:mt-0 sm:shrink-0 sm:text-6xl"
-                >
-                  角
-                </p>
-              ) : null}
-
-              {featured ? (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -bottom-10 -right-6 font-display text-[clamp(5rem,18vw,9rem)] font-black leading-none text-white/[0.08]"
-                >
-                  角
-                </div>
-              ) : null}
-            </motion.article>
-          );
-        })}
-      </div>
-    </AboutSectionShell>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 border-t border-kado-dark/10 pt-10"
+          >
+            <EditorialHeadline as="p" parts={ABOUT_EDITORIAL.futureParts} size="inline" className="max-w-4xl" />
+          </motion.div>
+        </AboutEditorialGrid>
+      </AboutSectionShell>
+    </>
   );
 }
