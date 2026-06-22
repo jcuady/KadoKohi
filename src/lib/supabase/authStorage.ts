@@ -56,4 +56,48 @@ export function prepareAuthStorageSync(
   supabaseUrl: string | undefined = import.meta.env.VITE_SUPABASE_URL as string | undefined,
 ): void {
   purgeForeignSupabaseAuthKeysSync(supabaseUrl);
+  pruneCorruptLocalAuthSync(supabaseUrl);
+}
+
+type StoredAuthPayload = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+};
+
+/** Read parsed session from localStorage without touching the Auth API. */
+export function readStoredAuthPayload(
+  supabaseUrl: string | undefined = import.meta.env.VITE_SUPABASE_URL as string | undefined,
+): StoredAuthPayload | null {
+  if (typeof window === 'undefined') return null;
+  const key = getSupabaseAuthStorageKey(supabaseUrl);
+  if (!key) return null;
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const session = (parsed.currentSession ?? parsed) as StoredAuthPayload;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/** Drop malformed or token-less auth blobs before GoTrue tries to refresh them. */
+export function pruneCorruptLocalAuthSync(
+  supabaseUrl: string | undefined = import.meta.env.VITE_SUPABASE_URL as string | undefined,
+): void {
+  if (typeof window === 'undefined') return;
+  const key = getSupabaseAuthStorageKey(supabaseUrl);
+  if (!key) return;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const session = readStoredAuthPayload(supabaseUrl);
+    if (!session?.refresh_token || !session.access_token) {
+      clearSupabaseAuthStorageSync(supabaseUrl);
+    }
+  } catch {
+    clearSupabaseAuthStorageSync(supabaseUrl);
+  }
 }

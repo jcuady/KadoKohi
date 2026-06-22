@@ -7,7 +7,7 @@ import { useAuthStore } from './store/authStore';
 import { hydrateGlobalMinimal } from './lib/bootstrapHydration';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
-import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
+import { isAuthListenerPaused, recoverStaleAuthSession, startAuthAutoRefresh, stopAuthAutoRefresh } from './lib/supabase/authSession';
 import { registerSW } from 'virtual:pwa-register';
 
 import { ensurePublishedCms } from './lib/cmsBootstrap';
@@ -16,7 +16,10 @@ function Bootstrap() {
   const initAuth = useAuthStore((s) => s.initFromSupabase);
 
   useEffect(() => {
-    void recoverStaleAuthSession().then(() => initAuth());
+    void recoverStaleAuthSession().then(() => {
+      startAuthAutoRefresh();
+      return initAuth();
+    });
     void (async () => {
       await ensurePublishedCms();
       await hydrateGlobalMinimal();
@@ -32,11 +35,13 @@ function Bootstrap() {
       // state (calling logout()/signOut() here would re-fire SIGNED_OUT → loop).
       if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
         stopOperationsRealtime();
+        stopAuthAutoRefresh();
         useAuthStore.setState({ user: null, loading: false });
         return;
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (isAuthListenerPaused()) return;
+        startAuthAutoRefresh();
         // Defer so we don't re-enter the auth lock held during this callback.
         setTimeout(() => {
           if (isAuthListenerPaused()) return;

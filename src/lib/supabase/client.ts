@@ -33,7 +33,8 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseKey!, {
       auth: {
         persistSession: true,
-        autoRefreshToken: true,
+        // ponytail: defer auto-refresh until recoverStaleAuthSession() clears dead tokens.
+        autoRefreshToken: false,
         detectSessionInUrl: true,
       },
     })

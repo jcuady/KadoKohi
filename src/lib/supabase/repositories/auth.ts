@@ -7,6 +7,8 @@ import {
   isInvalidRefreshTokenError,
   isRateLimitAuthError,
   recoverStaleAuthSession,
+  startAuthAutoRefresh,
+  stopAuthAutoRefresh,
 } from '../authSession';
 
 function parseEdgePayload(data: unknown): void {
@@ -37,6 +39,7 @@ export const authRepo = {
     await recoverStaleAuthSession();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    startAuthAutoRefresh();
     return data;
   },
   async signUp(email: string, password: string, name: string, phone: string) {
@@ -76,6 +79,7 @@ export const authRepo = {
         }
         throw signInError;
       }
+      startAuthAutoRefresh();
       return signInData;
     })();
 
@@ -87,6 +91,7 @@ export const authRepo = {
   },
   async signOut() {
     if (!supabase) return;
+    stopAuthAutoRefresh();
     await supabase.auth.signOut();
   },
   async session() {

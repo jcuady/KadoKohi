@@ -3,6 +3,7 @@ import { supabase } from './client';
 import {
   clearSupabaseAuthStorageSync,
   hasLocalAuthStorage,
+  pruneCorruptLocalAuthSync,
   purgeForeignSupabaseAuthKeysSync,
 } from './authStorage';
 
@@ -80,12 +81,33 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
 
 /** Drop corrupted local auth state so sign-up/sign-in are not blocked by refresh loops. */
 export async function invalidateLocalAuthSession(): Promise<void> {
+  stopAuthAutoRefresh();
   clearSupabaseAuthStorageSync();
   if (!supabase) return;
   try {
     await supabase.auth.signOut({ scope: 'local' });
   } catch {
     // Storage is already cleared; ignore lock errors.
+  }
+}
+
+/** Resume background token refresh after a valid session is confirmed. */
+export function startAuthAutoRefresh(): void {
+  if (!supabase) return;
+  try {
+    supabase.auth.startAutoRefresh();
+  } catch {
+    // Older auth clients may not expose startAutoRefresh; safe to ignore.
+  }
+}
+
+/** Pause background refresh during sign-out or before clearing bad tokens. */
+export function stopAuthAutoRefresh(): void {
+  if (!supabase) return;
+  try {
+    supabase.auth.stopAutoRefresh();
+  } catch {
+    // Safe to ignore when auth is not initialized.
   }
 }
 
@@ -96,16 +118,34 @@ export async function clearLocalAuthBeforeSignup(): Promise<void> {
 
 export async function recoverStaleAuthSession(): Promise<void> {
   if (!supabase) return;
+  stopAuthAutoRefresh();
   purgeForeignSupabaseAuthKeysSync();
+  pruneCorruptLocalAuthSync();
   try {
     const { data, error } = await supabase.auth.getSession();
-    if (error && isInvalidRefreshTokenError(error)) {
-      await invalidateLocalAuthSession();
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        await invalidateLocalAuthSession();
+      }
       return;
     }
-    // getSession() can return null session while a bad refresh token remains in storage.
-    if (!data.session && hasLocalAuthStorage()) {
-      await invalidateLocalAuthSession();
+
+    const session = data.session;
+    if (!session) {
+      if (hasLocalAuthStorage()) {
+        await invalidateLocalAuthSession();
+      }
+      return;
+    }
+
+    const expiresAtMs = (session.expires_at ?? 0) * 1000;
+    const needsRefresh = expiresAtMs > 0 && expiresAtMs < Date.now() + 60_000;
+    if (needsRefresh) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError && isInvalidRefreshTokenError(refreshError)) {
+        await invalidateLocalAuthSession();
+      }
+      return;
     }
   } catch (err) {
     if (isInvalidRefreshTokenError(err)) {
