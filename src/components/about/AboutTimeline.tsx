@@ -35,7 +35,7 @@ export default function AboutTimeline() {
   return (
     <AboutSectionShell
       ref={sectionRef}
-      className="bg-[#FAF7F2]"
+      className="about-parchment bg-[#FAF7F2]"
       innerClassName="max-w-5xl"
       id="about-journey"
     >
