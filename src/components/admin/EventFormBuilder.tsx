@@ -28,9 +28,16 @@ type Props = {
   assignedFormId?: string | null;
   onAssignForm?: (formId: string | null) => void;
   compact?: boolean;
+  /** Full-page split layout for Admin Events → Form templates tab. */
+  variant?: 'default' | 'page';
 };
 
-export default function EventFormBuilder({ assignedFormId, onAssignForm, compact }: Props) {
+export default function EventFormBuilder({
+  assignedFormId,
+  onAssignForm,
+  compact,
+  variant = 'default',
+}: Props) {
   const forms = useEventFormStore((s) => s.forms);
   const hydrated = useEventFormStore((s) => s.hydrated);
   const hydrate = useEventFormStore((s) => s.hydrateFromRemote);
@@ -145,54 +152,30 @@ export default function EventFormBuilder({ assignedFormId, onAssignForm, compact
     );
   }
 
-  return (
-    <div className={compact ? 'space-y-3' : 'rounded-2xl dash-card border p-5 space-y-4'}>
-      {!compact && (
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display font-bold text-xl dash-heading">Form maker</h2>
-            <p className="text-xs dash-muted mt-1">
-              Build reusable registration forms and assign them to events.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void startNew()}
-            disabled={saving}
-            className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> New form
-          </button>
-        </div>
-      )}
-
-      {onAssignForm && (
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
-            Assign to this event
-          </label>
-          <select
-            value={assignedFormId ?? ''}
-            onChange={(e) => {
-              const id = e.target.value || null;
-              onAssignForm(id);
-              if (id) handleSelectForm(id);
-            }}
-            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
-          >
-            <option value="">Standard (name, phone, email)</option>
-            {forms.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.fields.length} fields)
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {!compact && (
-        <div className="flex flex-wrap gap-2">
-          {forms.map((f) => (
+  const formList = (
+    <div className={variant === 'page' ? 'space-y-2' : 'flex flex-wrap gap-2'}>
+      {forms.length === 0 ? (
+        <p className="text-sm dash-muted px-1">No templates yet.</p>
+      ) : (
+        forms.map((f) =>
+          variant === 'page' ? (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => loadDraft(f)}
+              className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                editingId === f.id
+                  ? 'border-kado-red bg-kado-red/5'
+                  : 'dash-border hover:border-kado-red/30'
+              }`}
+            >
+              <p className="font-display text-sm font-bold dash-heading truncate">{f.name}</p>
+              <p className="text-[10px] dash-muted mt-0.5">
+                {f.fields.length} field{f.fields.length === 1 ? '' : 's'}
+                {f.description ? ` · ${f.description}` : ''}
+              </p>
+            </button>
+          ) : (
             <button
               key={f.id}
               type="button"
@@ -205,10 +188,14 @@ export default function EventFormBuilder({ assignedFormId, onAssignForm, compact
             >
               {f.name}
             </button>
-          ))}
-        </div>
+          ),
+        )
       )}
+    </div>
+  );
 
+  const editorPanel = (
+    <>
       {editing || draftFields.length > 0 ? (
         <>
           <div className="grid md:grid-cols-2 gap-3">
@@ -395,11 +382,19 @@ export default function EventFormBuilder({ assignedFormId, onAssignForm, compact
                 type="button"
                 onClick={() => {
                   if (!window.confirm(`Delete form “${draftName}”? Events using it will fall back to standard fields.`)) return;
-                  void removeForm(editingId).then(() => {
-                    setEditingId(null);
-                    setDraftFields([]);
-                    setDraftName('');
-                  });
+                  void removeForm(editingId)
+                    .then(() => {
+                      setEditingId(forms.find((f) => f.id !== editingId)?.id ?? null);
+                      const next = forms.find((f) => f.id !== editingId);
+                      if (next) loadDraft(next);
+                      else {
+                        setDraftFields([]);
+                        setDraftName('');
+                      }
+                    })
+                    .catch((err) => {
+                      setError(err instanceof Error ? err.message : 'Could not delete form.');
+                    });
                 }}
                 className="rounded-lg text-red-500 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
               >
@@ -424,7 +419,78 @@ export default function EventFormBuilder({ assignedFormId, onAssignForm, compact
           )}
         </>
       ) : (
-        <p className="text-sm dash-muted">No form selected. Create a new form or pick a template above.</p>
+        <p className="text-sm dash-muted">No form selected. Create a new form or pick a template.</p>
+      )}
+    </>
+  );
+
+  return (
+    <div className={compact ? 'space-y-3' : variant === 'page' ? 'space-y-4' : 'rounded-2xl dash-card border p-5 space-y-4'}>
+      {!compact && variant !== 'page' && (
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display font-bold text-xl dash-heading">Form maker</h2>
+            <p className="text-xs dash-muted mt-1">
+              Build reusable registration forms and assign them to events.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void startNew()}
+            disabled={saving}
+            className="rounded-xl bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> New form
+          </button>
+        </div>
+      )}
+
+      {onAssignForm && (
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1.5">
+            Assign to this event
+          </label>
+          <select
+            value={assignedFormId ?? ''}
+            onChange={(e) => {
+              const id = e.target.value || null;
+              onAssignForm(id);
+              if (id) handleSelectForm(id);
+            }}
+            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+          >
+            <option value="">Standard (name, phone, email)</option>
+            {forms.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.fields.length} fields)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!compact && variant === 'default' && formList}
+
+      {variant === 'page' && !compact ? (
+        <div className="grid gap-6 lg:grid-cols-[minmax(14rem,17rem)_1fr]">
+          <aside className="rounded-2xl dash-card border p-4 space-y-3 lg:sticky lg:top-4 lg:self-start">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-bold uppercase tracking-wider dash-muted">Templates</p>
+              <button
+                type="button"
+                onClick={() => void startNew()}
+                disabled={saving}
+                className="rounded-lg bg-kado-dark text-kado-cream px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider hover:bg-kado-red flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> New
+              </button>
+            </div>
+            {formList}
+          </aside>
+          <div className="rounded-2xl dash-card border p-5 space-y-4 min-w-0">{editorPanel}</div>
+        </div>
+      ) : (
+        editorPanel
       )}
 
       {compact && (

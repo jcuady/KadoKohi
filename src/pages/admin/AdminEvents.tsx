@@ -7,7 +7,10 @@ import { eventDurationLabel, eventImages, signupClosesBeforeEventStart } from '.
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { useEventFormStore } from '../../store/eventFormStore';
 import EventFormBuilder from '../../components/admin/EventFormBuilder';
-import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users, FileText } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users, FileText, CalendarDays } from 'lucide-react';
+
+type EventsTab = 'events' | 'forms' | 'submissions';
 
 type EventFormData = {
   title: string;
@@ -62,14 +65,14 @@ export default function AdminEvents() {
   const removeEvent = useEventStore((s) => s.removeEvent);
   const branches = useBranchStore((s) => s.branches);
   const formTemplates = useEventFormStore((s) => s.forms);
+  const formsHydrated = useEventFormStore((s) => s.hydrated);
   const hydrateFormTemplates = useEventFormStore((s) => s.hydrateFromRemote);
 
+  const [tab, setTab] = useState<EventsTab>('events');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EventFormData>(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [imageError, setImageError] = useState('');
-  const [registrationsEventId, setRegistrationsEventId] = useState<string | null>(null);
-  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [allRegistrations, setAllRegistrations] = useState<EventRegistration[]>([]);
   const [registrationQuery, setRegistrationQuery] = useState('');
   const [registrationEventFilter, setRegistrationEventFilter] = useState<string>('all');
@@ -228,14 +231,14 @@ export default function AdminEvents() {
     }
   };
 
-  const openRegistrations = async (eventId: string) => {
-    setRegistrationsEventId(eventId);
-    try {
-      const rows = await orderingRepo.fetchEventRegistrations(eventId);
-      setRegistrations(rows);
-    } catch {
-      setRegistrations([]);
-    }
+  const viewSubmissionsForEvent = (eventId: string) => {
+    setRegistrationEventFilter(eventId);
+    setTab('submissions');
+  };
+
+  const openFormTemplatesTab = () => {
+    cancel();
+    setTab('forms');
   };
 
   const filteredRegistrations = useMemo(() => {
@@ -252,156 +255,227 @@ export default function AdminEvents() {
   }, [allRegistrations, registrationEventFilter, registrationQuery]);
 
   return (
-    <div className="dash-page max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="dash-page max-w-5xl space-y-6 pb-16">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
+          <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">Admin · Operations</p>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Kado Events</h1>
-          <p className="dash-muted text-sm mt-1">{events.length} event(s) — manage listings, images, and sign-ups.</p>
-          {hydrated ? (
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
-              Synced with Supabase
+          <p className="dash-muted text-sm mt-1 max-w-xl">
+            Publish events on the public calendar, build sign-up forms, and review registrations.
+          </p>
+          {hydrated && formsHydrated ? (
+            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+              Synced with Supabase · {events.length} event{events.length === 1 ? '' : 's'} · {formTemplates.length} form
+              {formTemplates.length === 1 ? '' : 's'} · {allRegistrations.length} submission
+              {allRegistrations.length === 1 ? '' : 's'}
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={startAdd}
-          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1"
-        >
-          <Plus className="w-4 h-4" /> New event
-        </button>
+        {tab === 'events' ? (
+          <button
+            type="button"
+            onClick={startAdd}
+            className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1 shrink-0"
+          >
+            <Plus className="w-4 h-4" /> New event
+          </button>
+        ) : null}
       </div>
 
       {saveError ? (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
           {saveError}
         </p>
       ) : null}
 
-      <ul className="space-y-3 mb-8">
-        {events.map((evt) => {
-          const thumb = eventImages(evt)[0];
-          const count = regCounts[evt.id] ?? 0;
-          return (
-            <li key={evt.id} className="rounded-2xl dash-card border p-5 flex items-start gap-4">
-              {thumb ? (
-                <img src={thumb} alt={evt.title} className="w-16 h-16 rounded-xl object-cover shrink-0 border dash-border" />
-              ) : (
-                <div className="w-16 h-16 rounded-xl shrink-0 border dash-border flex items-center justify-center dash-card-alt">
-                  <ImageIcon className="w-5 h-5 dash-muted" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-display font-bold dash-heading">{evt.title}</span>
-                  {evt.highlight && <Star className="w-3.5 h-3.5 text-kado-red fill-kado-red" />}
-                  {evt.signupEnabled && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/10 px-2 py-0.5 rounded-full">
-                      Sign-ups
-                    </span>
-                  )}
-                  {!evt.visible && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest dash-muted dash-card-alt px-2 py-0.5 rounded-full">
-                      Hidden
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs dash-muted truncate">{evt.description}</p>
-                <p className="text-[10px] dash-muted mt-1">
-                  {new Date(evt.startsAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  {evt.branchId ? ` · ${branches.find((b) => b.id === evt.branchId)?.name ?? evt.branchId}` : ' · All branches'}
-                  {evt.signupEnabled && evt.signupClosesAt
-                    ? ` · Sign-up until ${new Date(evt.signupClosesAt).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}`
-                    : ''}
-                </p>
-                {eventDurationLabel(evt) && (
-                  <p className="text-[10px] dash-muted mt-1">Duration: {eventDurationLabel(evt)}</p>
-                )}
-                {evt.signupEnabled && (
-                  <>
-                    {evt.signupFormId && (
-                      <p className="text-[10px] dash-muted mt-1 inline-flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        Form: {formTemplates.find((f) => f.id === evt.signupFormId)?.name ?? evt.signupFormId}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => void openRegistrations(evt.id)}
-                      className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
-                    >
-                      <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''} (view list)
-                    </button>
-                  </>
-                )}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as EventsTab)} className="space-y-6">
+        <TabsList className="h-auto w-full flex-wrap gap-1 p-1">
+          <TabsTrigger value="events" className="flex-1 sm:flex-none min-h-[40px]">
+            Events ({events.length})
+          </TabsTrigger>
+          <TabsTrigger value="forms" className="flex-1 sm:flex-none min-h-[40px]">
+            Form templates ({formTemplates.length})
+          </TabsTrigger>
+          <TabsTrigger value="submissions" className="flex-1 sm:flex-none min-h-[40px]">
+            Submissions ({allRegistrations.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {tab === 'events' ? (
+          <section className="space-y-3" aria-label="Event listings">
+            {events.length === 0 ? (
+              <div className="rounded-2xl dash-card-alt border dash-border p-10 text-center">
+                <CalendarDays className="mx-auto mb-3 h-10 w-10 dash-muted" aria-hidden />
+                <p className="font-display font-bold dash-heading">No events yet</p>
+                <p className="dash-muted mt-1 text-sm">Create your first listing for the public /events page.</p>
+                <button
+                  type="button"
+                  onClick={startAdd}
+                  className="mt-4 rounded-xl bg-kado-red px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-cream hover:bg-kado-dark"
+                >
+                  New event
+                </button>
               </div>
-              <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1">
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button type="button" onClick={() => void handleDelete(evt)} className="text-red-400 hover:text-red-600 p-1">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+            ) : (
+              <ul className="space-y-3">
+                {events.map((evt) => {
+                  const thumb = eventImages(evt)[0];
+                  const count = regCounts[evt.id] ?? 0;
+                  return (
+                    <li key={evt.id} className="rounded-2xl dash-card border p-5 flex items-start gap-4">
+                      {thumb ? (
+                        <img src={thumb} alt={evt.title} className="w-16 h-16 rounded-xl object-cover shrink-0 border dash-border" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl shrink-0 border dash-border flex items-center justify-center dash-card-alt">
+                          <ImageIcon className="w-5 h-5 dash-muted" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-display font-bold dash-heading">{evt.title}</span>
+                          {evt.highlight && <Star className="w-3.5 h-3.5 text-kado-red fill-kado-red" />}
+                          {evt.signupEnabled && (
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/10 px-2 py-0.5 rounded-full">
+                              Sign-ups
+                            </span>
+                          )}
+                          {!evt.visible && (
+                            <span className="text-[9px] font-bold uppercase tracking-widest dash-muted dash-card-alt px-2 py-0.5 rounded-full">
+                              Hidden
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs dash-muted line-clamp-2">{evt.description}</p>
+                        <p className="text-[10px] dash-muted mt-1">
+                          {new Date(evt.startsAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {evt.branchId ? ` · ${branches.find((b) => b.id === evt.branchId)?.name ?? evt.branchId}` : ' · All branches'}
+                          {evt.signupEnabled && evt.signupClosesAt
+                            ? ` · Sign-up until ${new Date(evt.signupClosesAt).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}`
+                            : ''}
+                        </p>
+                        {eventDurationLabel(evt) && (
+                          <p className="text-[10px] dash-muted mt-1">Duration: {eventDurationLabel(evt)}</p>
+                        )}
+                        {evt.signupEnabled && (
+                          <>
+                            {evt.signupFormId && (
+                              <p className="text-[10px] dash-muted mt-1 inline-flex items-center gap-1">
+                                <FileText className="w-3 h-3" />
+                                Form: {formTemplates.find((f) => f.id === evt.signupFormId)?.name ?? evt.signupFormId}
+                              </p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => viewSubmissionsForEvent(evt.id)}
+                              className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
+                            >
+                              <Users className="w-3 h-3" /> {count} registration{count !== 1 ? 's' : ''}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1" aria-label={`Edit ${evt.title}`}>
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button type="button" onClick={() => void handleDelete(evt)} className="text-red-400 hover:text-red-600 p-1" aria-label={`Delete ${evt.title}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        ) : null}
 
-      <EventFormBuilder />
+        {tab === 'forms' ? (
+          <section aria-label="Registration form templates">
+            <p className="text-sm dash-muted mb-4 max-w-2xl">
+              Build reusable sign-up forms, then assign them when creating or editing an event. Every form must map fields
+              to name, email, and phone.
+            </p>
+            <EventFormBuilder variant="page" />
+          </section>
+        ) : null}
 
-      <section className="rounded-2xl dash-card border p-5 mb-8 mt-8">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="font-display font-bold text-xl dash-heading">Registration submissions</h2>
-          <span className="text-xs dash-muted font-bold uppercase tracking-wider">
-            {filteredRegistrations.length} result{filteredRegistrations.length === 1 ? '' : 's'}
-          </span>
-        </div>
-        <div className="grid md:grid-cols-3 gap-3 mb-4">
-          <input
-            value={registrationQuery}
-            onChange={(e) => setRegistrationQuery(e.target.value)}
-            placeholder="Search name, email, phone"
-            className="md:col-span-2 rounded-xl dash-input border px-4 py-2.5 text-sm"
-          />
-          <select
-            value={registrationEventFilter}
-            onChange={(e) => setRegistrationEventFilter(e.target.value)}
-            className="rounded-xl dash-input border px-4 py-2.5 text-sm"
-          >
-            <option value="all">All events</option>
-            {events.map((evt) => (
-              <option key={evt.id} value={evt.id}>{evt.title}</option>
-            ))}
-          </select>
-        </div>
-        {filteredRegistrations.length === 0 ? (
-          <p className="text-sm dash-muted">No registrations found for the selected filters.</p>
-        ) : (
-          <ul className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-            {filteredRegistrations.map((r) => (
-              <li key={r.id} className="rounded-xl border dash-border p-3 text-sm">
-                <p className="font-bold dash-heading">{r.contactName}</p>
-                <p className="dash-muted text-xs">{r.contactEmail}</p>
-                <p className="dash-muted text-xs">{r.contactPhone}</p>
-                {r.customAnswers && Object.keys(r.customAnswers).length > 0 && (
-                  <ul className="mt-2 text-[10px] dash-muted space-y-0.5">
-                    {Object.entries(r.customAnswers).map(([key, val]) => (
-                      <li key={key}>
-                        <span className="font-semibold">{key}:</span> {String(val)}
-                      </li>
+        {tab === 'submissions' ? (
+          <section className="rounded-2xl dash-card border p-5" aria-label="Registration submissions">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div>
+                <h2 className="font-display font-bold text-xl dash-heading">Registration submissions</h2>
+                <p className="text-xs dash-muted mt-1">All sign-ups across events, newest first.</p>
+              </div>
+              <span className="text-xs dash-muted font-bold uppercase tracking-wider">
+                {filteredRegistrations.length} result{filteredRegistrations.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="grid md:grid-cols-3 gap-3 mb-4">
+              <input
+                value={registrationQuery}
+                onChange={(e) => setRegistrationQuery(e.target.value)}
+                placeholder="Search name, email, phone"
+                className="md:col-span-2 rounded-xl dash-input border px-4 py-2.5 text-sm"
+              />
+              <select
+                value={registrationEventFilter}
+                onChange={(e) => setRegistrationEventFilter(e.target.value)}
+                className="rounded-xl dash-input border px-4 py-2.5 text-sm"
+              >
+                <option value="all">All events</option>
+                {events.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {filteredRegistrations.length === 0 ? (
+              <p className="text-sm dash-muted py-8 text-center">No registrations found for the selected filters.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-1 px-1">
+                <table className="w-full min-w-[36rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b dash-border text-[10px] font-bold uppercase tracking-wider dash-muted">
+                      <th className="py-2 pr-3">Guest</th>
+                      <th className="py-2 pr-3">Contact</th>
+                      <th className="py-2 pr-3">Event</th>
+                      <th className="py-2">Submitted</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y dash-border">
+                    {filteredRegistrations.map((r) => (
+                      <tr key={r.id} className="align-top">
+                        <td className="py-3 pr-3">
+                          <p className="font-bold dash-heading">{r.contactName}</p>
+                          {r.customAnswers && Object.keys(r.customAnswers).length > 0 ? (
+                            <ul className="mt-2 text-[10px] dash-muted space-y-0.5 max-w-xs">
+                              {Object.entries(r.customAnswers).map(([key, val]) => (
+                                <li key={key}>
+                                  <span className="font-semibold">{key}:</span> {String(val)}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </td>
+                        <td className="py-3 pr-3 text-xs dash-muted">
+                          <p>{r.contactEmail}</p>
+                          <p className="mt-0.5">{r.contactPhone}</p>
+                        </td>
+                        <td className="py-3 pr-3 text-xs dash-muted">
+                          {events.find((e) => e.id === r.eventId)?.title ?? r.eventId}
+                        </td>
+                        <td className="py-3 text-xs dash-muted whitespace-nowrap">
+                          {new Date(r.createdAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </td>
+                      </tr>
                     ))}
-                  </ul>
-                )}
-                <p className="text-[10px] dash-muted mt-1">
-                  Event: {events.find((e) => e.id === r.eventId)?.title ?? r.eventId}
-                </p>
-                <p className="text-[10px] dash-muted mt-0.5">
-                  Submitted: {new Date(r.createdAt).toLocaleString('en-PH')}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ) : null}
+      </Tabs>
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -632,11 +706,30 @@ export default function AdminEvents() {
                         />
                       </div>
                     </div>
-                    <EventFormBuilder
-                      compact
-                      assignedFormId={form.signupFormId || null}
-                      onAssignForm={(id) => setForm((f) => ({ ...f, signupFormId: id ?? '' }))}
-                    />
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                        Registration form
+                      </label>
+                      <select
+                        value={form.signupFormId}
+                        onChange={(e) => setForm((f) => ({ ...f, signupFormId: e.target.value }))}
+                        className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                      >
+                        <option value="">Standard (name, phone, email)</option>
+                        {formTemplates.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name} ({f.fields.length} fields)
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={openFormTemplatesTab}
+                        className="mt-2 text-[10px] font-bold uppercase tracking-wider text-kado-red hover:underline"
+                      >
+                        Manage form templates →
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -680,44 +773,6 @@ export default function AdminEvents() {
               </button>
             </div>
           </form>
-        </div>
-      )}
-
-      {registrationsEventId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md dash-card rounded-2xl p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-bold text-lg dash-heading">Registrations</h2>
-              <button type="button" onClick={() => setRegistrationsEventId(null)} className="dash-muted hover:text-kado-dark">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {registrations.length === 0 ? (
-              <p className="text-sm dash-muted">No registrations yet.</p>
-            ) : (
-              <ul className="space-y-3">
-                {registrations.map((r) => (
-                  <li key={r.id} className="rounded-xl border dash-border p-3 text-sm">
-                    <p className="font-bold dash-heading">{r.contactName}</p>
-                    <p className="dash-muted text-xs">{r.contactEmail}</p>
-                    <p className="dash-muted text-xs">{r.contactPhone}</p>
-                    {r.customAnswers && Object.keys(r.customAnswers).length > 0 && (
-                      <ul className="mt-2 text-[10px] dash-muted space-y-0.5">
-                        {Object.entries(r.customAnswers).map(([key, val]) => (
-                          <li key={key}>
-                            <span className="font-semibold">{key}:</span> {String(val)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <p className="text-[10px] dash-muted mt-1">
-                      {new Date(r.createdAt).toLocaleString('en-PH')}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       )}
     </div>
