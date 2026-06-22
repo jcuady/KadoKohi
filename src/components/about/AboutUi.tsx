@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /** HeroUI-inspired surface primitives — brand tokens, no extra UI library. */
@@ -86,3 +86,28 @@ export function AboutKanjiWatermark({ className }: { className?: string }) {
     </div>
   );
 }
+
+/** Consistent safe-area padding for all About sections. */
+export const AboutSectionShell = forwardRef<
+  HTMLElement,
+  {
+    children: ReactNode;
+    className?: string;
+    innerClassName?: string;
+    id?: string;
+  }
+>(function AboutSectionShell({ children, className, innerClassName, id }, ref) {
+  return (
+    <section
+      ref={ref}
+      id={id}
+      className={cn(
+        'border-b border-kado-dark/8 px-[max(1rem,env(safe-area-inset-left))] py-14 sm:px-6 sm:py-16 md:py-24',
+        'pr-[max(1rem,env(safe-area-inset-right))]',
+        className,
+      )}
+    >
+      <div className={cn('mx-auto w-full min-w-0 max-w-6xl', innerClassName)}>{children}</div>
+    </section>
+  );
+});

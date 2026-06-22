@@ -2,10 +2,14 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ABOUT_CTA } from '@/content/aboutPage';
+import { AboutSectionShell } from './AboutUi';
 
 export default function AboutCta() {
   return (
-    <section className="relative overflow-hidden bg-kado-dark px-6 py-16 text-kado-cream md:py-20">
+    <AboutSectionShell
+      className="relative overflow-hidden border-kado-dark/10 bg-kado-dark text-kado-cream"
+      innerClassName="max-w-5xl"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(158,24,29,0.35),transparent_50%)]"
@@ -15,9 +19,9 @@ export default function AboutCta() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="relative mx-auto flex max-w-5xl flex-col items-center gap-8 text-center md:flex-row md:justify-between md:text-left"
+        className="relative flex flex-col items-center gap-8 text-center md:flex-row md:justify-between md:text-left"
       >
-        <div>
+        <div className="min-w-0">
           <h2 className="kado-h2 mb-2 text-kado-cream">{ABOUT_CTA.title}</h2>
           <p className="kado-body max-w-md text-kado-cream/75">{ABOUT_CTA.body}</p>
         </div>
@@ -38,6 +42,6 @@ export default function AboutCta() {
           </Link>
         </div>
       </motion.div>
-    </section>
+    </AboutSectionShell>
   );
 }

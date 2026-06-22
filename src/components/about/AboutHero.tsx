@@ -17,7 +17,7 @@ export default function AboutHero() {
   return (
     <section
       ref={ref}
-      className="relative flex min-h-[min(100svh,56rem)] flex-col justify-center overflow-hidden border-b border-white/10 bg-kado-red pt-24 pb-20 text-kado-cream md:pb-24"
+      className="relative flex min-h-[min(100svh,56rem)] flex-col justify-center overflow-hidden border-b border-white/10 bg-kado-red px-[max(1rem,env(safe-area-inset-left))] pt-24 pb-20 text-kado-cream pr-[max(1rem,env(safe-area-inset-right))] md:pb-24"
     >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(241,223,186,0.14),transparent_55%)]" />
       <AboutKanjiWatermark className="-right-4 top-10 text-[clamp(7rem,24vw,14rem)] md:right-8" />
@@ -27,7 +27,7 @@ export default function AboutHero() {
         <AboutThreeScene />
       </Suspense>
 
-      <motion.div style={{ y, opacity }} className="relative z-10 mx-auto w-full max-w-5xl px-6 text-center">
+      <motion.div style={{ y, opacity }} className="relative z-10 mx-auto w-full min-w-0 max-w-5xl px-2 text-center sm:px-4">
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

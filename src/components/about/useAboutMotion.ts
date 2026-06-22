@@ -95,3 +95,62 @@ export function useStaggerReveal(
     return () => ctx.revert();
   }, [containerRef, childSelector]);
 }
+
+/** Draw accent lines / borders as cards enter the viewport. */
+export function useRevealLines(
+  containerRef: RefObject<HTMLElement | null>,
+  lineSelector: string,
+) {
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root || prefersReducedMotion()) return;
+
+    const ctx = gsap.context(() => {
+      root.querySelectorAll(lineSelector).forEach((line) => {
+        gsap.from(line, {
+          scaleY: 0,
+          transformOrigin: 'top center',
+          duration: 0.8,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: line,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        });
+      });
+    }, root);
+
+    return () => ctx.revert();
+  }, [containerRef, lineSelector]);
+}
+
+/** Subtle parallax on section headings while scrolling. */
+export function useHeadingParallax(
+  ref: RefObject<HTMLElement | null>,
+  yPercent = 8,
+) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReducedMotion()) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        el,
+        { yPercent: -yPercent },
+        {
+          yPercent,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.4,
+          },
+        },
+      );
+    }, el);
+
+    return () => ctx.revert();
+  }, [ref, yPercent]);
+}
