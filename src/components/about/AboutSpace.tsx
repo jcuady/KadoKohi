@@ -26,7 +26,13 @@ export default function AboutSpace() {
             <EditorialHeadline
               as="h2"
               dark
-              lines={[[{ text: 'Your ', accent: false }, { text: 'Corner', accent: true }, { text: ' Awaits', accent: false }]]}
+              lines={[
+                [{ text: 'Your', accent: false }],
+                [
+                  { text: 'Corner', accent: true },
+                  { text: ' Awaits', accent: false },
+                ],
+              ]}
               size="section"
               className="mb-5"
             />

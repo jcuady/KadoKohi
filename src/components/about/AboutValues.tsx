@@ -24,8 +24,8 @@ export default function AboutValues() {
       {/* Crafting the unconventional — overlapping type + image */}
       <AboutSectionShell className="relative overflow-hidden bg-kado-dark p-0 text-kado-cream sm:py-0" innerClassName="max-w-none">
         <AboutEditorialGrid dark>
-          <div className="relative grid min-h-[min(70vh,36rem)] lg:grid-cols-12">
-            <div className="relative z-10 flex flex-col justify-end px-[max(1rem,env(safe-area-inset-left))] py-14 sm:px-6 sm:py-20 lg:col-span-7 lg:py-24 pr-[max(1rem,env(safe-area-inset-right))]">
+          <div className="relative grid min-h-[min(60vh,32rem)] sm:min-h-[min(65vh,34rem)] lg:min-h-[min(70vh,36rem)] lg:grid-cols-12">
+            <div className="relative z-10 flex min-w-0 flex-col justify-end px-[max(1rem,env(safe-area-inset-left))] py-12 sm:px-6 sm:py-16 lg:col-span-7 lg:py-24 pr-[max(1rem,env(safe-area-inset-right))]">
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}

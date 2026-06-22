@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Event } from '../types/domain';
 import { newId } from '../lib/id';
+import { logAudit } from '../lib/audit';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 
@@ -59,58 +59,80 @@ const SEED_EVENTS: Event[] = [
 
 export interface EventStore {
   events: Event[];
+  hydrated: boolean;
   hydrateFromRemote: () => Promise<void>;
-  addEvent: (input: Omit<Event, 'id'> & { id?: string }) => void;
-  updateEvent: (id: string, patch: Partial<Event>) => void;
-  removeEvent: (id: string) => void;
+  addEvent: (input: Omit<Event, 'id'> & { id?: string }) => Promise<Event>;
+  updateEvent: (id: string, patch: Partial<Event>) => Promise<void>;
+  removeEvent: (id: string) => Promise<void>;
   visibleEvents: () => Event[];
   highlightEvent: () => Event | undefined;
   seed: () => void;
 }
 
-export const useEventStore = create<EventStore>()(
-  persist(
-    (set, get) => ({
-      events: SEED_EVENTS,
+export const useEventStore = create<EventStore>()((set, get) => ({
+  events: SEED_EVENTS,
+  hydrated: false,
 
-      hydrateFromRemote: async () => {
-        if (!supabase) return;
-        try {
-          const events = await orderingRepo.fetchEvents();
-          if (events.length) set({ events });
-        } catch {
-          // Keep current state when remote fetch fails.
-        }
-      },
+  hydrateFromRemote: async () => {
+    if (!supabase) return;
+    try {
+      const events = await orderingRepo.fetchEvents();
+      set({ events, hydrated: true });
+    } catch {
+      set({ hydrated: true });
+    }
+  },
 
-      addEvent: (input) => {
-        const e: Event = { id: input.id ?? newId(), ...input } as Event;
-        if (!e.id) e.id = newId();
-        set({ events: [...get().events, e] });
-        void orderingRepo.upsertEvent(e, get().events.length).catch(() => {});
-      },
+  addEvent: async (input) => {
+    const e: Event = { id: input.id ?? newId(), ...input } as Event;
+    if (!e.id) e.id = newId();
+    await orderingRepo.upsertEvent(e, get().events.length);
+    set({ events: [...get().events.filter((row) => row.id !== e.id), e] });
+    logAudit({
+      action: 'event.created',
+      entityType: 'event',
+      entityId: e.id,
+      branchId: e.branchId ?? null,
+      summary: `Created event ${e.title}`,
+    });
+    return e;
+  },
 
-      updateEvent: (id, patch) => {
-        const next = get().events.map((e) => (e.id === id ? { ...e, ...patch } : e));
-        set({ events: next });
-        const updated = next.find((e) => e.id === id);
-        if (updated) void orderingRepo.upsertEvent(updated).catch(() => {});
-      },
+  updateEvent: async (id, patch) => {
+    const current = get().events.find((row) => row.id === id);
+    if (!current) throw new Error('Event not found.');
+    const updated: Event = { ...current, ...patch };
+    await orderingRepo.upsertEvent(updated);
+    set({ events: get().events.map((row) => (row.id === id ? updated : row)) });
+    logAudit({
+      action: 'event.updated',
+      entityType: 'event',
+      entityId: id,
+      branchId: updated.branchId ?? null,
+      summary: `Updated event ${updated.title}`,
+      metadata: { changedKeys: Object.keys(patch) },
+    });
+  },
 
-      removeEvent: (id) => {
-        set({ events: get().events.filter((e) => e.id !== id) });
-        void orderingRepo.deleteEvent(id).catch(() => {});
-      },
+  removeEvent: async (id) => {
+    const deleted = get().events.find((row) => row.id === id);
+    await orderingRepo.deleteEvent(id);
+    set({ events: get().events.filter((row) => row.id !== id) });
+    logAudit({
+      action: 'event.deleted',
+      entityType: 'event',
+      entityId: id,
+      branchId: deleted?.branchId ?? null,
+      summary: `Deleted event ${deleted?.title ?? id}`,
+    });
+  },
 
-      visibleEvents: () =>
-        get()
-          .events.filter((e) => e.visible)
-          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
+  visibleEvents: () =>
+    get()
+      .events.filter((e) => e.visible)
+      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
 
-      highlightEvent: () => get().events.find((e) => e.highlight && e.visible),
+  highlightEvent: () => get().events.find((e) => e.highlight && e.visible),
 
-      seed: () => set({ events: SEED_EVENTS }),
-    }),
-    { name: 'kado-events-v1' },
-  ),
-);
+  seed: () => set({ events: SEED_EVENTS, hydrated: false }),
+}));

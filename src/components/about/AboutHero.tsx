@@ -16,13 +16,13 @@ export default function AboutHero() {
   return (
     <section
       ref={ref}
-      className="relative min-h-[min(100svh,54rem)] overflow-hidden border-b border-kado-cream/10 bg-kado-dark text-kado-cream"
+      className="relative min-h-[min(100svh,54rem)] overflow-x-clip border-b border-kado-cream/10 bg-kado-dark text-kado-cream"
     >
       <AboutEditorialGrid dark className="min-h-[inherit]">
         <div className="grid min-h-[inherit] lg:grid-cols-12">
           <motion.div
             style={{ y: copyY }}
-            className="relative z-10 flex flex-col justify-end px-[max(1rem,env(safe-area-inset-left))] pb-8 pt-28 sm:px-6 sm:pb-12 lg:col-span-7 lg:pb-16 lg:pt-32 pr-[max(1rem,env(safe-area-inset-right))]"
+            className="relative z-10 flex min-w-0 flex-col justify-end px-[max(1rem,env(safe-area-inset-left))] pb-8 pt-28 sm:px-6 sm:pb-12 lg:col-span-7 lg:pb-16 lg:pt-32 pr-[max(1rem,env(safe-area-inset-right))]"
           >
             <motion.p
               initial={{ opacity: 0, y: 16 }}

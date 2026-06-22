@@ -624,7 +624,7 @@ export const orderingRepo = {
     return (data ?? []).map(mapEvent);
   },
   async upsertEvent(e: Event, sortOrder?: number) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const images = e.images?.length ? e.images : e.cover ? [e.cover] : [];
     const { error } = await supabase.from('kk_events').upsert({
       id: e.id,
@@ -672,8 +672,11 @@ export const orderingRepo = {
   },
   async deleteEventForm(id: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.from('kk_event_forms').delete().eq('id', id);
+    const { data, error } = await supabase.from('kk_event_forms').delete().eq('id', id).select('id');
     if (error) throw error;
+    if (!data?.length) {
+      throw new Error('Form was not deleted. Sign in as admin and try again.');
+    }
   },
   async fetchEventRegistrationCounts(): Promise<Record<string, number>> {
     if (!supabase) return {};
@@ -740,9 +743,21 @@ export const orderingRepo = {
     };
   },
   async deleteEvent(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('kk_events').delete().eq('id', id);
+    if (!supabase) throw new Error('Supabase is not configured.');
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc('kk_admin_delete_event', {
+      p_event_id: id,
+    });
+    if (!rpcError) {
+      const row = (rpcData ?? {}) as { ok?: boolean };
+      if (row.ok) return;
+    }
+
+    const { data, error } = await supabase.from('kk_events').delete().eq('id', id).select('id');
     if (error) throw error;
+    if (!data?.length) {
+      throw new Error('Event was not deleted. Sign in as admin and try again.');
+    }
   },
   async fetchEventCalendar(year: number, month: number): Promise<{ blockouts: string[]; booked: string[] }> {
     if (!supabase) return { blockouts: [], booked: [] };

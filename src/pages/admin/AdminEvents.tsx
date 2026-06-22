@@ -55,6 +55,8 @@ function toLocalDatetime(iso?: string): string {
 
 export default function AdminEvents() {
   const events = useEventStore((s) => s.events);
+  const hydrated = useEventStore((s) => s.hydrated);
+  const hydrateEvents = useEventStore((s) => s.hydrateFromRemote);
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
   const removeEvent = useEventStore((s) => s.removeEvent);
@@ -72,6 +74,8 @@ export default function AdminEvents() {
   const [registrationQuery, setRegistrationQuery] = useState('');
   const [registrationEventFilter, setRegistrationEventFilter] = useState<string>('all');
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const loadCounts = () => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
@@ -82,10 +86,11 @@ export default function AdminEvents() {
   };
 
   useEffect(() => {
+    void hydrateEvents();
     void hydrateFormTemplates();
     loadCounts();
     loadAllRegistrations();
-  }, [events.length, hydrateFormTemplates]);
+  }, [hydrateEvents, hydrateFormTemplates]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -156,7 +161,7 @@ export default function AdminEvents() {
     setForm((f) => ({ ...f, images: [...f.images, trimmed] }));
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.startsAt) return;
     if (form.images.length === 0) {
@@ -192,14 +197,35 @@ export default function AdminEvents() {
       cta: form.ctaLabel.trim() ? { label: form.ctaLabel.trim(), href: '/events' } : undefined,
     };
 
-    if (editingId) {
-      updateEvent(editingId, payload);
-    } else {
-      addEvent(payload);
+    setSaveError('');
+    setSaving(true);
+    try {
+      if (editingId) {
+        await updateEvent(editingId, payload);
+      } else {
+        await addEvent(payload);
+      }
+      loadCounts();
+      loadAllRegistrations();
+      cancel();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save event.');
+    } finally {
+      setSaving(false);
     }
-    loadCounts();
-    loadAllRegistrations();
-    cancel();
+  };
+
+  const handleDelete = async (evt: Event) => {
+    if (!window.confirm(`Delete “${evt.title}”? This cannot be undone.`)) return;
+    setSaveError('');
+    try {
+      await removeEvent(evt.id);
+      if (editingId === evt.id) cancel();
+      loadCounts();
+      loadAllRegistrations();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not delete event.');
+    }
   };
 
   const openRegistrations = async (eventId: string) => {
@@ -231,6 +257,11 @@ export default function AdminEvents() {
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Kado Events</h1>
           <p className="dash-muted text-sm mt-1">{events.length} event(s) — manage listings, images, and sign-ups.</p>
+          {hydrated ? (
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+              Synced with Supabase
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -240,6 +271,12 @@ export default function AdminEvents() {
           <Plus className="w-4 h-4" /> New event
         </button>
       </div>
+
+      {saveError ? (
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {saveError}
+        </p>
+      ) : null}
 
       <ul className="space-y-3 mb-8">
         {events.map((evt) => {
@@ -301,7 +338,7 @@ export default function AdminEvents() {
               <button type="button" onClick={() => startEdit(evt)} className="dash-muted hover:text-kado-red p-1">
                 <Pencil className="w-4 h-4" />
               </button>
-              <button type="button" onClick={() => removeEvent(evt.id)} className="text-red-400 hover:text-red-600 p-1">
+              <button type="button" onClick={() => void handleDelete(evt)} className="text-red-400 hover:text-red-600 p-1">
                 <Trash2 className="w-4 h-4" />
               </button>
             </li>
@@ -636,9 +673,10 @@ export default function AdminEvents() {
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors"
+                disabled={saving}
+                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
               >
-                {editingId ? 'Update' : 'Create'}
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
               </button>
             </div>
           </form>

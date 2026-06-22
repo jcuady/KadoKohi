@@ -102,7 +102,7 @@ export const AboutSectionShell = forwardRef<
       ref={ref}
       id={id}
       className={cn(
-        'border-b border-kado-dark/8 px-[max(1rem,env(safe-area-inset-left))] py-14 sm:px-6 sm:py-16 md:py-24',
+        'overflow-x-clip border-b border-kado-dark/8 px-[max(1rem,env(safe-area-inset-left))] py-14 sm:px-6 sm:py-16 md:py-24',
         'pr-[max(1rem,env(safe-area-inset-right))]',
         className,
       )}

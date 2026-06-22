@@ -683,6 +683,21 @@ html.dash-dark {
   flex-shrink: 0;
 }
 
+@media (min-width: 48rem) and (max-width: 79.99rem) {
+  .about-scroll-rail--md-stack {
+    display: flex;
+    flex-direction: column;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    gap: 0;
+  }
+
+  .about-scroll-rail--md-stack > * {
+    width: 100%;
+    scroll-snap-align: unset;
+  }
+}
+
 @media (min-width: 64rem) {
   .about-scroll-rail--desktop-stack {
     display: flex;
@@ -731,7 +746,22 @@ html.dash-dark {
 }
 
 .about-editorial-headline-section {
-  font-size: clamp(1.85rem, 7vw, 4.25rem);
+  font-size: clamp(1.65rem, 6vw, 3.25rem);
+}
+
+.about-editorial-headline-sidebar {
+  font-size: clamp(1.5rem, 5vw, 2.85rem);
+  line-height: 0.95;
+}
+
+.about-commitment-headline {
+  font-size: clamp(1.75rem, 7vw, 3rem);
+}
+
+@media (min-width: 80rem) {
+  .about-commitment-headline {
+    font-size: clamp(1.5rem, 2.6vw, 2.65rem);
+  }
 }
 
 .about-editorial-headline-inline {

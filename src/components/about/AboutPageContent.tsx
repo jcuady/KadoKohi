@@ -12,7 +12,7 @@ import AboutCta from './AboutCta';
 /** Editorial About page — Hatton-inspired layout, Kado Kohi brand tokens. */
 export default function AboutPageContent() {
   return (
-    <div className="flex w-full min-w-0 flex-col bg-kado-cream text-kado-dark">
+    <div className="flex w-full min-w-0 flex-col overflow-x-clip bg-kado-cream text-kado-dark">
       <AboutHero />
       <AboutOrigins />
       <AboutMarqueeBand />

@@ -23,7 +23,10 @@ export default function AboutCta() {
           <EditorialHeadline
             as="h2"
             dark
-            lines={[[{ text: 'Find Your ', accent: false }, { text: 'Corner', accent: true }]]}
+            lines={[
+              [{ text: 'Find Your', accent: false }],
+              [{ text: 'Corner', accent: true }],
+            ]}
             size="section"
             className="mb-3 !text-kado-cream [&_span.text-kado-red]:text-kado-cream"
           />

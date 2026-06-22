@@ -13,12 +13,15 @@ export default function AboutExperience() {
           <p className="kado-label mb-3 text-kado-red">{ABOUT_EXPERIENCE.eyebrow}</p>
           <EditorialHeadline
             as="h2"
-            lines={[[{ text: 'More Than a ', accent: false }, { text: 'Cup', accent: true }]]}
+            lines={[
+              [{ text: 'More Than', accent: false }],
+              [{ text: 'a Cup', accent: true }],
+            ]}
             size="section"
           />
         </div>
 
-        <div className="about-scroll-rail about-scroll-rail--desktop-stack lg:grid lg:grid-cols-3 lg:gap-px lg:border lg:border-kado-dark/10 lg:bg-kado-dark/10">
+        <div className="about-scroll-rail lg:grid lg:grid-cols-3 lg:gap-px lg:border lg:border-kado-dark/10 lg:bg-kado-dark/10 lg:overflow-visible lg:[scroll-snap-type:none]">
           {ABOUT_EXPERIENCE.items.map((item, i) => (
             <motion.div
               key={item.title}

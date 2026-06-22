@@ -26,16 +26,12 @@ export const ABOUT_EDITORIAL = {
     ],
   ] as const,
   aboutLines: [
-    [
-      { text: 'About ', accent: false },
-      { text: 'Kado Kohi', accent: true },
-    ],
+    [{ text: 'About', accent: false }],
+    [{ text: 'Kado Kohi', accent: true }],
   ] as const,
   craftLines: [
-    [
-      { text: 'Crafting the ', accent: false },
-      { text: 'Unconventional', accent: true },
-    ],
+    [{ text: 'Crafting the', accent: false }],
+    [{ text: 'Unconventional', accent: true }],
   ] as const,
   futureParts: [
     { text: 'Crafting the future of ', accent: false },
@@ -47,22 +43,16 @@ export const ABOUT_EDITORIAL = {
     { text: '.', accent: false },
   ] as const,
   commitmentLines: [
-    [
-      { text: 'Our ', accent: false },
-      { text: 'Commitment', accent: true },
-    ],
+    [{ text: 'Our', accent: false }],
+    [{ text: 'Commitment', accent: true }],
   ] as const,
   philosophyLines: [
-    [
-      { text: 'How we ', accent: false },
-      { text: 'Show Up', accent: true },
-    ],
+    [{ text: 'How we', accent: false }],
+    [{ text: 'Show Up', accent: true }],
   ] as const,
   journeyLines: [
-    [
-      { text: 'Evolution of a ', accent: false },
-      { text: 'Tambayan', accent: true },
-    ],
+    [{ text: 'Evolution of a', accent: false }],
+    [{ text: 'Tambayan', accent: true }],
   ] as const,
   marqueeWords: ['Craft', 'Tambayan', 'Matcha', 'Marikina', 'Kohi', 'Community', 'Ritual', 'Corner'] as const,
   processLabel: 'From concept to craftsmanship',

@@ -44,14 +44,16 @@ export function EditorialHeadline({
   as?: 'h1' | 'h2' | 'h3' | 'p';
   dark?: boolean;
   className?: string;
-  size?: 'display' | 'section' | 'inline';
+  size?: 'display' | 'section' | 'sidebar' | 'inline';
 }) {
   const sizeClass =
     size === 'display'
       ? 'about-editorial-headline-display'
       : size === 'section'
         ? 'about-editorial-headline-section'
-        : 'about-editorial-headline-inline';
+        : size === 'sidebar'
+          ? 'about-editorial-headline-sidebar'
+          : 'about-editorial-headline-inline';
 
   const renderParts = (row: readonly EditorialPart[]) =>
     row.map((part, i) => (
@@ -65,14 +67,28 @@ export function EditorialHeadline({
 
   if (parts) {
     return (
-      <Tag className={cn('about-editorial-headline', sizeClass, dark ? 'text-kado-cream' : 'text-kado-dark', className)}>
+      <Tag
+        className={cn(
+          'about-editorial-headline max-w-full break-words',
+          sizeClass,
+          dark ? 'text-kado-cream' : 'text-kado-dark',
+          className,
+        )}
+      >
         {renderParts(parts)}
       </Tag>
     );
   }
 
   return (
-    <Tag className={cn('about-editorial-headline', sizeClass, dark ? 'text-kado-cream' : 'text-kado-dark', className)}>
+    <Tag
+      className={cn(
+        'about-editorial-headline max-w-full break-words',
+        sizeClass,
+        dark ? 'text-kado-cream' : 'text-kado-dark',
+        className,
+      )}
+    >
       {lines?.map((line, i) => (
         <span key={i} className="block">
           {renderParts(line)}
