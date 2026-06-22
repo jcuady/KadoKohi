@@ -14,7 +14,7 @@ import { MENU_MILK_OPTIONS } from '../../data/menuCatalog';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { clampText } from '../../lib/validation';
-import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight, Check, Eye, EyeOff } from 'lucide-react';
 import { orderingRepo, formatMenuProductCrudError } from '../../lib/supabase/repositories/ordering';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
@@ -557,7 +557,8 @@ export default function AdminMenu() {
 
   if (!remoteLoaded) {
     return (
-      <div className="max-w-4xl dash-page">
+      <div className="max-w-5xl dash-page pb-16">
+        <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">Admin · Operations</p>
         <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
         <p className="dash-muted text-sm">Loading menu from database…</p>
       </div>
@@ -565,58 +566,49 @@ export default function AdminMenu() {
   }
 
   return (
-    <div className="max-w-4xl dash-page">
-      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Menu Manager</h1>
-      <p className="dash-muted mb-2">
-        {categories.length} categories ({activeCategoryCount} on menu) · {products.length} products
-        {hiddenProductCount > 0 ? ` · ${hiddenProductCount} hidden` : ''}
-        {dataSource === 'remote' ? ' · synced from Supabase' : ' · offline catalog fallback'}
-      </p>
-      <p className="text-[10px] dash-muted mb-4">
-        KADO MENU V2 — edit here or on the public Menu page after changes save to the database.
-      </p>
-
-      <div className="mb-6 flex gap-2 rounded-2xl border dash-border p-1.5">
-        <button
-          type="button"
-          onClick={() => setMenuTab('coffee')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-            menuTab === 'coffee'
-              ? 'bg-kado-red text-kado-cream shadow-sm'
-              : 'dash-muted hover:bg-kado-cream/60'
-          }`}
-        >
-          <Coffee className="w-4 h-4" />
-          Coffee & drinks
-        </button>
-        <button
-          type="button"
-          onClick={() => setMenuTab('pastries')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-            menuTab === 'pastries'
-              ? 'bg-kado-red text-kado-cream shadow-sm'
-              : 'dash-muted hover:bg-kado-cream/60'
-          }`}
-        >
-          <Croissant className="w-4 h-4" />
-          Pastries
-        </button>
+    <div className="max-w-5xl dash-page space-y-6 pb-16">
+      <div>
+        <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">Admin · Operations</p>
+        <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Menu Manager</h1>
+        <p className="dash-muted text-sm mt-1 max-w-2xl">
+          {categories.length} categories ({activeCategoryCount} visible) · {products.length} products
+          {hiddenProductCount > 0 ? ` · ${hiddenProductCount} hidden` : ''}
+        </p>
+        {dataSource === 'remote' ? (
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+            Synced with Supabase
+          </p>
+        ) : (
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-amber-700">
+            Offline catalog fallback
+          </p>
+        )}
       </div>
 
-      <p className="dash-muted text-sm mb-6">
-        {menuTab === 'pastries' ? (
-          <>
-            {pastriesCategory
-              ? `${pastryItemCount} pastry item${pastryItemCount === 1 ? '' : 's'} · shown on /pastries and under Pastries on the menu`
-              : `Create a "${PASTRIES_CATEGORY_NAME}" category to manage pastries here.`}
-          </>
-        ) : (
-          <>
-            {coffeeCategoryCount} drink categor{coffeeCategoryCount === 1 ? 'y' : 'ies'} · {products.length - pastryItemCount}{' '}
-            drink product{products.length - pastryItemCount === 1 ? '' : 's'}
-          </>
-        )}
-      </p>
+      <Tabs value={menuTab} onValueChange={(v) => setMenuTab(v as MenuManagerTab)} className="space-y-6">
+        <TabsList className="h-auto w-full flex-wrap gap-1 p-1 sm:w-auto">
+          <TabsTrigger value="coffee" className="min-h-[40px] flex-1 gap-2 sm:flex-none sm:px-5">
+            <Coffee className="w-4 h-4" />
+            Coffee &amp; drinks
+          </TabsTrigger>
+          <TabsTrigger value="pastries" className="min-h-[40px] flex-1 gap-2 sm:flex-none sm:px-5">
+            <Croissant className="w-4 h-4" />
+            Pastries
+          </TabsTrigger>
+        </TabsList>
+
+        <p className="text-sm dash-muted -mt-2">
+          {menuTab === 'pastries' ? (
+            pastriesCategory
+              ? `${pastryItemCount} item${pastryItemCount === 1 ? '' : 's'} on /pastries and the public menu`
+              : `Create a "${PASTRIES_CATEGORY_NAME}" category to manage pastries here.`
+          ) : (
+            <>
+              {coffeeCategoryCount} drink categor{coffeeCategoryCount === 1 ? 'y' : 'ies'} ·{' '}
+              {products.length - pastryItemCount} product{products.length - pastryItemCount === 1 ? '' : 's'}
+            </>
+          )}
+        </p>
 
       {(hydrateError || initCatalogError) && (
         <div
@@ -661,35 +653,38 @@ export default function AdminMenu() {
       )}
 
       {menuTab === 'coffee' && (
-      <form onSubmit={(e) => void handleAddCategory(e)} className="mb-8 space-y-2">
-        <div className="flex gap-2">
-        <input
-          value={newCatName}
-          onChange={(e) => setNewCatName(e.target.value)}
-          placeholder="New category name…"
-          disabled={addingCategory}
-          className="flex-1 rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={addingCategory || !newCatName.trim()}
-          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1 disabled:opacity-60"
-        >
-          <Plus className="w-4 h-4" /> {addingCategory ? 'Adding…' : 'Category'}
-        </button>
+        <div className="flex flex-col gap-3 rounded-xl border dash-border dash-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs dash-muted">
+            Drag the grip to reorder categories and products. Changes save to Supabase automatically.
+          </p>
+          <form onSubmit={(e) => void handleAddCategory(e)} className="flex w-full gap-2 sm:max-w-md sm:w-auto">
+            <input
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder="New category…"
+              disabled={addingCategory}
+              className="min-w-0 flex-1 rounded-lg dash-input border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={addingCategory || !newCatName.trim()}
+              className="shrink-0 rounded-lg bg-kado-dark text-kado-cream px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1 disabled:opacity-60"
+            >
+              <Plus className="w-3.5 h-3.5" /> {addingCategory ? '…' : 'Add'}
+            </button>
+          </form>
         </div>
-        {addCategoryError ? (
-          <p className="text-xs font-semibold text-red-600">{addCategoryError}</p>
-        ) : null}
-      </form>
       )}
 
-      {/* Category accordion */}
-      <p className="text-xs dash-muted mb-4">
-        {menuTab === 'pastries'
-          ? 'Quick-add cookies by name only — price, photo, and description are optional.'
-          : 'Drag categories or products (grip) to reorder display order.'}
-      </p>
+      {addCategoryError ? (
+        <p className="text-xs font-semibold text-red-600 -mt-4">{addCategoryError}</p>
+      ) : null}
+
+      {menuTab === 'pastries' && (
+        <p className="text-xs dash-muted -mt-2">
+          Quick-add by name — price, photo, and description are optional for pastries.
+        </p>
+      )}
 
       <div className="space-y-3">
         {visibleCategories.map((cat) => {
@@ -718,12 +713,12 @@ export default function AdminMenu() {
               onDrop={onCatDrop}
             >
               {/* Category header */}
-              <div className="flex items-center gap-2 px-5 py-4">
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
                 <span
                   role="button"
                   tabIndex={0}
                   aria-label={`Drag to reorder category ${cat.name}`}
-                  className={`p-1 -m-1 rounded shrink-0 ${
+                  className={`p-1.5 rounded-lg shrink-0 ${
                     menuTab === 'pastries'
                       ? 'cursor-not-allowed opacity-30'
                       : 'cursor-grab active:cursor-grabbing touch-none hover:bg-kado-cream/80'
@@ -741,77 +736,90 @@ export default function AdminMenu() {
                 <button
                   type="button"
                   onClick={() => setExpandedCat(isExpanded ? null : cat.id)}
-                  className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  {isExpanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
                   {editingCategoryId === cat.id ? (
                     <input
                       value={editingCategoryName}
                       onChange={(e) => setEditingCategoryName(e.target.value)}
-                      className="rounded-lg dash-input border px-2 py-1 text-sm font-bold min-w-[160px]"
+                      className="rounded-lg dash-input border px-2 py-1 text-sm font-bold min-w-[10rem] max-w-full"
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
-                    <span className="font-display font-bold text-kado-dark dash-heading truncate">{cat.name}</span>
+                    <span className="font-display font-bold dash-heading truncate">{cat.name}</span>
                   )}
                   <span className="text-xs dash-muted shrink-0">{catProducts.length} items</span>
+                  {!cat.visible && (
+                    <span className="text-[9px] font-bold uppercase tracking-widest dash-muted bg-kado-cream/80 px-2 py-0.5 rounded-full shrink-0">
+                      Hidden
+                    </span>
+                  )}
                 </button>
-                {editingCategoryId === cat.id ? (
-                  <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 ml-auto">
+                  {editingCategoryId === cat.id ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={commitCategoryRename}
+                        className="rounded-lg p-2 text-kado-red hover:bg-kado-red/10"
+                        aria-label="Save category name"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategoryId(null);
+                          setEditingCategoryName('');
+                        }}
+                        className="rounded-lg p-2 dash-muted hover:bg-kado-cream/80"
+                        aria-label="Cancel rename"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
-                      onClick={commitCategoryRename}
-                      className="text-kado-red hover:text-kado-dark p-1"
+                      onClick={() => beginCategoryRename(cat)}
+                      className="rounded-lg p-2 dash-muted hover:bg-kado-cream/80 hover:text-kado-red"
+                      aria-label={`Rename ${cat.name}`}
                     >
-                      <Check className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCategoryId(null);
-                        setEditingCategoryName('');
-                      }}
-                      className="dash-muted hover:text-kado-dark p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
+                  )}
                   <button
                     type="button"
-                    onClick={() => beginCategoryRename(cat)}
-                    className="dash-muted hover:text-kado-red p-1"
+                    onClick={() => updateCategory(cat.id, { visible: !cat.visible })}
+                    className={`rounded-lg p-2 transition-colors ${
+                      cat.visible ? 'dash-muted hover:bg-kado-cream/80' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    }`}
+                    title={cat.visible ? 'Hide category from menu' : 'Show category on menu'}
+                    aria-label={cat.visible ? 'Hide category' : 'Show category'}
                   >
-                    <Pencil className="w-4 h-4" />
+                    {cat.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </button>
-                )}
-                <label className="flex items-center gap-1.5 text-xs dash-muted shrink-0" title="Hide entire category from public menu and QR">
-                  <input
-                    type="checkbox"
-                    checked={!cat.visible}
-                    onChange={(e) => updateCategory(cat.id, { visible: !e.target.checked })}
-                    className="rounded"
-                  />
-                  Hide
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm(`Delete "${cat.name}" and all its products?`)) removeCategory(cat.id);
-                  }}
-                  className="text-red-500 hover:text-red-700 p-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Delete "${cat.name}" and all its products?`)) removeCategory(cat.id);
+                    }}
+                    className="rounded-lg p-2 text-red-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Delete ${cat.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Expanded product list */}
               {isExpanded && (
-                <div className="border-t dash-border px-5 py-4 space-y-2">
+                <div className="border-t dash-border px-4 py-3 sm:px-5 space-y-2">
                   {catProducts.map((p, pIndex) => (
                     <div
                       key={p.id}
-                      className="flex items-center gap-3 rounded-xl dash-card-alt border dash-border px-4 py-3"
+                      className="flex flex-col gap-2 rounded-xl dash-card-alt border dash-border px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3"
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -826,100 +834,105 @@ export default function AdminMenu() {
                         setDrag(null);
                       }}
                     >
-                      <span
-                        className="cursor-grab active:cursor-grabbing touch-none p-1 -m-1 rounded hover:bg-white shrink-0"
-                        draggable
-                        onDragStart={(e) => {
-                          e.stopPropagation();
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDrag({ kind: 'prod', categoryId: cat.id, from: pIndex });
-                        }}
-                        onDragEnd={onDragEnd}
-                        aria-label={`Drag to reorder ${p.name}`}
-                      >
-                        <GripVertical className="w-4 h-4 dash-muted" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-kado-dark dash-heading truncate">{p.name}</span>
-                          {!p.visible && (
-                            <span className="text-[9px] uppercase tracking-widest font-bold dash-muted dash-card-alt px-2 py-0.5 rounded-full">
-                              Hidden
-                            </span>
-                          )}
-                          {!isProductInStock(p) && (
-                            <span className="text-[9px] uppercase tracking-widest font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
-                              Out of stock
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs dash-muted mt-0.5 flex gap-2 flex-wrap">
-                          {catIsPastry && !pastryHasPrice(p) ? (
-                            <span>No listed price</span>
-                          ) : (
-                            <span>{formatPhp(p.basePrice)}</span>
-                          )}
-                          {catIsPastry && isMixMatchCookie(p) ? (
-                            <span className="rounded-full bg-[#1e4d8c]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#1e4d8c]">
-                              Mix &amp; Match
-                            </span>
-                          ) : null}
-                          {catIsPastry && isCollabPastry(p) ? (
-                            <span className="rounded-full bg-kado-red/10 px-2 py-0.5 text-[9px] font-bold uppercase text-kado-red">
-                              Collab
-                            </span>
-                          ) : null}
-                          {!catIsPastry && (
-                            <>
-                              <span>{p.temperature}</span>
-                              {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
-                              {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
-                              {p.customFields?.length > 0 && <span>{p.customFields.length} custom group(s)</span>}
-                              {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
-                            </>
-                          )}
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <span
+                          className="cursor-grab active:cursor-grabbing touch-none rounded-lg p-1.5 hover:bg-white shrink-0"
+                          draggable
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDrag({ kind: 'prod', categoryId: cat.id, from: pIndex });
+                          }}
+                          onDragEnd={onDragEnd}
+                          aria-label={`Drag to reorder ${p.name}`}
+                        >
+                          <GripVertical className="w-4 h-4 dash-muted" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="font-bold text-sm dash-heading truncate">{p.name}</span>
+                            {!p.visible && (
+                              <span className="text-[9px] uppercase tracking-widest font-bold dash-muted bg-white/80 px-2 py-0.5 rounded-full">
+                                Hidden
+                              </span>
+                            )}
+                            {!isProductInStock(p) && (
+                              <span className="text-[9px] uppercase tracking-widest font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                Out of stock
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs dash-muted mt-0.5 flex gap-x-2 gap-y-0.5 flex-wrap">
+                            {catIsPastry && !pastryHasPrice(p) ? (
+                              <span>No listed price</span>
+                            ) : (
+                              <span className="font-semibold text-kado-dark/80">{formatPhp(p.basePrice)}</span>
+                            )}
+                            {catIsPastry && isMixMatchCookie(p) ? (
+                              <span className="rounded-full bg-[#1e4d8c]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#1e4d8c]">
+                                Mix &amp; Match
+                              </span>
+                            ) : null}
+                            {catIsPastry && isCollabPastry(p) ? (
+                              <span className="rounded-full bg-kado-red/10 px-2 py-0.5 text-[9px] font-bold uppercase text-kado-red">
+                                Collab
+                              </span>
+                            ) : null}
+                            {!catIsPastry && (
+                              <>
+                                <span>{p.temperature}</span>
+                                {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
+                                {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
+                                {p.customFields?.length > 0 && <span>{p.customFields.length} custom</span>}
+                                {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <MenuProductStockButton product={p} />
-                      <label
-                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider dash-muted shrink-0"
-                        title="Hide from public menu, pastries page, and QR ordering"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!p.visible}
-                          onChange={() => updateProduct(p.id, { visible: !p.visible })}
-                          className="rounded"
-                        />
-                        Hide
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => startEditProduct(p)}
-                        className="dash-muted hover:text-kado-red p-1"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteProduct(p.id)}
-                        disabled={deletingProductId === p.id}
-                        className={`p-1 transition-colors ${
-                          deleteConfirmProductId === p.id
-                            ? 'text-red-600 font-bold'
-                            : 'text-red-400 hover:text-red-600'
-                        } disabled:opacity-50`}
-                        title={deleteConfirmProductId === p.id ? 'Click again to confirm delete' : 'Delete product'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-0.5 sm:shrink-0">
+                        <MenuProductStockButton product={p} size="icon" />
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(p.id, { visible: !p.visible })}
+                          className={`rounded-lg p-2 transition-colors ${
+                            p.visible ? 'dash-muted hover:bg-white' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                          }`}
+                          title={p.visible ? 'Hide from menu' : 'Show on menu'}
+                          aria-label={p.visible ? 'Hide product' : 'Show product'}
+                        >
+                          {p.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEditProduct(p)}
+                          className="rounded-lg p-2 dash-muted hover:bg-white hover:text-kado-red"
+                          aria-label={`Edit ${p.name}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteProduct(p.id)}
+                          disabled={deletingProductId === p.id}
+                          className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${
+                            deleteConfirmProductId === p.id
+                              ? 'bg-red-50 text-red-600'
+                              : 'text-red-400 hover:bg-red-50 hover:text-red-600'
+                          }`}
+                          title={deleteConfirmProductId === p.id ? 'Click again to confirm delete' : 'Delete product'}
+                          aria-label={`Delete ${p.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
 
                   <button
                     type="button"
                     onClick={() => startAddProduct(cat.id)}
-                    className="w-full rounded-xl border-2 border-dashed dash-border py-3 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red hover:text-kado-red transition-colors flex items-center justify-center gap-1"
+                    className="w-full rounded-lg border border-dashed dash-border py-2.5 text-[10px] font-bold uppercase tracking-wider dash-muted hover:border-kado-red hover:text-kado-red transition-colors flex items-center justify-center gap-1"
                   >
                     <Plus className="w-4 h-4" /> {catIsPastry ? 'Add pastry' : 'Add product'}
                   </button>
@@ -929,6 +942,7 @@ export default function AdminMenu() {
           );
         })}
       </div>
+      </Tabs>
 
       {/* Product form modal */}
       {(editingProduct || addingToCat) && (
