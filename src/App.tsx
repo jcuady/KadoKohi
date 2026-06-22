@@ -122,12 +122,12 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/signup" element={<Signup />} />
-        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
-        <Route path="/management-portal" element={<InternalLogin />} />
-        <Route path="/management-portal/forgot-password" element={<ForgotPassword variant="internal" />} />
+        <Route path="/auth/login/*" element={<Login />} />
+        <Route path="/auth/signup/*" element={<Signup />} />
+        <Route path="/auth/forgot-password/*" element={<ForgotPassword />} />
+        <Route path="/auth/reset-password/*" element={<ResetPassword />} />
+        <Route path="/management-portal/forgot-password/*" element={<ForgotPassword variant="internal" />} />
+        <Route path="/management-portal/*" element={<InternalLogin />} />
 
         <Route element={<RoleGate allowed={['admin']} />}>
           <Route

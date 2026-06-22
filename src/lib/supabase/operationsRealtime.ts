@@ -20,7 +20,7 @@ import { useBlogStore } from '../../store/blogStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
 import { useAuthStore } from '../../store/authStore';
-import { defaultAdminOrderScope, orderScopeForUser } from '../orderFetchScope';
+import { orderScopeForUser } from '../orderFetchScope';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -144,9 +144,12 @@ function onTableChange(table: OpsTable) {
 export async function refreshOperationsData(): Promise<void> {
   const user = useAuthStore.getState().user;
   const adminScope = useOrderStore.getState().adminFetchScope ?? undefined;
-  const orderScope = orderScopeForUser(user, adminScope) ?? defaultAdminOrderScope();
+  const orderScope = orderScopeForUser(user, adminScope);
+  const orderHydrate = orderScope
+    ? useOrderStore.getState().hydrateFromRemote(orderScope)
+    : useOrderStore.getState().hydrateFromRemote({ limit: 0 });
   await Promise.all([
-    useOrderStore.getState().hydrateFromRemote(orderScope),
+    orderHydrate,
     useMenuStore.getState().hydrateFromRemote(),
     useUserStore.getState().hydrateFromRemote(),
     useTableStore.getState().hydrateFromRemote(),

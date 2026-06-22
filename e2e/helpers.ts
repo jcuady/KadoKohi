@@ -3,14 +3,38 @@ import { resolve } from 'path';
 import { type APIRequestContext, type Page, expect } from '@playwright/test';
 
 /**
- * Shared test credentials (live Supabase project idwtlujcdfnnndxmlaco).
- * All seeded accounts share the same password.
+ * Shared test credentials (Clerk + kk_profiles on project idwtlujcdfnnndxmlaco).
+ * Run scripts/migrate_users_to_clerk.py after cutover so clerk_user_id is set.
  */
 export const CREDS = {
   admin: { email: 'admin@kadokohi.com', password: 'KadoKohi2026!' },
   barista: { email: 'barista@kadokohi.com', password: 'KadoKohi2026!' },
   customer: { email: 'customer@kadokohi.com', password: 'KadoKohi2026!' },
 };
+
+/** Internal portal sign-in (email + password only — no verification codes). */
+async function fillInternalSignIn(page: Page, email: string, password: string): Promise<void> {
+  const emailInput = page.locator('#internal-email');
+  await emailInput.waitFor({ state: 'visible', timeout: 20000 });
+  await emailInput.fill(email);
+  await page.locator('#internal-password').fill(password);
+  await page.getByRole('button', { name: /^sign in$/i }).click();
+}
+
+/** Clerk embedded SignIn field selectors (customer login). */
+async function fillClerkSignIn(page: Page, email: string, password: string): Promise<void> {
+  const identifier = page.locator('input[name="identifier"], input[type="email"]').first();
+  await identifier.waitFor({ state: 'visible', timeout: 20000 });
+  await identifier.fill(email);
+  const continueBtn = page.getByRole('button', { name: /continue/i }).first();
+  if (await continueBtn.isVisible().catch(() => false)) {
+    await continueBtn.click();
+  }
+  const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
+  await passwordInput.waitFor({ state: 'visible', timeout: 20000 });
+  await passwordInput.fill(password);
+  await page.getByRole('button', { name: /continue|sign in/i }).first().click();
+}
 
 /** Dismiss cookie banner when it blocks taps (common on mobile e2e). */
 export async function dismissCookieConsent(page: Page): Promise<void> {
@@ -24,10 +48,8 @@ export async function dismissCookieConsent(page: Page): Promise<void> {
 export async function customerLogin(page: Page): Promise<void> {
   await page.goto('/auth/login');
   await dismissCookieConsent(page);
-  await page.locator('input#email').fill(CREDS.customer.email);
-  await page.locator('input#password').fill(CREDS.customer.password);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL(/\/account/, { timeout: 30000 });
+  await fillClerkSignIn(page, CREDS.customer.email, CREDS.customer.password);
+  await page.waitForURL(/\/account/, { timeout: 45000 });
 }
 
 type InternalRole = 'admin' | 'barista' | 'staff';
@@ -47,10 +69,8 @@ export async function internalLogin(
   await page.goto('/management-portal');
   await dismissCookieConsent(page);
   await page.getByRole('button', { name: new RegExp(`^${role}$`, 'i'), exact: false }).first().click();
-  await page.locator('input#email').fill(login.email);
-  await page.locator('input#password').fill(login.password);
-  await page.getByRole('button', { name: /sign in —/i }).click();
-  await page.waitForURL(new RegExp(`/${role}`), { timeout: 30000 });
+  await fillInternalSignIn(page, login.email, login.password);
+  await page.waitForURL(new RegExp(`/${role}`), { timeout: 45000 });
 }
 
 /**
@@ -113,19 +133,25 @@ function supabaseHeaders(cfg: { url: string; anonKey: string }, token?: string) 
   };
 }
 
-/** Password grant for seeded customer account (live Supabase). */
+/**
+ * Clerk session JWT for API tests (Supabase RLS via "supabase" template).
+ * Requires CLERK_SECRET_KEY + migrated test user; returns null when unavailable.
+ */
 export async function customerAccessToken(request: APIRequestContext): Promise<string | null> {
-  const cfg = supabaseAnonConfig();
-  if (!cfg) return null;
+  const file = loadDotEnv();
+  const clerkSecret = process.env.CLERK_SECRET_KEY ?? file.CLERK_SECRET_KEY;
+  if (!clerkSecret) return null;
 
-  const res = await request.post(`${cfg.url}/auth/v1/token?grant_type=password`, {
-    headers: supabaseHeaders(cfg),
-    data: { email: CREDS.customer.email, password: CREDS.customer.password },
+  const res = await request.post('https://api.clerk.com/v1/sign_in_tokens', {
+    headers: {
+      Authorization: `Bearer ${clerkSecret}`,
+      'Content-Type': 'application/json',
+    },
+    data: { user_id: process.env.E2E_CLERK_CUSTOMER_USER_ID ?? file.E2E_CLERK_CUSTOMER_USER_ID },
   });
-
   if (!res.ok()) return null;
-  const body = (await res.json()) as { access_token?: string };
-  return body.access_token ?? null;
+  const body = (await res.json()) as { token?: string };
+  return body.token ?? null;
 }
 
 export async function supabaseGet<T>(

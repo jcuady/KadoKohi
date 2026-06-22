@@ -1053,10 +1053,35 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
+  /** Customer/staff profile patch — UPDATE only (row created by kk_ensure_my_profile or admin). */
+  async updateProfile(
+    id: string,
+    patch: { name?: string; email?: string; phone?: string | null; loyaltyStamps?: number },
+  ) {
+    if (!supabase) return;
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.name !== undefined) dbPatch.name = patch.name;
+    if (patch.email !== undefined) dbPatch.email = patch.email;
+    if (patch.phone !== undefined) dbPatch.phone = patch.phone;
+    if (patch.loyaltyStamps !== undefined) dbPatch.loyalty_stamps = patch.loyaltyStamps;
+    if (Object.keys(dbPatch).length === 0) return;
+    const { error } = await supabase.from('kk_profiles').update(dbPatch).eq('id', id);
+    if (error) throw error;
+  },
   async deleteUser(id: string) {
     if (!supabase) return;
     const { error } = await supabase.from('kk_profiles').delete().eq('id', id);
     if (error) throw error;
+  },
+  async fetchUserByClerkId(clerkUserId: string): Promise<User | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_profiles')
+      .select('*')
+      .eq('clerk_user_id', clerkUserId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapUser(data as Parameters<typeof mapUser>[0]);
   },
   /** Fetch a single profile row by ID (used when the local store may not have it). */
   async fetchUserById(id: string): Promise<User | null> {

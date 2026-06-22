@@ -51,8 +51,8 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 | Styling | Tailwind CSS v4 (`@theme` tokens: `kado-cream`, `kado-red`, `kado-dark`, `kado-offwhite`) |
 | Animation | `motion/react`, GSAP (select sections) |
 | Client state | Zustand (caches synced to Supabase — **not** local-only mock) |
-| Backend | Supabase: Auth, Postgres (`kk_*` tables), Storage, Realtime, RPCs |
-| Edge functions | `kk-customer-signup`, `kk-admin-users`, `kk-send-contact`, `kk-send-push` |
+| Backend | Supabase: Postgres (`kk_*` tables), Storage, Realtime, RPCs; **Clerk** for identity |
+| Edge functions | `kk-clerk-webhook`, `kk-admin-users`, `kk-send-contact`, `kk-send-push` |
 | Email | Resend (contact form, Kado Circle signups) |
 | PWA | `vite-plugin-pwa`, service worker, push scaffold |
 | E2E | Playwright (`e2e/*.spec.ts`) |
@@ -62,7 +62,7 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 - Routes: `src/App.tsx`
 - Bootstrap/hydration: `src/main.tsx`
 - Domain types: `src/types/domain.ts`
-- Auth: `src/store/authStore.ts`, `src/lib/supabase/repositories/auth.ts`
+- Auth: `src/store/authStore.ts`, `src/components/ClerkAuthBridge.tsx`, `src/lib/clerk/*`, `src/lib/supabase/client.ts`
 - Orders: `src/store/orderStore.ts`, `src/lib/supabase/repositories/ordering.ts`
 - Route guard: `src/components/RoleGate.tsx`
 - Roles: `src/lib/roles.ts`
@@ -88,7 +88,7 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 - Customer login at `/auth/login` does **not** expose admin/barista/staff tabs (per `kado-kohi-revisions.md`).
 - Internal login at `/management-portal` validates role matches selected tab; mismatched role logs out immediately.
 
-**Session:** Supabase Auth JWT in localStorage. Profile resolved from `kk_profiles` via `orderingRepo.fetchUserById` / `ensureMyProfile`.
+**Session:** Clerk (`@clerk/clerk-react`) issues the session; Supabase client attaches the Clerk **session token** (native third-party auth — not the deprecated `supabase` JWT template). Profile resolved from `kk_profiles` via `clerk_user_id` bridge (`requesting_profile_id()` in DB).
 
 ---
 

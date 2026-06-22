@@ -1,13 +1,13 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Coffee, Gift, LogIn, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { SignIn, useAuth, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
+import { Coffee, Gift, MapPin } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { isValidEmail } from '../../lib/validation';
-import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { isInternalRole } from '../../lib/roles';
 import AuthAlert from '../../components/auth/AuthAlert';
 import AuthBrandMark from '../../components/auth/AuthBrandMark';
-import PasswordField from '../../components/auth/PasswordField';
+import AuthSessionGate from '../../components/AuthSessionGate';
+import { clerkAppearance } from '../../lib/clerk/appearance';
 
 const perks = [
   { icon: Gift, text: 'Track Kado Circle stamps and rewards' },
@@ -18,46 +18,28 @@ const perks = [
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const signIn = useAuthStore((s) => s.signIn);
-  const from = (location.state as { from?: string } | null)?.from;
+  const { isSignedIn } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
+  const logout = useAuthStore((s) => s.logout);
   const notice = (location.state as { notice?: string } | null)?.notice;
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const isSsoCallback = location.pathname.includes('/sso-callback');
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required.');
+  useEffect(() => {
+    if (!isSignedIn || loading) return;
+    if (!user) return;
+    if (isInternalRole(user.role)) {
+      void logout();
+      setError('This sign-in is for customer accounts only. Staff should use the management portal.');
       return;
     }
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email address.');
-      return;
+    const from = (location.state as { from?: string } | null)?.from;
+    const target = from && from.startsWith('/account') ? from : '/account';
+    if (!location.pathname.startsWith(target)) {
+      navigate(target, { replace: true });
     }
-
-    setSubmitting(true);
-    try {
-      await signIn(email.trim().toLowerCase(), password);
-      const role = useAuthStore.getState().user?.role;
-      if (role && isInternalRole(role)) {
-        await useAuthStore.getState().logout();
-        setError('This sign-in is for customer accounts only. Staff should use the management portal.');
-        setSubmitting(false);
-        return;
-      }
-      navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
-    } catch (err) {
-      setError(
-        formatAuthErrorMessage(err, 'Invalid credentials. Please check your email and password.'),
-      );
-      setSubmitting(false);
-    }
-  };
+  }, [isSignedIn, loading, user, logout, navigate, location.state, location.pathname]);
 
   const formPanel = (
     <div className="w-full max-w-md mx-auto lg:max-w-none">
@@ -71,65 +53,27 @@ export default function Login() {
       {notice && !error && <AuthAlert variant="success">{notice}</AuthAlert>}
       {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
-      <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError('');
-            }}
-            className="w-full rounded-xl border border-kado-dark/12 bg-white px-4 py-3 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red"
-            placeholder="you@email.com"
+      {isSsoCallback ? (
+        <AuthSessionGate loadingMessage="Completing Google sign-in…">
+          <div className="flex flex-col items-center gap-4 py-10">
+            <AuthenticateWithRedirectCallback
+              signInFallbackRedirectUrl="/account"
+              signUpFallbackRedirectUrl="/account"
+            />
+          </div>
+        </AuthSessionGate>
+      ) : (
+        <AuthSessionGate loadingMessage="Completing sign-in…">
+          <SignIn
+            routing="path"
+            path="/auth/login"
+            signUpUrl="/auth/signup"
+            appearance={clerkAppearance}
+            fallbackRedirectUrl="/account"
+            forceRedirectUrl="/account"
           />
-        </div>
-
-        <PasswordField
-          id="password"
-          label="Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            setError('');
-          }}
-          required
-        />
-
-        <div className="flex justify-end">
-          <Link
-            to="/auth/forgot-password"
-            className="text-xs font-bold uppercase tracking-wider text-kado-red hover:underline underline-offset-2"
-          >
-            Forgot password?
-          </Link>
-        </div>
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-2xl bg-kado-red text-kado-cream py-3.5 font-bold uppercase tracking-[0.14em] text-xs hover:bg-kado-dark transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2 shadow-md shadow-kado-red/15"
-        >
-          <LogIn className="w-4 h-4" />
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-kado-dark/60">
-        New here?{' '}
-        <Link to="/auth/signup" className="font-bold text-kado-red hover:underline underline-offset-2">
-          Create an account
-        </Link>
-      </p>
+        </AuthSessionGate>
+      )}
 
       <Link
         to="/"

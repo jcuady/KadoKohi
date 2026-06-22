@@ -5,3 +5,7 @@ verify_jwt = false
 # Public contact + Kado Circle email capture (rate-limited; uses Resend when configured).
 [functions.kk-send-contact]
 verify_jwt = false
+
+# Management portal sign-in (password verified server-side; returns Clerk ticket).
+[functions.kk-internal-login]
+verify_jwt = false

@@ -48,7 +48,8 @@ export function orderScopeForUser(user: User | null, adminScope?: FetchOrdersSco
   if (user.role === 'customer') {
     return { customerId: user.id, limit: 100 };
   }
-  if (user.role === 'barista' && user.branchId) {
+  if (user.role === 'barista') {
+    if (!user.branchId) return { limit: 0 };
     return {
       branchId: user.branchId,
       channels: BARISTA_ORDER_CHANNELS,

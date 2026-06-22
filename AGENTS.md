@@ -19,6 +19,7 @@ Cursor loads `.cursor/rules/project-context.mdc` automatically in every chat.
 | Secrets | Never commit `.env`, service role keys, or tokens |
 | Branches | Active: `branch_marikina` / `marikina`, `branch_greenhills` / `greenhills` |
 | Internal login | `/management-portal` only (not on customer `/auth/login`) |
+| Auth | Clerk for all roles; `VITE_CLERK_PUBLISHABLE_KEY` required; edge secrets `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET` |
 | Ground truth | `src/App.tsx` → `src/types/domain.ts` → `supabase/migrations/` → this doc |
 
 ## Verify changes
@@ -37,7 +38,7 @@ Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills
 | Routes | `src/App.tsx` |
 | Bootstrap | `src/main.tsx` |
 | Domain types | `src/types/domain.ts` |
-| Auth | `src/store/authStore.ts`, `src/lib/supabase/repositories/auth.ts` |
+| Auth | `src/store/authStore.ts`, `src/components/ClerkAuthBridge.tsx`, `src/lib/clerk/`, `src/lib/supabase/client.ts` |
 | Orders | `src/store/orderStore.ts`, `src/lib/supabase/repositories/ordering.ts` |
 | QR ordering | `src/pages/OrderQR.tsx`, `src/pages/OrderTakeout.tsx` |
 | Online cart | `src/components/CartDrawer.tsx` |

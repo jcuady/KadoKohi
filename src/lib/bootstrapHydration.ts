@@ -14,6 +14,7 @@ import { useMerchStore } from '../store/merchStore';
 import { useOrderStore } from '../store/orderStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useVoucherStore } from '../store/voucherStore';
+import { isProfileUuid } from './id';
 import {
   refreshOperationsData,
   startOperationsRealtime,
@@ -95,6 +96,9 @@ export function hydrateBookingMatcha(): Promise<void> {
 }
 
 export function hydrateCustomerAccount(customerId: string): Promise<void> {
+  if (!isProfileUuid(customerId)) {
+    return Promise.resolve();
+  }
   return runOnce(`customer-${customerId}`, async () => {
     await Promise.all([
       useOrderStore.getState().hydrateForCustomer(customerId),

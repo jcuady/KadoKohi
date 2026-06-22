@@ -34,6 +34,8 @@ const SEED_USERS: User[] = [
 export interface UserStore {
   users: User[];
   hydrateFromRemote: () => Promise<void>;
+  /** In-memory cache only — used after Clerk → kk_profiles hydrate (no remote upsert). */
+  setLocalUser: (user: User) => void;
   addUser: (input: Omit<User, 'id' | 'createdAt'> & { id?: string }) => User;
   updateUser: (id: string, patch: Partial<User>) => Promise<void>;
   /** Admin/barista manual stamp adjustment (delta can be negative). Audited. */
@@ -54,6 +56,15 @@ export const useUserStore = create<UserStore>()((set, get) => ({
         } catch {
           // Keep in-memory state when remote fetch fails.
         }
+      },
+
+      setLocalUser: (user) => {
+        const existing = get().users.find((u) => u.id === user.id);
+        if (existing) {
+          set({ users: get().users.map((u) => (u.id === user.id ? { ...existing, ...user } : u)) });
+          return;
+        }
+        set({ users: [...get().users, user] });
       },
 
       addUser: (input) => {
@@ -80,31 +91,38 @@ export const useUserStore = create<UserStore>()((set, get) => ({
 
       updateUser: async (id, patch) => {
         const existing = get().users.find((u) => u.id === id);
-        if (!existing) {
-          const inserted: User = {
-            id,
-            email: typeof patch.email === 'string' ? patch.email : `${id}@kadokohi.local`,
-            name: typeof patch.name === 'string' ? patch.name : 'User',
-            role: (patch.role as Role | undefined) ?? 'customer',
-            branchId: patch.branchId,
-            loyaltyStamps: patch.loyaltyStamps,
-            createdAt: typeof patch.createdAt === 'string' ? patch.createdAt : new Date().toISOString(),
-          };
-          await orderingRepo.upsertUser(inserted);
-          set({ users: [...get().users, inserted] });
-          return;
-        }
-        const merged = { ...existing, ...patch };
+        const merged = existing ? { ...existing, ...patch } : ({
+          id,
+          email: typeof patch.email === 'string' ? patch.email : `${id}@kadokohi.local`,
+          name: typeof patch.name === 'string' ? patch.name : 'User',
+          role: (patch.role as Role | undefined) ?? 'customer',
+          branchId: patch.branchId,
+          loyaltyStamps: patch.loyaltyStamps,
+          createdAt: typeof patch.createdAt === 'string' ? patch.createdAt : new Date().toISOString(),
+        } as User);
         const updated: User =
           merged.role === 'admin'
             ? { ...merged, branchId: undefined, phone: undefined }
             : merged.role === 'customer'
               ? { ...merged, branchId: undefined }
               : { ...merged, phone: undefined, branchId: merged.branchId };
-        await orderingRepo.upsertUser(updated);
-        set({
-          users: get().users.map((u) => (u.id === id ? updated : u)),
-        });
+
+        if (updated.role === 'customer') {
+          await orderingRepo.updateProfile(id, {
+            name: updated.name,
+            email: updated.email,
+            phone: updated.phone ?? null,
+            loyaltyStamps: updated.loyaltyStamps,
+          });
+        } else {
+          await orderingRepo.upsertUser(updated);
+        }
+
+        if (existing) {
+          set({ users: get().users.map((u) => (u.id === id ? updated : u)) });
+        } else {
+          set({ users: [...get().users, updated] });
+        }
         logAudit({
           action: 'user.updated',
           entityType: 'user',

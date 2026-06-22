@@ -149,7 +149,20 @@ export default function AdminUsers() {
     setSaving(true);
     try {
       if (editingId) {
-        await updateUser(editingId, payload);
+        const existing = users.find((u) => u.id === editingId);
+        const viaEdge =
+          isInternalRole(payload.role) || (existing != null && isInternalRole(existing.role));
+        if (viaEdge) {
+          await authRepo.updateInternalUser({
+            userId: editingId,
+            name: payload.name,
+            email: payload.email,
+            role: payload.role as Extract<Role, 'admin' | 'barista' | 'staff' | 'customer'>,
+            branchId: payload.branchId,
+          });
+        } else {
+          await updateUser(editingId, payload);
+        }
         await hydrateUsers();
       } else {
         if (password.trim().length < 8) {
@@ -410,7 +423,8 @@ export default function AdminUsers() {
                     {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                   <p className="text-[10px] dash-muted mt-1">
-                    {form.role === 'staff' ? 'Staff' : 'Barista'} only sees orders and bookings for this branch.
+                    {form.role === 'staff' ? 'Staff' : 'Barista'} only sees orders for this branch.
+                    {editingId ? ' They must sign out and back in after a branch change.' : ''}
                   </p>
                 </div>
               )}
