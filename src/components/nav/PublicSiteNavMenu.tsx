@@ -195,7 +195,7 @@ function MobileNavItem({ item, onNavigate }: { item: NavItem; onNavigate: () => 
 
 export function PublicSiteNavDesktop() {
   return (
-    <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+    <div className="hidden min-w-0 flex-1 justify-center xl:flex">
       <nav aria-label="Main" className="public-nav-shell">
         {PUBLIC_SITE_NAV.map((item) => (
           <Fragment key={item.label}>

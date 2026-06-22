@@ -519,20 +519,94 @@ html.public-light {
 
 /*
  * Customer-facing density (~80% browser zoom) on home, menu, merch, auth, account, QR/takeout.
- * ponytail: one html class toggled by usePublicLightDocumentTheme; ops portals excluded.
- * zoom where supported (Chrome/Safari/Edge); rem root fallback for Firefox.
+ * Orientation-aware clamp; zoom where supported (scales px + rem); rem root fallback for Firefox.
  */
 html.customer-facing {
+  --public-nav-h: 3.25rem;
   --customer-ui-scale: 0.8;
   font-size: calc(100% * var(--customer-ui-scale));
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
+@media (orientation: portrait) and (max-width: 48rem) {
+  html.customer-facing {
+    --customer-ui-scale: clamp(0.84, 2vw + 0.8, 0.9);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  html.customer-facing {
+    --customer-ui-scale: 0.76;
+    --public-nav-h: 3rem;
+  }
+}
+
+@media (min-width: 90rem) {
+  html.customer-facing {
+    --customer-ui-scale: 0.8;
+  }
+}
+
 @supports (zoom: 1) {
   html.customer-facing {
     font-size: 100%;
     zoom: var(--customer-ui-scale);
+  }
+}
+
+/* Desktop nav shell — compact between xl and 2xl so pills do not collide with logo/actions */
+@media (min-width: 80rem) and (max-width: 96rem) {
+  html.customer-facing .public-nav-link {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+
+  html.customer-facing .public-nav-shell {
+    gap: 0.0625rem;
+    padding: 0.2rem 0.28rem;
+  }
+}
+
+html.customer-facing .public-nav-shell {
+  flex-wrap: nowrap;
+}
+
+/* Homepage hero — fluid height across portrait / landscape */
+.landing-hero {
+  --hero-nav-offset: var(--public-nav-h, 3.25rem);
+  min-height: max(34rem, calc(100svh - var(--hero-nav-offset)));
+  height: max(34rem, calc(100svh - var(--hero-nav-offset)));
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  .landing-hero {
+    min-height: max(22rem, calc(100svh - var(--hero-nav-offset)));
+    height: auto;
+  }
+
+  .landing-hero-cards {
+    display: none !important;
+  }
+
+  .landing-hero-copy {
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 40rem) and (orientation: landscape) {
+  .landing-hero-cards {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    max-width: 28rem !important;
+  }
+
+  .landing-hero-cards article {
+    max-height: 8rem;
+  }
+
+  .landing-hero-cards .landing-hero-card-media {
+    aspect-ratio: 4 / 3;
   }
 }
 

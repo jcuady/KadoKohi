@@ -52,7 +52,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-kado-cream flex items-center justify-center px-6 py-16">
+    <div className="customer-surface min-h-screen bg-kado-cream flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-lg rounded-[2rem] border border-kado-dark/10 bg-kado-offwhite p-8 md:p-10 shadow-2xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">

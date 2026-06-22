@@ -115,7 +115,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-kado-offwhite lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden">
+    <div className="customer-surface min-h-dvh flex flex-col bg-kado-offwhite lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden">
       {/* Brand panel — desktop (fits viewport; no page scroll) */}
       <aside className="relative hidden lg:flex lg:w-[44%] xl:w-[42%] h-full min-h-0 flex-col shrink-0 justify-between overflow-hidden bg-kado-dark text-kado-cream px-6 xl:px-10 py-6 xl:py-8">
         <div

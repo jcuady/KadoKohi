@@ -44,7 +44,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="public-nav-icon-btn lg:hidden"
+            className="public-nav-icon-btn xl:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
             aria-expanded={mobileOpen}
@@ -89,7 +89,7 @@ export default function Navbar() {
             )}
             <Link
               to={authLink.path}
-              className="public-nav-ghost hidden lg:inline-flex"
+              className="public-nav-ghost hidden xl:inline-flex"
             >
               <AuthIcon className="h-5 w-5 shrink-0" aria-hidden />
               <span className="hidden xl:inline max-w-[7rem] truncate">{authLink.label}</span>
@@ -108,7 +108,7 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[110] bg-kado-dark/55 lg:hidden"
+              className="fixed inset-0 z-[110] bg-kado-dark/55 xl:hidden"
               onClick={closeMobile}
             />
             <motion.aside
@@ -117,7 +117,7 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed top-0 right-0 z-[120] flex h-full w-[min(88vw,22rem)] flex-col bg-kado-red text-white shadow-2xl lg:hidden"
+              className="fixed top-0 right-0 z-[120] flex h-full w-[min(88vw,22rem)] flex-col bg-kado-red text-white shadow-2xl xl:hidden"
             >
               <div className="flex h-14 items-center justify-between border-b border-white/15 px-4">
                 <Link to="/" onClick={closeMobile} className="shrink-0">

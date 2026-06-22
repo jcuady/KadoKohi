@@ -102,7 +102,7 @@ export default function HelpInstall() {
   const steps = tab === 'android' ? ANDROID_STEPS : IOS_STEPS;
 
   return (
-    <div className="min-h-screen bg-kado-offwhite font-sans selection:bg-kado-red selection:text-white">
+    <div className="customer-surface min-h-screen bg-kado-offwhite font-sans selection:bg-kado-red selection:text-white">
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 border-b border-kado-dark/10 bg-kado-cream/90 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-5 py-4 flex items-center gap-4">
