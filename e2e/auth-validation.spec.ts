@@ -64,7 +64,7 @@ test.describe('Internal portal', () => {
     await page.goto('/management-portal');
     await page.locator('input#email').fill('customer@kadokohi.com');
     await page.locator('input#password').fill('KadoKohi2026!');
-    await page.getByRole('button', { name: /sign in —/i }).click();
+    await page.getByRole('button', { name: /sign in as/i }).click();
     await expect(
       page.getByText(/for admin, barista, and staff accounts only/i),
     ).toBeVisible({ timeout: 20000 });

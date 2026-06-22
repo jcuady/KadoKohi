@@ -6,6 +6,7 @@ import { clampText, isValidEmail, requirePhilippinePhone } from '../../lib/valid
 import { normalizePhilippinePhone } from '../../lib/phonePhilippines';
 import PhilippinePhoneField from '../../components/PhilippinePhoneField';
 import SignupTermsConsent from '../../components/auth/SignupTermsConsent';
+import PasswordField from '../../components/auth/PasswordField';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 import {
@@ -288,12 +289,9 @@ export default function Signup() {
               />
               <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3 gap-3">
                 <div className="min-w-0">
-                  <label htmlFor="signup-password" className="block text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/55 mb-1">
-                    Password
-                  </label>
-                  <input
+                  <PasswordField
                     id="signup-password"
-                    type="password"
+                    label="Password"
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => {
@@ -302,17 +300,13 @@ export default function Signup() {
                     }}
                     required
                     minLength={8}
-                    className="w-full rounded-xl border border-kado-dark/12 bg-kado-offwhite/50 px-3 py-2.5 lg:py-2 text-sm text-kado-dark placeholder:text-kado-dark/35 focus:outline-none focus:ring-2 focus:ring-kado-red/25 focus:border-kado-red transition-shadow"
                     placeholder="8+ characters"
                   />
                 </div>
                 <div className="min-w-0">
-                  <label htmlFor="signup-confirm" className="block text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/55 mb-1">
-                    Confirm password
-                  </label>
-                  <input
+                  <PasswordField
                     id="signup-confirm"
-                    type="password"
+                    label="Confirm password"
                     autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => {
@@ -320,7 +314,6 @@ export default function Signup() {
                       setError('');
                     }}
                     required
-                    className="w-full rounded-xl border border-kado-dark/12 bg-kado-offwhite/50 px-3 py-2.5 lg:py-2 text-sm text-kado-dark placeholder:text-kado-dark/35 focus:outline-none focus:ring-2 focus:ring-kado-red/25 focus:border-kado-red transition-shadow"
                     placeholder="Repeat"
                   />
                 </div>

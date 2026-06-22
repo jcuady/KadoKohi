@@ -27,6 +27,7 @@ const NOINDEX_PATTERNS = [
   '/account/*',
   '/auth/*',
   '/management-portal',
+  '/management-portal/*',
   '/order/qr/:code',
   '/order/takeout',
   '/help/install',

@@ -10,6 +10,8 @@ import Branches from './pages/Branches';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import InternalLogin from './pages/auth/InternalLogin';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import Events from './pages/Events';
 import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
@@ -122,7 +124,10 @@ export default function App() {
 
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<Signup />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="/management-portal" element={<InternalLogin />} />
+        <Route path="/management-portal/forgot-password" element={<ForgotPassword variant="internal" />} />
 
         <Route element={<RoleGate allowed={['admin']} />}>
           <Route

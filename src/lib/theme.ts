@@ -6,7 +6,7 @@ import type { DashTheme } from '../store/settingsStore';
 const INTERNAL_PREFIXES = ['/admin', '/barista', '/staff'] as const;
 
 export function isInternalPortalPath(pathname: string): boolean {
-  if (pathname === '/management-portal') return true;
+  if (pathname === '/management-portal' || pathname.startsWith('/management-portal/')) return true;
   return INTERNAL_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
