@@ -59,10 +59,10 @@ export default function BaristaQueue() {
   };
 
   return (
-    <div className="dash-page p-4 md:p-8 max-w-4xl">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-display text-3xl font-bold dash-heading mb-1">Queue</h1>
+    <div className="dash-page max-w-4xl p-3 sm:p-4 md:p-8">
+      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold dash-heading mb-1 sm:text-3xl">Queue</h1>
           <p className="dash-muted text-xs">All orders (newest first). Open a row to set status or cancel.</p>
         </div>
         <Link
@@ -120,7 +120,7 @@ export default function BaristaQueue() {
         onApply={applyPatch}
       />
       {patchError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
+        <div className="dash-toast-bottom fixed z-[200] flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:px-5">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {patchError}
           <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>

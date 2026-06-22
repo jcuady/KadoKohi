@@ -12,9 +12,18 @@ export const CREDS = {
   customer: { email: 'customer@kadokohi.com', password: 'KadoKohi2026!' },
 };
 
+/** Dismiss cookie banner when it blocks taps (common on mobile e2e). */
+export async function dismissCookieConsent(page: Page): Promise<void> {
+  const accept = page.getByRole('button', { name: /I accept cookies/i });
+  if (await accept.isVisible().catch(() => false)) {
+    await accept.click();
+  }
+}
+
 /** Sign in via the customer login form and wait for the account area. */
 export async function customerLogin(page: Page): Promise<void> {
   await page.goto('/auth/login');
+  await dismissCookieConsent(page);
   await page.locator('input#email').fill(CREDS.customer.email);
   await page.locator('input#password').fill(CREDS.customer.password);
   await page.getByRole('button', { name: /sign in/i }).click();
@@ -36,6 +45,7 @@ export async function internalLogin(
     throw new Error(`No credentials configured for internal role: ${role}`);
   }
   await page.goto('/management-portal');
+  await dismissCookieConsent(page);
   await page.getByRole('button', { name: new RegExp(`^${role}$`, 'i'), exact: false }).first().click();
   await page.locator('input#email').fill(login.email);
   await page.locator('input#password').fill(login.password);

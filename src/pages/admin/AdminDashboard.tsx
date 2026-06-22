@@ -79,7 +79,7 @@ export default function AdminDashboard() {
             <select
               value={branchFilter}
               onChange={(e) => setBranchFilter(e.target.value)}
-              className="min-w-[10rem] bg-transparent text-xs font-bold uppercase tracking-wider outline-none"
+              className="w-full min-w-0 bg-transparent text-xs font-bold uppercase tracking-wider outline-none sm:min-w-[10rem]"
               aria-label="Filter by branch"
             >
               <option value="all">All branches</option>

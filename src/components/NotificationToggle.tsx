@@ -107,36 +107,53 @@ export default function NotificationToggle({
   if (variant === 'sidebar') {
     return (
       <div className="space-y-2 px-1">
-        <div className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-[var(--color-dash-hover)] transition-colors">
-          <label htmlFor={switchId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
-            <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                enabled ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
-              }`}
-            >
-              {enabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-[var(--color-dash-text)]">{title}</span>
-              <span className="block text-[10px] leading-snug text-[var(--color-dash-text-muted)]">
-                {enabled ? 'On for this device' : 'Tap to enable'}
+        <button
+          type="button"
+          onClick={() => void toggle()}
+          disabled={switchDisabled || busy}
+          title={enabled ? `${title} — on` : title}
+          className="flex w-full items-center justify-center rounded-lg p-2 transition-colors hover:bg-[var(--color-dash-hover)] disabled:opacity-45 md:hidden"
+        >
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+              enabled ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
+            }`}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : enabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+          </span>
+        </button>
+        <div className="hidden md:block">
+          <div className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-[var(--color-dash-hover)] transition-colors">
+            <label htmlFor={switchId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                  enabled ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
+                }`}
+              >
+                {enabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
               </span>
-            </span>
-          </label>
-          <ToggleSwitch
-            id={switchId}
-            checked={enabled}
-            disabled={switchDisabled}
-            busy={busy}
-            onToggle={() => void toggle()}
-          />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-[var(--color-dash-text)]">{title}</span>
+                <span className="block text-[10px] leading-snug text-[var(--color-dash-text-muted)]">
+                  {enabled ? 'On for this device' : 'Tap to enable'}
+                </span>
+              </span>
+            </label>
+            <ToggleSwitch
+              id={switchId}
+              checked={enabled}
+              disabled={switchDisabled}
+              busy={busy}
+              onToggle={() => void toggle()}
+            />
+          </div>
+          {status === 'denied' && (
+            <p className="px-2 text-[10px] leading-snug text-amber-600">
+              Blocked in browser settings — allow notifications for this site, then reload.
+            </p>
+          )}
+          {feedback && <div className="px-1"><FeedbackBanner feedback={feedback} /></div>}
         </div>
-        {status === 'denied' && (
-          <p className="px-2 text-[10px] leading-snug text-amber-600">
-            Blocked in browser settings — allow notifications for this site, then reload.
-          </p>
-        )}
-        {feedback && <div className="px-1"><FeedbackBanner feedback={feedback} /></div>}
       </div>
     );
   }

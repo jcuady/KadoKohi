@@ -175,7 +175,7 @@ export default function AdminPOS() {
           <select
             value={adminPosBranchId ?? ''}
             onChange={(e) => setAdminPosBranchId(e.target.value || null)}
-            className="rounded-xl dash-input border px-4 py-2.5 text-sm font-semibold min-w-[220px]"
+            className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm font-semibold sm:min-w-[220px] sm:max-w-xs"
           >
             {branches.map((b) => (
               <option key={b.id} value={b.id}>

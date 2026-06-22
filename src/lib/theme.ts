@@ -10,22 +10,34 @@ export function isInternalPortalPath(pathname: string): boolean {
   return INTERNAL_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+/** Public marketing, auth, account, QR/takeout — not admin/barista/staff portals. */
+export function isCustomerFacingPath(pathname: string): boolean {
+  return !isInternalPortalPath(pathname);
+}
+
 /** Customer-facing routes always use brand light mode (cream / red / dark text). */
 export function usePublicLightDocumentTheme(): void {
   const { pathname } = useLocation();
   const internal = isInternalPortalPath(pathname);
+  const customerFacing = isCustomerFacingPath(pathname);
 
   useEffect(() => {
-    if (internal) return;
     const root = document.documentElement;
+    if (internal) {
+      root.classList.remove('public-light', 'customer-facing');
+      root.style.colorScheme = '';
+      return;
+    }
     root.classList.remove('dash-dark');
     root.classList.add('public-light');
+    if (customerFacing) root.classList.add('customer-facing');
+    else root.classList.remove('customer-facing');
     root.style.colorScheme = 'light';
     return () => {
-      root.classList.remove('public-light');
+      root.classList.remove('public-light', 'customer-facing');
       root.style.colorScheme = '';
     };
-  }, [internal]);
+  }, [internal, customerFacing]);
 }
 
 export function useDashTheme(): { isDark: boolean; theme: DashTheme; toggle: () => void } {

@@ -163,10 +163,10 @@ export default function BaristaPOS() {
 
   return (
     <>
-    <div className="dash-page p-4 md:p-8">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">POS</h1>
+    <div className="dash-page p-3 sm:p-4 md:p-8">
+      <div className="mb-5 flex flex-col justify-between gap-4 sm:mb-6 lg:flex-row lg:items-end">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold dash-heading sm:text-3xl md:text-4xl">POS</h1>
           <p className="dash-muted text-sm mt-1">
             {lockedBranchId ? 'Locked to your branch.' : 'Admin: pick branch (synced with Admin POS selector).'}
           </p>
@@ -175,7 +175,7 @@ export default function BaristaPOS() {
           <select
             value={adminPosBranchId ?? ''}
             onChange={(e) => setAdminPosBranchId(e.target.value || null)}
-            className="rounded-xl border dash-input px-4 py-2.5 text-sm font-semibold max-w-xs"
+            className="w-full max-w-full rounded-xl border dash-input px-4 py-2.5 text-sm font-semibold sm:max-w-xs"
           >
             {branches.map((b) => (
               <option key={b.id} value={b.id}>

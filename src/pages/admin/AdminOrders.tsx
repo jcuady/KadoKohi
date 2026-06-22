@@ -161,7 +161,7 @@ export default function AdminOrders() {
   };
 
   return (
-    <div className={`dash-page flex min-w-0 flex-col gap-4 md:gap-6 ${viewMode === 'kanban' ? 'h-[calc(100dvh-7rem)] max-w-none' : 'max-w-7xl'}`}>
+    <div className={`dash-page flex min-w-0 flex-col gap-3 sm:gap-4 md:gap-6 ${viewMode === 'kanban' ? 'h-[calc(100dvh-5.5rem)] max-w-none md:h-[calc(100dvh-7rem)]' : 'max-w-7xl'}`}>
       {/* Header */}
       <Card>
         <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -177,7 +177,7 @@ export default function AdminOrders() {
               <select
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
-                className="min-w-[10rem] bg-transparent text-xs font-bold uppercase tracking-wider outline-none"
+                className="w-full min-w-0 bg-transparent text-xs font-bold uppercase tracking-wider outline-none sm:min-w-[10rem]"
                 aria-label="Filter by branch"
               >
                 <option value="all">All branches</option>
@@ -303,7 +303,8 @@ export default function AdminOrders() {
         </Card>
       ) : viewMode === 'table' ? (
         <Card className="overflow-hidden p-0">
-          <Table>
+          <div className="dash-table-scroll custom-scrollbar">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Order</TableHead>
@@ -387,10 +388,11 @@ export default function AdminOrders() {
               })}
             </TableBody>
           </Table>
+          </div>
         </Card>
       ) : (
         <div className="admin-orders-kanban min-h-0 min-w-0 flex-1">
-          <div className="grid h-full min-h-[min(520px,calc(100dvh-18rem))] auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
+          <div className="grid h-full min-h-[min(520px,calc(100dvh-14rem))] auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
             {KANBAN_COLUMNS.map((col) => {
               const colOrders = filtered
                 .filter((o) => kanbanColumnForOrder(o) === col.id)

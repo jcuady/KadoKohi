@@ -44,8 +44,8 @@ export default function BaristaMenu() {
   }
 
   return (
-    <div className="dash-page p-4 md:p-8 max-w-4xl">
-      <h1 className="font-display text-2xl md:text-3xl font-bold dash-heading mb-1">Menu</h1>
+    <div className="dash-page max-w-4xl p-3 sm:p-4 md:p-8">
+      <h1 className="font-display text-xl font-bold dash-heading mb-1 sm:text-2xl md:text-3xl">Menu</h1>
       <p className="dash-muted text-xs mb-6">
         Mark drinks out of stock when you run out — customers will still see them but cannot order.
       </p>

@@ -279,7 +279,7 @@ export default function OrderQR() {
       : 'Place order · pay cash at counter';
 
   return (
-    <div className="qr-root guest-order-page bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
+    <div className="qr-root customer-surface guest-order-page bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
       <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)] pt-safe-nav">
         <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-5 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2.5">
           <div className="flex items-center gap-3">

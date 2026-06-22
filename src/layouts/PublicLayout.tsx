@@ -20,7 +20,7 @@ export default function PublicLayout() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen font-sans selection:bg-kado-red selection:text-kado-cream flex flex-col bg-kado-cream text-kado-dark">
+    <div className="customer-surface min-h-screen font-sans selection:bg-kado-red selection:text-kado-cream flex flex-col bg-kado-cream text-kado-dark">
       <Navbar />
       <main className="flex-1 min-w-0 overflow-x-hidden">
         <Outlet />

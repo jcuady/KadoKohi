@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Coffee, Leaf, IceCreamCone, Star, Croissant } from 'lucide-react';
@@ -12,6 +12,11 @@ import type { Product } from '../types/domain';
 import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { isIcedOnlyDrink, productFallbackDescription } from '../lib/menuProductModifiers';
+import {
+  findVisibleMenuProduct,
+  menuProductDomId,
+  pageForProductInList,
+} from '../lib/menuDeepLink';
 
 function categoryIcon(categoryId: string, categoryName?: string): React.ReactNode {
   if (categoryName?.trim().toLowerCase() === 'pastries') {
@@ -53,7 +58,9 @@ export default function Menu() {
     () => sortedCategories[0]?.id ?? '',
   );
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const deepLinkHandled = useRef('');
 
   useEffect(() => {
     if (!sortedCategories.length) return;
@@ -71,13 +78,28 @@ export default function Menu() {
 
   useEffect(() => {
     if (!remoteLoaded || !deepLinkProductId) return;
-    const product = products.find((p) => p.id === deepLinkProductId && p.visible);
+    if (deepLinkHandled.current === deepLinkProductId) return;
+
+    const product = findVisibleMenuProduct(products, deepLinkProductId);
     if (!product?.categoryId) return;
+
+    const categoryItems = productsByCategory(product.categoryId);
+    const targetPage = pageForProductInList(product.id, categoryItems, PRODUCT_GRID_PAGE_SIZE);
+
+    deepLinkHandled.current = deepLinkProductId;
     setActiveCategoryId(product.categoryId);
+    if (targetPage) setPage(targetPage);
     setSelectedProduct(product);
-  }, [remoteLoaded, deepLinkProductId, products]);
+    setHighlightProductId(product.id);
+  }, [remoteLoaded, deepLinkProductId, products, productsByCategory]);
+
+  useEffect(() => {
+    if (!deepLinkProductId) deepLinkHandled.current = '';
+  }, [deepLinkProductId]);
 
   const clearMenuDeepLink = () => {
+    deepLinkHandled.current = '';
+    setHighlightProductId(null);
     if (!searchParams.has('product') && !searchParams.has('category')) return;
     const next = new URLSearchParams(searchParams);
     next.delete('product');
@@ -102,6 +124,22 @@ export default function Menu() {
     const start = (safePage - 1) * PRODUCT_GRID_PAGE_SIZE;
     return items.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
   }, [items, safePage]);
+
+  useEffect(() => {
+    if (!highlightProductId || highlightProductId !== deepLinkProductId) return;
+    if (!paginatedItems.some((p) => p.id === highlightProductId)) return;
+
+    const domId = menuProductDomId(highlightProductId);
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(domId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+    const clearTimer = window.setTimeout(() => setHighlightProductId(null), 2800);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [highlightProductId, deepLinkProductId, paginatedItems, safePage, activeCategoryId]);
 
   return (
     <div className="customer-menu-page relative w-full bg-white font-sans">
@@ -212,13 +250,18 @@ export default function Menu() {
                 return (
                   <motion.button
                     key={product.id}
+                    id={menuProductDomId(product.id)}
                     type="button"
                     disabled={!inStock}
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, ease: 'easeOut' }}
                     onClick={() => inStock && setSelectedProduct(product)}
-                    className={`group flex h-full touch-manipulation flex-col overflow-hidden rounded-xl border border-kado-dark/10 bg-white text-left transition-all duration-300 focus:outline-none active:scale-[0.99] md:rounded-[1.25rem] ${
+                    className={`group flex h-full touch-manipulation flex-col overflow-hidden rounded-xl border bg-white text-left transition-all duration-300 focus:outline-none active:scale-[0.99] md:rounded-[1.25rem] ${
+                      highlightProductId === product.id
+                        ? 'border-kado-red ring-2 ring-kado-red ring-offset-2'
+                        : 'border-kado-dark/10'
+                    } ${
                       inStock
                         ? 'hover:-translate-y-0.5 hover:border-kado-red/30 hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] focus-visible:ring-2 focus-visible:ring-kado-red'
                         : 'cursor-not-allowed border-kado-dark/5 opacity-60'

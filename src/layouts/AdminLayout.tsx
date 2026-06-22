@@ -35,9 +35,6 @@ import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 import { useBranchStore } from '../store/branchStore';
 import AdminKioskBranchModal from '../components/admin/AdminKioskBranchModal';
 
-const SIDEBAR_W = 'w-56';
-const MAIN_OFFSET = 'ml-56';
-
 type NavIcon = ComponentType<{ className?: string; strokeWidth?: number }>;
 
 type NavLinkItem = {
@@ -139,6 +136,21 @@ const NAV: NavEntry[] = [
 
 const KIOSK_NAV = { label: 'Kiosk', icon: Monitor };
 
+function flattenNav(entries: NavEntry[]): NavLinkItem[] {
+  const out: NavLinkItem[] = [];
+  for (const entry of entries) {
+    if (entry.type === 'link') out.push(entry);
+    else {
+      for (const child of entry.children) {
+        out.push({ type: 'link', ...child });
+      }
+    }
+  }
+  return out;
+}
+
+const FLAT_NAV = flattenNav(NAV);
+
 function pathMatchesNav(to: string, pathname: string, end?: boolean) {
   if (end) return pathname === to;
   return pathname === to || pathname.startsWith(`${to}/`);
@@ -158,6 +170,15 @@ function linkClass(isActive: boolean, nested = false) {
   ].join(' ');
 }
 
+function compactLinkClass(isActive: boolean) {
+  return [
+    'flex items-center justify-center rounded-lg p-2.5 transition-colors duration-150 md:justify-start md:gap-2.5 md:px-3 md:py-2 md:text-[13px]',
+    isActive
+      ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
+      : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+  ].join(' ');
+}
+
 function groupHeaderClass(isActive: boolean, isOpen: boolean) {
   return [
     'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
@@ -170,7 +191,7 @@ function groupHeaderClass(isActive: boolean, isOpen: boolean) {
 
 function sidebarFooterBtnClass() {
   return [
-    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium',
+    'flex w-full items-center justify-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium md:justify-start md:px-3',
     'transition-colors duration-150',
     'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)]',
     'hover:text-[var(--color-dash-text)]',
@@ -225,21 +246,22 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-dash-bg)', color: 'var(--color-dash-text)' }}>
+    <div className="dash-shell min-h-screen" style={{ background: 'var(--color-dash-bg)', color: 'var(--color-dash-text)' }}>
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen ${SIDEBAR_W} shrink-0 flex-col border-r shadow-[2px_0_24px_rgba(0,0,0,0.04)]`}
+        className="dash-sidebar fixed left-0 top-0 z-40 flex h-[100dvh] w-[4.5rem] shrink-0 flex-col border-r shadow-[2px_0_24px_rgba(0,0,0,0.04)] md:w-56"
         style={{ background: 'var(--color-dash-sidebar)', borderColor: 'var(--color-dash-border)' }}
       >
-        <div className="shrink-0 border-b px-4 pb-3 pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
-          <Link to="/admin" className="block">
+        <div className="shrink-0 border-b px-2 pb-3 pt-3 md:px-4 md:pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
+          <Link to="/admin" className="flex items-center justify-center md:justify-start">
             <img
               src="/logo/Logo2.png"
               alt="Kado Kohi"
-              className="h-8 w-auto object-contain object-left"
+              className="hidden h-8 w-auto object-contain object-left md:block"
               style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}
             />
+            <span className="font-display text-base font-bold text-kado-red md:hidden">角</span>
           </Link>
-          <div className="mt-3 flex items-center gap-2.5">
+          <div className="mt-3 hidden items-center gap-2.5 md:flex">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kado-red text-[11px] font-black uppercase text-white">
               {user?.name?.charAt(0) ?? 'A'}
             </div>
@@ -259,129 +281,166 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 py-3">
-          {NAV.map((entry) => {
-            if (entry.type === 'link') {
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 custom-scrollbar md:space-y-1 md:px-2 md:py-3">
+          {/* Mobile / narrow: flat icon rail */}
+          <div className="space-y-0.5 md:hidden">
+            {FLAT_NAV.map((entry) => {
               const Icon = entry.icon;
               return (
                 <NavLink
                   key={entry.to}
                   to={entry.to}
                   end={entry.end}
-                  className={({ isActive }) => linkClass(isActive)}
+                  title={entry.label}
+                  className={({ isActive }) => compactLinkClass(isActive)}
                 >
-                  <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
-                  <span className="truncate">{entry.label}</span>
+                  <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
                 </NavLink>
               );
-            }
-
-            const active = groupIsActive(entry, location.pathname);
-            const isOpen = openGroups[entry.id] ?? false;
-            const GroupIcon = entry.icon;
-
-            return (
-              <div key={entry.id} className="space-y-0.5">
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(entry.id)}
-                  className={groupHeaderClass(active, isOpen)}
-                  aria-expanded={isOpen}
-                >
-                  <GroupIcon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
-                  <span className="flex-1 truncate text-left">{entry.label}</span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-                {isOpen ? (
-                  <div
-                    className="ml-3 space-y-0.5 border-l pl-2"
-                    style={{ borderColor: 'var(--color-dash-border)' }}
-                  >
-                    {entry.children.map((child) => {
-                      const ChildIcon = child.icon;
-                      return (
-                        <NavLink
-                          key={child.to}
-                          to={child.to}
-                          end={child.end}
-                          className={({ isActive }) => linkClass(isActive, true)}
-                        >
-                          <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} />
-                          <span className="truncate">{child.label}</span>
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-
-          <div className="pt-2">
-            <p
-              className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em]"
-              style={{ color: 'var(--color-dash-text-muted)' }}
-            >
-              In-store
-            </p>
+            })}
             <button
               type="button"
               onClick={() => setKioskBranchOpen(true)}
+              title={KIOSK_NAV.label}
               className={[
-                'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+                'flex w-full items-center justify-center rounded-lg p-2.5 transition-colors duration-150',
                 location.pathname === '/barista/kiosk'
                   ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
                   : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
               ].join(' ')}
             >
-              <KIOSK_NAV.icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
-              <span className="truncate">{KIOSK_NAV.label}</span>
+              <KIOSK_NAV.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
             </button>
+          </div>
+
+          {/* Tablet+ : grouped sidebar */}
+          <div className="hidden space-y-1 md:block">
+            {NAV.map((entry) => {
+              if (entry.type === 'link') {
+                const Icon = entry.icon;
+                return (
+                  <NavLink
+                    key={entry.to}
+                    to={entry.to}
+                    end={entry.end}
+                    className={({ isActive }) => linkClass(isActive)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+                    <span className="truncate">{entry.label}</span>
+                  </NavLink>
+                );
+              }
+
+              const active = groupIsActive(entry, location.pathname);
+              const isOpen = openGroups[entry.id] ?? false;
+              const GroupIcon = entry.icon;
+
+              return (
+                <div key={entry.id} className="space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(entry.id)}
+                    className={groupHeaderClass(active, isOpen)}
+                    aria-expanded={isOpen}
+                  >
+                    <GroupIcon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+                    <span className="flex-1 truncate text-left">{entry.label}</span>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen ? (
+                    <div
+                      className="ml-3 space-y-0.5 border-l pl-2"
+                      style={{ borderColor: 'var(--color-dash-border)' }}
+                    >
+                      {entry.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        return (
+                          <NavLink
+                            key={child.to}
+                            to={child.to}
+                            end={child.end}
+                            className={({ isActive }) => linkClass(isActive, true)}
+                          >
+                            <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} />
+                            <span className="truncate">{child.label}</span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <div className="pt-2">
+              <p
+                className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: 'var(--color-dash-text-muted)' }}
+              >
+                In-store
+              </p>
+              <button
+                type="button"
+                onClick={() => setKioskBranchOpen(true)}
+                className={[
+                  'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+                  location.pathname === '/barista/kiosk'
+                    ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
+                    : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
+                ].join(' ')}
+              >
+                <KIOSK_NAV.icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
+                <span className="truncate">{KIOSK_NAV.label}</span>
+              </button>
+            </div>
           </div>
         </nav>
 
         <div
-          className="shrink-0 space-y-1 border-t px-2 pb-3 pt-3"
+          className="shrink-0 space-y-1 border-t px-1.5 pb-2 pt-2 md:px-2 md:pb-3 md:pt-3"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
           <p
-            className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em]"
+            className="hidden px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.14em] md:block"
             style={{ color: 'var(--color-dash-text-muted)' }}
           >
             Workspace
           </p>
           <NotificationToggle variant="sidebar" audience="staff" label="Enable alerts" />
-          <button type="button" onClick={toggle} className={sidebarFooterBtnClass()}>
+          <button type="button" onClick={toggle} className={sidebarFooterBtnClass()} title={isDark ? 'Light mode' : 'Dark mode'}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
-            {isDark ? 'Light mode' : 'Dark mode'}
+            <span className="hidden md:inline">{isDark ? 'Light mode' : 'Dark mode'}</span>
           </button>
-          <Link to="/" className={sidebarFooterBtnClass()}>
+          <Link to="/" className={sidebarFooterBtnClass()} title="View site">
             <ExternalLink className="h-4 w-4 shrink-0" strokeWidth={2} />
-            View site
+            <span className="hidden md:inline">View site</span>
           </Link>
           <button
             type="button"
             onClick={handleLogout}
             className={`${sidebarFooterBtnClass()} hover:!text-kado-red`}
+            title="Sign out"
           >
             <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} />
-            Sign out
+            <span className="hidden md:inline">Sign out</span>
           </button>
         </div>
       </aside>
 
-      <div className={`flex min-h-screen min-w-0 flex-1 flex-col ${MAIN_OFFSET}`}>
+      <div className="dash-main ml-[4.5rem] flex min-h-[100dvh] min-w-0 flex-1 flex-col md:ml-56">
         <header
-          className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b bg-[var(--color-dash-surface)]/95 px-6 backdrop-blur-sm"
+          className="dash-main-header sticky top-0 z-30 flex h-12 shrink-0 items-center border-b bg-[var(--color-dash-surface)]/95 px-4 backdrop-blur-sm md:h-14 md:px-6"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Admin · Operations</span>
+          <span className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-kado-red md:tracking-[0.2em]">
+            Admin · Operations
+          </span>
         </header>
-        <div className="flex-1 overflow-auto p-6 md:p-8">
+        <div className="dash-main-body flex-1 overflow-auto p-4 md:p-8">
           <Outlet />
         </div>
       </div>

@@ -70,10 +70,10 @@ export default function BaristaBoard() {
   };
 
   return (
-    <div className="dash-page p-4 md:p-6 h-full flex flex-col">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold dash-heading">Order Board</h1>
+    <div className="dash-page flex h-full min-h-0 flex-col p-3 sm:p-4 md:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3 md:mb-5 md:gap-4">
+        <div className="min-w-0">
+          <h1 className="font-display text-xl font-bold dash-heading sm:text-2xl md:text-3xl">Order Board</h1>
           <p className="dash-muted text-xs mt-1">
             {user?.role === 'admin'
               ? 'All branches · all channels'
@@ -90,7 +90,7 @@ export default function BaristaBoard() {
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 min-h-0">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {COLUMNS.map((col) => {
           const colOrders = visible
             .filter((o) => kioskColumnKey(o) === col.id)
@@ -180,7 +180,7 @@ export default function BaristaBoard() {
         onApply={applyPatch}
       />
       {patchError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-semibold shadow-xl">
+        <div className="dash-toast-bottom fixed z-[200] flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:px-5">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {patchError}
           <button onClick={() => setPatchError(null)} className="ml-2 text-white/70 hover:text-white text-xs">✕</button>

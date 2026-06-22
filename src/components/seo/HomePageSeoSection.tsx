@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, MapPin, Star } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -15,6 +16,7 @@ import { drinksForMenuSeoPillar } from '../../lib/menuSeoDrinks';
 import { menuCategoryForSeoPillar, menuCategoryHref, menuProductHref } from '../../lib/menuProductLink';
 import type { MenuSeoCopy } from '../../store/landingContentStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
+import { useMenuStore } from '../../store/menuStore';
 import CmsStyledText from '../cms/CmsStyledText';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
@@ -33,7 +35,16 @@ type Props = { copy: MenuSeoCopy; cmsEditMode?: boolean };
 export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
   const updateMenuSeo = useLandingContentStore((s) => s.updateMenuSeo);
   const updateMenuSeoPillar = useLandingContentStore((s) => s.updateMenuSeoPillar);
+  const products = useMenuStore((s) => s.products);
+  const menuRemoteLoaded = useMenuStore((s) => s.remoteLoaded);
+  const hydrateMenu = useMenuStore((s) => s.hydrateFromRemote);
   const { rating, reviewCount } = KADO_GOOGLE_LISTING;
+
+  useEffect(() => {
+    if (!menuRemoteLoaded) void hydrateMenu();
+  }, [menuRemoteLoaded, hydrateMenu]);
+
+  const catalogProducts = menuRemoteLoaded ? products : undefined;
 
   return (
     <section
@@ -129,7 +140,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
                   )}
                 />
                 <ul className="mt-2 space-y-1 border-t border-white/10 pt-2 sm:mt-3 sm:space-y-1.5 sm:pt-3">
-                  {drinksForMenuSeoPillar(pillar.drinkCategoryKey).map((drink) => (
+                  {drinksForMenuSeoPillar(pillar.drinkCategoryKey, catalogProducts).map((drink) => (
                     <li key={drink.name} className="leading-snug">
                       <Link
                         to={menuProductHref(drink.productId)}
