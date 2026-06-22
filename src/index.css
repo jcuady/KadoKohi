@@ -518,45 +518,37 @@ html.public-light {
 }
 
 /*
- * Customer-facing density (~80% browser zoom) on home, menu, merch, auth, account, QR/takeout.
- * Orientation-aware clamp; zoom where supported (scales px + rem); rem root fallback for Firefox.
+ * Customer-facing: true full-viewport layout (no CSS zoom — zoom leaves right/bottom gutters).
+ * Density comes from clamp() type scale + breakpoints, not artificial page shrink.
  */
 html.customer-facing {
   --public-nav-h: 3.25rem;
-  --customer-ui-scale: 0.8;
-  font-size: calc(100% * var(--customer-ui-scale));
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+  width: 100%;
+  min-height: 100%;
 }
 
-@media (orientation: portrait) and (max-width: 48rem) {
-  html.customer-facing {
-    --customer-ui-scale: clamp(0.84, 2vw + 0.8, 0.9);
-  }
+html.customer-facing body {
+  width: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+html.customer-facing #root {
+  width: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (orientation: landscape) and (max-height: 32rem) {
   html.customer-facing {
-    --customer-ui-scale: 0.76;
     --public-nav-h: 3rem;
   }
 }
 
-@media (min-width: 90rem) {
-  html.customer-facing {
-    --customer-ui-scale: 0.8;
-  }
-}
-
-@supports (zoom: 1) {
-  html.customer-facing {
-    font-size: 100%;
-    zoom: var(--customer-ui-scale);
-  }
-}
-
-/* Desktop nav shell — compact between xl and 2xl so pills do not collide with logo/actions */
-@media (min-width: 80rem) and (max-width: 96rem) {
+/* Desktop nav — compact between lg and xl so pills fit without shrinking the page */
+@media (min-width: 64rem) and (max-width: 80rem) {
   html.customer-facing .public-nav-link {
     padding: 0.3rem 0.5rem;
     font-size: 0.6875rem;
@@ -572,41 +564,9 @@ html.customer-facing .public-nav-shell {
   flex-wrap: nowrap;
 }
 
-/* Homepage hero — fluid height across portrait / landscape */
-.landing-hero {
-  --hero-nav-offset: var(--public-nav-h, 3.25rem);
-  min-height: max(34rem, calc(100svh - var(--hero-nav-offset)));
-  height: max(34rem, calc(100svh - var(--hero-nav-offset)));
-}
-
 @media (orientation: landscape) and (max-height: 32rem) {
-  .landing-hero {
-    min-height: max(22rem, calc(100svh - var(--hero-nav-offset)));
-    height: auto;
-  }
-
   .landing-hero-cards {
     display: none !important;
-  }
-
-  .landing-hero-copy {
-    padding-bottom: 1.5rem !important;
-  }
-}
-
-@media (min-width: 64rem) and (max-height: 40rem) and (orientation: landscape) {
-  .landing-hero-cards {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    max-width: 28rem !important;
-  }
-
-  .landing-hero-cards article {
-    max-height: 8rem;
-  }
-
-  .landing-hero-cards .landing-hero-card-media {
-    aspect-ratio: 4 / 3;
   }
 }
 
@@ -683,7 +643,7 @@ html.dash-dark {
 
 .customer-surface {
   width: 100%;
-  max-width: 100vw;
+  min-width: 0;
   min-height: 100dvh;
   min-height: 100svh;
   overflow-x: clip;
@@ -691,7 +651,7 @@ html.dash-dark {
 
 .customer-menu-page {
   width: 100%;
-  max-width: 100vw;
+  min-width: 0;
   overflow-x: clip;
   min-height: 100dvh;
   min-height: 100svh;

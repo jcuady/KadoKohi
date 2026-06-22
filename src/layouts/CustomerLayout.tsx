@@ -20,7 +20,7 @@ export default function CustomerLayout() {
     }`;
 
   return (
-    <div className="customer-surface min-h-screen font-sans flex flex-col selection:bg-kado-red selection:text-kado-cream bg-kado-cream text-kado-dark">
+    <div className="customer-surface flex min-h-dvh w-full min-w-0 flex-col bg-kado-cream font-sans text-kado-dark selection:bg-kado-red selection:text-kado-cream">
       <Navbar />
 
       <div className="border-b border-kado-dark/5 bg-[#FAF7F2]">

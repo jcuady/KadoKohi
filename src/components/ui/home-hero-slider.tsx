@@ -56,7 +56,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
   return (
     <section
       id="landing-hero"
-      className="landing-hero relative w-full overflow-hidden border-b border-kado-dark/10"
+      className="relative h-[calc(100svh-3.5rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
     >
       <AnimatePresence mode="wait">
         {cms ? (
@@ -85,7 +85,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
       <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/88 via-[#141414]/60 to-[#141414]/38" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/18" />
 
-      <div className="landing-hero-copy relative z-10 grid h-full grid-cols-1 items-end gap-6 px-5 pb-28 pt-16 sm:px-8 sm:pb-32 md:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(240px,0.75fr)] lg:px-12 lg:pb-12 xl:px-20">
+      <div className="relative z-10 grid h-full grid-cols-1 items-end gap-6 md:gap-8 px-5 pb-28 pt-16 sm:px-8 sm:pb-32 md:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.8fr)] md:px-12 md:pb-12 lg:px-20">
         <div className="max-w-3xl">
           <CmsStyledText
             value={c?.locationBadge ?? 'Kado Kohi · Marikina'}
@@ -176,7 +176,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           </div>
         </div>
 
-        <div className="landing-hero-cards hidden lg:grid grid-cols-2 gap-3 justify-self-end w-full max-w-[22rem] xl:max-w-sm self-end">
+        <div className="landing-hero-cards hidden md:grid grid-cols-2 gap-3 justify-self-end w-full max-w-[22rem] lg:max-w-sm self-end">
           {current.cards.slice(0, 4).map((card, i) => (
             <motion.article
               key={card.id}
@@ -185,7 +185,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
               className="overflow-hidden rounded-xl border border-white/15 bg-black/35 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
             >
-              <div className="landing-hero-card-media aspect-[3/4] w-full overflow-hidden">
+              <div className="aspect-[3/4] w-full overflow-hidden">
                 {cms ? (
                   <CmsEditableImage
                     cmsField={`hero.slide.${slideIndex}.card.${i}.src`}
