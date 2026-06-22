@@ -1,23 +1,32 @@
-/** About page copy — replace placeholders when final brand story is approved. */
+/** About page copy — brand-aligned, crawlable, customer-facing. */
 
 export const ABOUT_HERO = {
   eyebrow: 'About Kado Kohi',
   softOpeningLabel: 'Soft Opening',
   softOpeningDate: 'February 15, 2026',
-  tagline: 'A Japanese-inspired urban tambayan — where craft coffee and community share the same corner.',
+  headline: 'Born at the corner.',
+  tagline:
+    'A Japanese-inspired urban tambayan where craft coffee, premium matcha, and Marikina community share the same ritual.',
   locationNote: 'J.P. Laurel corner Mt. Everest · Sta. Elena, Marikina City',
 } as const;
 
+export const ABOUT_STATS = [
+  { value: '4.9★', label: 'Google rating', detail: 'Local favorite in Sta. Elena' },
+  { value: '角', label: 'Kado means corner', detail: 'A place anchored in the neighborhood' },
+  { value: '2026', label: 'Soft opening', detail: 'Feb 15 — doors open to neighbors' },
+  { value: 'Matcha', label: 'Signature series', detail: 'Oat lattes & hojicha craft' },
+] as const;
+
 export const ABOUT_ORIGINS = {
   eyebrow: 'Origins',
-  title: 'Born at the corner.',
+  title: 'Where corner meets craft.',
   lead:
-    'Kado (角) means corner. Kohi (コーヒー) means coffee. Together they describe a place — not just a shop, but a daily ritual anchored in Marikina.',
+    'Kado (角) means corner. Kohi (コーヒー) means coffee. Together they name a daily ritual — not just a shop, but Marikina’s living room for creatives, early risers, and anyone who treats a great cup seriously.',
   paragraphs: [
-    '[Placeholder — Founder story: what sparked the idea for Kado Kohi, and why Marikina’s Sta. Elena corner felt like home.]',
-    '[Placeholder — Early days: pop-ups, cupping sessions, and the community feedback that shaped the menu and the space.]',
+    'Kado Kohi began as a vision for a minimalist sanctuary: Japanese restraint, Filipino warmth, and coffee culture you can feel in every pour. Sta. Elena’s J.P. Laurel corner felt right — walkable, creative, and rooted in local life.',
+    'Before the doors opened, months of cupping, menu testing, and community feedback shaped what you taste today — from signature matcha oat lattes to pastries that belong beside the bar.',
   ],
-  imageAlt: 'Kado Kohi cafe interior — placeholder until final photography is approved',
+  imageAlt: 'Kado Kohi cafe interior in Marikina — warm wood, concrete, and bar craft',
   imageSrc: '/featuredmarikina/kadom1.jpg',
   imageFallback: '/social/cafe-latte.png',
 } as const;
@@ -26,19 +35,22 @@ export const ABOUT_COMMITMENT = {
   eyebrow: 'Our Commitment',
   title: 'What we promise every guest.',
   intro:
-    'Quality, warmth, and consistency — the three threads we never compromise on, from the first pour to the last conversation at the bar.',
+    'Quality, warmth, and consistency — three threads we never compromise on, from the first pour to the last conversation at the bar.',
   pillars: [
     {
       title: 'Craft in every cup',
-      body: '[Placeholder — Sourcing standards, roast partners, and how we train baristas for consistency.]',
+      body:
+        'Thoughtful sourcing, calibrated recipes, and bar training built for repeatability — so your matcha oat latte tastes the same on rush hour and on a quiet Tuesday.',
     },
     {
       title: 'Hospitality that feels human',
-      body: '[Placeholder — Tambayan culture: welcoming regulars, creatives, and first-time visitors the same way.]',
+      body:
+        'Tambayan culture means everyone belongs: regulars, first-timers, remote workers, and friends meeting after class. Coffee is the excuse; connection is the product.',
     },
     {
       title: 'A corner that belongs to Marikina',
-      body: '[Placeholder — Local partnerships, events, and how we show up for the neighborhood.]',
+      body:
+        'We show up for the neighborhood — local features, booth bookings, collaborations, and a space designed for the people who made Sta. Elena feel like home.',
     },
   ],
 } as const;
@@ -93,9 +105,9 @@ export const ABOUT_TIMELINE = {
       highlight: true,
     },
     {
-      date: '[Placeholder]',
-      title: 'Grand opening',
-      body: '[Placeholder — Full launch date, programming, and opening-week celebrations.]',
+      date: '2026',
+      title: 'Grand chapter ahead',
+      body: 'Full menu rollout, extended hours, and programming that keeps the corner alive — follow us for opening-week news.',
     },
   ],
 } as const;
@@ -103,10 +115,39 @@ export const ABOUT_TIMELINE = {
 export const ABOUT_SPACE = {
   eyebrow: 'The Space',
   title: 'Your corner awaits.',
-  body: '[Placeholder — Describe the interior: seating, bar flow, natural light, and what makes the space feel like a tambayan.]',
-  imageAlt: 'Kado Kohi bar and seating — placeholder',
+  body:
+    'Warm ambient light, wood and concrete textures, and a bar built for craft visibility. Whether you’re staying for a meeting, a matcha moment, or a pastry pause, the layout flows like a true tambayan — open, grounded, and premium without pretense.',
+  imageAlt: 'Kado Kohi bar and seating in Marikina',
   imageSrc: '/featuredmarikina/kadom2.jpg',
   imageFallback: '/social/matcha-latte.png',
+  secondaryImageSrc: '/booth-photos/booth-1.jpg',
+  secondaryImageFallback: '/social/matcha-series.png',
+  secondaryImageAlt: 'Guests and community at Kado Kohi',
+} as const;
+
+export const ABOUT_EXPERIENCE = {
+  eyebrow: 'Explore',
+  title: 'More than a cup.',
+  items: [
+    {
+      title: 'Signature menu',
+      body: 'Matcha oat lattes, hojicha, KADO Latte, and seasonal specials — order in-store or browse online.',
+      to: '/menu',
+      label: 'View menu',
+    },
+    {
+      title: 'Events & collabs',
+      body: 'Pop-ups, booth bookings, and community moments — see what’s brewing at the corner.',
+      to: '/events',
+      label: 'See events',
+    },
+    {
+      title: 'Merch & gifts',
+      body: 'Take a piece of Kado home — official merch with branch pickup in Marikina.',
+      to: '/merch',
+      label: 'Shop merch',
+    },
+  ],
 } as const;
 
 export const ABOUT_CTA = {
