@@ -29,6 +29,19 @@ test('menu page renders', async ({ page }) => {
   await expect(page).toHaveURL(/\/menu/);
 });
 
+test('careers page renders open roles and apply flow', async ({ page }) => {
+  await page.goto('/careers');
+  await expect(page.locator('#root')).not.toBeEmpty();
+  await expect(page.getByRole('heading', { name: /build the tambayan/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^barista$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /marketing manager/i })).toBeVisible();
+  await page.getByRole('button', { name: /apply now/i }).first().click();
+  const applyDialog = page.getByRole('dialog', { name: /apply to kado kohi/i });
+  await expect(applyDialog).toBeVisible();
+  await expect(applyDialog.getByPlaceholder(/your name/i)).toBeVisible();
+  await expect(applyDialog.getByPlaceholder(/you@email/i)).toBeVisible();
+});
+
 test('customer login form renders', async ({ page }) => {
   await page.goto('/auth/login');
   await expect(page.getByRole('heading', { name: /^sign in$/i })).toBeVisible();
