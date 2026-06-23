@@ -45,6 +45,24 @@ export function getSiteOrigin(): string {
 }
 
 /**
+ * Origin for Supabase auth email links (confirm signup, password reset).
+ * Local dev uses the live Vite origin (port 5174); production always uses www.
+ */
+export function getAuthRedirectOrigin(): string {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (isLocalDevHost(host)) {
+      return stripTrailingSlash(window.location.origin);
+    }
+    if (isKadokohiProductionHost(host)) {
+      return PRODUCTION_SITE_URL;
+    }
+    return stripTrailingSlash(window.location.origin);
+  }
+  return PRODUCTION_SITE_URL;
+}
+
+/**
  * Origin encoded inside table/takeout QR codes.
  * On local dev, defaults to production www so printed QRs work for customers.
  */

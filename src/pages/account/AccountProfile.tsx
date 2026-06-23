@@ -4,8 +4,8 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
-import { useUser } from '@clerk/clerk-react';
-import { formatClerkErrorMessage } from '../../lib/clerk/errors';
+import { authRepo } from '../../lib/supabase/repositories/auth';
+import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import NotificationToggle from '../../components/NotificationToggle';
 import { requirePhilippinePhone } from '../../lib/validation';
 import { normalizePhilippinePhone, philippinePhoneLocalPart } from '../../lib/phonePhilippines';
@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 
 export default function AccountProfile() {
-  const { user: clerkUser } = useUser();
   const user = useAuthStore((s) => s.user);
   const updateUser = useUserStore((s) => s.updateUser);
   const [editing, setEditing] = useState(false);
@@ -70,13 +69,12 @@ export default function AccountProfile() {
     }
     setChangingPassword(true);
     try {
-      if (!clerkUser) throw new Error('Not signed in.');
-      await clerkUser.updatePassword({ newPassword: newPassword.trim() });
+      await authRepo.updatePassword(newPassword.trim());
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMsg('Password updated successfully.');
     } catch (err) {
-      setPasswordError(formatClerkErrorMessage(err, 'Unable to change password.'));
+      setPasswordError(formatAuthErrorMessage(err, 'Unable to change password.'));
     } finally {
       setChangingPassword(false);
     }

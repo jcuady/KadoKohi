@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
 import { AlertCircle, Coffee, Lock, Package, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import type { Role } from '../../types/domain';
 import AuthAlert from '../../components/auth/AuthAlert';
 import AuthBrandMark from '../../components/auth/AuthBrandMark';
-import InternalAuthSessionGate from '../../components/auth/InternalAuthSessionGate';
 import InternalSignInForm from '../../components/auth/InternalSignInForm';
 
 type InternalTab = 'admin' | 'barista' | 'staff';
@@ -22,7 +20,6 @@ const tabs: { key: InternalTab; label: string; icon: typeof Shield; desc: string
 export default function InternalLogin() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isSignedIn } = useAuth();
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
   const logout = useAuthStore((s) => s.logout);
@@ -37,7 +34,7 @@ export default function InternalLogin() {
   };
 
   useEffect(() => {
-    if (!isSignedIn || loading || !user) return;
+    if (loading || !user) return;
     const role = user.role as Role;
     if (!INTERNAL_ROLES.includes(role as InternalTab)) {
       void logout();
@@ -52,7 +49,7 @@ export default function InternalLogin() {
     if (role === 'admin') navigate('/admin', { replace: true });
     else if (role === 'barista') navigate('/barista', { replace: true });
     else navigate('/staff', { replace: true });
-  }, [isSignedIn, loading, user, tab, logout, navigate]);
+  }, [loading, user, tab, logout, navigate]);
 
   const activeTab = tabs.find((t) => t.key === tab);
 
@@ -94,9 +91,7 @@ export default function InternalLogin() {
         {activeTab?.desc}
       </p>
 
-      <InternalAuthSessionGate loadingMessage="Completing sign-in…">
-        <InternalSignInForm expectedRole={tab} />
-      </InternalAuthSessionGate>
+      <InternalSignInForm expectedRole={tab} />
 
       <div className="mt-6 flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[11px] text-white/55">
         <Lock className="w-4 h-4 shrink-0 mt-0.5 text-kado-red" />

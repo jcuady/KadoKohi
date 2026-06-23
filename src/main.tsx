@@ -1,43 +1,57 @@
-import { StrictMode } from 'react';
+import {StrictMode} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { ClerkProvider } from '@clerk/clerk-react';
+import { useEffect } from 'react';
 import App from './App.tsx';
 import './index.css';
+import { useAuthStore } from './store/authStore';
 import { hydrateGlobalMinimal } from './lib/bootstrapHydration';
+import { supabase } from './lib/supabase/client';
+import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
+import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
 import { registerSW } from 'virtual:pwa-register';
+
 import { ensurePublishedCms } from './lib/cmsBootstrap';
-import ClerkAuthBridge from './components/ClerkAuthBridge';
-import { CLERK_PUBLISHABLE_KEY, isClerkConfigured } from './lib/clerk/config';
-import { clerkAllowedRedirectOrigins } from './lib/clerk/origins';
 
 function Bootstrap() {
-  return (
-    <ClerkAuthBridge>
-      <App />
-    </ClerkAuthBridge>
-  );
-}
+  const initAuth = useAuthStore((s) => s.initFromSupabase);
 
-function MissingClerkConfig() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-kado-cream p-6 text-center">
-      <div className="max-w-md">
-        <h1 className="font-display text-2xl font-bold text-kado-dark mb-2">Auth not configured</h1>
-        <p className="text-sm text-kado-dark/70">
-          Set <code className="font-mono text-xs">VITE_CLERK_PUBLISHABLE_KEY</code> in your{' '}
-          <code className="font-mono text-xs">.env</code> file, then restart the dev server.
-        </p>
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    void recoverStaleAuthSession().then(() => initAuth());
+    void (async () => {
+      await ensurePublishedCms();
+      await hydrateGlobalMinimal();
+    })();
+
+    // Keep auth state in sync with Supabase session events (token refresh,
+    // sign-out from another tab, OAuth callback, email confirmation, etc.).
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // IMPORTANT: never call supabase.auth.* (signOut/getSession) synchronously
+      // inside this callback — it deadlocks the auth lock. On SIGNED_OUT the
+      // session is already cleared at the Supabase layer, so just reset local
+      // state (calling logout()/signOut() here would re-fire SIGNED_OUT → loop).
+      if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+        stopOperationsRealtime();
+        useAuthStore.setState({ user: null, loading: false });
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (isAuthListenerPaused()) return;
+        // Defer so we don't re-enter the auth lock held during this callback.
+        setTimeout(() => {
+          if (isAuthListenerPaused()) return;
+          void useAuthStore.getState().initFromSupabase();
+        }, 0);
+      }
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return <App />;
 }
 
 registerSW({ immediate: true });
-
-void (async () => {
-  await ensurePublishedCms();
-  await hydrateGlobalMinimal();
-})();
 
 const container = document.getElementById('root')!;
 type RootHost = HTMLElement & { __kkReactRoot?: Root };
@@ -47,20 +61,6 @@ host.__kkReactRoot = root;
 
 root.render(
   <StrictMode>
-    {isClerkConfigured ? (
-      <ClerkProvider
-        publishableKey={CLERK_PUBLISHABLE_KEY!}
-        signInUrl="/auth/login"
-        signUpUrl="/auth/signup"
-        signInFallbackRedirectUrl="/account"
-        signUpFallbackRedirectUrl="/account"
-        afterSignOutUrl="/"
-        allowedRedirectOrigins={clerkAllowedRedirectOrigins()}
-      >
-        <Bootstrap />
-      </ClerkProvider>
-    ) : (
-      <MissingClerkConfig />
-    )}
+    <Bootstrap />
   </StrictMode>,
 );

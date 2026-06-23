@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, Package, UserPlus } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, Package, UserPlus, LogOut } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useCartToggle } from '../hooks/useCartToggle';
 import BrandWordmark from './BrandWordmark';
 import { PublicSiteNavDesktop, PublicSiteNavMobile } from './nav/PublicSiteNavMenu';
-import { clerkAppearance } from '../lib/clerk/appearance';
 
 function useAuthLink(): { label: string; path: string; icon: typeof User } {
   const user = useAuthStore((s) => s.user);
@@ -23,6 +21,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const authLink = useAuthLink();
   const AuthIcon = authLink.icon;
 
@@ -80,32 +79,36 @@ export default function Navbar() {
               </AnimatePresence>
             </button>
 
-            <SignedOut>
-              <Link
-                to="/auth/signup"
-                className="public-nav-cta hidden xl:inline-flex"
-              >
-                <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
-                <span>Join</span>
-              </Link>
-              <Link
-                to="/auth/login"
-                className="public-nav-ghost hidden xl:inline-flex"
-              >
-                <User className="h-5 w-5 shrink-0" aria-hidden />
-                <span className="hidden xl:inline max-w-[7rem] truncate">Sign in</span>
-              </Link>
-            </SignedOut>
-            <SignedIn>
-              <Link
-                to={authLink.path}
-                className="public-nav-ghost hidden xl:inline-flex max-w-[8rem]"
-              >
-                <AuthIcon className="h-5 w-5 shrink-0" aria-hidden />
-                <span className="hidden xl:inline truncate">{authLink.label}</span>
-              </Link>
-              <UserButton appearance={clerkAppearance} afterSignOutUrl="/" />
-            </SignedIn>
+            {!user ? (
+              <>
+                <Link to="/auth/signup" className="public-nav-cta hidden xl:inline-flex">
+                  <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
+                  <span>Join</span>
+                </Link>
+                <Link to="/auth/login" className="public-nav-ghost hidden xl:inline-flex">
+                  <User className="h-5 w-5 shrink-0" aria-hidden />
+                  <span className="hidden xl:inline max-w-[7rem] truncate">Sign in</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to={authLink.path}
+                  className="public-nav-ghost hidden xl:inline-flex max-w-[8rem]"
+                >
+                  <AuthIcon className="h-5 w-5 shrink-0" aria-hidden />
+                  <span className="hidden xl:inline truncate">{authLink.label}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="public-nav-icon-btn"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -149,34 +152,48 @@ export default function Navbar() {
                 <PublicSiteNavMobile onNavigate={closeMobile} />
 
                 <div className="border-t border-white/15 pt-3">
-                <SignedOut>
-                  <Link
-                    to="/auth/signup"
-                    onClick={closeMobile}
-                    className="public-nav-cta flex w-full min-h-[44px] justify-center"
-                  >
-                    <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
-                    Join — create account
-                  </Link>
-                  <Link
-                    to="/auth/login"
-                    onClick={closeMobile}
-                    className="public-nav-ghost mt-2 flex min-h-[44px] w-full justify-center text-white"
-                  >
-                    <User className="h-5 w-5" />
-                    Sign in
-                  </Link>
-                </SignedOut>
-                <SignedIn>
-                  <Link
-                    to={authLink.path}
-                    onClick={closeMobile}
-                    className="public-nav-ghost mt-2 flex min-h-[44px] w-full justify-center text-white"
-                  >
-                    <AuthIcon className="h-5 w-5" />
-                    {authLink.label}
-                  </Link>
-                </SignedIn>
+                {!user ? (
+                  <>
+                    <Link
+                      to="/auth/signup"
+                      onClick={closeMobile}
+                      className="public-nav-cta flex w-full min-h-[44px] justify-center"
+                    >
+                      <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
+                      Join — create account
+                    </Link>
+                    <Link
+                      to="/auth/login"
+                      onClick={closeMobile}
+                      className="public-nav-ghost mt-2 flex min-h-[44px] w-full justify-center text-white"
+                    >
+                      <User className="h-5 w-5" />
+                      Sign in
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to={authLink.path}
+                      onClick={closeMobile}
+                      className="public-nav-ghost mt-2 flex min-h-[44px] w-full justify-center text-white"
+                    >
+                      <AuthIcon className="h-5 w-5" />
+                      {authLink.label}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobile();
+                        void logout();
+                      }}
+                      className="public-nav-ghost mt-2 flex min-h-[44px] w-full justify-center text-white"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sign out
+                    </button>
+                  </>
+                )}
                 </div>
               </nav>
 

@@ -1,6 +1,13 @@
+import type { AuthTokenResponse } from '@supabase/supabase-js';
 import { supabase } from '../client';
-import { clerkSignOut } from '../../clerk/tokenBridge';
 import type { Role } from '../../../types/domain';
+import { getAuthRedirectOrigin } from '../../siteUrl';
+import {
+  clearLocalAuthBeforeSignup,
+  invalidateLocalAuthSession,
+  isInvalidRefreshTokenError,
+  recoverStaleAuthSession,
+} from '../authSession';
 
 function parseEdgePayload(data: unknown): void {
   if (data && typeof data === 'object' && 'error' in data && data.error) {
@@ -16,24 +23,94 @@ async function invokeAdminUsers<T = unknown>(body: Record<string, unknown>): Pro
   return data as T;
 }
 
-async function invokeInternalLogin<T = unknown>(body: Record<string, unknown>): Promise<T> {
-  if (!supabase) throw new Error('Supabase is not configured.');
-  const { data, error } = await supabase.functions.invoke('kk-internal-login', { body });
-  if (error) throw error;
-  parseEdgePayload(data);
-  return data as T;
-}
+let signUpInFlight: Promise<AuthTokenResponse['data']> | null = null;
 
 export const authRepo = {
-  async signInInternal(input: {
-    email: string;
-    password: string;
-    expectedRole: Extract<Role, 'admin' | 'barista' | 'staff'>;
-  }) {
-    return invokeInternalLogin<{ ticket: string }>(input);
+  async signIn(email: string, password: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    await recoverStaleAuthSession();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  },
+  async signUp(email: string, password: string, name: string, phone: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    if (signUpInFlight) return signUpInFlight;
+
+    signUpInFlight = (async () => {
+      await clearLocalAuthBeforeSignup();
+
+      const emailRedirectTo = `${getAuthRedirectOrigin()}/auth/login`;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, role: 'customer', phone },
+          emailRedirectTo,
+        },
+      });
+      if (error) throw error;
+      if (data.user?.identities && data.user.identities.length === 0) {
+        throw new Error('That email is already registered. Try signing in instead.');
+      }
+      if (!data.user?.id) {
+        throw new Error('Sign up failed. Please try again.');
+      }
+
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('kk-customer-signup', {
+        body: {
+          profileOnly: true,
+          userId: data.user.id,
+          email,
+          name,
+          phone,
+        },
+      });
+      if (fnError) throw fnError;
+      parseEdgePayload(fnData);
+
+      if (!data.session) {
+        return {
+          user: data.user,
+          session: null,
+        };
+      }
+
+      return data;
+    })();
+
+    try {
+      return await signUpInFlight;
+    } finally {
+      signUpInFlight = null;
+    }
   },
   async signOut() {
-    await clerkSignOut();
+    if (!supabase) return;
+    await supabase.auth.signOut();
+  },
+  async session() {
+    if (!supabase) return null;
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        await invalidateLocalAuthSession();
+      } else {
+        await recoverStaleAuthSession();
+      }
+      return null;
+    }
+    return data.session;
+  },
+  async updatePassword(newPassword: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  },
+  async resetPasswordForEmail(email: string, redirectTo: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
   },
   async createInternalUser(input: {
     email: string;
@@ -42,7 +119,7 @@ export const authRepo = {
     role: Extract<Role, 'admin' | 'barista' | 'staff' | 'customer'>;
     branchId?: string;
   }) {
-    return invokeAdminUsers<{ user?: { id: string; clerkUserId?: string } }>({
+    return invokeAdminUsers<{ user?: { id: string } }>({
       action: 'create_user',
       ...input,
     });

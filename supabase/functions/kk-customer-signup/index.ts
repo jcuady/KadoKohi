@@ -62,16 +62,14 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
+    const profileOnly = body.profileOnly === true;
+    const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     const email = String(body.email ?? "").trim().toLowerCase();
-    const password = String(body.password ?? "");
     const name = String(body.name ?? "").trim();
     const phone = normalizePhilippinePhone(String(body.phone ?? ""));
 
-    if (!email || !password || !name || !phone) {
+    if (!email || !name || !phone) {
       return json({ error: "Missing or invalid required fields" }, 400);
-    }
-    if (password.length < 8) {
-      return json({ error: "Password must be at least 8 characters" }, 400);
     }
     if (name.length < 2) {
       return json({ error: "Name must be at least 2 characters" }, 400);
@@ -81,6 +79,34 @@ Deno.serve(async (req: Request) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    if (profileOnly) {
+      if (!userId) {
+        return json({ error: "Missing userId" }, 400);
+      }
+      const { data: authUser, error: lookupErr } = await admin.auth.admin.getUserById(userId);
+      if (lookupErr || !authUser.user) {
+        return json({ error: "User not found" }, 404);
+      }
+      await admin.from("kk_profiles").upsert({
+        id: userId,
+        email,
+        name,
+        role: "customer",
+        branch_id: null,
+        phone,
+        loyalty_stamps: 0,
+      });
+      return json({ ok: true, userId, needsEmailConfirmation: true });
+    }
+
+    const password = String(body.password ?? "");
+    if (!password) {
+      return json({ error: "Missing or invalid required fields" }, 400);
+    }
+    if (password.length < 8) {
+      return json({ error: "Password must be at least 8 characters" }, 400);
+    }
 
     const { data: newUser, error: createError } = await admin.auth.admin.createUser({
       email,

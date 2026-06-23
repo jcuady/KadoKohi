@@ -18,7 +18,7 @@ alwaysApply: true
 | Branches (active) | `branch_marikina` / `marikina`, `branch_greenhills` / `greenhills` |
 | Internal login | `/management-portal` (admin, barista, staff) |
 | Customer login | `/auth/login` |
-| Auth provider | Clerk (`VITE_CLERK_PUBLISHABLE_KEY`) + Supabase third-party Clerk (session token) |
+| Auth provider | Supabase Auth (email/password); Resend SMTP for confirm/reset emails |
 | Dev server | `http://127.0.0.1:5174` |
 | Full reference | `PROJECT_CONTEXT.md` §23–30 (layout, stores, env, deploy) |
 

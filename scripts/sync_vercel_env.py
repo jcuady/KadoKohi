@@ -19,7 +19,6 @@ VERCEL_KEYS = [
     "VITE_SUPABASE_PUBLISHABLE_KEY",
     "VITE_SUPABASE_ANON_KEY",
     "VITE_SITE_URL",
-    "VITE_CLERK_PUBLISHABLE_KEY",
     "VITE_VAPID_PUBLIC_KEY",
 ]
 
@@ -99,12 +98,6 @@ def main() -> int:
     if missing:
         print(f"Missing in .env: {', '.join(missing)}", file=sys.stderr)
         return 1
-
-    clerk = env.get("VITE_CLERK_PUBLISHABLE_KEY", "")
-    if clerk.startswith("pk_test_"):
-        print("WARN: VITE_CLERK_PUBLISHABLE_KEY is pk_test_ — use pk_live_ for Production Clerk instance", file=sys.stderr)
-    elif not clerk.startswith("pk_live_"):
-        print("WARN: VITE_CLERK_PUBLISHABLE_KEY does not look like a Clerk publishable key", file=sys.stderr)
 
     print(f"Syncing {len(VERCEL_KEYS)} vars to Vercel project kado-kohi …")
     targets = ["production", "preview"]

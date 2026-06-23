@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getClerkSupabaseToken } from '../clerk/tokenBridge';
+import { clearSupabaseAuthStorageSync, prepareAuthStorageSync } from './authStorage';
 
 function trimEnv(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -26,22 +26,23 @@ if (import.meta.env.DEV && supabaseUrl && !supabaseUrl.includes(KADO_SUPABASE_PR
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 
+// Purge tokens from other Supabase projects before GoTrue init attempts refresh.
+prepareAuthStorageSync(supabaseUrl);
+
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseKey!, {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-      global: {
-        fetch: async (url, options: RequestInit = {}) => {
-          const headers = new Headers(options.headers);
-          const clerkToken = await getClerkSupabaseToken();
-          if (clerkToken) {
-            headers.set('Authorization', `Bearer ${clerkToken}`);
-          }
-          return fetch(url, { ...options, headers });
-        },
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
     })
   : null;
+
+if (supabase && typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+      clearSupabaseAuthStorageSync(supabaseUrl);
+    }
+  });
+}

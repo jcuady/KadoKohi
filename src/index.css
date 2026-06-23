@@ -649,6 +649,18 @@ html.dash-dark {
   overflow-x: clip;
 }
 
+/* Clerk embed — full-width on narrow screens */
+.clerk-auth-root {
+  width: 100%;
+  min-width: 0;
+}
+
+.clerk-auth-root .cl-card,
+.clerk-auth-root .cl-cardBox {
+  width: 100%;
+  max-width: 100%;
+}
+
 .customer-menu-page {
   width: 100%;
   min-width: 0;

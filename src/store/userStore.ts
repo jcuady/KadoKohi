@@ -34,7 +34,7 @@ const SEED_USERS: User[] = [
 export interface UserStore {
   users: User[];
   hydrateFromRemote: () => Promise<void>;
-  /** In-memory cache only — used after Clerk → kk_profiles hydrate (no remote upsert). */
+  /** In-memory cache only — used after auth hydrate (no remote upsert on read). */
   setLocalUser: (user: User) => void;
   addUser: (input: Omit<User, 'id' | 'createdAt'> & { id?: string }) => User;
   updateUser: (id: string, patch: Partial<User>) => Promise<void>;

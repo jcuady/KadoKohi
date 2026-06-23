@@ -1073,16 +1073,6 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_profiles').delete().eq('id', id);
     if (error) throw error;
   },
-  async fetchUserByClerkId(clerkUserId: string): Promise<User | null> {
-    if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_profiles')
-      .select('*')
-      .eq('clerk_user_id', clerkUserId)
-      .maybeSingle();
-    if (error || !data) return null;
-    return mapUser(data as Parameters<typeof mapUser>[0]);
-  },
   /** Fetch a single profile row by ID (used when the local store may not have it). */
   async fetchUserById(id: string): Promise<User | null> {
     if (!supabase) return null;

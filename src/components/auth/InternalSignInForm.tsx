@@ -1,52 +1,52 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
 import type { Role } from '../../types/domain';
 import PasswordField from './PasswordField';
 import AuthAlert from './AuthAlert';
-import { authRepo } from '../../lib/supabase/repositories/auth';
-import { formatClerkErrorMessage } from '../../lib/clerk/errors';
+import { useAuthStore } from '../../store/authStore';
+import { isValidEmail } from '../../lib/validation';
+import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 
 type Props = {
   expectedRole: Extract<Role, 'admin' | 'barista' | 'staff'>;
 };
 
-/** Email + password only — password verified server-side; no device verification codes. */
 export default function InternalSignInForm({ expectedRole }: Props) {
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const signIn = useAuthStore((s) => s.signIn);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!isLoaded) {
-    return (
-      <div className="flex justify-center py-10">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/15 border-t-kado-red" />
-      </div>
-    );
-  }
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!signIn) return;
     setError('');
+
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const { ticket } = await authRepo.signInInternal({
-        email: email.trim().toLowerCase(),
-        password,
-        expectedRole,
-      });
-
-      const result = await signIn.create({ strategy: 'ticket', ticket });
-      if (result.status !== 'complete' || !result.createdSessionId) {
-        setError('Sign-in could not be completed. Please try again.');
+      await signIn(email.trim().toLowerCase(), password);
+      const profile = useAuthStore.getState().user;
+      const role = profile?.role;
+      if (!profile || role !== expectedRole) {
+        await useAuthStore.getState().logout();
+        if (role && role !== expectedRole) {
+          setError(`This account is registered as ${role}. Switch to the ${role} tab.`);
+        } else {
+          setError('Invalid email or password.');
+        }
         return;
       }
-      await setActive({ session: result.createdSessionId });
     } catch (err) {
-      setError(formatClerkErrorMessage(err, 'Could not sign in. Check your email and password.'));
+      setError(formatAuthErrorMessage(err, 'Could not sign in. Check your email and password.'));
     } finally {
       setSubmitting(false);
     }

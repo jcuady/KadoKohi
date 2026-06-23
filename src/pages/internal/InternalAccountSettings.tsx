@@ -3,8 +3,8 @@ import { Lock, User, Mail, Shield, MapPin, Save } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useBranchStore } from '../../store/branchStore';
-import { useUser } from '@clerk/clerk-react';
-import { formatClerkErrorMessage } from '../../lib/clerk/errors';
+import { authRepo } from '../../lib/supabase/repositories/auth';
+import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { hasAllBranchAccess } from '../../lib/roles';
 
 type Props = {
@@ -12,7 +12,6 @@ type Props = {
 };
 
 export default function InternalAccountSettings({ portalLabel }: Props) {
-  const { user: clerkUser } = useUser();
   const user = useAuthStore((s) => s.user);
   const updateUser = useUserStore((s) => s.updateUser);
   const branches = useBranchStore((s) => s.branches);
@@ -71,13 +70,12 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
     }
     setChangingPassword(true);
     try {
-      if (!clerkUser) throw new Error('Not signed in.');
-      await clerkUser.updatePassword({ newPassword: newPassword.trim() });
+      await authRepo.updatePassword(newPassword.trim());
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMsg('Password updated. Use it the next time you sign in.');
     } catch (err) {
-      setPasswordError(formatClerkErrorMessage(err, 'Unable to change password.'));
+      setPasswordError(formatAuthErrorMessage(err, 'Unable to change password.'));
     } finally {
       setChangingPassword(false);
     }
