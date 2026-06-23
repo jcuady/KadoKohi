@@ -34,64 +34,73 @@ function FaqItem({
   showMapLink: boolean;
 }) {
   const updateFaqItem = useLandingContentStore((s) => s.updateFaqItem);
+  const panelId = `faq-panel-${index}`;
+  const buttonId = `faq-trigger-${index}`;
 
   return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="group flex w-full items-center justify-between gap-3 rounded-2xl bg-kado-cream px-5 py-4 text-left shadow-sm transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-kado-red"
-        aria-expanded={isOpen}
-      >
-        <CmsStyledText
-          value={question}
-          as="span"
-          className="flex-1 font-display text-sm font-bold leading-snug text-kado-dark sm:text-base"
-          {...cmsTextProps(cmsEditMode, `faq.item.${index}.question`, `Question ${index + 1}`, (v) =>
-            updateFaqItem(index, { question: v }),
-          )}
-        />
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-kado-dark/50 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-      </button>
+    <article className="flex h-full min-w-0 flex-col">
+      <h3 className="m-0">
+        <button
+          id={buttonId}
+          type="button"
+          onClick={onToggle}
+          className="group flex w-full min-h-[52px] items-center justify-between gap-3 rounded-xl border border-kado-cream/20 bg-kado-cream px-4 py-3.5 text-left shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-kado-red sm:px-5 sm:py-4"
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+        >
+          <CmsStyledText
+            value={question}
+            as="span"
+            className="flex-1 font-display text-[0.9375rem] font-bold leading-snug text-kado-dark sm:text-base"
+            {...cmsTextProps(cmsEditMode, `faq.item.${index}.question`, `Question ${index + 1}`, (v) =>
+              updateFaqItem(index, { question: v }),
+            )}
+          />
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-kado-dark/45 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </button>
+      </h3>
 
       <AnimatePresence initial={false}>
         {isOpen ? (
           <motion.div
+            id={panelId}
+            role="region"
+            aria-labelledby={buttonId}
             key="body"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-1 pt-4 pb-2 text-center sm:px-2">
+            <div className="px-1 pt-3 pb-1 sm:px-2 sm:pt-3.5">
               <CmsStyledText
                 value={answer}
                 as="p"
-                className="whitespace-pre-line text-sm leading-relaxed text-white/90 sm:text-base"
+                className="whitespace-pre-line text-left text-sm leading-relaxed text-white/90 sm:text-[0.9375rem]"
                 {...cmsTextProps(cmsEditMode, `faq.item.${index}.answer`, `Answer ${index + 1}`, (v) =>
                   updateFaqItem(index, { answer: v }),
                 )}
               />
 
               {showMapLink ? (
-                <div className="mt-5 space-y-3">
+                <div className="mt-4 space-y-3">
                   <a
                     href={kadoMapsSearchUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-kado-cream/90 bg-kado-cream/10 px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-kado-cream transition-colors hover:bg-kado-cream/20"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-kado-cream/80 bg-kado-cream/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-kado-cream transition-colors hover:bg-kado-cream/20"
                   >
                     Open in Google Maps
                     <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                   </a>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
                     Nearby landmarks
                   </p>
-                  <div className="rounded-2xl border border-kado-cream/25 bg-kado-cream/10 px-4 py-3 text-left text-xs leading-relaxed text-white/85 sm:text-sm">
+                  <div className="rounded-xl border border-kado-cream/20 bg-kado-cream/10 px-4 py-3 text-left text-xs leading-relaxed text-white/85 sm:text-sm">
                     <p>Marikina Science School</p>
                     <p className="mt-1">Shell Gas Station along Mayor Gil Fernando Ave.</p>
                   </div>
@@ -107,7 +116,7 @@ function FaqItem({
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </div>
+    </article>
   );
 }
 
@@ -121,7 +130,7 @@ export default function HomeFaqSection({ copy, cmsEditMode }: Props) {
   return (
     <section
       id="landing-faq"
-      className="relative w-full overflow-hidden bg-kado-red py-20 px-6 text-white md:px-12 lg:px-24"
+      className="relative w-full overflow-hidden bg-kado-red px-5 py-16 text-white sm:px-8 md:px-10 md:py-20 lg:px-16 lg:py-24"
     >
       {/* ponytail: lightweight grain — SVG feTurbulence, no image asset */}
       <div
@@ -132,33 +141,33 @@ export default function HomeFaqSection({ copy, cmsEditMode }: Props) {
         }}
       />
 
-      <div className="relative mx-auto max-w-xl">
-        <header className="mb-10 text-center sm:mb-12">
+      <div className="relative mx-auto max-w-6xl">
+        <header className="mx-auto mb-8 max-w-2xl text-center md:mb-10 lg:mb-12">
           <CmsStyledText
             value={copy.eyebrow}
             as="p"
-            className="font-display text-lg font-black tracking-[0.12em] text-white sm:text-xl"
+            className="font-display text-base font-black tracking-[0.14em] text-white/90 sm:text-lg"
             {...cmsTextProps(cmsEditMode, 'faq.eyebrow', 'FAQ eyebrow', (v) => updateFaq({ eyebrow: v }))}
           />
           <CmsStyledText
             value={copy.title}
             as="h2"
-            className="mt-2 font-display text-2xl font-black uppercase leading-tight tracking-[0.06em] text-white sm:text-3xl md:text-4xl"
+            className="mt-2 font-display text-2xl font-black uppercase leading-tight tracking-[0.05em] text-white sm:text-3xl lg:text-[2rem]"
             {...cmsTextProps(cmsEditMode, 'faq.title', 'FAQ title', (v) => updateFaq({ title: v }))}
           />
           {cmsTextPlain(copy.subtitle).trim() ? (
             <CmsStyledText
               value={copy.subtitle}
               as="p"
-              className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/70"
+              className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-white/70 md:mt-4"
               {...cmsTextProps(cmsEditMode, 'faq.subtitle', 'FAQ subtitle', (v) => updateFaq({ subtitle: v }))}
             />
           ) : null}
         </header>
 
-        <div className="flex flex-col gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 items-start gap-x-8 gap-y-3 sm:gap-y-3.5 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-4">
           {items.map((item, i) => (
-            <div key={`faq-${i}-${cmsTextPlain(item.question).slice(0, 24)}`}>
+            <div key={`faq-${i}-${cmsTextPlain(item.question).slice(0, 24)}`} className="min-w-0">
               <FaqItem
                 question={item.question}
                 answer={item.answer}
@@ -172,19 +181,19 @@ export default function HomeFaqSection({ copy, cmsEditMode }: Props) {
           ))}
         </div>
 
-        <footer className="mt-14 text-center">
+        <footer className="mx-auto mt-10 max-w-xl text-center md:mt-12 lg:mt-14">
           <CmsStyledText
             value={copy.footerText}
             as="p"
-            className="text-sm font-bold uppercase tracking-[0.12em] text-white/80 sm:text-base"
+            className="text-xs font-bold uppercase tracking-[0.12em] text-white/75 sm:text-sm"
             {...cmsTextProps(cmsEditMode, 'faq.footerText', 'FAQ footer', (v) => updateFaq({ footerText: v }))}
           />
-          <div className="mt-5 flex flex-col items-center gap-3">
+          <div className="mt-4 flex flex-col items-center gap-2.5 sm:mt-5 sm:gap-3">
             <a
               href={SEO_SOCIAL.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border-2 border-white px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-white hover:text-kado-red"
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border-2 border-white/90 px-6 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition-colors hover:bg-white hover:text-kado-red"
             >
               <Instagram className="h-4 w-4" aria-hidden />
               <CmsStyledText
@@ -197,7 +206,7 @@ export default function HomeFaqSection({ copy, cmsEditMode }: Props) {
             </a>
             <Link
               to="/contact"
-              className="text-xs font-semibold text-white/60 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="text-xs font-semibold text-white/55 underline-offset-2 transition-colors hover:text-white hover:underline"
             >
               Or message us on the contact page →
             </Link>
