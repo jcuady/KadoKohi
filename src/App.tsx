@@ -9,6 +9,7 @@ import Contact from './pages/Contact';
 import Branches from './pages/Branches';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import AuthConfirm from './pages/auth/AuthConfirm';
 import InternalLogin from './pages/auth/InternalLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -124,6 +125,7 @@ export default function App() {
 
         <Route path="/auth/login/*" element={<Login />} />
         <Route path="/auth/signup/*" element={<Signup />} />
+        <Route path="/auth/confirm/*" element={<AuthConfirm />} />
         <Route path="/auth/forgot-password/*" element={<ForgotPassword />} />
         <Route path="/auth/reset-password/*" element={<ResetPassword />} />
         <Route path="/management-portal/forgot-password/*" element={<ForgotPassword variant="internal" />} />

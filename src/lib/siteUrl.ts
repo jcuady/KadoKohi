@@ -62,6 +62,11 @@ export function getAuthRedirectOrigin(): string {
   return PRODUCTION_SITE_URL;
 }
 
+/** Customer email-confirm callback (allowlist in Supabase Auth → URL Configuration). */
+export function getAuthConfirmUrl(): string {
+  return `${getAuthRedirectOrigin()}/auth/confirm`;
+}
+
 /**
  * Origin encoded inside table/takeout QR codes.
  * On local dev, defaults to production www so printed QRs work for customers.

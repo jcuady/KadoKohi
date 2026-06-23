@@ -9,6 +9,7 @@ import PasswordField from '../../components/auth/PasswordField';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { SIGNUP_CHECK_EMAIL_NOTICE, SIGNUP_CHECK_EMAIL_QUERY } from '../../lib/authNotices';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 
 const inputClass =
@@ -81,9 +82,9 @@ export default function Signup() {
         password,
       );
       if (needsEmailConfirmation) {
-        navigate('/auth/login', {
+        navigate(`/auth/login?${SIGNUP_CHECK_EMAIL_QUERY}=1`, {
           replace: true,
-          state: { notice: 'Account created! Please check your email to confirm, then sign in.' },
+          state: { notice: SIGNUP_CHECK_EMAIL_NOTICE },
         });
         return;
       }

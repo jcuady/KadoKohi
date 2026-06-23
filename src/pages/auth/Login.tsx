@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { isInternalRole } from '../../lib/roles';
 import { isValidEmail } from '../../lib/validation';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { completeSupabaseAuthRedirect, hasAuthCallbackInUrl } from '../../lib/supabase/authRedirect';
+import { SIGNUP_CHECK_EMAIL_NOTICE, SIGNUP_CHECK_EMAIL_QUERY } from '../../lib/authNotices';
 import AuthAlert from '../../components/auth/AuthAlert';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import PasswordField from '../../components/auth/PasswordField';
@@ -11,13 +13,45 @@ import PasswordField from '../../components/auth/PasswordField';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const signIn = useAuthStore((s) => s.signIn);
-  const notice = (location.state as { notice?: string } | null)?.notice;
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
+  const initFromSupabase = useAuthStore((s) => s.initFromSupabase);
+  const stateNotice = (location.state as { notice?: string } | null)?.notice;
+  const checkEmailNotice =
+    searchParams.get(SIGNUP_CHECK_EMAIL_QUERY) === '1' ? SIGNUP_CHECK_EMAIL_NOTICE : null;
+  const notice = stateNotice ?? checkEmailNotice;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Legacy confirm links that still point at /auth/login — auto sign-in and go to account.
+  useEffect(() => {
+    if (!hasAuthCallbackInUrl()) return;
+    let cancelled = false;
+    void (async () => {
+      const { session } = await completeSupabaseAuthRedirect();
+      if (cancelled || !session) return;
+      await initFromSupabase();
+      if (cancelled) return;
+      const role = useAuthStore.getState().user?.role;
+      if (role && isInternalRole(role)) return;
+      navigate('/account', { replace: true, state: { onboard: true } });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initFromSupabase, navigate]);
+
+  // Already signed in — skip the form.
+  useEffect(() => {
+    if (authLoading || !user || user.role !== 'customer') return;
+    const from = (location.state as { from?: string } | null)?.from;
+    navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
+  }, [authLoading, user, navigate, location.state]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();

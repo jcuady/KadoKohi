@@ -58,6 +58,19 @@ test.describe('Customer login', () => {
 });
 
 test.describe('Customer signup', () => {
+  test('login shows check-email success notice from signup redirect', async ({ page }) => {
+    await gotoAuth(page, '/auth/login?check-email=1');
+    await expect(page.getByText(/account created/i)).toBeVisible();
+    await expect(page.getByText(/signed in automatically/i)).toBeVisible();
+  });
+
+  test('email confirm page shows error when opened without a token', async ({ page }) => {
+    await gotoAuth(page, '/auth/confirm');
+    await expect(page.getByRole('heading', { name: /confirming your email/i })).toBeVisible();
+    await expect(page.getByText(/invalid or has expired/i)).toBeVisible();
+    await expect(page.getByRole('link', { name: /go to sign in/i })).toBeVisible();
+  });
+
   test('password mismatch shows error', async ({ page }) => {
     await gotoAuth(page, '/auth/signup');
     await fillSignupForm(page, { confirm: 'password999' });

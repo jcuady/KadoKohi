@@ -1,7 +1,7 @@
 import type { AuthTokenResponse } from '@supabase/supabase-js';
 import { supabase } from '../client';
 import type { Role } from '../../../types/domain';
-import { getAuthRedirectOrigin } from '../../siteUrl';
+import { getAuthConfirmUrl } from '../../siteUrl';
 import {
   clearLocalAuthBeforeSignup,
   invalidateLocalAuthSession,
@@ -40,7 +40,7 @@ export const authRepo = {
     signUpInFlight = (async () => {
       await clearLocalAuthBeforeSignup();
 
-      const emailRedirectTo = `${getAuthRedirectOrigin()}/auth/login`;
+      const emailRedirectTo = getAuthConfirmUrl();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
