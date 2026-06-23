@@ -62,6 +62,19 @@ test.describe('Customer signup', () => {
     await gotoAuth(page, '/auth/login?check-email=1');
     await expect(page.getByText(/account created/i)).toBeVisible();
     await expect(page.getByText(/signed in automatically/i)).toBeVisible();
+    await expect(page.getByText(/next steps/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /resend confirmation email/i })).toBeVisible();
+  });
+
+  test('login prefills email from signup redirect query', async ({ page }) => {
+    await gotoAuth(page, '/auth/login?check-email=1&email=new.user%40example.com');
+    await expect(page.locator('#login-email')).toHaveValue('new.user@example.com');
+  });
+
+  test('signup shows how sign-up works guide', async ({ page }) => {
+    await gotoAuth(page, '/auth/signup');
+    await expect(page.getByText(/how sign-up works/i)).toBeVisible();
+    await expect(page.getByText(/confirmation link to your email/i)).toBeVisible();
   });
 
   test('email confirm page shows error when opened without a token', async ({ page }) => {
@@ -129,6 +142,7 @@ test.describe('Forgot password', () => {
     await page.locator('#forgot-email').fill(CREDS.customer.email);
     await page.getByRole('button', { name: /send reset link/i }).click();
     await expect(page.getByText(/if an account exists/i)).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/next steps/i)).toBeVisible();
   });
 
   test('internal forgot-password page loads', async ({ page }) => {

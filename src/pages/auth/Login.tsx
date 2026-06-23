@@ -5,8 +5,16 @@ import { isInternalRole } from '../../lib/roles';
 import { isValidEmail } from '../../lib/validation';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { completeSupabaseAuthRedirect, hasAuthCallbackInUrl } from '../../lib/supabase/authRedirect';
-import { SIGNUP_CHECK_EMAIL_NOTICE, SIGNUP_CHECK_EMAIL_QUERY } from '../../lib/authNotices';
+import { authRepo } from '../../lib/supabase/repositories/auth';
+import {
+  SIGNUP_CHECK_EMAIL_NOTICE,
+  SIGNUP_CHECK_EMAIL_QUERY,
+  SIGNUP_CONFIRM_RESENT_NOTICE,
+  SIGNUP_EMAIL_NEXT_STEPS,
+  SIGNUP_EMAIL_QUERY,
+} from '../../lib/authNotices';
 import AuthAlert from '../../components/auth/AuthAlert';
+import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import PasswordField from '../../components/auth/PasswordField';
 
@@ -18,27 +26,39 @@ export default function Login() {
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
   const initFromSupabase = useAuthStore((s) => s.initFromSupabase);
+
+  const awaitingEmailConfirm = searchParams.get(SIGNUP_CHECK_EMAIL_QUERY) === '1';
   const stateNotice = (location.state as { notice?: string } | null)?.notice;
-  const checkEmailNotice =
-    searchParams.get(SIGNUP_CHECK_EMAIL_QUERY) === '1' ? SIGNUP_CHECK_EMAIL_NOTICE : null;
+  const checkEmailNotice = awaitingEmailConfirm ? SIGNUP_CHECK_EMAIL_NOTICE : null;
   const notice = stateNotice ?? checkEmailNotice;
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => searchParams.get(SIGNUP_EMAIL_QUERY)?.trim() ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [completingRedirect, setCompletingRedirect] = useState(() => hasAuthCallbackInUrl());
 
   // Legacy confirm links that still point at /auth/login — auto sign-in and go to account.
   useEffect(() => {
     if (!hasAuthCallbackInUrl()) return;
     let cancelled = false;
+    setCompletingRedirect(true);
     void (async () => {
       const { session } = await completeSupabaseAuthRedirect();
-      if (cancelled || !session) return;
+      if (cancelled) return;
+      if (!session) {
+        setCompletingRedirect(false);
+        return;
+      }
       await initFromSupabase();
       if (cancelled) return;
       const role = useAuthStore.getState().user?.role;
-      if (role && isInternalRole(role)) return;
+      if (role && isInternalRole(role)) {
+        setCompletingRedirect(false);
+        return;
+      }
       navigate('/account', { replace: true, state: { onboard: true } });
     })();
     return () => {
@@ -48,14 +68,15 @@ export default function Login() {
 
   // Already signed in — skip the form.
   useEffect(() => {
-    if (authLoading || !user || user.role !== 'customer') return;
+    if (authLoading || completingRedirect || !user || user.role !== 'customer') return;
     const from = (location.state as { from?: string } | null)?.from;
     navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
-  }, [authLoading, user, navigate, location.state]);
+  }, [authLoading, completingRedirect, user, navigate, location.state]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
 
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
@@ -84,13 +105,55 @@ export default function Login() {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    setError('');
+    setInfo('');
+    if (!isValidEmail(email)) {
+      setError('Enter the email you used to sign up above, then try again.');
+      return;
+    }
+    setResending(true);
+    try {
+      await authRepo.resendSignupConfirmation(email.trim().toLowerCase());
+      setInfo(SIGNUP_CONFIRM_RESENT_NOTICE);
+    } catch (err) {
+      setError(formatAuthErrorMessage(err, 'Could not resend the confirmation email. Try again in a minute.'));
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const showResend =
+    awaitingEmailConfirm || /confirm your email/i.test(error);
+
+  if (completingRedirect) {
+    return (
+      <CustomerAuthLayout variant="login">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-kado-dark mb-1.5">Signing you in</h1>
+        <p className="text-sm text-kado-dark/60 mb-5 sm:mb-6">Finishing email confirmation…</p>
+        <div className="flex justify-center py-8" aria-busy="true" aria-label="Signing in">
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
+        </div>
+      </CustomerAuthLayout>
+    );
+  }
+
   return (
     <CustomerAuthLayout variant="login">
       <h1 className="font-display text-2xl sm:text-3xl font-bold text-kado-dark mb-1.5">Sign in</h1>
-      <p className="text-sm text-kado-dark/60 mb-5 sm:mb-6">Welcome back to Kado Kohi.</p>
+      <p className="text-sm text-kado-dark/60 mb-5 sm:mb-6">
+        {awaitingEmailConfirm
+          ? 'Almost there — confirm your email, then you can sign in anytime.'
+          : 'Welcome back to Kado Kohi.'}
+      </p>
 
       {notice && !error && <AuthAlert variant="success">{notice}</AuthAlert>}
+      {info && !error && <AuthAlert variant="success">{info}</AuthAlert>}
       {error && <AuthAlert variant="error">{error}</AuthAlert>}
+
+      {awaitingEmailConfirm && (
+        <AuthFlowGuide steps={SIGNUP_EMAIL_NEXT_STEPS} title="Next steps" variant="success" />
+      )}
 
       <form onSubmit={(e) => void handleLogin(e)} className="space-y-4">
         <div>
@@ -115,7 +178,19 @@ export default function Login() {
           onChange={(ev) => setPassword(ev.target.value)}
           required
         />
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {showResend ? (
+            <button
+              type="button"
+              onClick={() => void handleResendConfirmation()}
+              disabled={resending}
+              className="text-xs font-semibold text-kado-red hover:underline disabled:opacity-60"
+            >
+              {resending ? 'Sending…' : 'Resend confirmation email'}
+            </button>
+          ) : (
+            <span />
+          )}
           <Link to="/auth/forgot-password" className="text-xs font-semibold text-kado-red hover:underline">
             Forgot password?
           </Link>
@@ -133,6 +208,13 @@ export default function Login() {
         New here?{' '}
         <Link to="/auth/signup" className="font-semibold text-kado-red hover:underline">
           Create an account
+        </Link>
+      </p>
+
+      <p className="mt-4 text-center text-xs text-kado-dark/45">
+        Staff or barista?{' '}
+        <Link to="/management-portal" className="font-semibold text-kado-red hover:underline">
+          Use the management portal
         </Link>
       </p>
 

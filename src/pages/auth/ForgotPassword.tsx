@@ -6,6 +6,8 @@ import { getAuthRedirectOrigin } from '../../lib/siteUrl';
 import { isValidEmail } from '../../lib/validation';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
+import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
+import { PASSWORD_RESET_SENT_STEPS } from '../../lib/authNotices';
 
 type ForgotPasswordProps = {
   variant?: 'customer' | 'internal';
@@ -41,9 +43,12 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
   const form = (
     <>
       {sent ? (
-        <AuthAlert variant="success">
-          If an account exists for that email, we sent a password reset link. Check your inbox.
-        </AuthAlert>
+        <>
+          <AuthAlert variant="success">
+            If an account exists for that email, we sent a password reset link. Check your inbox.
+          </AuthAlert>
+          {!isInternal && <AuthFlowGuide steps={PASSWORD_RESET_SENT_STEPS} title="Next steps" variant="success" />}
+        </>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           {error && <AuthAlert variant="error">{error}</AuthAlert>}

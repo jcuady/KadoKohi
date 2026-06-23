@@ -112,6 +112,15 @@ export const authRepo = {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) throw error;
   },
+  async resendSignupConfirmation(email: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getAuthConfirmUrl() },
+    });
+    if (error) throw error;
+  },
   async createInternalUser(input: {
     email: string;
     password: string;

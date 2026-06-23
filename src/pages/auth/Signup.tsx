@@ -8,8 +8,15 @@ import SignupTermsConsent from '../../components/auth/SignupTermsConsent';
 import PasswordField from '../../components/auth/PasswordField';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
+import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
-import { SIGNUP_CHECK_EMAIL_NOTICE, SIGNUP_CHECK_EMAIL_QUERY } from '../../lib/authNotices';
+import {
+  SIGNUP_CHECK_EMAIL_NOTICE,
+  SIGNUP_CHECK_EMAIL_QUERY,
+  SIGNUP_EMAIL_QUERY,
+  SIGNUP_FORM_GUIDE,
+  SIGNUP_PASSWORD_HINT,
+} from '../../lib/authNotices';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 
 const inputClass =
@@ -21,6 +28,8 @@ export default function Signup() {
   const location = useLocation();
   const prefilledEmail = (location.state as { email?: string } | null)?.email?.trim() ?? '';
   const signUp = useAuthStore((s) => s.signUp);
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState(prefilledEmail);
@@ -34,6 +43,11 @@ export default function Signup() {
   useEffect(() => {
     void clearLocalAuthBeforeSignup();
   }, []);
+
+  useEffect(() => {
+    if (authLoading || !user || user.role !== 'customer') return;
+    navigate('/account', { replace: true });
+  }, [authLoading, user, navigate]);
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
@@ -73,16 +87,22 @@ export default function Signup() {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     setSubmitting(true);
     try {
       const { needsEmailConfirmation } = await signUp(
         clampText(name, 80),
-        email.trim().toLowerCase(),
+        normalizedEmail,
         normalizePhilippinePhone(phoneLocal),
         password,
       );
       if (needsEmailConfirmation) {
-        navigate(`/auth/login?${SIGNUP_CHECK_EMAIL_QUERY}=1`, {
+        const params = new URLSearchParams({
+          [SIGNUP_CHECK_EMAIL_QUERY]: '1',
+          [SIGNUP_EMAIL_QUERY]: normalizedEmail,
+        });
+        navigate(`/auth/login?${params.toString()}`, {
           replace: true,
           state: { notice: SIGNUP_CHECK_EMAIL_NOTICE },
         });
@@ -101,7 +121,9 @@ export default function Signup() {
   return (
     <CustomerAuthLayout variant="signup">
       <h1 className="font-display text-2xl sm:text-3xl font-bold text-kado-dark mb-1.5">Join Kado Circle</h1>
-      <p className="text-sm text-kado-dark/60 mb-5 sm:mb-6">Create your account to earn stamps and track orders.</p>
+      <p className="text-sm text-kado-dark/60 mb-4 sm:mb-5">Create your account to earn stamps and track orders.</p>
+
+      <AuthFlowGuide steps={SIGNUP_FORM_GUIDE} title="How sign-up works" />
 
       {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
@@ -129,6 +151,7 @@ export default function Signup() {
             className={inputClass}
             required
           />
+          <p className="mt-1.5 text-[11px] text-kado-dark/50">We send a confirmation link to this address.</p>
         </div>
         <PhilippinePhoneField
           id="signup-phone"
@@ -137,15 +160,18 @@ export default function Signup() {
           onChange={setPhoneLocal}
           required
         />
-        <PasswordField
-          id="signup-password"
-          label="Password"
-          autoComplete="new-password"
-          minLength={8}
-          value={password}
-          onChange={(ev) => setPassword(ev.target.value)}
-          required
-        />
+        <div>
+          <PasswordField
+            id="signup-password"
+            label="Password"
+            autoComplete="new-password"
+            minLength={8}
+            value={password}
+            onChange={(ev) => setPassword(ev.target.value)}
+            required
+          />
+          <p className="mt-1.5 text-[11px] text-kado-dark/50">{SIGNUP_PASSWORD_HINT}</p>
+        </div>
         <PasswordField
           id="signup-confirm"
           label="Confirm password"
@@ -171,6 +197,20 @@ export default function Signup() {
           Sign in
         </Link>
       </p>
+
+      <p className="mt-4 text-center text-xs text-kado-dark/45">
+        Staff or barista?{' '}
+        <Link to="/management-portal" className="font-semibold text-kado-red hover:underline">
+          Use the management portal
+        </Link>
+      </p>
+
+      <Link
+        to="/"
+        className="mt-4 block text-center text-sm font-semibold text-kado-dark/45 hover:text-kado-red transition-colors"
+      >
+        Back to site
+      </Link>
     </CustomerAuthLayout>
   );
 }

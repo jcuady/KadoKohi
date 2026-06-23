@@ -80,7 +80,7 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
     return 'New sign-ups are temporarily disabled. Please contact us for help.';
   }
   if (/email not confirmed|confirm your email/i.test(lower)) {
-    return 'Please confirm your email first — check your inbox for the Kado Kohi verification link, then sign in.';
+    return 'Please confirm your email first — check your inbox for the Kado Kohi link. After you confirm, you\'ll be signed in automatically.';
   }
   if (/invalid login credentials|invalid credentials/i.test(lower)) {
     return fallback;
