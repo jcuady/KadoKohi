@@ -46,8 +46,8 @@ function product(
 }
 
 export const MENU_CATEGORIES: MenuCategory[] = [
-  { id: 'cat_classics', branchId: null, name: 'Espresso Based Classics', order: 0, visible: true },
-  { id: 'cat_signatures', branchId: null, name: 'Espresso Based Signatures', order: 1, visible: true },
+  { id: 'cat_signatures', branchId: null, name: 'Espresso Based Signatures', order: 0, visible: true },
+  { id: 'cat_classics', branchId: null, name: 'Espresso Based Classics', order: 1, visible: true },
   { id: 'cat_matcha', branchId: null, name: 'Matcha & Hojicha', order: 2, visible: true },
   { id: 'cat_yuzu', branchId: null, name: 'Yuzu Soda', order: 3, visible: true },
 ];

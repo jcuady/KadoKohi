@@ -4,6 +4,7 @@
  * Source: https://www.google.com/search?q=kado+coffee+reviews&hl=en
  */
 import type { StoredTestimonial } from '../store/landingContentStore';
+import { KADO_LOCATION, kadoMapsSearchUrl } from './kadoLocation';
 
 export type GoogleReviewsListing = {
   name: string;
@@ -21,10 +22,10 @@ export const KADO_GOOGLE_LISTING: GoogleReviewsListing = {
   "placeLabel": "Kado Kohi — Marikina",
   "rating": 4.9,
   "reviewCount": 22,
-  "mapsUrl": "https://www.google.com/maps/search/Kado+Kohi+Marikina",
+  "mapsUrl": kadoMapsSearchUrl(),
   "reviewsUrl": "https://www.google.com/search?q=kado+coffee+reviews&hl=en",
   "shareUrl": "https://share.google/Y4fAFEabPt1hCeRcz",
-  "address": "J.P. Laurel, Corner Mt Everest, Marikina, 1801 Metro Manila"
+  "address": KADO_LOCATION.fullAddress
 };
 
 export const KADO_GOOGLE_REVIEWS_SYNCED_AT = "2026-06-03T08:31:37.864Z";

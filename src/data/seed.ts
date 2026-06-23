@@ -18,8 +18,8 @@ export const SEED_BRANCHES: Branch[] = [
     id: 'branch_marikina',
     slug: 'marikina',
     name: 'Kado Kohi — Marikina',
-    address: 'J.P. Laurel St. Corner Mt. Everest',
-    city: 'Marikina City',
+    address: 'J.P. Laurel St. corner Mt. Everest',
+    city: 'Marikina City, Philippines 1807',
     status: 'active',
     hours: [
       { day: 'mon', open: '07:00', close: '23:00' },

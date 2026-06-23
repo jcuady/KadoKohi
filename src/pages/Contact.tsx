@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { MapPin, Clock, Phone, Mail, Send } from 'lucide-react';
+import { MapPin, Clock, Phone, Mail, Send, ExternalLink } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import {
   CONTACT_PURPOSES,
@@ -11,6 +11,7 @@ import { sendInboundEmail, validateContactForm } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { cn } from '../lib/utils';
+import { kadoMapsSearchUrl, isStaleMapsEmbedUrl, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
 function hasSocialLinks(s: ReturnType<typeof useSettingsStore.getState>['settings']) {
   return !!(s.socialInstagram?.trim() || s.socialFacebook?.trim() || s.socialTiktok?.trim());
@@ -69,6 +70,10 @@ export default function Contact() {
   };
 
   const mailHref = `mailto:${inboundEmail}`;
+  const mapsHref = kadoMapsSearchUrl();
+  const mapsEmbedSrc = isStaleMapsEmbedUrl(contact.mapsEmbedUrl)
+    ? kadoMapsEmbedUrl()
+    : contact.mapsEmbedUrl;
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
@@ -226,10 +231,10 @@ export default function Contact() {
             viewport={{ once: true }}
             className="flex flex-col gap-8"
           >
-            <div className="rounded-[1.5rem] overflow-hidden border border-kado-dark/10 aspect-video bg-kado-dark/5 shadow-md">
+            <div className="relative rounded-[1.5rem] overflow-hidden border border-kado-dark/10 aspect-video bg-kado-dark/5 shadow-md">
               <iframe
                 title="Kado Kohi Location"
-                src={contact.mapsEmbedUrl}
+                src={mapsEmbedSrc}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -237,11 +242,26 @@ export default function Contact() {
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-kado-dark/75 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm transition-colors hover:bg-kado-red"
+              >
+                Open in Maps
+                <ExternalLink className="h-3 w-3" aria-hidden />
+              </a>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { icon: <MapPin className="w-5 h-5" />, label: 'Address', value: contact.contactAddress },
+                {
+                  icon: <MapPin className="w-5 h-5" />,
+                  label: 'Address',
+                  value: contact.contactAddress,
+                  href: mapsHref,
+                  external: true,
+                },
                 { icon: <Clock className="w-5 h-5" />, label: 'Hours', value: contact.contactHours },
                 {
                   icon: <Phone className="w-5 h-5" />,
@@ -268,7 +288,9 @@ export default function Contact() {
                     {info.href ? (
                       <a
                         href={info.href}
-                        className="text-sm font-bold text-kado-dark hover:text-kado-red transition-colors break-all"
+                        target={info.external ? '_blank' : undefined}
+                        rel={info.external ? 'noopener noreferrer' : undefined}
+                        className="text-sm font-bold text-kado-dark hover:text-kado-red transition-colors break-words [overflow-wrap:anywhere]"
                       >
                         {info.value}
                       </a>

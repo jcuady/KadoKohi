@@ -1,4 +1,7 @@
 import type { CmsText } from '../lib/cmsTypography';
+import { SEO_CEREMONIAL_MATCHA_MARIKINA } from '../content/seo';
+
+const CEREMONIAL_MATCHA_ALT = SEO_CEREMONIAL_MATCHA_MARIKINA;
 
 export type HomeMediaSource = 'KadoKohi Social' | 'InsideMarikina';
 
@@ -43,18 +46,18 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-5',
-        src: `${SOCIAL}/Copy of 5.png`,
-        alt: 'Kado Kohi editorial portrait',
-        title: 'Matcha Editorial',
-        tag: 'Portrait',
+        src: '/social/matcha-latte.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
         id: 'social-4',
-        src: `${SOCIAL}/Copy of 4.png`,
-        alt: 'Kado Kohi matcha visual social card',
-        title: 'Matcha Visual',
-        tag: 'Portrait',
+        src: '/social/matcha-series.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
@@ -85,18 +88,18 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'featured-2',
-        src: `${FEATURED}/kadom2.jpg`,
-        alt: 'InsideMarikina local feature photo of Kado Kohi',
-        title: 'Local Culture',
-        tag: 'Feature',
-        source: 'InsideMarikina',
+        src: '/social/matcha-latte.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
+        source: 'KadoKohi Social',
       },
       {
         id: 'social-6',
-        src: `${SOCIAL}/Copy of 6.png`,
-        alt: 'Kado Kohi story artwork',
-        title: 'Kado Story',
-        tag: 'Square',
+        src: '/social/matcha-series.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
@@ -127,18 +130,18 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-5b',
-        src: `${SOCIAL}/Copy of 5.png`,
-        alt: 'Kado Kohi editorial social sample',
-        title: 'Editorial',
-        tag: 'Portrait',
+        src: '/social/matcha-latte.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
         id: 'social-2square',
-        src: `${SOCIAL}/Copy of 2 Kado Social Media Samples.png`,
-        alt: 'Kado Kohi square social samples collage',
-        title: 'Square Samples',
-        tag: 'Square',
+        src: '/social/matcha-series.png',
+        alt: CEREMONIAL_MATCHA_ALT,
+        title: 'Ceremonial Matcha',
+        tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {

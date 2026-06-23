@@ -1,3 +1,4 @@
+import type { EventFormField } from './eventForms';
 import { supabase } from './supabase/client';
 import {
   KADO_INBOUND_EMAIL,
@@ -100,6 +101,56 @@ export async function sendInboundEmail(input: InboundEmailInput): Promise<SendIn
   }
 
   return { ok: true, via: 'mailto', mailto: mailtoFallback(input) };
+}
+
+export type CareerApplicationEmailInput = {
+  listingTitle: string;
+  name: string;
+  email: string;
+  phone: string;
+  answers: Record<string, string | boolean | number>;
+  fields: EventFormField[];
+};
+
+function formatCareerAnswers(fields: EventFormField[], answers: Record<string, string | boolean | number>): string {
+  const lines: string[] = [];
+  for (const field of fields) {
+    if (field.mapsTo === 'contact_name' || field.mapsTo === 'contact_email' || field.mapsTo === 'contact_phone') {
+      continue;
+    }
+    const raw = answers[field.id];
+    if (raw === undefined || raw === '') continue;
+    lines.push(`${field.label}: ${String(raw)}`);
+  }
+  return lines.join('\n');
+}
+
+/** Notifies hiring inbox after a career application is stored. Failure is non-blocking. */
+export async function sendCareerApplicationEmail(input: CareerApplicationEmailInput): Promise<void> {
+  if (!supabase) return;
+
+  const detail = formatCareerAnswers(input.fields, input.answers);
+  const message = [
+    `Role: ${input.listingTitle}`,
+    `Phone: ${input.phone}`,
+    '',
+    detail || '(No additional answers)',
+  ].join('\n');
+
+  const body = {
+    kind: 'career_application',
+    email: input.email.trim().toLowerCase(),
+    name: input.name.trim(),
+    listingTitle: input.listingTitle,
+    phone: input.phone,
+    message,
+  };
+
+  try {
+    await supabase.functions.invoke('kk-send-contact', { body });
+  } catch {
+    // Application is already stored; email is best-effort.
+  }
 }
 
 export function validateContactForm(input: {

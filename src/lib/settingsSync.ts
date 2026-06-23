@@ -1,4 +1,5 @@
 import type { AppSettings, DashTheme } from '../store/settingsStore';
+import { KADO_LOCATION, isStaleMapsEmbedUrl, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
 /** JSON blob stored in `kk_app_settings.order_hours` (site + hours config). */
 export type SiteConfigJson = {
@@ -39,6 +40,15 @@ export function siteConfigFromSettings(settings: AppSettings): SiteConfigJson {
   };
 }
 
+function resolveContactAddress(addr?: string): string {
+  const a = addr?.trim();
+  if (!a) return KADO_LOCATION.displayAddress;
+  if (/j\.?\s*p\.?\s*laurel.*mt\.?\s*everest/i.test(a) && !/1807/.test(a)) {
+    return KADO_LOCATION.displayAddress;
+  }
+  return a;
+}
+
 export function settingsFromDbRow(row: {
   tax_rate?: number | string | null;
   gcash_qr_image?: string | null;
@@ -57,9 +67,9 @@ export function settingsFromDbRow(row: {
     boothContactName: site.boothContactName,
     contactEmail: site.contactEmail,
     contactPhone: site.contactPhone,
-    contactAddress: site.contactAddress,
+    contactAddress: resolveContactAddress(site.contactAddress),
     contactHours: site.contactHours,
-    mapsEmbedUrl: site.mapsEmbedUrl,
+    mapsEmbedUrl: isStaleMapsEmbedUrl(site.mapsEmbedUrl) ? kadoMapsEmbedUrl() : site.mapsEmbedUrl,
     socialInstagram: site.socialInstagram,
     socialFacebook: site.socialFacebook,
     socialTiktok: site.socialTiktok,

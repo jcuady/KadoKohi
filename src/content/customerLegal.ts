@@ -134,7 +134,7 @@ export const PRIVACY_POLICY: LegalSection[] = [
   {
     title: '2. Personal information controller',
     paragraphs: [
-      'The personal information controller for customer data collected through this Platform is Kado Kohi, with primary operations at J.P. Laurel St. Corner Mt. Everest, Marikina City, Philippines.',
+      'The personal information controller for customer data collected through this Platform is Kado Kohi, with primary operations at J.P. Laurel St. corner Mt. Everest, Marikina City, Philippines 1807.',
       `Privacy inquiries: ${LEGAL_CONTACT_EMAIL}.`,
     ],
   },

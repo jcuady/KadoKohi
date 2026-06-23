@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSettingsStore } from '../store/settingsStore';
 import { FooterSocialLinks } from './ContactSocialLinks';
 import { requestCookiePreferences } from '../lib/cookieConsent';
+import { kadoMapsSearchUrl } from '../content/kadoLocation';
 
 export default function Footer() {
   const contact = useSettingsStore((s) => s.settings);
@@ -71,7 +72,14 @@ export default function Footer() {
             <div className="flex flex-col gap-3 text-sm text-kado-cream/70">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
-                <span>{contact.contactAddress}</span>
+                <a
+                  href={kadoMapsSearchUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-kado-red transition-colors underline-offset-2 hover:underline"
+                >
+                  {contact.contactAddress}
+                </a>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 shrink-0 text-kado-red" />
@@ -85,7 +93,7 @@ export default function Footer() {
               </div>
               <div className="flex items-start gap-2">
                 <Mail className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
-                <a href={mailHref} className="hover:text-kado-red transition-colors break-all font-medium">
+                <a href={mailHref} className="hover:text-kado-red transition-colors break-words [overflow-wrap:anywhere] font-medium">
                   {contact.contactEmail}
                 </a>
               </div>

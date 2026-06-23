@@ -16,10 +16,10 @@ const DEFAULT_SITE_CONFIG = {
   boothContactName: "Kado Kohi Events",
   contactEmail: "kadocoffeeph@gmail.com",
   contactPhone: "+63 920 948 2934",
-  contactAddress: "J.P. Laurel St. Corner Mt. Everest, Marikina",
-  contactHours: "Mon ? Sun: 7 AM ? 11 PM",
+  contactAddress: "J.P. Laurel St. corner Mt. Everest, Marikina City, Philippines 1807",
+  contactHours: "Mon – Sun: 7 AM – 11 PM",
   mapsEmbedUrl:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890",
+    "https://maps.google.com/maps?q=Kado%20Coffee%2C%20J.P.%20Laurel%20St.%20corner%20Mt.%20Everest%2C%20Marikina%20City%2C%20Philippines%201807&hl=en&z=18&iwloc=near&output=embed",
   socialInstagram: "",
   socialFacebook: "",
   socialTiktok: "",

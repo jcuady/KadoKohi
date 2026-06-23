@@ -1,7 +1,13 @@
 import { LEGAL_CONTACT_EMAIL } from '../content/customerLegal';
+import {
+  DEFAULT_EVENT_SIGNUP_FIELDS,
+  parseFormFields,
+  type EventFormField,
+} from './eventForms';
 import { newId } from './id';
 
 export type CareerListingCategory = 'careers' | 'content-creators' | 'collaborations';
+export type CareerApplyMode = 'form' | 'link';
 
 export interface CareerListing {
   id: string;
@@ -11,15 +17,27 @@ export interface CareerListing {
   employmentType?: string;
   description: string;
   applyLabel: string;
-  applyHref: string;
+  applyHref?: string;
+  applyMode: CareerApplyMode;
   visible: boolean;
   sortOrder: number;
+}
+
+export interface CareerApplicationFormConfig {
+  title: string;
+  intro: string;
+  successTitle: string;
+  successMessage: string;
+  fields: EventFormField[];
 }
 
 export interface CareersPageCopy {
   heroEyebrow: string;
   heroTitle: string;
   heroDescription: string;
+  heroBenefits: string[];
+  whyJoinTitle: string;
+  whyJoinBody: string;
   careersSectionTitle: string;
   careersSectionIntro: string;
   creatorsSectionTitle: string;
@@ -32,6 +50,7 @@ export interface CareersPageCopy {
 export interface CareersPageContent {
   copy: CareersPageCopy;
   listings: CareerListing[];
+  applicationForm: CareerApplicationFormConfig;
 }
 
 export const CAREER_CATEGORY_LABELS: Record<CareerListingCategory, string> = {
@@ -44,21 +63,57 @@ function careersMailto(subject: string): string {
   return `mailto:${LEGAL_CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent('Hi Kado Kohi team,\n\nName:\n\nMessage:\n\nThank you.')}`;
 }
 
+export const DEFAULT_CAREER_APPLICATION_FORM: CareerApplicationFormConfig = {
+  title: 'Apply to Kado Kohi',
+  intro: 'Tell us about yourself — we reply to every application within a few business days.',
+  successTitle: 'Application sent',
+  successMessage: 'Thanks for applying. Our team will review your details and get back to you by email.',
+  fields: [
+    ...DEFAULT_EVENT_SIGNUP_FIELDS,
+    {
+      id: 'f_availability',
+      type: 'select',
+      label: 'Availability',
+      required: true,
+      options: ['Full-time', 'Part-time', 'Weekends only', 'Flexible / project-based'],
+    },
+    {
+      id: 'f_why',
+      type: 'textarea',
+      label: 'Why do you want to join Kado Kohi?',
+      placeholder: 'A few sentences about you, your experience, and what draws you to our corner.',
+      required: true,
+      helpText: 'Share relevant experience — cafe, marketing, events, delivery, or hospitality.',
+    },
+    {
+      id: 'f_portfolio',
+      type: 'text',
+      label: 'Portfolio or social link',
+      placeholder: 'Instagram, portfolio URL, or sample work (optional)',
+      required: false,
+    },
+  ],
+};
+
 export const DEFAULT_CAREERS_PAGE_COPY: CareersPageCopy = {
-  heroEyebrow: 'Join the corner',
-  heroTitle: 'Kickstart Your Career',
+  heroEyebrow: 'Careers at Kado Kohi',
+  heroTitle: 'Build the tambayan with us',
   heroDescription:
-    'Baristas, content creators, and brand partners — grow with Kado Kohi in Marikina. We hire warm people who care about craft coffee, matcha, and community.',
+    'We hire people who care about craft coffee, ceremonial matcha, and warm hospitality. Grow your career in Marikina — on the bar, behind the brand, on the decks, or on the road.',
+  heroBenefits: ['Hands-on training', 'Growth paths', 'Team-first culture', 'Flexible schedules'],
+  whyJoinTitle: 'Why join our corner?',
+  whyJoinBody:
+    'Kado Kohi is a Japanese-inspired urban café built for community — morning runs, study sessions, and late-night tambayan. We invest in people who show up with curiosity, consistency, and care.',
   careersSectionTitle: 'Open roles',
   careersSectionIntro:
-    'From barista shifts to shift-lead paths — we look for curiosity, hospitality, and a love for the tambayan energy we build every day.',
+    'From espresso bars to marketing campaigns, weekend DJ sets to delivery runs — explore roles across our Marikina home base.',
   creatorsSectionTitle: 'Content creators',
   creatorsSectionIntro:
-    'Reels, lookbooks, event coverage, and UGC that fits our Japanese-inspired urban mood — pitch a concept or ask about upcoming campaigns.',
+    'Reels, lookbooks, event coverage, and UGC that fits our mood — pitch a concept or ask about upcoming campaigns.',
   collabsSectionTitle: 'Collaborations',
   collabsSectionIntro:
     'Pop-ups, co-branded drinks, neighborhood activations, and partner booths — tell us your idea and we\'ll explore it together.',
-  emptyMessage: 'No open listings in this section right now. Follow @kadocoffeeph or email us — new roles land here first.',
+  emptyMessage: 'No open listings in this section right now. Follow @kadocoffeeph or check back soon.',
 };
 
 export const SEED_CAREER_LISTINGS: CareerListing[] = [
@@ -69,24 +124,50 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     location: 'Marikina · Sta. Elena',
     employmentType: 'Full-time / Part-time',
     description:
-      'Pull espresso, whisk matcha, and hold space for our tambayan. Prior cafe experience helps; warmth and consistency matter most.',
-    applyLabel: 'Apply via email',
-    applyHref: careersMailto('Barista Application — Kado Kohi'),
+      'Pull espresso, whisk matcha, and hold space for our tambayan. Prior café experience helps; warmth and consistency matter most.',
+    applyLabel: 'Apply now',
+    applyMode: 'form',
     visible: true,
     sortOrder: 0,
   },
   {
-    id: 'career_shift_lead',
-    title: 'Shift Lead',
+    id: 'career_marketing_manager',
+    title: 'Marketing Manager',
     category: 'careers',
     location: 'Marikina · Sta. Elena',
     employmentType: 'Full-time',
     description:
-      'Support opening/closing, coach baristas on standards, and keep the floor calm during rush. Leadership experience in F&B preferred.',
-    applyLabel: 'Apply via email',
-    applyHref: careersMailto('Shift Lead Application — Kado Kohi'),
+      'Own campaigns, social storytelling, and local partnerships. You translate brand voice into reels, events, and community moments that feel unmistakably Kado Kohi.',
+    applyLabel: 'Apply now',
+    applyMode: 'form',
     visible: true,
     sortOrder: 1,
+  },
+  {
+    id: 'career_dj',
+    title: 'DJ',
+    category: 'careers',
+    location: 'Marikina · Metro Manila',
+    employmentType: 'Part-time / Events',
+    description:
+      'Set the mood for tambayan nights, run club pop-ups, and collaborate on seasonal playlists. Share your mixes and event experience.',
+    applyLabel: 'Apply now',
+    applyMode: 'form',
+    visible: true,
+    sortOrder: 2,
+  },
+  {
+    id: 'career_delivery_rider',
+    title: 'Delivery Rider',
+    category: 'careers',
+    location: 'Marikina & nearby areas',
+    employmentType: 'Part-time / Full-time',
+    description:
+      'Deliver Kado Kohi orders safely and on time around Marikina. Valid license, reliable phone, and friendly service on every drop-off.',
+    applyLabel: 'Apply now',
+    applyMode: 'form',
+    visible: true,
+    sortOrder: 3,
   },
   {
     id: 'career_creator',
@@ -96,8 +177,8 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     employmentType: 'Project-based',
     description:
       'Cover Kado Run mornings, tambayan nights, or seasonal drink drops. Share your portfolio and rate card — we reply with campaign fit.',
-    applyLabel: 'Pitch your concept',
-    applyHref: careersMailto('Content Creator Collaboration — Kado Kohi'),
+    applyLabel: 'Submit pitch',
+    applyMode: 'form',
     visible: true,
     sortOrder: 0,
   },
@@ -110,7 +191,7 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     description:
       'Bakeries, brands, and neighborhood groups — propose a limited drink, merch drop, or weekend activation at the corner or your venue.',
     applyLabel: 'Propose a collab',
-    applyHref: careersMailto('Collaboration Inquiry — Kado Kohi'),
+    applyMode: 'form',
     visible: true,
     sortOrder: 0,
   },
@@ -120,14 +201,34 @@ function clampCopyField(raw: unknown, fallback: string): string {
   return typeof raw === 'string' && raw.trim() ? raw : fallback;
 }
 
+function clampBenefits(raw: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(raw)) return fallback;
+  const items = raw.map((v) => (typeof v === 'string' ? v.trim() : '')).filter(Boolean);
+  return items.length > 0 ? items : fallback;
+}
+
+function clampApplicationForm(raw: unknown): CareerApplicationFormConfig {
+  const base = DEFAULT_CAREER_APPLICATION_FORM;
+  if (!raw || typeof raw !== 'object') return base;
+  const r = raw as Partial<CareerApplicationFormConfig>;
+  const fields = parseFormFields(r.fields);
+  return {
+    title: clampCopyField(r.title, base.title),
+    intro: clampCopyField(r.intro, base.intro),
+    successTitle: clampCopyField(r.successTitle, base.successTitle),
+    successMessage: clampCopyField(r.successMessage, base.successMessage),
+    fields: fields.length > 0 ? fields : base.fields,
+  };
+}
+
 function clampListing(raw: Partial<CareerListing>, fallback?: CareerListing): CareerListing {
   const base = fallback ?? {
     id: newId(),
     title: 'Untitled listing',
     category: 'careers' as const,
     description: '',
-    applyLabel: 'Apply',
-    applyHref: careersMailto('Careers — Kado Kohi'),
+    applyLabel: 'Apply now',
+    applyMode: 'form' as const,
     visible: true,
     sortOrder: 0,
   };
@@ -135,6 +236,13 @@ function clampListing(raw: Partial<CareerListing>, fallback?: CareerListing): Ca
     raw.category === 'content-creators' || raw.category === 'collaborations' || raw.category === 'careers'
       ? raw.category
       : base.category;
+  const applyMode: CareerApplyMode = raw.applyMode === 'link' || raw.applyMode === 'form' ? raw.applyMode : base.applyMode;
+  const applyHref =
+    typeof raw.applyHref === 'string' && raw.applyHref.trim()
+      ? raw.applyHref.trim()
+      : applyMode === 'link'
+        ? base.applyHref ?? careersMailto('Careers — Kado Kohi')
+        : undefined;
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : base.id,
     title: clampCopyField(raw.title, base.title),
@@ -143,10 +251,34 @@ function clampListing(raw: Partial<CareerListing>, fallback?: CareerListing): Ca
     employmentType: typeof raw.employmentType === 'string' ? raw.employmentType : base.employmentType,
     description: clampCopyField(raw.description, base.description),
     applyLabel: clampCopyField(raw.applyLabel, base.applyLabel),
-    applyHref: clampCopyField(raw.applyHref, base.applyHref),
+    applyHref,
+    applyMode,
     visible: typeof raw.visible === 'boolean' ? raw.visible : base.visible,
     sortOrder: typeof raw.sortOrder === 'number' ? raw.sortOrder : base.sortOrder,
   };
+}
+
+/** Maps legacy shift-lead id to marketing manager when hydrating old CMS data. */
+function migrateLegacyListings(listings: CareerListing[]): CareerListing[] {
+  return listings.map((item) => {
+    if (item.id === 'career_shift_lead') {
+      return {
+        ...item,
+        id: 'career_marketing_manager',
+        title: 'Marketing Manager',
+        employmentType: 'Full-time',
+        description:
+          'Own campaigns, social storytelling, and local partnerships. You translate brand voice into reels, events, and community moments that feel unmistakably Kado Kohi.',
+        applyLabel: 'Apply now',
+        applyMode: 'form' as const,
+        applyHref: undefined,
+      };
+    }
+    if (!item.applyMode) {
+      return { ...item, applyMode: item.applyHref ? 'link' : 'form' };
+    }
+    return item;
+  });
 }
 
 export function normalizeCareersPageContent(raw: Partial<CareersPageContent> | null | undefined): CareersPageContent {
@@ -156,6 +288,9 @@ export function normalizeCareersPageContent(raw: Partial<CareersPageContent> | n
     heroEyebrow: clampCopyField(copyRaw?.heroEyebrow, baseCopy.heroEyebrow),
     heroTitle: clampCopyField(copyRaw?.heroTitle, baseCopy.heroTitle),
     heroDescription: clampCopyField(copyRaw?.heroDescription, baseCopy.heroDescription),
+    heroBenefits: clampBenefits(copyRaw?.heroBenefits, baseCopy.heroBenefits),
+    whyJoinTitle: clampCopyField(copyRaw?.whyJoinTitle, baseCopy.whyJoinTitle),
+    whyJoinBody: clampCopyField(copyRaw?.whyJoinBody, baseCopy.whyJoinBody),
     careersSectionTitle: clampCopyField(copyRaw?.careersSectionTitle, baseCopy.careersSectionTitle),
     careersSectionIntro: clampCopyField(copyRaw?.careersSectionIntro, baseCopy.careersSectionIntro),
     creatorsSectionTitle: clampCopyField(copyRaw?.creatorsSectionTitle, baseCopy.creatorsSectionTitle),
@@ -165,10 +300,13 @@ export function normalizeCareersPageContent(raw: Partial<CareersPageContent> | n
     emptyMessage: clampCopyField(copyRaw?.emptyMessage, baseCopy.emptyMessage),
   };
 
-  const listings =
+  const listingsRaw =
     Array.isArray(raw?.listings) && raw.listings.length > 0
       ? raw.listings.map((item, i) => clampListing(item, SEED_CAREER_LISTINGS[i]))
       : SEED_CAREER_LISTINGS;
 
-  return { copy, listings };
+  const listings = migrateLegacyListings(listingsRaw);
+  const applicationForm = clampApplicationForm(raw?.applicationForm);
+
+  return { copy, listings, applicationForm };
 }

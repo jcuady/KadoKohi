@@ -1250,6 +1250,65 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, careers_content: content });
     if (error) throw error;
   },
+  async submitCareerApplication(input: {
+    id: string;
+    listingId: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    answers: Record<string, string | boolean | number>;
+  }): Promise<{ id: string; listingId: string; listingTitle: string; createdAt: string }> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_submit_career_application', {
+      payload: {
+        id: input.id,
+        listing_id: input.listingId,
+        answers: input.answers,
+      },
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      id: String(row.id ?? input.id),
+      listingId: input.listingId,
+      listingTitle: String(row.listing_title ?? ''),
+      createdAt: String(row.created_at ?? new Date().toISOString()),
+    };
+  },
+  async fetchCareerApplications(): Promise<
+    Array<{
+      id: string;
+      listingId: string;
+      listingTitle: string;
+      contactName: string;
+      contactEmail: string;
+      contactPhone: string;
+      answers: Record<string, unknown>;
+      customerId: string | null;
+      createdAt: string;
+    }>
+  > {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
+      .from('kk_career_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        listingId: String(r.listing_id),
+        listingTitle: String(r.listing_title),
+        contactName: String(r.contact_name),
+        contactEmail: String(r.contact_email),
+        contactPhone: String(r.contact_phone ?? ''),
+        answers: (r.answers as Record<string, unknown>) ?? {},
+        customerId: r.customer_id ? String(r.customer_id) : null,
+        createdAt: String(r.created_at),
+      };
+    });
+  },
   async fetchBoothCatalog(): Promise<unknown | null> {
     if (!supabase) return null;
     const { data, error } = await supabase

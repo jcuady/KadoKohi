@@ -3,9 +3,11 @@ import { persist } from 'zustand/middleware';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import {
+  DEFAULT_CAREER_APPLICATION_FORM,
   DEFAULT_CAREERS_PAGE_COPY,
   normalizeCareersPageContent,
   SEED_CAREER_LISTINGS,
+  type CareerApplicationFormConfig,
   type CareerListing,
   type CareerListingCategory,
   type CareersPageCopy,
@@ -14,11 +16,14 @@ import {
 export interface CareersStore {
   pageCopy: CareersPageCopy;
   listings: CareerListing[];
+  applicationForm: CareerApplicationFormConfig;
   saveError: string | null;
   saving: boolean;
   hydrateFromRemote: () => Promise<void>;
   saveToRemote: () => Promise<void>;
   updatePageCopy: (patch: Partial<CareersPageCopy>) => void;
+  updateApplicationForm: (patch: Partial<CareerApplicationFormConfig>) => void;
+  setApplicationFormFields: (fields: CareerApplicationFormConfig['fields']) => void;
   addListing: (input: Omit<CareerListing, 'id' | 'sortOrder'> & { id?: string; sortOrder?: number }) => void;
   updateListing: (id: string, patch: Partial<CareerListing>) => void;
   removeListing: (id: string) => void;
@@ -31,6 +36,7 @@ export const useCareersStore = create<CareersStore>()(
     (set, get) => ({
       pageCopy: DEFAULT_CAREERS_PAGE_COPY,
       listings: SEED_CAREER_LISTINGS,
+      applicationForm: DEFAULT_CAREER_APPLICATION_FORM,
       saveError: null,
       saving: false,
 
@@ -39,17 +45,22 @@ export const useCareersStore = create<CareersStore>()(
           const remote = await orderingRepo.fetchCareersContent();
           if (!remote || typeof remote !== 'object') return;
           const normalized = normalizeCareersPageContent(remote);
-          set({ pageCopy: normalized.copy, listings: normalized.listings, saveError: null });
+          set({
+            pageCopy: normalized.copy,
+            listings: normalized.listings,
+            applicationForm: normalized.applicationForm,
+            saveError: null,
+          });
         } catch {
           // Keep local persisted content when remote fetch fails.
         }
       },
 
       saveToRemote: async () => {
-        const { pageCopy, listings } = get();
+        const { pageCopy, listings, applicationForm } = get();
         set({ saving: true, saveError: null });
         try {
-          await orderingRepo.upsertCareersContent({ copy: pageCopy, listings });
+          await orderingRepo.upsertCareersContent({ copy: pageCopy, listings, applicationForm });
           set({ saving: false, saveError: null });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Could not save careers page content.';
@@ -59,6 +70,12 @@ export const useCareersStore = create<CareersStore>()(
       },
 
       updatePageCopy: (patch) => set({ pageCopy: { ...get().pageCopy, ...patch } }),
+
+      updateApplicationForm: (patch) =>
+        set({ applicationForm: { ...get().applicationForm, ...patch } }),
+
+      setApplicationFormFields: (fields) =>
+        set({ applicationForm: { ...get().applicationForm, fields } }),
 
       addListing: (input) =>
         set({
@@ -91,12 +108,17 @@ export const useCareersStore = create<CareersStore>()(
         set({
           pageCopy: DEFAULT_CAREERS_PAGE_COPY,
           listings: SEED_CAREER_LISTINGS,
+          applicationForm: DEFAULT_CAREER_APPLICATION_FORM,
           saveError: null,
         }),
     }),
     {
-      name: 'kado-careers-v1',
-      partialize: (state) => ({ pageCopy: state.pageCopy, listings: state.listings }),
+      name: 'kado-careers-v2',
+      partialize: (state) => ({
+        pageCopy: state.pageCopy,
+        listings: state.listings,
+        applicationForm: state.applicationForm,
+      }),
     },
   ),
 );

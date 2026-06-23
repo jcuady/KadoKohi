@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { clampCmsTextField, cmsTextPlain, type CmsText } from '../lib/cmsTypography';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
+import { SEO_CEREMONIAL_MATCHA_MARIKINA } from '../content/seo';
 import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
@@ -338,15 +339,15 @@ const SEED_MENU_SEO_PILLARS: [
   {
     title: 'Signature lattes',
     subtitle: 'Torched muscovado & more',
-    imageUrl: '/social/coffee-series.png',
-    imageAlt: 'Kado Coffee signature lattes including KADO Latte',
+    imageUrl: '/social/matcha-latte.png',
+    imageAlt: SEO_CEREMONIAL_MATCHA_MARIKINA,
     drinkCategoryKey: 'signatures',
   },
   {
     title: 'Classics',
     subtitle: 'Hot, iced, or oat milk',
-    imageUrl: '/social/cafe-latte.png',
-    imageAlt: 'Classic espresso lattes at Kado Kohi',
+    imageUrl: '/social/matcha-series.png',
+    imageAlt: SEO_CEREMONIAL_MATCHA_MARIKINA,
     drinkCategoryKey: 'classics',
   },
   {
@@ -464,12 +465,12 @@ export const SEED_CONTENT: LandingContentState = {
     ctaLabel: 'All branches',
   },
   faq: {
-    eyebrow: '角 Good to know',
-    title: 'Common questions.',
-    subtitle: 'Everything you need before you pull up a chair — ordering, loyalty, events, and policies.',
+    eyebrow: 'KADO KŌHĪ',
+    title: 'Frequently Asked Questions',
+    subtitle: '',
     items: SEED_HOME_FAQ_ITEMS.map((item) => ({ ...item })),
-    footerText: 'Still have questions? Our team is happy to help.',
-    contactCtaLabel: 'Contact us',
+    footerText: 'Got more questions?',
+    contactCtaLabel: '@kadocoffeeph',
   },
   kadoCircle: {
     badge: 'The Inner Circle',

@@ -1,55 +1,67 @@
 import type { FaqItemCopy } from '../store/landingContentStore';
 
-/** Default homepage FAQ — ordering, loyalty, booth booking, and site policies. */
+/** First FAQ item — location (map link rendered in HomeFaqSection). */
+export const HOME_FAQ_LOCATION_INDEX = 0;
+
+/**
+ * Homepage FAQ — brand voice from @kadocoffeeph carousel, tailored to kadokohi.com flows.
+ */
 export const SEED_HOME_FAQ_ITEMS: FaqItemCopy[] = [
   {
-    question: 'Where is Kado Kohi and what are your hours?',
+    question: 'Where are you located?',
     answer:
-      'Our flagship cafe is at J.P. Laurel St. corner Mt. Everest, Sta. Elena, Marikina City. We are open daily, 7:00 AM to 11:00 PM. A Greenhills branch is coming soon — follow @kadocoffeeph for updates.',
+      'J.P. Laurel St. corner Mt. Everest, Marikina City, Philippines 1807.\n\nNearby landmarks: Marikina Science School and Shell Gas Station along Mayor Gil Fernando Ave.',
   },
   {
-    question: 'How do I order online for pickup?',
+    question: 'What are your operating hours?',
     answer:
-      'Go to All Coffee or Pastries, add items to your cart, choose takeout pickup, and check out with GCash QR or cash at the counter. Guest checkout is available — no account required.',
+      'We are still on soft-opening operations. Follow @kadocoffeeph on Instagram for our weekly schedule and same-day updates.',
+  },
+  {
+    question: 'How do I commute to Kado?',
+    answer:
+      'From Marikina Bayan / LRT Marikina–Pasig: ride a tricycle to Mountainview Village (get dropped near Marikina Catholic School).\n\nVia jeep: ride along Mayor Gil Fernando and get off at Marikina Catholic School, then walk.\n\nRide-hailing: search “Kado Coffee” in your app.',
+  },
+  {
+    question: 'Do you have WiFi and sockets?',
+    answer: 'Yes — we have WiFi and a limited number of sockets for guests.',
+  },
+  {
+    question: 'Do you have parking?',
+    answer: 'Yes — three (3) parking slots are available on a first-come basis.',
+  },
+  {
+    question: 'Are you pet friendly?',
+    answer: 'Pets are welcome in our alfresco area only.',
+  },
+  {
+    question: 'Do you accept online orders?',
+    answer:
+      'Yes. Order on kadokohi.com — takeout pickup, table QR dine-in, and merch checkout. Pay with GCash QR (upload proof) or pay at the counter. Guest checkout works; create a Kado Circle account to track orders and stamps.',
   },
   {
     question: 'Can I order from my table with a QR code?',
     answer:
-      'Yes. Scan the Kado QR card on your table to open the dine-in menu in your browser. Place your order, pay via GCash (upload proof) or choose pay-at-counter cash, and we will bring drinks to your table.',
+      'Yes. Scan the Kado QR on your table to open the dine-in menu, add items, and check out in your browser. We prepare your order for table service.',
   },
   {
-    question: 'What is Mix & Match and how does the bundle discount work?',
+    question: 'What is Mix & Match?',
     answer:
-      'Pair any Kado Kohi drink with a Kukidō cookie on the homepage or Pastries page. Order drink only, cookie only, or both together — when you bundle a drink and cookie, you get 10% off the pair automatically at checkout.',
+      'Pair any Kado Kohi drink with a Kukidō cookie on the homepage or Pastries page. Bundle a drink and cookie together for 10% off the pair at checkout.',
   },
   {
-    question: 'How does GCash payment work for online orders?',
+    question: 'What is Kado Circle?',
     answer:
-      'After placing your order, scan our GCash QR, pay the exact total shown, and upload your payment screenshot. Our barista confirms payment before your order is prepared. You can switch to pay-at-counter cash from your order status page while it is still pending.',
-  },
-  {
-    question: 'What is Kado Circle and how do stamps work?',
-    answer:
-      'Kado Circle is our loyalty program. Create a customer account, earn a digital stamp on eligible drinks, and collect 10 stamps for a free drink. View your card anytime under Account → Stamps.',
+      'Our loyalty program. Create a free account, earn digital stamps on eligible drinks, and collect 10 stamps for a free drink. View your card under Account → Stamps.',
   },
   {
     question: 'How do I book the coffee booth for an event?',
     answer:
-      'Visit Book Booth, pick a package (or submit a custom proposal), choose an available date, and send your request. Our team reviews availability and sends a final quote — no payment is required until your booking is confirmed.',
-  },
-  {
-    question: 'How do Kado Events sign-ups work?',
-    answer:
-      'Browse Events for tambayan nights and community pop-ups. When sign-ups are open, register with your details on the event page. Capacity is limited — confirmation is shown on screen after you submit.',
+      'Visit Book Booth, choose a package (or submit a custom proposal), pick an available date, and send your request. Our team confirms availability and sends a quote — payment is only after approval.',
   },
   {
     question: 'Do you offer oat milk or plant-based options?',
     answer:
-      'Yes. Oatside oat milk and soy milk are available on espresso drinks. Select your milk when customizing — oat and soy add ₱50 to the base price unless noted on the menu.',
-  },
-  {
-    question: 'How does this site use cookies?',
-    answer:
-      'We use essential cookies and local storage for your cart, sign-in session, and site settings. On first visit you can accept or refuse optional cookies with equal prominence. Details are in our Privacy Policy under Cookies and local storage.',
+      'Yes. Oatside oat milk and soy milk are available on espresso drinks. Select your milk when customizing — oat and soy add ₱50 unless noted on the menu.',
   },
 ];

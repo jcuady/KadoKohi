@@ -44,6 +44,8 @@ type Body = {
   name?: string;
   message?: string;
   purpose?: string;
+  listingTitle?: string;
+  phone?: string;
 };
 
 async function sendResend(params: {
@@ -133,6 +135,32 @@ Deno.serve(async (req: Request) => {
       <p><strong>Purpose:</strong> ${escapeHtml(purpose)}</p>
       <p><strong>Name:</strong> ${escapeHtml(name)}</p>
       <p><strong>Reply-to:</strong> ${escapeHtml(email)}</p>
+      <hr />
+      <p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>
+    `;
+    const sent = await sendResend({ subject, html, replyTo: email });
+    if (!sent.ok) {
+      return json({ error: sent.message, emailConfigured: false }, 503);
+    }
+    return json({ ok: true, id: sent.id });
+  }
+
+  if (kind === "career_application") {
+    const name = String(body.name ?? "").trim();
+    const message = String(body.message ?? "").trim();
+    const listingTitle = String(body.listingTitle ?? "Role").trim();
+    const phone = String(body.phone ?? "").trim();
+
+    if (name.length < 2) return json({ error: "Name is required" }, 400);
+    if (message.length < 5) return json({ error: "Application details are required" }, 400);
+
+    const subject = `[Kado Kohi] Career application — ${listingTitle} — ${name}`;
+    const html = `
+      <p><strong>Career application</strong> (via /careers)</p>
+      <p><strong>Role:</strong> ${escapeHtml(listingTitle)}</p>
+      <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(phone)}</p>
       <hr />
       <p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>
     `;

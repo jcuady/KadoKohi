@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { logAudit } from '../lib/audit';
+import { KADO_LOCATION, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
 export type DashTheme = 'light' | 'dark';
 
@@ -39,10 +40,9 @@ const DEFAULTS: AppSettings = {
   boothContactName: 'Kado Kohi Events',
   contactEmail: 'kadocoffeeph@gmail.com',
   contactPhone: '+63 920 948 2934',
-  contactAddress: 'J.P. Laurel St. Corner Mt. Everest, Sta. Elena, Marikina City',
+  contactAddress: KADO_LOCATION.displayAddress,
   contactHours: 'Mon – Sun: 7 AM – 11 PM',
-  mapsEmbedUrl:
-    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.6!2d121.1!3d14.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM5JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890',
+  mapsEmbedUrl: kadoMapsEmbedUrl(),
   socialInstagram: 'https://www.instagram.com/kadocoffeeph/?hl=en',
   socialFacebook: 'https://www.facebook.com/KadoKohi',
   socialTiktok: 'https://www.tiktok.com/@kadokohiph',

@@ -2,7 +2,7 @@ import { SEED_BOOTH_ADDONS, SEED_BOOTH_PACKAGES, SEED_BOOKING_SHOWCASE_GALLERY }
 import { SEED_CONTENT } from '../store/landingContentStore';
 import { DEFAULT_BOOTH_PAGE_COPY } from './boothPageContent';
 import { DEFAULT_MATCHA_PAGE_COPY, SEED_MATCHA_SHOWCASE_GALLERY } from './matchaPageContent';
-import { DEFAULT_CAREERS_PAGE_COPY, SEED_CAREER_LISTINGS } from './careersPageContent';
+import { DEFAULT_CAREERS_PAGE_COPY, DEFAULT_CAREER_APPLICATION_FORM, SEED_CAREER_LISTINGS } from './careersPageContent';
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
 
@@ -48,6 +48,7 @@ export async function ensurePublishedCms(): Promise<void> {
         orderingRepo.upsertCareersContent({
           copy: DEFAULT_CAREERS_PAGE_COPY,
           listings: SEED_CAREER_LISTINGS,
+          applicationForm: DEFAULT_CAREER_APPLICATION_FORM,
         }),
       );
     }

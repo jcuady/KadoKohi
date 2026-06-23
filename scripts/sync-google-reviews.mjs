@@ -23,7 +23,7 @@ export const KADO_GOOGLE_LISTING = {
   mapsUrl: 'https://www.google.com/maps/search/Kado+Kohi+Marikina',
   reviewsUrl: SEARCH_REVIEWS_URL,
   shareUrl: 'https://share.google/Y4fAFEabPt1hCeRcz',
-  address: 'J.P. Laurel, Corner Mt Everest, Marikina, 1801 Metro Manila',
+  address: 'J.P. Laurel St. corner Mt. Everest, Marikina City, Philippines 1807',
 };
 
 async function syncViaPlacesApi(apiKey) {
