@@ -13,6 +13,7 @@ import FeaturedCoffeesSection from './FeaturedCoffeesSection';
 import MixMatchHomeSection from './MixMatchHomeSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
+import { hydrateEvents } from '../../lib/bootstrapHydration';
 import { useCountdown } from '../../hooks/useCountdown';
 import {
   eventDurationLabel,
@@ -131,7 +132,12 @@ const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e77
 function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: boolean }) {
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const events = useEventStore((s) => s.events);
+  const eventsHydrated = useEventStore((s) => s.hydrated);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!eventsHydrated) void hydrateEvents();
+  }, [eventsHydrated]);
 
   useEffect(() => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});

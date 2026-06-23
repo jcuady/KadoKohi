@@ -7,7 +7,6 @@ import { supabase } from '../lib/supabase/client';
 
 const IMG_LATTE = 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1200&auto=format&fit=crop';
 const IMG_CUPPING = 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1200&auto=format&fit=crop';
-const IMG_OPENING = 'https://images.unsplash.com/photo-1453614512568-c4024d13c247?q=80&w=1200&auto=format&fit=crop';
 
 const SEED_EVENTS: Event[] = [
   {
@@ -41,20 +40,6 @@ const SEED_EVENTS: Event[] = [
     maxSignups: 12,
     cta: { label: 'Sign up', href: '/events' },
   },
-  {
-    id: 'evt_greenhills_opening',
-    branchId: 'branch_greenhills',
-    title: 'Greenhills Grand Opening',
-    description: 'Be among the first to visit our new Greenhills Mall branch. Free drink for the first 100 guests!',
-    startsAt: '2026-06-01T09:00:00+08:00',
-    images: [IMG_OPENING],
-    cover: IMG_OPENING,
-    visible: true,
-    highlight: false,
-    signupEnabled: true,
-    signupClosesAt: '2026-05-31T09:00:00+08:00',
-    cta: { label: 'Sign up', href: '/events' },
-  },
 ];
 
 export interface EventStore {
@@ -70,16 +55,19 @@ export interface EventStore {
 }
 
 export const useEventStore = create<EventStore>()((set, get) => ({
-  events: SEED_EVENTS,
+  events: [],
   hydrated: false,
 
   hydrateFromRemote: async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      set({ events: [], hydrated: true });
+      return;
+    }
     try {
       const events = await orderingRepo.fetchEvents();
       set({ events, hydrated: true });
     } catch {
-      set({ hydrated: true });
+      set({ events: [], hydrated: true });
     }
   },
 

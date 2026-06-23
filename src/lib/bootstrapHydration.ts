@@ -46,6 +46,7 @@ export function hydratePublicShell(): Promise<void> {
       useMenuStore.getState().hydrateFromRemote(),
       useSettingsStore.getState().hydrateFromRemote(),
       useLandingContentStore.getState().hydrateFromRemote(),
+      useEventStore.getState().hydrateFromRemote(),
     ]);
   });
 }
