@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Stamp, Search, Plus, Minus, Clock, Users } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import { useOrderStore } from '../../store/orderStore';
+import { useAuthStore } from '../../store/authStore';
+import { orderScopeForUser } from '../../lib/orderFetchScope';
 import {
   buildLoyaltyMemberRows,
   customerOrderedInPeriod,
@@ -24,11 +26,12 @@ type LoyaltyStampsCounterProps = {
 };
 
 export default function LoyaltyStampsCounter({ adjustReason, embedded = false }: LoyaltyStampsCounterProps) {
+  const user = useAuthStore((s) => s.user);
   const users = useUserStore((s) => s.users);
   const hydrateUsers = useUserStore((s) => s.hydrateFromRemote);
   const adjustLoyaltyStamps = useUserStore((s) => s.adjustLoyaltyStamps);
-  const orders = useOrderStore((s) => s.orders);
   const hydrateOrders = useOrderStore((s) => s.hydrateFromRemote);
+  const orders = useOrderStore((s) => s.orders);
 
   const [query, setQuery] = useState('');
   const [period, setPeriod] = useState<OrderPeriod>('day');
@@ -37,8 +40,9 @@ export default function LoyaltyStampsCounter({ adjustReason, embedded = false }:
 
   useEffect(() => {
     void hydrateUsers();
-    void hydrateOrders();
-  }, [hydrateUsers, hydrateOrders]);
+    const scope = orderScopeForUser(user);
+    if (scope) void hydrateOrders(scope);
+  }, [hydrateUsers, hydrateOrders, user?.id, user?.role, user?.branchId]);
 
   const rows = useMemo(() => buildLoyaltyMemberRows(users, orders, []), [users, orders]);
 

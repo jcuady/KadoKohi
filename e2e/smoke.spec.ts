@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test('home page loads with branding', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Kado Kohi/i);
+  await expect(page).toHaveTitle(/Kado Coffee/i);
   // Root mounts and renders something visible.
   await expect(page.locator('#root')).not.toBeEmpty();
 });
@@ -31,9 +31,9 @@ test('menu page renders', async ({ page }) => {
 
 test('customer login form renders', async ({ page }) => {
   await page.goto('/auth/login');
-  await expect(page.getByText(/Customer Sign In/i)).toBeVisible();
-  await expect(page.locator('input#email')).toBeVisible();
-  await expect(page.locator('input#password')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^sign in$/i })).toBeVisible();
+  await expect(page.locator('#login-email')).toBeVisible();
+  await expect(page.locator('#login-password')).toBeVisible();
 });
 
 test('customer signup form renders', async ({ page }) => {
@@ -44,13 +44,14 @@ test('customer signup form renders', async ({ page }) => {
 
 test('internal portal renders role tabs', async ({ page }) => {
   await page.goto('/management-portal');
-  await expect(page.getByText(/Internal Access/i)).toBeVisible();
+  await expect(page.getByText(/management portal/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^admin$/i })).toBeVisible();
 });
 
 test('PWA manifest + primary icon are served', async ({ page, request }) => {
   await page.goto('/');
   // vite-plugin-pwa injects a manifest link.
-  const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+  const manifestHref = await page.locator('link[rel="manifest"][href*="manifest.webmanifest"]').getAttribute('href');
   expect(manifestHref, 'manifest link should be present').toBeTruthy();
 
   const icon = await request.get('/icons/icon-192x192.png');

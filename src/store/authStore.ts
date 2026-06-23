@@ -38,7 +38,7 @@ async function resolveSessionProfile(
     fallbackName;
   try {
     const ensured = await orderingRepo.ensureMyProfile(metaName);
-    useUserStore.getState().updateUser(ensured.id, ensured);
+    useUserStore.getState().setLocalUser(ensured);
     return normalizeProfile(ensured);
   } catch {
     const metaRole = sessionUser.user_metadata?.role;
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           }
           const profile = await resolveSessionProfile(session.user);
           set({ user: profile, loading: false });
-          useUserStore.getState().updateUser(profile.id, profile);
+          useUserStore.getState().setLocalUser(profile);
           syncOperationalSession(profile);
         } catch (err) {
           if (isInvalidRefreshTokenError(err)) {
@@ -124,7 +124,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           if (!sessionUser) return;
           const profile = await resolveSessionProfile(sessionUser);
           set({ user: profile, loading: false });
-          useUserStore.getState().updateUser(profile.id, profile);
+          useUserStore.getState().setLocalUser(profile);
           syncOperationalSession(profile);
         } finally {
           resumeAuthListener();
@@ -145,7 +145,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           }
           const profile = await resolveSessionProfile(sessionUser, name);
           set({ user: profile, loading: false });
-          useUserStore.getState().updateUser(profile.id, profile);
+          useUserStore.getState().setLocalUser(profile);
           syncOperationalSession(profile);
           return { needsEmailConfirmation: false };
         } finally {

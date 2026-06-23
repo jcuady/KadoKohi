@@ -148,15 +148,14 @@ export async function refreshOperationsData(): Promise<void> {
   const orderHydrate = orderScope
     ? useOrderStore.getState().hydrateFromRemote(orderScope)
     : useOrderStore.getState().hydrateFromRemote({ limit: 0 });
-  await Promise.all([
+
+  const tasks: Promise<unknown>[] = [
     orderHydrate,
     useMenuStore.getState().hydrateFromRemote(),
     useUserStore.getState().hydrateFromRemote(),
     useTableStore.getState().hydrateFromRemote(),
     useBranchStore.getState().hydrateFromRemote(),
     useSettingsStore.getState().hydrateFromRemote(),
-    useAuditStore.getState().refresh(),
-    usePromoStore.getState().fetchAll(),
     useMerchStore.getState().hydrateFromRemote(),
     useEventStore.getState().hydrateFromRemote(),
     useEventFormStore.getState().hydrateFromRemote(),
@@ -167,7 +166,18 @@ export async function refreshOperationsData(): Promise<void> {
     useCareersStore.getState().hydrateFromRemote(),
     useBoothCatalogStore.getState().hydrateFromRemote(),
     useBlogStore.getState().hydrateFromRemote(),
-  ]);
+  ];
+
+  if (user?.role === 'admin') {
+    tasks.push(useAuditStore.getState().refresh(), usePromoStore.getState().fetchAll());
+  }
+
+  const results = await Promise.allSettled(tasks);
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      console.error('refreshOperationsData partial failure', result.reason);
+    }
+  }
 }
 
 /**

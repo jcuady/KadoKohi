@@ -73,6 +73,7 @@ export default function ResetPassword() {
             id="reset-password"
             label="New password"
             autoComplete="new-password"
+            minLength={8}
             value={password}
             onChange={(ev) => setPassword(ev.target.value)}
             required
@@ -81,6 +82,7 @@ export default function ResetPassword() {
             id="reset-confirm"
             label="Confirm password"
             autoComplete="new-password"
+            minLength={8}
             value={confirm}
             onChange={(ev) => setConfirm(ev.target.value)}
             required

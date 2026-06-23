@@ -74,7 +74,6 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           const message = formatBaristaOrderError(err, 'load');
           set({ hydrateError: message });
           console.error('orderStore.hydrateFromRemote failed', err);
-          throw err;
         }
       },
 

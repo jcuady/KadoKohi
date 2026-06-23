@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   customerAccessToken,
   placeOrderRpc,
+  rpcErrorMessage,
   supabaseAnonConfig,
   supabaseGet,
   trackOrderRpc,
@@ -172,5 +173,144 @@ test.describe('Transactional flows (Supabase kk_place_order)', () => {
     const tracked = await trackOrderRpc(request, orderId);
     expect(tracked.length).toBe(1);
     expect(tracked[0].channel).toBe('merch');
+  });
+
+  test('anon online order is accepted via kk_place_order', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const branches = await supabaseGet<BranchRow[]>(
+      request,
+      'kk_branches?select=id,name&status=eq.active&limit=1',
+    );
+    const products = await supabaseGet<ProductRow[]>(
+      request,
+      'kk_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = products?.[0];
+    test.skip(!branch || !product, 'Need active branch and product seed data');
+
+    const orderId = uniqueTestId('e2e-online');
+    const { status, body } = await placeOrderRpc(request, {
+      id: orderId,
+      channel: 'online',
+      branch_id: branch.id,
+      guest_name: 'E2E Online Guest',
+      payment_method: 'gcash-qr',
+      status: 'pending',
+      payment_status: 'unpaid',
+      items: [{ id: uniqueTestId('line'), product_id: product.id, qty: 1, item_type: 'coffee' }],
+    });
+
+    expect(status).toBe(200);
+    expect((body as Record<string, unknown>).channel).toBe('online');
+    expect((body as Record<string, unknown>).guest_name).toBe('E2E Online Guest');
+    expect((body as Record<string, unknown>).payment_method).toBe('gcash-qr');
+  });
+
+  test('kk_place_order rejects invalid channel for anon', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const branches = await supabaseGet<BranchRow[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const products = await supabaseGet<ProductRow[]>(
+      request,
+      'kk_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = products?.[0];
+    test.skip(!branch || !product, 'Need active branch and product seed data');
+
+    const { status, body } = await placeOrderRpc(request, {
+      id: uniqueTestId('e2e-bad-channel'),
+      channel: 'pos',
+      branch_id: branch.id,
+      items: [{ id: uniqueTestId('line'), product_id: product.id, qty: 1, item_type: 'coffee' }],
+    });
+
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(rpcErrorMessage(body)).toMatch(/invalid channel|staff may only place pos/i);
+  });
+
+  test('kk_place_order rejects empty items array', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const branches = await supabaseGet<BranchRow[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const branch = branches?.[0];
+    test.skip(!branch, 'Need active branch seed data');
+
+    const { status, body } = await placeOrderRpc(request, {
+      id: uniqueTestId('e2e-empty-items'),
+      channel: 'takeout',
+      branch_id: branch.id,
+      guest_name: 'E2E Guest',
+      items: [],
+    });
+
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(rpcErrorMessage(body)).toMatch(/between 1 and 50 items/i);
+  });
+
+  test('kk_place_order rejects inactive table for dine-in', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const branches = await supabaseGet<BranchRow[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const products = await supabaseGet<ProductRow[]>(
+      request,
+      'kk_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = products?.[0];
+    test.skip(!branch || !product, 'Need active branch and product seed data');
+
+    const { status, body } = await placeOrderRpc(request, {
+      id: uniqueTestId('e2e-bad-table'),
+      channel: 'dine-in',
+      branch_id: branch.id,
+      table_id: 'table_does_not_exist',
+      items: [{ id: uniqueTestId('line'), product_id: product.id, qty: 1, item_type: 'coffee' }],
+    });
+
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(rpcErrorMessage(body)).toMatch(/table is invalid or inactive/i);
+  });
+
+  test('kk_place_order requires guest name for takeout', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const branches = await supabaseGet<BranchRow[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const products = await supabaseGet<ProductRow[]>(
+      request,
+      'kk_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = products?.[0];
+    test.skip(!branch || !product, 'Need active branch and product seed data');
+
+    const { status, body } = await placeOrderRpc(request, {
+      id: uniqueTestId('e2e-no-name'),
+      channel: 'takeout',
+      branch_id: branch.id,
+      items: [{ id: uniqueTestId('line'), product_id: product.id, qty: 1, item_type: 'coffee' }],
+    });
+
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(rpcErrorMessage(body)).toMatch(/guest name is required/i);
   });
 });

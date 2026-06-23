@@ -8,11 +8,12 @@ import { type APIRequestContext, type Page, expect } from '@playwright/test';
 export const CREDS = {
   admin: { email: 'admin@kadokohi.com', password: 'KadoKohi2026!' },
   barista: { email: 'barista@kadokohi.com', password: 'KadoKohi2026!' },
+  staff: { email: 'staff@kadokohi.com', password: 'KadoKohi2026!' },
   customer: { email: 'customer@kadokohi.com', password: 'KadoKohi2026!' },
 };
 
 /** Internal portal sign-in (email + password only — no verification codes). */
-async function fillInternalSignIn(page: Page, email: string, password: string): Promise<void> {
+export async function fillInternalSignIn(page: Page, email: string, password: string): Promise<void> {
   const emailInput = page.locator('#internal-email');
   await emailInput.waitFor({ state: 'visible', timeout: 20000 });
   await emailInput.fill(email);
@@ -21,7 +22,7 @@ async function fillInternalSignIn(page: Page, email: string, password: string): 
 }
 
 /** Customer login form (email + password). */
-async function fillCustomerSignIn(page: Page, email: string, password: string): Promise<void> {
+export async function fillCustomerSignIn(page: Page, email: string, password: string): Promise<void> {
   const emailInput = page.locator('#login-email');
   await emailInput.waitFor({ state: 'visible', timeout: 20000 });
   await emailInput.fill(email);
@@ -32,8 +33,12 @@ async function fillCustomerSignIn(page: Page, email: string, password: string): 
 /** Dismiss cookie banner when it blocks taps (common on mobile e2e). */
 export async function dismissCookieConsent(page: Page): Promise<void> {
   const accept = page.getByRole('button', { name: /I accept cookies/i });
-  if (await accept.isVisible().catch(() => false)) {
-    await accept.click();
+  try {
+    if (await accept.isVisible({ timeout: 1500 })) {
+      await accept.click({ timeout: 5000, noWaitAfter: true });
+    }
+  } catch {
+    // Banner may animate away or already be dismissed.
   }
 }
 
@@ -55,7 +60,7 @@ export async function internalLogin(
 ): Promise<void> {
   const login =
     creds ??
-    (role === 'admin' || role === 'barista' ? CREDS[role] : undefined);
+    (role === 'admin' || role === 'barista' || role === 'staff' ? CREDS[role] : undefined);
   if (!login) {
     throw new Error(`No credentials configured for internal role: ${role}`);
   }
@@ -72,7 +77,13 @@ export async function internalLogin(
  */
 export function trackPageErrors(page: Page): () => string[] {
   const errors: string[] = [];
-  page.on('pageerror', (err) => errors.push(err.message));
+  page.on('pageerror', (err) => {
+    if (err instanceof Error) {
+      errors.push(err.message);
+      return;
+    }
+    errors.push(String(err));
+  });
   return () => errors;
 }
 
@@ -117,6 +128,44 @@ export function uniqueTestId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
+/** Fill the customer signup form (defaults are valid; override fields to test validation). */
+export async function fillSignupForm(
+  page: Page,
+  overrides: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirm: string;
+    terms: boolean;
+  }> = {},
+): Promise<void> {
+  const values = {
+    name: 'QA Tester',
+    email: `qa+${uniqueTestId('signup')}@example.com`,
+    phone: '9171234567',
+    password: 'password123',
+    confirm: 'password123',
+    terms: true,
+    ...overrides,
+  };
+  await page.locator('input#signup-name').fill(values.name);
+  await page.locator('input#signup-email').fill(values.email);
+  await page.locator('input#signup-phone').fill(values.phone);
+  await page.locator('input#signup-password').fill(values.password);
+  await page.locator('input#signup-confirm').fill(values.confirm);
+  if (values.terms) {
+    await page.locator('#signup-terms').check();
+  } else {
+    await page.locator('#signup-terms').uncheck();
+  }
+}
+
+/** Disable native HTML5 validation so client-side branches can be exercised. */
+export async function disableNativeFormValidation(page: Page): Promise<void> {
+  await page.locator('form').first().evaluate((form) => form.setAttribute('novalidate', 'novalidate'));
+}
+
 function supabaseHeaders(cfg: { url: string; anonKey: string }, token?: string) {
   const bearer = token ?? cfg.anonKey;
   return {
@@ -131,6 +180,18 @@ function supabaseHeaders(cfg: { url: string; anonKey: string }, token?: string) 
  * Returns null when credentials or config are unavailable.
  */
 export async function customerAccessToken(request: APIRequestContext): Promise<string | null> {
+  return passwordAccessToken(request, CREDS.customer.email, CREDS.customer.password);
+}
+
+/**
+ * Supabase access token for API tests (password sign-in).
+ * Returns null when credentials or config are unavailable.
+ */
+export async function passwordAccessToken(
+  request: APIRequestContext,
+  email: string,
+  password: string,
+): Promise<string | null> {
   const cfg = supabaseAnonConfig();
   if (!cfg) return null;
 
@@ -139,10 +200,7 @@ export async function customerAccessToken(request: APIRequestContext): Promise<s
       apikey: cfg.anonKey,
       'Content-Type': 'application/json',
     },
-    data: {
-      email: CREDS.customer.email,
-      password: CREDS.customer.password,
-    },
+    data: { email, password },
   });
   if (!res.ok()) return null;
   const body = (await res.json()) as { access_token?: string };
@@ -183,6 +241,59 @@ export async function placeOrderRpc(
   } catch {
     return { status: res.status(), body: text };
   }
+}
+
+type TableCodeRow = { code: string; label?: string };
+type BranchSlugRow = { slug: string; name?: string };
+
+/** First active dine-in table code (for valid QR URL tests). */
+export async function fetchActiveTableCode(request: APIRequestContext): Promise<string | null> {
+  const rows = await supabaseGet<TableCodeRow[]>(
+    request,
+    'kk_tables?select=code&active=eq.true&limit=1',
+  );
+  return rows?.[0]?.code ?? null;
+}
+
+/** First active branch slug (for takeout `?b=` tests). */
+export async function fetchActiveBranchSlug(request: APIRequestContext): Promise<string | null> {
+  const rows = await supabaseGet<BranchSlugRow[]>(
+    request,
+    'kk_branches?select=slug&status=eq.active&limit=1',
+  );
+  return rows?.[0]?.slug ?? null;
+}
+
+/** Add the first in-stock item from a guest menu grid (QR / takeout product sheet). */
+export async function addFirstGuestMenuItem(page: Page): Promise<void> {
+  await dismissCookieConsent(page);
+  const grid = page.locator('.guest-order-product-grid');
+  await grid.waitFor({ state: 'visible', timeout: 20000 });
+  const products = grid.locator('button:not([disabled])');
+  const count = await products.count();
+  expect(count, 'need at least one orderable menu item').toBeGreaterThan(0);
+
+  for (let i = 0; i < Math.min(count, 5); i++) {
+    await products.nth(i).click();
+    await expect(page.getByText('Customize')).toBeVisible({ timeout: 5000 });
+    const sheet = page.locator('div.fixed.inset-x-0.bottom-0').filter({ hasText: 'Customize' }).last();
+    const addBtn = sheet.getByRole('button', { name: /add to (order|table order)/i });
+    if (await addBtn.isEnabled().catch(() => false)) {
+      await addBtn.scrollIntoViewIfNeeded();
+      await addBtn.click();
+      await expect(page.getByText('Customize')).toHaveCount(0, { timeout: 5000 });
+      return;
+    }
+    await sheet.getByRole('button', { name: /close/i }).click();
+  }
+
+  throw new Error('Could not add any in-stock guest menu item');
+}
+
+export function rpcErrorMessage(body: Record<string, unknown> | string): string {
+  if (typeof body === 'string') return body;
+  const msg = body.message;
+  return typeof msg === 'string' ? msg : JSON.stringify(body);
 }
 
 export async function trackOrderRpc(

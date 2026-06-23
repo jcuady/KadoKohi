@@ -50,7 +50,12 @@ export function isRateLimitAuthError(error: unknown): boolean {
 /** User-facing copy for signup / login failures. */
 export function formatAuthErrorMessage(error: unknown, fallback: string): string {
   if (!error) return fallback;
-  const msg = error instanceof Error ? error.message : String(error);
+  const msg =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
   const lower = msg.toLowerCase();
 
   if (isRateLimitAuthError(error)) {

@@ -87,7 +87,7 @@ export const usePromoStore = create<PromoStore>()((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not load promo codes.';
       set({ loading: false, hydrateError: message });
-      throw err;
+      console.error('promoStore.fetchAll failed', err);
     }
   },
 

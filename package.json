@@ -12,7 +12,12 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:auth": "playwright test e2e/auth.spec.ts e2e/auth-api.spec.ts",
+    "test:e2e:ordering": "playwright test e2e/order-flows.spec.ts e2e/ordering.spec.ts e2e/guest-validation.spec.ts e2e/transactions.spec.ts",
+    "test:e2e:admin": "playwright test e2e/admin.spec.ts e2e/admin-ops.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "screenshots:hero": "node scripts/snapshot-hero.mjs",
     "sync:google-reviews": "node scripts/sync-google-reviews.mjs",
@@ -47,6 +52,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.1.9"
   }
 }

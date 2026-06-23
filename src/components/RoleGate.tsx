@@ -27,9 +27,7 @@ export default function RoleGate({ allowed, children }: RoleGateProps) {
   }
 
   if (!user || !allowed.includes(user.role)) {
-    const target = allowed.some((r) => r === 'admin' || r === 'barista' || r === 'staff')
-      ? '/management-portal'
-      : '/auth/login';
+    const target = allowed.includes('customer') ? '/auth/login' : '/management-portal';
     return <Navigate to={target} replace state={{ from: location.pathname }} />;
   }
 

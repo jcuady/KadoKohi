@@ -4,6 +4,7 @@ import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { authRepo } from '../lib/supabase/repositories/auth';
 import { logAudit } from '../lib/audit';
+import { useAuthStore } from './authStore';
 
 const SEED_USERS: User[] = [
   {
@@ -115,7 +116,18 @@ export const useUserStore = create<UserStore>()((set, get) => ({
             loyaltyStamps: updated.loyaltyStamps,
           });
         } else {
-          await orderingRepo.upsertUser(updated);
+          const actor = useAuthStore.getState().user;
+          const isSelf = actor?.id === id;
+          if (actor?.role === 'admin') {
+            await orderingRepo.upsertUser(updated);
+          } else if (isSelf && (updated.role === 'barista' || updated.role === 'staff')) {
+            const selfPatch: { name?: string; email?: string } = {};
+            if (patch.name !== undefined) selfPatch.name = updated.name;
+            if (patch.email !== undefined) selfPatch.email = updated.email;
+            if (Object.keys(selfPatch).length > 0) {
+              await orderingRepo.updateProfile(id, selfPatch);
+            }
+          }
         }
 
         if (existing) {

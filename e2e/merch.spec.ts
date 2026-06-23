@@ -7,7 +7,7 @@ test.describe('Merch storefront', () => {
     await page.goto('/merch');
 
     await expect(page.getByRole('heading', { name: /shop merch/i })).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText(/claim at branch pickup/i)).toBeVisible();
+    await expect(page.getByText(/GCash/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /kado classic tee/i })).toBeVisible({ timeout: 20000 });
 
     await page.getByRole('button', { name: /^accessories$/i }).click();
