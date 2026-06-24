@@ -13,6 +13,7 @@ import type { BoothBookingOccasion, BoothBookingSelectedAddonSnapshot, BookingEs
 import EventAvailabilityCalendar from './EventAvailabilityCalendar';
 import CmsStyledText from '../cms/CmsStyledText';
 import { buildBoothProposalMailto } from '../../lib/boothProposalEmail';
+import { sendBoothProposalSubmittedEmail } from '../../lib/sendBoothEmail';
 import { buildProposalEstimate } from '../../lib/boothProposal';
 import { formatPhp } from '../../lib/money';
 import {
@@ -75,6 +76,7 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
   const [step, setStep] = useState(1);
   const [packageChoice, setPackageChoice] = useState(EVENT_PROPOSAL_PACKAGE_ID);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
+  const [addonHours, setAddonHours] = useState<Record<string, string>>({});
   const packageDefaulted = useRef(false);
 
   const [contactName, setContactName] = useState('');
@@ -92,6 +94,7 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
   const [submitting, setSubmitting] = useState(false);
   const [submittedCode, setSubmittedCode] = useState('');
   const [mailtoHref, setMailtoHref] = useState('');
+  const [teamEmailSent, setTeamEmailSent] = useState(false);
 
   useEffect(() => {
     onStageChange?.(submittedCode ? 'submitted' : 'form');
@@ -133,18 +136,37 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
       packageId: selectedPackage.id,
       guestCount,
       durationHours,
-      addonSelections: selectedAddonIds.map((addonId) => ({ addonId })),
+      addonSelections: selectedAddonIds.map((addonId) => {
+        const addon = allAddons.find((a) => a.id === addonId);
+        const hours = Number(addonHours[addonId]);
+        if (addon?.pricingType === 'per_hour' && Number.isFinite(hours) && hours > 0) {
+          return { addonId, qty: hours };
+        }
+        return { addonId };
+      }),
       taxRatePercent: taxRate,
       assumptions: ['Indicative estimate — final quote confirmed by our events team'],
     });
-  }, [isProposal, selectedPackage, guestCount, durationHours, selectedAddonIds, taxRate]);
+  }, [isProposal, selectedPackage, guestCount, durationHours, selectedAddonIds, addonHours, allAddons, taxRate]);
 
   const occasionLabel = OCCASIONS.find((o) => o.id === occasion)?.label ?? occasion;
 
   const toggleAddon = (addonId: string) => {
-    setSelectedAddonIds((prev) =>
-      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId],
-    );
+    setSelectedAddonIds((prev) => {
+      if (prev.includes(addonId)) {
+        setAddonHours((hours) => {
+          const next = { ...hours };
+          delete next[addonId];
+          return next;
+        });
+        return prev.filter((id) => id !== addonId);
+      }
+      const addon = allAddons.find((a) => a.id === addonId);
+      if (addon?.pricingType === 'per_hour') {
+        setAddonHours((hours) => ({ ...hours, [addonId]: String(durationHours) }));
+      }
+      return [...prev, addonId];
+    });
   };
 
   function addonSnapshotsFromEstimate(estimate: BookingEstimate): BoothBookingSelectedAddonSnapshot[] {
@@ -259,26 +281,43 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
         estimateSnapshot: { ...estimate, shortCode: 'PENDING' },
         status: 'submitted',
       });
-      const mailto = buildBoothProposalMailto({
-        to: contactEmail,
+      const mailed = await sendBoothProposalSubmittedEmail({
         referenceCode: booking.shortCode,
+        bookingKind,
         contactName: contactName.trim(),
         contactEmail: contactEmailField.trim(),
         contactPhone: contactPhone.trim(),
         eventName: eventName.trim(),
-        occasion,
         guestCount,
         eventDate,
         startTime,
         endTime,
         message: message.trim() || undefined,
-        serviceLabel: serviceTag,
-        submitPath: BOOKING_PAGE_PATHS[bookingKind],
       });
 
       setSubmittedCode(booking.shortCode);
-      setMailtoHref(mailto);
-      window.location.href = mailto;
+      setTeamEmailSent(mailed);
+      if (!mailed) {
+        const mailto = buildBoothProposalMailto({
+          to: contactEmail,
+          referenceCode: booking.shortCode,
+          contactName: contactName.trim(),
+          contactEmail: contactEmailField.trim(),
+          contactPhone: contactPhone.trim(),
+          eventName: eventName.trim(),
+          occasion,
+          guestCount,
+          eventDate,
+          startTime,
+          endTime,
+          message: message.trim() || undefined,
+          serviceLabel: serviceTag,
+          submitPath: BOOKING_PAGE_PATHS[bookingKind],
+        });
+        setMailtoHref(mailto);
+      } else {
+        setMailtoHref('');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save your proposal. Please try again.');
     } finally {
@@ -295,8 +334,10 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
           </span>
           <h2 className="font-display text-2xl md:text-3xl font-black text-kado-dark mb-3">Proposal saved</h2>
           <p className="text-sm text-kado-dark/65 leading-relaxed max-w-md mx-auto mb-2">
-            Reference <strong className="text-kado-dark">{submittedCode}</strong>. We opened your email app so you can
-            send your proposal to our events team — we&apos;ll reply to negotiate pricing and details.
+            Reference <strong className="text-kado-dark">{submittedCode}</strong>.
+            {teamEmailSent
+              ? ' Our events team at kadocoffeeph@gmail.com has been notified — we will reply to negotiate pricing and details.'
+              : ' We could not auto-send your proposal — use the button below to email our events team.'}
           </p>
           <p className="text-sm text-kado-dark/55 mb-7">
             No payment is required now. Pricing is discussed after we review your event.
@@ -496,20 +537,37 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
                     <Label>Add-ons</Label>
                     <div className="space-y-2">
                       {catalogAddons.map((addon) => (
-                        <label
+                        <div
                           key={addon.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-kado-dark/15 px-4 py-2.5 cursor-pointer hover:border-kado-dark/30"
+                          className="rounded-xl border border-kado-dark/15 px-4 py-2.5 hover:border-kado-dark/30"
                         >
-                          <span className="flex items-center gap-2 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={selectedAddonIds.includes(addon.id)}
-                              onChange={() => toggleAddon(addon.id)}
-                            />
-                            <span className="text-sm text-kado-dark truncate">{addon.name}</span>
-                          </span>
-                          <span className="text-xs font-bold text-kado-dark/70 shrink-0">{formatPhp(addon.price)}</span>
-                        </label>
+                          <label className="flex items-center justify-between gap-3 cursor-pointer">
+                            <span className="flex items-center gap-2 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedAddonIds.includes(addon.id)}
+                                onChange={() => toggleAddon(addon.id)}
+                              />
+                              <span className="text-sm text-kado-dark truncate">{addon.name}</span>
+                            </span>
+                            <span className="text-xs font-bold text-kado-dark/70 shrink-0">
+                              {formatPhp(addon.price)}
+                              {addon.pricingType === 'per_hour' ? '/hr' : addon.pricingType === 'per_head' ? '/head' : ''}
+                            </span>
+                          </label>
+                          {addon.pricingType === 'per_hour' && selectedAddonIds.includes(addon.id) && (
+                            <div className="mt-2 pl-6">
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-kado-dark/50">Hours</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={addonHours[addon.id] ?? String(durationHours)}
+                                onChange={(e) => setAddonHours((s) => ({ ...s, [addon.id]: e.target.value }))}
+                                className="mt-1 w-24 rounded-lg border border-kado-dark/15 px-3 py-1.5 text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>

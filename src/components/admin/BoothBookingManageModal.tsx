@@ -13,6 +13,8 @@ import {
 } from '../../lib/boothBookingStatus';
 import { bookingInitialTotal, resolveBookingKind } from '../../lib/boothBookingEstimate';
 import { BOOKING_PAGE_LABELS } from '../../lib/bookingPageKinds';
+import { buildBoothQuoteEmailHtml, buildBoothQuoteEmailPlain } from '../../lib/boothQuoteEmail';
+import { sendBoothQuoteToClient } from '../../lib/sendBoothEmail';
 import { formatPhp } from '../../lib/money';
 import BoothEstimateBreakdown from '../booth/BoothEstimateBreakdown';
 import BoothContactCallCard from '../booth/BoothContactCallCard';
@@ -35,7 +37,9 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
   const [internalNotes, setInternalNotes] = useState('');
   const [staffId, setStaffId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
 
   const staffUsers = users.filter((u) => u.role === 'staff' || u.role === 'admin');
   useEffect(() => {
@@ -47,6 +51,7 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
     setInternalNotes(booking.internalNotes ?? '');
     setStaffId(booking.assignedStaffId ?? '');
     setSaveError('');
+    setEmailSuccess('');
   }, [booking]);
 
   if (!booking) return null;
@@ -90,6 +95,43 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
     void persistChanges(false);
   };
 
+  const handleSendQuoteEmail = async () => {
+    if (!booking) return;
+    const total = Number(officialTotal);
+    if (!Number.isFinite(total) || total < 0) {
+      setSaveError('Enter a valid quoted total before sending.');
+      return;
+    }
+    setSending(true);
+    setSaveError('');
+    setEmailSuccess('');
+    try {
+      await setFinalQuote(booking.id, total, {
+        quoteNotes,
+        status: status === 'submitted' ? 'quoted' : status,
+      });
+      const result = await sendBoothQuoteToClient({
+        booking: { ...booking, quoteNotes },
+        quotedTotal: total,
+        customMessage: quoteNotes.trim() || undefined,
+      });
+      if (!result.ok) throw new Error(result.error || 'Could not send email.');
+      setEmailSuccess('Quote email sent to client.');
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not send quote email.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const emailPreview = booking
+    ? buildBoothQuoteEmailPlain({
+        booking,
+        quotedTotal: Number(officialTotal) || 0,
+        customMessage: quoteNotes,
+      })
+    : null;
+
   return (
     <AnimatePresence>
       <motion.div
@@ -121,6 +163,10 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
               <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
                 {saveError}
               </p>
+            ) : null}
+
+            {emailSuccess ? (
+              <p className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{emailSuccess}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2 text-xs">
@@ -186,10 +232,35 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
               </div>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || sending}
                 className="w-full rounded-xl bg-kado-red text-white py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red/90 disabled:opacity-60"
               >
                 {saving ? 'Saving…' : 'Save official quote'}
+              </button>
+              {emailPreview && (
+                <div className="rounded-xl bg-kado-cream/50 border dash-border p-3 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider dash-muted">Email preview</p>
+                  <p className="text-xs font-semibold dash-heading">{emailPreview.subject}</p>
+                  <pre className="whitespace-pre-wrap text-[11px] dash-muted leading-relaxed max-h-32 overflow-y-auto">{emailPreview.body}</pre>
+                  <div
+                    className="rounded-lg border dash-border bg-white p-2 text-[11px] max-h-40 overflow-y-auto"
+                    dangerouslySetInnerHTML={{
+                      __html: buildBoothQuoteEmailHtml({
+                        booking,
+                        quotedTotal: Number(officialTotal) || 0,
+                        customMessage: quoteNotes,
+                      }),
+                    }}
+                  />
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={saving || sending}
+                onClick={() => void handleSendQuoteEmail()}
+                className="w-full rounded-xl bg-kado-dark text-kado-cream py-2.5 text-xs font-bold uppercase tracking-wider disabled:opacity-60"
+              >
+                {sending ? 'Sending…' : 'Send quote email to client'}
               </button>
             </form>
 

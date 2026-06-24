@@ -39,7 +39,7 @@ function computeAddonLine(
   durationHours: number,
 ): number {
   if (pricingType === 'per_head') return Math.max(1, guestCount);
-  if (pricingType === 'per_hour') return Math.max(1, durationHours);
+  if (pricingType === 'per_hour') return Math.max(1, baseQty);
   return Math.max(1, baseQty);
 }
 
@@ -73,7 +73,7 @@ export function buildBookingEstimate(input: BookingEstimateDraftInput): BookingE
     if (!addon) continue;
     const qty = computeAddonLine(
       addon.pricingType,
-      selection.qty ?? 1,
+      addon.pricingType === 'per_hour' ? (selection.qty ?? durationHours) : (selection.qty ?? 1),
       input.guestCount,
       durationHours,
     );

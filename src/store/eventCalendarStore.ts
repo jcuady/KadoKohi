@@ -7,6 +7,8 @@ type EventCalendarStore = {
   loading: boolean;
   loadMonth: (year: number, month: number) => Promise<EventCalendarMonth>;
   toggleBlockout: (dateKey: string, note?: string) => Promise<boolean>;
+  invalidateMonth: (year: number, month: number) => void;
+  refreshMonth: (year: number, month: number) => Promise<EventCalendarMonth>;
 };
 
 function cacheKey(year: number, month: number): string {
@@ -16,6 +18,18 @@ function cacheKey(year: number, month: number): string {
 export const useEventCalendarStore = create<EventCalendarStore>((set, get) => ({
   cache: {},
   loading: false,
+
+  invalidateMonth: (year, month) => {
+    const key = cacheKey(year, month);
+    const next = { ...get().cache };
+    delete next[key];
+    set({ cache: next });
+  },
+
+  refreshMonth: async (year, month) => {
+    get().invalidateMonth(year, month);
+    return get().loadMonth(year, month);
+  },
 
   loadMonth: async (year, month) => {
     const key = cacheKey(year, month);

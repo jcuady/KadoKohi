@@ -11,7 +11,10 @@ import { BOOKING_PAGE_LABELS, type BookingPageKind } from '../../lib/bookingPage
 import { bookingInitialTotal, bookingQuotedTotal, resolveBookingKind } from '../../lib/boothBookingEstimate';
 import { formatPhp } from '../../lib/money';
 import BoothBookingManageModal from '../../components/admin/BoothBookingManageModal';
+import AdminBoothDayModal from '../../components/admin/AdminBoothDayModal';
 import EventAvailabilityCalendar from '../../components/booking/EventAvailabilityCalendar';
+import { useEventCalendarStore } from '../../store/eventCalendarStore';
+import type { EventCalendarMonth } from '../../lib/eventCalendar';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -30,6 +33,10 @@ export default function AdminBoothBookings() {
   const [statusFilter, setStatusFilter] = useState<BoothBookingStatus | 'all'>('all');
   const [kindFilter, setKindFilter] = useState<BookingPageKind | 'all'>('all');
   const [manageId, setManageId] = useState<string | null>(null);
+  const [dayKey, setDayKey] = useState<string | null>(null);
+  const [calendarVersion, setCalendarVersion] = useState(0);
+  const [monthSnapshot, setMonthSnapshot] = useState<EventCalendarMonth | null>(null);
+  const refreshMonth = useEventCalendarStore((s) => s.refreshMonth);
 
   useEffect(() => {
     void hydrateFromRemote();
@@ -46,6 +53,21 @@ export default function AdminBoothBookings() {
 
   const manageBooking = manageId ? bookings.find((b) => b.id === manageId) ?? null : null;
 
+  const handleCalendarRefresh = () => {
+    setCalendarVersion((v) => v + 1);
+    if (dayKey) {
+      const [y, m] = dayKey.split('-').map(Number);
+      void refreshMonth(y, m).then(setMonthSnapshot);
+    }
+    void hydrateFromRemote();
+  };
+
+  const handleAdminDayClick = (key: string) => {
+    setDayKey(key);
+    const [y, m] = key.split('-').map(Number);
+    void refreshMonth(y, m).then(setMonthSnapshot);
+  };
+
   return (
     <div className="max-w-6xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Event Proposals</h1>
@@ -55,8 +77,12 @@ export default function AdminBoothBookings() {
 
       <div className="mb-10 max-w-md">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Availability calendar</p>
-        <p className="text-xs dash-muted mb-3">Only admins can block or reopen dates. Confirmed bookings show as booked.</p>
-        <EventAvailabilityCalendar adminMode />
+        <p className="text-xs dash-muted mb-3">Tap a date to manage bookings, quotes, and availability.</p>
+        <EventAvailabilityCalendar
+          adminMode
+          onAdminDayClick={handleAdminDayClick}
+          calendarVersion={calendarVersion}
+        />
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
@@ -147,6 +173,18 @@ export default function AdminBoothBookings() {
       )}
 
       <BoothBookingManageModal booking={manageBooking} onClose={() => setManageId(null)} />
+
+      <AdminBoothDayModal
+        dateKey={dayKey}
+        calendar={monthSnapshot}
+        bookings={bookings}
+        onClose={() => setDayKey(null)}
+        onOpenManage={(id) => {
+          setDayKey(null);
+          setManageId(id);
+        }}
+        onSaved={handleCalendarRefresh}
+      />
     </div>
   );
 }

@@ -65,19 +65,42 @@ export default function AdminBoothCatalog() {
   const branches = useBranchStore((s) => s.branches);
 
   const [savedMsg, setSavedMsg] = useState('');
+  const [actionBusy, setActionBusy] = useState(false);
 
   useEffect(() => {
     void hydrateFromRemote();
   }, [hydrateFromRemote]);
 
-  const handlePublish = async () => {
+  const persistCatalog = async (message = 'Booth catalog saved.') => {
     setSavedMsg('');
     try {
       await saveToRemote();
-      setSavedMsg('Booth catalog published.');
+      setSavedMsg(message);
     } catch {
       // saveError set in store
     }
+  };
+
+  const handlePublish = async () => {
+    setActionBusy(true);
+    await persistCatalog('Booth catalog published.');
+    setActionBusy(false);
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    if (!window.confirm('Delete this package permanently?')) return;
+    removePackage(id);
+    setActionBusy(true);
+    await persistCatalog('Package removed.');
+    setActionBusy(false);
+  };
+
+  const handleDeleteAddon = async (id: string) => {
+    if (!window.confirm('Delete this add-on permanently?')) return;
+    removeAddon(id);
+    setActionBusy(true);
+    await persistCatalog('Add-on removed.');
+    setActionBusy(false);
   };
 
   const sortedPackages = useMemo(() => [...packages].sort((a, b) => a.order - b.order), [packages]);
@@ -115,7 +138,7 @@ export default function AdminBoothCatalog() {
     setShowPkgModal(true);
   };
 
-  const submitPackage = (e: FormEvent) => {
+  const submitPackage = async (e: FormEvent) => {
     e.preventDefault();
     if (!pkgForm.name.trim() || !pkgForm.basePrice) return;
     const payload = {
@@ -138,6 +161,9 @@ export default function AdminBoothCatalog() {
       addPackage({ ...payload, order: sortedPackages.length });
     }
     setShowPkgModal(false);
+    setActionBusy(true);
+    await persistCatalog(editingPkgId ? 'Package updated.' : 'Package created.');
+    setActionBusy(false);
   };
 
   const openAddAddon = () => {
@@ -162,17 +188,18 @@ export default function AdminBoothCatalog() {
     setShowAddonModal(true);
   };
 
-  const submitAddon = (e: FormEvent) => {
+  const submitAddon = async (e: FormEvent) => {
     e.preventDefault();
     if (!addonForm.name.trim() || !addonForm.price) return;
+    const isPerHour = addonForm.pricingType === 'per_hour';
     const payload = {
       name: addonForm.name.trim(),
       description: addonForm.description.trim() || undefined,
       pricingType: addonForm.pricingType,
       price: Math.max(0, Number(addonForm.price)),
-      unitLabel: addonForm.unitLabel.trim() || undefined,
+      unitLabel: isPerHour ? 'hour' : addonForm.unitLabel.trim() || undefined,
       visible: addonForm.visible,
-      branchId: addonForm.branchId || undefined,
+      branchId: isPerHour ? undefined : addonForm.branchId || undefined,
     };
     if (editingAddonId) {
       updateAddon(editingAddonId, payload);
@@ -180,6 +207,9 @@ export default function AdminBoothCatalog() {
       addAddon({ ...payload, order: sortedAddons.length });
     }
     setShowAddonModal(false);
+    setActionBusy(true);
+    await persistCatalog(editingAddonId ? 'Add-on updated.' : 'Add-on created.');
+    setActionBusy(false);
   };
 
   return (
@@ -193,7 +223,7 @@ export default function AdminBoothCatalog() {
           <button
             type="button"
             onClick={() => void handlePublish()}
-            disabled={saving}
+            disabled={saving || actionBusy}
             className="rounded-xl bg-kado-red text-kado-cream px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
           >
             {saving ? 'Publishing…' : 'Publish'}
@@ -249,7 +279,7 @@ export default function AdminBoothCatalog() {
                 <button type="button" onClick={() => openEditPackage(pkg.id)} className="p-1.5 dash-muted hover:text-kado-red">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button type="button" onClick={() => removePackage(pkg.id)} className="p-1.5 text-red-400 hover:text-red-600">
+                <button type="button" onClick={() => void handleDeletePackage(pkg.id)} className="p-1.5 text-red-400 hover:text-red-600" disabled={actionBusy}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -282,7 +312,7 @@ export default function AdminBoothCatalog() {
                 <button type="button" onClick={() => openEditAddon(addon.id)} className="p-1.5 dash-muted hover:text-kado-red">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button type="button" onClick={() => removeAddon(addon.id)} className="p-1.5 text-red-400 hover:text-red-600">
+                <button type="button" onClick={() => void handleDeleteAddon(addon.id)} className="p-1.5 text-red-400 hover:text-red-600" disabled={actionBusy}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -327,36 +357,60 @@ export default function AdminBoothCatalog() {
 
       {showAddonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={submitAddon} className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
-            <h3 className="font-display text-xl font-bold dash-heading">{editingAddonId ? 'Edit Add-on' : 'New Add-on'}</h3>
+          <form onSubmit={(e) => void submitAddon(e)} className="w-full max-w-lg dash-card rounded-[2rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-5 md:px-7 pt-5 md:pt-6 pb-3 border-b dash-border">
+              <h3 className="font-display text-xl font-bold dash-heading">{editingAddonId ? 'Edit Add-on' : 'New Add-on'}</h3>
+              <p className="text-xs dash-muted mt-1">Per-hour add-ons apply to all branches and use customer-entered hours.</p>
+            </div>
+            <div className="px-5 md:px-7 py-4 md:py-5 space-y-4 overflow-y-auto">
             <Input label="Name" value={addonForm.name} onChange={(v) => setAddonForm((s) => ({ ...s, name: v }))} required />
             <TextArea label="Description" value={addonForm.description} onChange={(v) => setAddonForm((s) => ({ ...s, description: v }))} />
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Pricing type</label>
-              <select
-                value={addonForm.pricingType}
-                onChange={(e) => setAddonForm((s) => ({ ...s, pricingType: e.target.value as BoothAddonPricingType }))}
-                className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
-              >
-                <option value="fixed">Fixed</option>
-                <option value="per_head">Per head</option>
-                <option value="per_hour">Per hour</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Pricing type</label>
+                <select
+                  value={addonForm.pricingType}
+                  onChange={(e) => {
+                    const pricingType = e.target.value as BoothAddonPricingType;
+                    setAddonForm((s) => ({
+                      ...s,
+                      pricingType,
+                      branchId: pricingType === 'per_hour' ? '' : s.branchId,
+                      unitLabel: pricingType === 'per_hour' ? 'hour' : s.unitLabel,
+                    }));
+                  }}
+                  className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+                >
+                  <option value="fixed">Fixed</option>
+                  <option value="per_head">Per head</option>
+                  <option value="per_hour">Per hour</option>
+                </select>
+              </div>
+              <Input label="Price" type="number" value={addonForm.price} onChange={(v) => setAddonForm((s) => ({ ...s, price: v }))} required />
             </div>
-            <Input label="Price" type="number" value={addonForm.price} onChange={(v) => setAddonForm((s) => ({ ...s, price: v }))} required />
-            <Input label="Unit label (optional)" value={addonForm.unitLabel} onChange={(v) => setAddonForm((s) => ({ ...s, unitLabel: v }))} />
-            <SelectBranch
-              value={addonForm.branchId}
-              branches={branches}
-              onChange={(v) => setAddonForm((s) => ({ ...s, branchId: v }))}
-            />
+            {addonForm.pricingType !== 'per_hour' && (
+              <>
+                <Input label="Unit label (optional)" value={addonForm.unitLabel} onChange={(v) => setAddonForm((s) => ({ ...s, unitLabel: v }))} />
+                <SelectBranch
+                  value={addonForm.branchId}
+                  branches={branches}
+                  onChange={(v) => setAddonForm((s) => ({ ...s, branchId: v }))}
+                />
+              </>
+            )}
+            {addonForm.pricingType === 'per_hour' && (
+              <p className="text-xs dash-muted rounded-xl border dash-border px-3 py-2">
+                Branch scope is hidden for per-hour add-ons. Customers enter hours during booking.
+              </p>
+            )}
             <label className="text-xs dash-muted flex items-center gap-2">
               <input type="checkbox" checked={addonForm.visible} onChange={(e) => setAddonForm((s) => ({ ...s, visible: e.target.checked }))} />
               Visible
             </label>
-            <div className="flex justify-end gap-3 pt-1">
+            </div>
+            <div className="px-5 md:px-7 py-4 border-t dash-border bg-[var(--color-dash-surface)]/95 flex justify-end gap-3">
               <button type="button" onClick={() => setShowAddonModal(false)} className="rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted">Cancel</button>
-              <button type="submit" className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider">{editingAddonId ? 'Update' : 'Create'}</button>
+              <button type="submit" disabled={actionBusy} className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider disabled:opacity-60">{editingAddonId ? 'Save' : 'Create'}</button>
             </div>
           </form>
         </div>

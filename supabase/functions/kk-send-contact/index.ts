@@ -46,12 +46,23 @@ type Body = {
   purpose?: string;
   listingTitle?: string;
   phone?: string;
+  referenceCode?: string;
+  bookingKind?: string;
+  eventName?: string;
+  guestCount?: number;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string;
+  quotedTotal?: number;
+  customMessage?: string;
+  html?: string;
 };
 
 async function sendResend(params: {
   subject: string;
   html: string;
-  replyTo: string;
+  replyTo?: string;
+  to?: string[];
 }): Promise<{ ok: true; id: string } | { ok: false; message: string }> {
   if (!RESEND_API_KEY) {
     return { ok: false, message: "Email service not configured" };
@@ -65,8 +76,8 @@ async function sendResend(params: {
     },
     body: JSON.stringify({
       from: RESEND_FROM,
-      to: [INBOUND_EMAIL],
-      reply_to: params.replyTo,
+      to: params.to ?? [INBOUND_EMAIL],
+      reply_to: params.replyTo ?? INBOUND_EMAIL,
       subject: params.subject,
       html: params.html,
     }),
@@ -165,6 +176,62 @@ Deno.serve(async (req: Request) => {
       <p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>
     `;
     const sent = await sendResend({ subject, html, replyTo: email });
+    if (!sent.ok) {
+      return json({ error: sent.message, emailConfigured: false }, 503);
+    }
+    return json({ ok: true, id: sent.id });
+  }
+
+  if (kind === "booth_proposal") {
+    const name = String(body.name ?? "").trim();
+    const referenceCode = String(body.referenceCode ?? "").trim();
+    const bookingKind = String(body.bookingKind ?? "coffee-cart").trim();
+    const phone = String(body.phone ?? "").trim();
+    const eventName = String(body.eventName ?? "").trim();
+    const guestCount = Number(body.guestCount ?? 0);
+    const eventDate = String(body.eventDate ?? "").trim();
+    const startTime = String(body.startTime ?? "").trim();
+    const endTime = String(body.endTime ?? "").trim();
+    const message = String(body.message ?? "").trim();
+    const htmlOverride = String(body.html ?? "").trim();
+
+    if (name.length < 2) return json({ error: "Name is required" }, 400);
+    if (!referenceCode) return json({ error: "Reference code is required" }, 400);
+
+    const subject = `[Kado Kohi] Booth proposal ${referenceCode} — ${name}`;
+    const html = htmlOverride || `
+      <p><strong>New booth proposal</strong> (${escapeHtml(bookingKind)})</p>
+      <p><strong>Reference:</strong> ${escapeHtml(referenceCode)}</p>
+      <p><strong>Contact:</strong> ${escapeHtml(name)} · ${escapeHtml(email)} · ${escapeHtml(phone)}</p>
+      <p><strong>Event:</strong> ${escapeHtml(eventName)} · ${guestCount} guests</p>
+      <p><strong>Date:</strong> ${escapeHtml(eventDate)} · ${escapeHtml(startTime)}–${escapeHtml(endTime)}</p>
+      ${message ? `<p><strong>Notes:</strong><br />${escapeHtml(message).replace(/\n/g, "<br />")}</p>` : ""}
+      <p>Review in Admin → Event Proposals.</p>
+    `;
+    const sent = await sendResend({ subject, html, replyTo: email });
+    if (!sent.ok) {
+      return json({ error: sent.message, emailConfigured: false }, 503);
+    }
+    return json({ ok: true, id: sent.id });
+  }
+
+  if (kind === "booth_quote") {
+    const name = String(body.name ?? "").trim();
+    const referenceCode = String(body.referenceCode ?? "").trim();
+    const quotedTotal = Number(body.quotedTotal ?? 0);
+    const htmlOverride = String(body.html ?? "").trim();
+
+    if (name.length < 2) return json({ error: "Name is required" }, 400);
+    if (!referenceCode) return json({ error: "Reference code is required" }, 400);
+    if (!htmlOverride) return json({ error: "Email body is required" }, 400);
+
+    const subject = `Your Kado Kohi event quote — ${referenceCode}`;
+    const sent = await sendResend({
+      subject,
+      html: htmlOverride,
+      replyTo: INBOUND_EMAIL,
+      to: [email],
+    });
     if (!sent.ok) {
       return json({ error: sent.message, emailConfigured: false }, 503);
     }

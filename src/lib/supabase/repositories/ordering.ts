@@ -1337,13 +1337,7 @@ export const orderingRepo = {
   },
   async upsertBoothCatalog(catalog: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .update({ booth_catalog: catalog })
-      .eq('id', true)
-      .select('id')
-      .maybeSingle();
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_catalog: catalog });
     if (error) throw error;
-    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
   },
 };

@@ -14,6 +14,8 @@ type Props = {
   selectedDate?: string;
   onSelectDate?: (dateKey: string) => void;
   adminMode?: boolean;
+  onAdminDayClick?: (dateKey: string) => void;
+  calendarVersion?: number;
   className?: string;
 };
 
@@ -21,6 +23,8 @@ export default function EventAvailabilityCalendar({
   selectedDate,
   onSelectDate,
   adminMode = false,
+  onAdminDayClick,
+  calendarVersion = 0,
   className = '',
 }: Props) {
   const today = new Date();
@@ -28,18 +32,20 @@ export default function EventAvailabilityCalendar({
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [monthData, setMonthData] = useState<EventCalendarMonth | null>(null);
   const loadMonth = useEventCalendarStore((s) => s.loadMonth);
+  const refreshMonth = useEventCalendarStore((s) => s.refreshMonth);
   const toggleBlockout = useEventCalendarStore((s) => s.toggleBlockout);
   const loading = useEventCalendarStore((s) => s.loading);
 
   useEffect(() => {
     let active = true;
-    void loadMonth(year, month).then((data) => {
+    const loader = calendarVersion > 0 ? refreshMonth : loadMonth;
+    void loader(year, month).then((data) => {
       if (active) setMonthData(data);
     });
     return () => {
       active = false;
     };
-  }, [year, month, loadMonth]);
+  }, [year, month, loadMonth, refreshMonth, calendarVersion]);
 
   const matrix = useMemo(() => {
     const first = new Date(year, month - 1, 1);
@@ -66,9 +72,13 @@ export default function EventAvailabilityCalendar({
     const key = dateKeyFromParts(year, month, day);
     if (adminMode) {
       if (dayStatus(key, calendar) === 'past') return;
+      if (onAdminDayClick) {
+        onAdminDayClick(key);
+        return;
+      }
       if (dayStatus(key, calendar) === 'booked') return;
       await toggleBlockout(key);
-      const refreshed = await loadMonth(year, month);
+      const refreshed = await refreshMonth(year, month);
       setMonthData(refreshed);
       return;
     }
@@ -115,7 +125,7 @@ export default function EventAvailabilityCalendar({
           const status = dayStatus(key, calendar);
           const selected = selectedDate === key;
           const selectable = adminMode
-            ? status !== 'past' && status !== 'booked'
+            ? status !== 'past' && (onAdminDayClick ? true : status !== 'booked')
             : isDateSelectable(key, calendar);
 
           let cellClass =
@@ -127,7 +137,9 @@ export default function EventAvailabilityCalendar({
             if (status === 'booked' && !adminMode) {
               cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
             } else if (status === 'booked') {
-              cellClass += 'bg-kado-dark/8 text-kado-dark/35 cursor-not-allowed';
+              cellClass += onAdminDayClick
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer'
+                : 'bg-kado-dark/8 text-kado-dark/35 cursor-not-allowed';
             } else {
               cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
             }
@@ -171,7 +183,9 @@ export default function EventAvailabilityCalendar({
 
       {adminMode && (
         <p className="text-xs text-kado-dark/55 mt-3 leading-relaxed">
-          Tap an open day to block it for events. Tap a blocked day to reopen it. Confirmed bookings cannot be changed here.
+          {onAdminDayClick
+            ? 'Tap any date to manage bookings, send quotes, or block availability.'
+            : 'Tap an open day to block it for events. Tap a blocked day to reopen it. Confirmed bookings cannot be changed here.'}
         </p>
       )}
     </div>
