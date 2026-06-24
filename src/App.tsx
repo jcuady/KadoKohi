@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazyWithRetry } from './lib/lazyWithRetry';
 import PublicLayout from './layouts/PublicLayout';
 import RoleGate from './components/RoleGate';
 import Home from './pages/Home';
@@ -34,7 +35,7 @@ import SiteCookieConsent from './components/SiteCookieConsent';
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const BaristaLayout = lazy(() => import('./layouts/BaristaLayout'));
 const StaffLayout = lazy(() => import('./layouts/StaffLayout'));
-const CustomerLayout = lazy(() => import('./layouts/CustomerLayout'));
+const CustomerLayout = lazyWithRetry(() => import('./layouts/CustomerLayout'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminBranches = lazy(() => import('./pages/admin/AdminBranches'));
@@ -69,11 +70,11 @@ const BaristaMenu = lazy(() => import('./pages/barista/BaristaMenu'));
 const BaristaStamps = lazy(() => import('./pages/barista/BaristaStamps'));
 const BaristaKioskDisplay = lazy(() => import('./pages/barista/BaristaKioskDisplay'));
 
-const AccountDashboard = lazy(() => import('./pages/account/AccountDashboard'));
-const AccountOrders = lazy(() => import('./pages/account/AccountOrders'));
-const AccountProfile = lazy(() => import('./pages/account/AccountProfile'));
-const AccountBoothBookings = lazy(() => import('./pages/account/AccountBoothBookings'));
-const AccountVouchers = lazy(() => import('./pages/account/AccountVouchers'));
+const AccountDashboard = lazyWithRetry(() => import('./pages/account/AccountDashboard'));
+const AccountOrders = lazyWithRetry(() => import('./pages/account/AccountOrders'));
+const AccountProfile = lazyWithRetry(() => import('./pages/account/AccountProfile'));
+const AccountBoothBookings = lazyWithRetry(() => import('./pages/account/AccountBoothBookings'));
+const AccountVouchers = lazyWithRetry(() => import('./pages/account/AccountVouchers'));
 
 function RouteChunkFallback() {
   return (

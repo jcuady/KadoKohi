@@ -14,15 +14,36 @@ export function stripAuthParamsFromUrl(): void {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   url.hash = '';
-  for (const key of ['code', 'error', 'error_description', 'type']) {
+  for (const key of ['code', 'error', 'error_description', 'type', 'token_hash']) {
     url.searchParams.delete(key);
   }
   const next = `${url.pathname}${url.search}${url.hash}`;
   window.history.replaceState({}, '', next);
 }
 
+function isPkceCrossDeviceError(error: Error): boolean {
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('pkce') ||
+    msg.includes('code verifier') ||
+    msg.includes('flow state') ||
+    msg.includes('invalid request') && msg.includes('code')
+  );
+}
+
+async function sessionFromUrlHash(): Promise<Session | null> {
+  if (!supabase || typeof window === 'undefined') return null;
+  if (!window.location.hash.includes('access_token=')) return null;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) return null;
+  stripAuthParamsFromUrl();
+  return data.session;
+}
+
 /**
- * Finish an email-confirm or magic-link redirect (PKCE ?code= or legacy hash tokens).
+ * Finish an email-confirm or magic-link redirect (token_hash, PKCE ?code=, or legacy hash tokens).
+ * token_hash works across devices; PKCE ?code= only works on the browser that started sign-up.
  */
 export async function completeSupabaseAuthRedirect(): Promise<{
   session: Session | null;
@@ -35,14 +56,6 @@ export async function completeSupabaseAuthRedirect(): Promise<{
   await recoverStaleAuthSession();
 
   const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) return { session: null, error };
-    stripAuthParamsFromUrl();
-    return { session: data.session, error: null };
-  }
-
   const tokenHash = params.get('token_hash');
   const type = params.get('type');
   if (tokenHash && type) {
@@ -53,6 +66,29 @@ export async function completeSupabaseAuthRedirect(): Promise<{
     if (error) return { session: null, error };
     stripAuthParamsFromUrl();
     return { session: data.session, error: null };
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      if (isPkceCrossDeviceError(error)) {
+        return {
+          session: null,
+          error: new Error(
+            'This confirmation link must be opened on the same device where you signed up, or request a new confirmation email and open that link on this device.',
+          ),
+        };
+      }
+      return { session: null, error };
+    }
+    stripAuthParamsFromUrl();
+    return { session: data.session, error: null };
+  }
+
+  const hashSession = await sessionFromUrlHash();
+  if (hashSession) {
+    return { session: hashSession, error: null };
   }
 
   if (!hasAuthCallbackInUrl()) {

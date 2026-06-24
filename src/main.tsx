@@ -8,9 +8,13 @@ import { hydrateGlobalMinimal } from './lib/bootstrapHydration';
 import { supabase } from './lib/supabase/client';
 import { stopOperationsRealtime } from './lib/supabase/operationsRealtime';
 import { isAuthListenerPaused, recoverStaleAuthSession } from './lib/supabase/authSession';
+import { redirectAuthCallbackToHandler } from './lib/authUrlBootstrap';
+import { clearChunkReloadFlag } from './lib/lazyWithRetry';
 import { registerSW } from 'virtual:pwa-register';
 
 import { ensurePublishedCms } from './lib/cmsBootstrap';
+
+const pendingAuthRedirect = redirectAuthCallbackToHandler();
 
 function Bootstrap() {
   const initAuth = useAuthStore((s) => s.initFromSupabase);
@@ -51,16 +55,25 @@ function Bootstrap() {
   return <App />;
 }
 
-registerSW({ immediate: true });
+if (!pendingAuthRedirect) {
+  clearChunkReloadFlag();
 
-const container = document.getElementById('root')!;
-type RootHost = HTMLElement & { __kkReactRoot?: Root };
-const host = container as RootHost;
-const root = host.__kkReactRoot ?? createRoot(container);
-host.__kkReactRoot = root;
+  registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      window.location.reload();
+    },
+  });
 
-root.render(
-  <StrictMode>
-    <Bootstrap />
-  </StrictMode>,
-);
+  const container = document.getElementById('root')!;
+  type RootHost = HTMLElement & { __kkReactRoot?: Root };
+  const host = container as RootHost;
+  const hostRoot = host.__kkReactRoot ?? createRoot(container);
+  host.__kkReactRoot = hostRoot;
+
+  hostRoot.render(
+    <StrictMode>
+      <Bootstrap />
+    </StrictMode>,
+  );
+}

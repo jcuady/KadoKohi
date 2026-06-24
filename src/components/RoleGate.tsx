@@ -18,7 +18,7 @@ export default function RoleGate({ allowed, children }: RoleGateProps) {
   const loading = useAuthStore((s) => s.loading);
   const location = useLocation();
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />

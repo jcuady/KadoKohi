@@ -97,7 +97,8 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           set({ loading: false });
           return;
         }
-        set({ loading: true });
+        const showBootstrapSpinner = !get().user;
+        if (showBootstrapSpinner) set({ loading: true });
         try {
           const session = await authRepo.session();
           if (!session?.user) {

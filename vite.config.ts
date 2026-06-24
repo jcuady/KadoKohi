@@ -55,8 +55,22 @@ export default defineConfig(() => {
         },
         workbox: {
           navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/assets\//],
           importScripts: ['/push-sw.js'],
           runtimeCaching: [
+            {
+              urlPattern: ({ request, url }) =>
+                request.destination === 'script' || url.pathname.startsWith('/assets/'),
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'kado-assets',
+                networkTimeoutSeconds: 5,
+                expiration: {
+                  maxEntries: 80,
+                  maxAgeSeconds: 60 * 60 * 24 * 7,
+                },
+              },
+            },
             {
               urlPattern: ({ request }) => request.destination === 'image',
               handler: 'CacheFirst',

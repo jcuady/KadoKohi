@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase/client';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { completeSupabaseAuthRedirect } from '../../lib/supabase/authRedirect';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
 import PasswordField from '../../components/auth/PasswordField';
@@ -10,6 +11,7 @@ import PasswordField from '../../components/auth/PasswordField';
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -17,15 +19,33 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!supabase) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    let cancelled = false;
+
+    void (async () => {
+      const { session, error: redirectError } = await completeSupabaseAuthRedirect();
+      if (cancelled) return;
+      if (redirectError) {
+        setBootError(
+          formatAuthErrorMessage(redirectError, 'This reset link is invalid or expired.'),
+        );
+        return;
+      }
+      if (session) {
         setReady(true);
       }
+    })();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setReady(true);
+        setBootError('');
+      }
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -60,7 +80,7 @@ export default function ResetPassword() {
 
       {!ready ? (
         <AuthAlert variant="error">
-          This reset link is invalid or expired.{' '}
+          {bootError || 'This reset link is invalid or expired.'}{' '}
           <Link to="/auth/forgot-password" className="underline font-semibold">
             Request a new one
           </Link>
