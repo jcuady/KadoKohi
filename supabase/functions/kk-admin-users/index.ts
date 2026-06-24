@@ -6,6 +6,19 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const RESET_CONFIRM_PHRASE = "RESET ALL DATA";
 
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
 const DEFAULT_SITE_CONFIG = {
   defaultOpenTime: "07:00",
   defaultCloseTime: "23:00",
@@ -39,20 +52,31 @@ const RESET_DELETE_TABLES: Array<{ table: string; column?: string; sentinel?: st
   { table: "kk_branches" },
 ];
 
+async function detachUserReferences(
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+) {
+  await adminClient.from("kk_push_subscriptions").delete().eq("user_id", userId);
+  await adminClient.from("kk_event_registrations").delete().eq("customer_id", userId);
+  await adminClient.from("kk_orders").update({ customer_id: null }).eq("customer_id", userId);
+  await adminClient.from("kk_booth_bookings").update({ customer_id: null }).eq("customer_id", userId);
+  await adminClient
+    .from("kk_booth_bookings")
+    .update({ assigned_staff_id: null })
+    .eq("assigned_staff_id", userId);
+}
+
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: cors });
+  }
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Method not allowed" }, 405);
   }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Missing authorization" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Missing authorization" }, 401);
   }
 
   const callerToken = authHeader.replace("Bearer ", "");
@@ -62,10 +86,7 @@ Deno.serve(async (req: Request) => {
     error: userError,
   } = await callerClient.auth.getUser(callerToken);
   if (userError || !user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Unauthorized" }, 401);
   }
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -76,10 +97,7 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (!profile || profile.role !== "admin") {
-    return new Response(JSON.stringify({ error: "Admin role required" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Admin role required" }, 403);
   }
 
   const body = await req.json();
@@ -88,35 +106,20 @@ Deno.serve(async (req: Request) => {
   if (action === "create_user") {
     const { email, password, name, role, branchId } = body;
     if (!email || !password || !name || !role) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return json({ error: "Missing required fields" }, 400);
     }
     if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return json({ error: "Password must be at least 8 characters" }, 400);
     }
     const allowedRoles = ["admin", "barista", "staff", "customer"] as const;
     if (!allowedRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid role" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "Invalid role" }, 400);
     }
     if ((role === "barista" || role === "staff") && !branchId) {
-      return new Response(
-        JSON.stringify({ error: "Branch is required for barista and staff accounts" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "Branch is required for barista and staff accounts" }, 400);
     }
     if (role === "customer" && branchId) {
-      return new Response(
-        JSON.stringify({ error: "Customer accounts cannot be assigned to a branch here" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "Customer accounts cannot be assigned to a branch here" }, 400);
     }
     const { data: newUser, error: createError } =
       await adminClient.auth.admin.createUser({
@@ -126,10 +129,7 @@ Deno.serve(async (req: Request) => {
         user_metadata: { name, role, branch_id: branchId ?? null },
       });
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: createError.message }, 400);
     }
     await adminClient.from("kk_profiles").upsert({
       id: newUser.user.id,
@@ -139,37 +139,23 @@ Deno.serve(async (req: Request) => {
       branch_id: role === "admin" ? null : (branchId ?? null),
       loyalty_stamps: 0,
     });
-    return new Response(JSON.stringify({ user: newUser.user }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ user: newUser.user });
   }
 
   if (action === "update_user") {
     const { userId, name, email, role, branchId } = body;
     if (!userId || typeof userId !== "string") {
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Missing userId" }, 400);
     }
     if (!name || !email || !role) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Missing required fields" }, 400);
     }
     const allowedRoles = ["admin", "barista", "staff", "customer"] as const;
     if (!allowedRoles.includes(role)) {
-      return new Response(JSON.stringify({ error: "Invalid role" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Invalid role" }, 400);
     }
     if ((role === "barista" || role === "staff") && !branchId) {
-      return new Response(JSON.stringify({ error: "Branch is required for barista and staff accounts" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Branch is required for barista and staff accounts" }, 400);
     }
 
     const { data: target, error: targetErr } = await adminClient
@@ -178,10 +164,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", userId)
       .maybeSingle();
     if (targetErr || !target) {
-      return new Response(JSON.stringify({ error: targetErr?.message ?? "User not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: targetErr?.message ?? "User not found" }, 404);
     }
 
     if (target.role === "admin" && role !== "admin") {
@@ -190,10 +173,7 @@ Deno.serve(async (req: Request) => {
         .select("id", { count: "exact", head: true })
         .eq("role", "admin");
       if ((count ?? 0) <= 1) {
-        return new Response(JSON.stringify({ error: "Cannot demote the last admin account." }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Cannot demote the last admin account." }, 400);
       }
     }
 
@@ -208,10 +188,7 @@ Deno.serve(async (req: Request) => {
       })
       .eq("id", userId);
     if (profileErr) {
-      return new Response(JSON.stringify({ error: profileErr.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: profileErr.message }, 400);
     }
 
     const { error: authErr } = await adminClient.auth.admin.updateUserById(userId, {
@@ -219,30 +196,19 @@ Deno.serve(async (req: Request) => {
       user_metadata: { name: String(name).trim(), role, branch_id: resolvedBranchId },
     });
     if (authErr) {
-      return new Response(JSON.stringify({ error: authErr.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: authErr.message }, 400);
     }
 
-    return new Response(JSON.stringify({ success: true, user: { id: userId } }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true, user: { id: userId } });
   }
 
   if (action === "delete_user") {
     const { userId } = body;
     if (!userId || typeof userId !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Missing userId" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "Missing userId" }, 400);
     }
     if (userId === user.id) {
-      return new Response(
-        JSON.stringify({ error: "You cannot delete your own account while signed in." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "You cannot delete your own account while signed in." }, 400);
     }
 
     const { data: target, error: targetErr } = await adminClient
@@ -251,16 +217,10 @@ Deno.serve(async (req: Request) => {
       .eq("id", userId)
       .maybeSingle();
     if (targetErr) {
-      return new Response(JSON.stringify({ error: targetErr.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: targetErr.message }, 400);
     }
     if (!target) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "User not found" }, 404);
     }
 
     if (target.role === "admin") {
@@ -269,73 +229,47 @@ Deno.serve(async (req: Request) => {
         .select("id", { count: "exact", head: true })
         .eq("role", "admin");
       if (adminCountErr) {
-        return new Response(JSON.stringify({ error: adminCountErr.message }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: adminCountErr.message }, 400);
       }
       if ((count ?? 0) <= 1) {
-        return new Response(
-          JSON.stringify({ error: "Cannot delete the last admin account." }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
-        );
+        return json({ error: "Cannot delete the last admin account." }, 400);
       }
     }
 
-    await adminClient.from("kk_push_subscriptions").delete().eq("user_id", userId);
-    await adminClient.from("kk_event_registrations").delete().eq("customer_id", userId);
+    await detachUserReferences(adminClient, userId);
 
     const { error: authDeleteErr } = await adminClient.auth.admin.deleteUser(userId);
     if (authDeleteErr) {
-      return new Response(JSON.stringify({ error: authDeleteErr.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: authDeleteErr.message }, 400);
     }
 
     await adminClient.from("kk_profiles").delete().eq("id", userId);
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true });
   }
 
   if (action === "reset_password") {
     const { userId, newPassword } = body;
     if (!userId || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: "Missing userId or newPassword" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return json({ error: "Missing userId or newPassword" }, 400);
     }
     if (newPassword.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return json({ error: "Password must be at least 8 characters" }, 400);
     }
     const { error: resetError } =
       await adminClient.auth.admin.updateUserById(userId, {
         password: newPassword,
       });
     if (resetError) {
-      return new Response(JSON.stringify({ error: resetError.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: resetError.message }, 400);
     }
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true });
   }
 
   if (action === "send_password_reset") {
     const { userId } = body;
     if (!userId || typeof userId !== "string") {
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Missing userId" }, 400);
     }
     const { data: target } = await adminClient
       .from("kk_profiles")
@@ -343,7 +277,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", userId)
       .maybeSingle();
     if (!target?.email) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
+      return json({ error: "User not found" }, 404);
     }
     const siteUrl = Deno.env.get("SITE_URL") ?? "https://www.kadokohi.com";
     const redirectTo = `${siteUrl.replace(/\/$/, "")}/auth/reset-password`;
@@ -351,14 +285,9 @@ Deno.serve(async (req: Request) => {
       redirectTo,
     });
     if (resetErr) {
-      return new Response(JSON.stringify({ error: resetErr.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: resetErr.message }, 400);
     }
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true });
   }
 
   if (action === "list_users") {
@@ -367,26 +296,18 @@ Deno.serve(async (req: Request) => {
       error: listError,
     } = await adminClient.auth.admin.listUsers();
     if (listError) {
-      return new Response(JSON.stringify({ error: listError.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: listError.message }, 400);
     }
     const { data: profiles } = await adminClient
       .from("kk_profiles")
       .select("*");
-    return new Response(JSON.stringify({ users, profiles }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ users, profiles });
   }
 
   if (action === "reset_all_data") {
     const { confirmPhrase } = body;
     if (confirmPhrase !== RESET_CONFIRM_PHRASE) {
-      return new Response(
-        JSON.stringify({ error: `Type "${RESET_CONFIRM_PHRASE}" to confirm.` }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: `Type "${RESET_CONFIRM_PHRASE}" to confirm.` }, 400);
     }
 
     const deleted: Record<string, number | boolean> = {
@@ -433,12 +354,13 @@ Deno.serve(async (req: Request) => {
         .neq("role", "admin");
       if (profileErr) throw profileErr;
 
-      for (const profile of nonAdminProfiles ?? []) {
-        if (profile.id === user.id) continue;
-        await adminClient.auth.admin.deleteUser(profile.id).catch((err) => {
-          console.warn(`auth delete failed for ${profile.id}:`, err.message);
+      for (const profileRow of nonAdminProfiles ?? []) {
+        if (profileRow.id === user.id) continue;
+        await detachUserReferences(adminClient, profileRow.id);
+        await adminClient.auth.admin.deleteUser(profileRow.id).catch((err) => {
+          console.warn(`auth delete failed for ${profileRow.id}:`, err.message);
         });
-        await adminClient.from("kk_profiles").delete().eq("id", profile.id);
+        await adminClient.from("kk_profiles").delete().eq("id", profileRow.id);
         deleted.usersRemoved = (deleted.usersRemoved as number) + 1;
       }
 
@@ -454,20 +376,12 @@ Deno.serve(async (req: Request) => {
         .eq("role", "admin");
       deleted.adminsPreserved = adminProfiles?.length ?? 0;
 
-      return new Response(JSON.stringify({ success: true, deleted }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ success: true, deleted });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Reset failed.";
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: message }, 500);
     }
   }
 
-  return new Response(JSON.stringify({ error: "Unknown action" }), {
-    status: 400,
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ error: "Unknown action" }, 400);
 });

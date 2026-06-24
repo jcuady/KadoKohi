@@ -18,7 +18,18 @@ function parseEdgePayload(data: unknown): void {
 async function invokeAdminUsers<T = unknown>(body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('Supabase is not configured.');
   const { data, error } = await supabase.functions.invoke('kk-admin-users', { body });
-  if (error) throw error;
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    if (ctx) {
+      try {
+        const payload = (await ctx.json()) as { error?: string };
+        if (payload?.error) throw new Error(payload.error);
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message !== error.message) throw parseErr;
+      }
+    }
+    throw error;
+  }
   parseEdgePayload(data);
   return data as T;
 }
