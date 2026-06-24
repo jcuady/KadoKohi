@@ -5,6 +5,16 @@ import { KADO_LOCATION, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
 export type DashTheme = 'light' | 'dark';
 
+export type BoothPaymentConfig = {
+  gcashEnabled: boolean;
+  gcashQrImage?: string;
+  bankEnabled: boolean;
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankInstructions?: string;
+};
+
 export interface AppSettings {
   taxRate: number;
   defaultOpenTime: string;
@@ -17,6 +27,7 @@ export interface AppSettings {
   /** Phone number for booth booking inquiries (click-to-call). */
   boothContactPhone: string;
   boothContactName?: string;
+  boothPayment: BoothPaymentConfig;
   /** Public contact page & footer */
   contactEmail: string;
   contactPhone: string;
@@ -38,6 +49,14 @@ const DEFAULTS: AppSettings = {
   gcashQrImage: '',
   boothContactPhone: '+63 917 123 4567',
   boothContactName: 'Kado Kohi Events',
+  boothPayment: {
+    gcashEnabled: true,
+    bankEnabled: true,
+    bankName: '',
+    bankAccountName: '',
+    bankAccountNumber: '',
+    bankInstructions: '',
+  },
   contactEmail: 'kadocoffeeph@gmail.com',
   contactPhone: '+63 920 948 2934',
   contactAddress: KADO_LOCATION.displayAddress,

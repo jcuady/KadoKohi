@@ -5,6 +5,7 @@ export type EventCalendarMonth = {
   year: number;
   month: number;
   blockouts: string[];
+  pending: string[];
   booked: string[];
 };
 
@@ -30,26 +31,28 @@ export function monthMatrix(year: number, month: number): (number | null)[][] {
   return rows;
 }
 
-export type EventDayStatus = 'past' | 'available' | 'blocked' | 'booked';
+export type EventDayStatus = 'past' | 'available' | 'blocked' | 'pending' | 'booked';
 
 export function dayStatus(
   key: string,
-  calendar: Pick<EventCalendarMonth, 'blockouts' | 'booked'>,
+  calendar: Pick<EventCalendarMonth, 'blockouts' | 'pending' | 'booked'>,
   minDate = minEventDateKey(),
 ): EventDayStatus {
   if (key < minDate) return 'past';
   if (calendar.blockouts.includes(key)) return 'blocked';
+  if (calendar.pending.includes(key)) return 'pending';
   if (calendar.booked.includes(key)) return 'booked';
   return 'available';
 }
 
 export function isDateSelectable(
   key: string,
-  calendar: Pick<EventCalendarMonth, 'blockouts' | 'booked'>,
+  calendar: Pick<EventCalendarMonth, 'blockouts' | 'pending' | 'booked'>,
   minDate = minEventDateKey(),
 ): boolean {
   if (key < minDate) return false;
   if (calendar.blockouts.includes(key)) return false;
+  if (calendar.pending.includes(key)) return false;
   return true;
 }
 

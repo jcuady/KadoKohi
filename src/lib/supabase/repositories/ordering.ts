@@ -295,6 +295,12 @@ function mapBooking(row: any): BoothBooking {
     quoteNotes: row.quote_notes ?? undefined,
     quotedAt: row.quoted_at ?? undefined,
     status: row.status,
+    paymentMethod: (row.payment_method ?? 'gcash-or-bank') as BoothBooking['paymentMethod'],
+    paymentStatus: (row.payment_status ?? 'unpaid') as BoothBooking['paymentStatus'],
+    paymentAmount: row.payment_amount != null ? Number(row.payment_amount) : undefined,
+    paymentProofImage: row.payment_proof_image ?? undefined,
+    paymentProofUploadedAt: row.payment_proof_uploaded_at ?? undefined,
+    paymentPaidAt: row.payment_paid_at ?? undefined,
     assignedStaffId: row.assigned_staff_id ?? undefined,
     internalNotes: row.internal_notes ?? undefined,
     createdAt: row.created_at,
@@ -770,18 +776,29 @@ export const orderingRepo = {
       throw new Error('Event was not deleted. Sign in as admin and try again.');
     }
   },
-  async fetchEventCalendar(year: number, month: number): Promise<{ blockouts: string[]; booked: string[] }> {
-    if (!supabase) return { blockouts: [], booked: [] };
+  async fetchEventCalendar(year: number, month: number): Promise<{ blockouts: string[]; pending: string[]; booked: string[] }> {
+    if (!supabase) return { blockouts: [], pending: [], booked: [] };
     const { data, error } = await supabase.rpc('kk_fetch_event_calendar', {
       p_year: year,
       p_month: month,
     });
     if (error) throw error;
-    const row = (data ?? {}) as { blockouts?: string[]; booked?: string[] };
+    const row = (data ?? {}) as { blockouts?: string[]; pending?: string[]; booked?: string[] };
     return {
       blockouts: row.blockouts ?? [],
+      pending: row.pending ?? [],
       booked: row.booked ?? [],
     };
+  },
+  async setEventDateKind(dateKey: string, kind: 'available' | 'blocked' | 'pending', note?: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_admin_set_event_date_kind', {
+      p_date: dateKey,
+      p_kind: kind,
+      p_note: note ?? null,
+    });
+    if (error) throw error;
+    return (data ?? {}) as { block_date?: string; kind?: string };
   },
   async toggleEventBlockout(dateKey: string, note?: string): Promise<{ blocked: boolean }> {
     if (!supabase) throw new Error('Supabase is not configured.');
@@ -850,9 +867,47 @@ export const orderingRepo = {
     if (patch.quoteNotes !== undefined) dbPatch.quote_notes = patch.quoteNotes ?? null;
     if (patch.quotedAt !== undefined) dbPatch.quoted_at = patch.quotedAt ?? null;
     if (patch.internalNotes !== undefined) dbPatch.internal_notes = patch.internalNotes ?? null;
+    if (patch.eventDate !== undefined) dbPatch.event_date = new Date(patch.eventDate).toISOString();
+    if (patch.startsAt !== undefined) dbPatch.starts_at = new Date(patch.startsAt).toISOString();
+    if (patch.endsAt !== undefined) dbPatch.ends_at = new Date(patch.endsAt).toISOString();
+    if (patch.paymentMethod !== undefined) dbPatch.payment_method = patch.paymentMethod;
+    if (patch.paymentStatus !== undefined) dbPatch.payment_status = patch.paymentStatus;
+    if (patch.paymentAmount !== undefined) dbPatch.payment_amount = patch.paymentAmount ?? null;
+    if (patch.paymentProofImage !== undefined) dbPatch.payment_proof_image = patch.paymentProofImage ?? null;
+    if (patch.paymentProofUploadedAt !== undefined) dbPatch.payment_proof_uploaded_at = patch.paymentProofUploadedAt ?? null;
+    if (patch.paymentPaidAt !== undefined) dbPatch.payment_paid_at = patch.paymentPaidAt ?? null;
     if (Object.keys(dbPatch).length === 0) return;
     const { error } = await supabase.from('kk_booth_bookings').update(dbPatch).eq('id', id);
     if (error) throw error;
+  },
+  async adminPatchBooking(id: string, patch: Partial<BoothBooking>) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const payload: Record<string, unknown> = { id };
+    if (patch.status !== undefined) payload.status = patch.status;
+    if (patch.assignedStaffId !== undefined) payload.assigned_staff_id = patch.assignedStaffId ?? null;
+    if (patch.finalQuote !== undefined) payload.final_quote = patch.finalQuote;
+    if (patch.quoteNotes !== undefined) payload.quote_notes = patch.quoteNotes ?? null;
+    if (patch.quotedAt !== undefined) payload.quoted_at = patch.quotedAt;
+    if (patch.internalNotes !== undefined) payload.internal_notes = patch.internalNotes ?? null;
+    if (patch.eventDate !== undefined) payload.event_date = new Date(patch.eventDate).toISOString();
+    if (patch.startsAt !== undefined) payload.starts_at = new Date(patch.startsAt).toISOString();
+    if (patch.endsAt !== undefined) payload.ends_at = new Date(patch.endsAt).toISOString();
+    if (patch.paymentMethod !== undefined) payload.payment_method = patch.paymentMethod;
+    if (patch.paymentStatus !== undefined) payload.payment_status = patch.paymentStatus;
+    if (patch.paymentAmount !== undefined) payload.payment_amount = patch.paymentAmount;
+    if (patch.paymentPaidAt !== undefined) payload.payment_paid_at = patch.paymentPaidAt;
+    const { data, error } = await supabase.rpc('kk_admin_patch_booth_booking', { payload });
+    if (error) throw error;
+    return data as Record<string, unknown>;
+  },
+  async submitBoothPaymentProof(bookingId: string, proofRef: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('kk_submit_booth_payment_proof', {
+      p_booking_id: bookingId,
+      p_proof_data_url: proofRef,
+    });
+    if (error) throw error;
+    return data as { payment_status?: string };
   },
   async fetchOrders(scope?: FetchOrdersScope): Promise<Order[]> {
     if (!supabase) return [];

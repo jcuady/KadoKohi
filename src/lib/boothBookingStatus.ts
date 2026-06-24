@@ -1,5 +1,6 @@
 import type { BoothBooking, BoothBookingStatus, BookingEstimate } from '../types/domain';
 import { normalizeBookingEstimate } from './boothBookingEstimate';
+import { boothAmountDue } from './boothPayment';
 
 export const BOOTH_BOOKING_STATUS_LABELS: Record<BoothBookingStatus, string> = {
   submitted: 'Submitted',
@@ -63,4 +64,26 @@ export function isOfficialQuote(booking: BoothBooking): boolean {
 
 export function customerShouldCallAdmin(status: BoothBookingStatus): boolean {
   return ['submitted', 'under_review', 'quoted', 'awaiting_confirmation'].includes(status);
+}
+
+export function customerShouldPay(booking: BoothBooking): boolean {
+  return (
+    ['quoted', 'awaiting_confirmation'].includes(booking.status) &&
+    booking.paymentStatus === 'unpaid'
+  );
+}
+
+export function customerCanUploadProof(booking: BoothBooking): boolean {
+  return (
+    ['quoted', 'awaiting_confirmation'].includes(booking.status) &&
+    (booking.paymentStatus === 'unpaid' || booking.paymentStatus === 'proof_submitted')
+  );
+}
+
+/** Customer account payment block — quote sent, amount due, not yet settled. */
+export function customerShowsPaymentPanel(booking: BoothBooking): boolean {
+  if (!['quoted', 'awaiting_confirmation'].includes(booking.status)) return false;
+  if (booking.paymentStatus === 'paid' || booking.paymentStatus === 'refunded') return false;
+  const due = boothAmountDue(booking);
+  return due != null && due > 0;
 }

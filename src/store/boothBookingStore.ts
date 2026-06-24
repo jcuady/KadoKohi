@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { BoothBooking, BoothBookingStatus, BookingEstimate } from '../types/domain';
+import type { BoothBooking, BoothBookingStatus, BoothPaymentMethod, BookingEstimate, PaymentStatus } from '../types/domain';
 import { SEED_BOOTH_BOOKINGS } from '../data/seed';
 import { buildFinalQuote } from '../lib/boothQuote';
+import { boothAmountDue } from '../lib/boothPayment';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
@@ -12,14 +13,35 @@ function shortCode(): string {
 }
 
 async function patchBookingRemote(id: string, patch: Partial<BoothBooking>): Promise<void> {
-  await orderingRepo.patchBooking(id, patch);
+  const result = await orderingRepo.adminPatchBooking(id, patch);
+  if (!result || typeof result !== 'object') return;
+  const row = result as Record<string, unknown>;
+  const store = useBoothBookingStore.getState();
+  const current = store.bookings.find((b) => b.id === id);
+  if (!current) return;
+  const merged: BoothBooking = {
+    ...current,
+    ...patch,
+    status: (row.status as BoothBooking['status']) ?? patch.status ?? current.status,
+    paymentStatus:
+      (row.payment_status as BoothBooking['paymentStatus']) ?? patch.paymentStatus ?? current.paymentStatus,
+    paymentAmount:
+      row.payment_amount != null ? Number(row.payment_amount) : patch.paymentAmount ?? current.paymentAmount,
+    paymentPaidAt:
+      (row.payment_paid_at as string | undefined) ?? patch.paymentPaidAt ?? current.paymentPaidAt,
+    updatedAt: String(row.updated_at ?? new Date().toISOString()),
+  };
+  useBoothBookingStore.setState({
+    bookings: store.bookings.map((b) => (b.id === id ? merged : b)),
+  });
 }
 
 export interface BoothBookingStore {
   bookings: BoothBooking[];
   hydrateFromRemote: () => Promise<void>;
   createBooking: (
-    input: Omit<BoothBooking, 'id' | 'shortCode' | 'createdAt' | 'updatedAt'> & { shortCode?: string },
+    input: Omit<BoothBooking, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'paymentMethod' | 'paymentStatus'> &
+      Partial<Pick<BoothBooking, 'paymentMethod' | 'paymentStatus'>> & { shortCode?: string },
   ) => Promise<BoothBooking>;
   updateBooking: (id: string, patch: Partial<BoothBooking>) => Promise<void>;
   setStatus: (id: string, status: BoothBookingStatus) => Promise<void>;
@@ -27,8 +49,18 @@ export interface BoothBookingStore {
   setFinalQuote: (
     id: string,
     officialTotal: number,
-    opts?: { quoteNotes?: string; status?: BoothBookingStatus },
+    opts?: {
+      quoteNotes?: string;
+      status?: BoothBookingStatus;
+      paymentAmount?: number;
+      paymentMethod?: BoothPaymentMethod;
+    },
   ) => Promise<void>;
+  setPaymentAmount: (id: string, amount: number, method?: BoothPaymentMethod) => Promise<void>;
+  setPaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<void>;
+  submitPaymentProof: (id: string, proofRef: string) => Promise<void>;
+  markPaymentPaid: (id: string) => Promise<void>;
+  markUnderReview: (id: string) => Promise<void>;
   bookingsForBranch: (branchId: string) => BoothBooking[];
   bookingsForStaff: (staffId: string) => BoothBooking[];
   bookingsForCustomer: (customerId: string) => BoothBooking[];
@@ -56,6 +88,8 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
     const booking: BoothBooking = {
       id: newId(),
       shortCode: input.shortCode ?? shortCode(),
+      paymentMethod: input.paymentMethod ?? 'gcash-or-bank',
+      paymentStatus: input.paymentStatus ?? 'unpaid',
       ...input,
       bookingKind: input.bookingKind ?? 'coffee-cart',
       createdAt: now,
@@ -94,37 +128,11 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
   },
 
   setStatus: async (id, status) => {
-    const prev = get().bookings;
-    const snapshot = prev.find((b) => b.id === id);
-    if (!snapshot) return;
-    set({
-      bookings: prev.map((b) =>
-        b.id === id ? { ...b, status, updatedAt: new Date().toISOString() } : b,
-      ),
-    });
-    try {
-      await patchBookingRemote(id, { status });
-    } catch (err) {
-      set({ bookings: prev });
-      throw err;
-    }
+    await get().updateBooking(id, { status });
   },
 
   assignStaff: async (id, staffId) => {
-    const prev = get().bookings;
-    const snapshot = prev.find((b) => b.id === id);
-    if (!snapshot) return;
-    set({
-      bookings: prev.map((b) =>
-        b.id === id ? { ...b, assignedStaffId: staffId, updatedAt: new Date().toISOString() } : b,
-      ),
-    });
-    try {
-      await patchBookingRemote(id, { assignedStaffId: staffId });
-    } catch (err) {
-      set({ bookings: prev });
-      throw err;
-    }
+    await get().updateBooking(id, { assignedStaffId: staffId });
   },
 
   setFinalQuote: async (id, officialTotal, opts) => {
@@ -140,11 +148,15 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
       opts?.status ??
       (booking.status === 'submitted' || booking.status === 'under_review' ? 'quoted' : booking.status);
     const quotedAt = new Date().toISOString();
+    const paymentAmount = opts?.paymentAmount ?? officialTotal;
     const patch = {
       finalQuote,
       quoteNotes: opts?.quoteNotes?.trim() || booking.quoteNotes,
       quotedAt,
       status,
+      paymentAmount,
+      paymentMethod: opts?.paymentMethod ?? booking.paymentMethod,
+      paymentStatus: booking.paymentStatus ?? 'unpaid',
     };
     set({
       bookings: prev.map((b) =>
@@ -157,6 +169,55 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
       set({ bookings: prev });
       throw err;
     }
+  },
+
+  setPaymentAmount: async (id, amount, method) => {
+    const patch: Partial<BoothBooking> = { paymentAmount: amount };
+    if (method) patch.paymentMethod = method;
+    await get().updateBooking(id, patch);
+  },
+
+  setPaymentStatus: async (id, paymentStatus) => {
+    await get().updateBooking(id, { paymentStatus });
+  },
+
+  submitPaymentProof: async (id, proofRef) => {
+    const prev = get().bookings;
+    const snapshot = prev.find((b) => b.id === id);
+    if (!snapshot) return;
+    const now = new Date().toISOString();
+    set({
+      bookings: prev.map((b) =>
+        b.id === id
+          ? { ...b, paymentStatus: 'proof_submitted', paymentProofImage: proofRef, paymentProofUploadedAt: now, updatedAt: now }
+          : b,
+      ),
+    });
+    try {
+      await orderingRepo.submitBoothPaymentProof(id, proofRef);
+    } catch (err) {
+      set({ bookings: prev });
+      throw err;
+    }
+  },
+
+  markPaymentPaid: async (id) => {
+    const booking = get().bookings.find((b) => b.id === id);
+    if (!booking) return;
+    const now = new Date().toISOString();
+    const amount = boothAmountDue(booking);
+    await get().updateBooking(id, {
+      paymentStatus: 'paid',
+      paymentPaidAt: now,
+      status: 'confirmed',
+      paymentAmount: amount ?? booking.paymentAmount,
+    });
+  },
+
+  markUnderReview: async (id) => {
+    const booking = get().bookings.find((b) => b.id === id);
+    if (!booking || booking.status !== 'submitted') return;
+    await get().updateBooking(id, { status: 'under_review' });
   },
 
   bookingsForBranch: (branchId) =>

@@ -80,3 +80,30 @@ test('voucher modal opens and percent value is capped at 100', async ({ page }) 
   await page.getByRole('button', { name: /cancel/i }).click();
   await expect(page.getByRole('heading', { name: /new promo code/i })).toHaveCount(0);
 });
+
+test('booth bookings calendar sidebar filters and day modal', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await internalLogin(page, 'admin');
+  await page.goto('/admin/booth-bookings');
+
+  await expect(page.getByText(/availability calendar/i)).toBeVisible();
+  await expect(page.getByLabel(/search bookings/i)).toBeVisible();
+
+  const serviceFilter = page.locator('label').filter({ hasText: /^Service$/i }).locator('select');
+  await expect(serviceFilter).toBeVisible();
+  await serviceFilter.selectOption('coffee-cart');
+
+  const openDay = page.locator('button[aria-label*="available"], button[aria-label*="pending"], button[aria-label*="blocked"], button[aria-label*="booked"]').first();
+  await expect(openDay).toBeVisible({ timeout: 15000 });
+  const aria = (await openDay.getAttribute('aria-label')) ?? '';
+  const dateKey = aria.split(' ')[0];
+  await openDay.click();
+
+  await expect(page.getByRole('heading', { name: dateKey })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/date availability/i)).toBeVisible();
+  await page.getByLabel(/close/i).click();
+  await expect(page.getByRole('heading', { name: dateKey })).toHaveCount(0);
+
+  await page.getByRole('button', { name: /clear all filters/i }).click();
+  expect(errors()).toEqual([]);
+});

@@ -11,6 +11,8 @@ import {
 } from '../../lib/boothBookingStatus';
 import { bookingInitialTotal, bookingQuotedTotal, resolveBookingKind } from '../../lib/boothBookingEstimate';
 import { formatPhp } from '../../lib/money';
+import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_BADGE } from '../../lib/orderStatus';
+import { boothAmountDue } from '../../lib/boothPayment';
 import BoothBookingManageModal from '../../components/admin/BoothBookingManageModal';
 
 function timeAgo(iso: string): string {
@@ -79,6 +81,7 @@ export default function StaffBoothBookings() {
           {list.map((booking) => {
             const kind = resolveBookingKind(booking.bookingKind, booking.specialRequests);
             const quotedTotal = bookingQuotedTotal(booking);
+            const amountDue = boothAmountDue(booking);
             return (
             <li key={booking.id} className="rounded-2xl dash-card border p-5">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -96,6 +99,11 @@ export default function StaffBoothBookings() {
                     {isOfficialQuote(booking) && (
                       <span className="text-[10px] font-bold uppercase text-violet-700">Quoted</span>
                     )}
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${PAYMENT_STATUS_BADGE[booking.paymentStatus]}`}
+                    >
+                      {PAYMENT_STATUS_LABELS[booking.paymentStatus]}
+                    </span>
                     <span className="text-xs dash-muted">{timeAgo(booking.createdAt)}</span>
                   </div>
                   <p className="text-sm dash-muted">
@@ -104,6 +112,7 @@ export default function StaffBoothBookings() {
                   <p className="text-xs dash-muted mt-1">
                     Est. {formatPhp(bookingInitialTotal(booking))}
                     {quotedTotal != null && <> · Quote {formatPhp(quotedTotal)}</>}
+                    {amountDue != null && amountDue > 0 && <> · Due {formatPhp(amountDue)}</>}
                   </p>
                 </div>
                 <button

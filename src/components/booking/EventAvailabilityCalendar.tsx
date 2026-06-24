@@ -60,7 +60,7 @@ export default function EventAvailabilityCalendar({
     return rows;
   }, [year, month]);
 
-  const calendar = monthData ?? { year, month, blockouts: [], booked: [] };
+  const calendar = monthData ?? { year, month, blockouts: [], pending: [], booked: [] };
 
   const shiftMonth = (delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
@@ -131,14 +131,23 @@ export default function EventAvailabilityCalendar({
           let cellClass =
             'aspect-square rounded-xl text-xs font-bold flex items-center justify-center transition-colors ';
           if (status === 'past') cellClass += 'text-kado-dark/25 cursor-default';
-          else if (status === 'blocked') cellClass += 'bg-red-50 text-red-700 border border-red-200';
-          else if (selected) cellClass += 'bg-kado-red text-white shadow-md';
+          else if (status === 'blocked')
+            cellClass += selected
+              ? 'bg-red-50 text-red-700 border border-red-200 ring-2 ring-kado-red ring-offset-1'
+              : 'bg-red-50 text-red-700 border border-red-200';
+          else if (status === 'pending')
+            cellClass += selected
+              ? 'bg-amber-50 text-amber-800 border border-amber-200 ring-2 ring-kado-red ring-offset-1'
+              : 'bg-amber-50 text-amber-800 border border-amber-200';
+          else if (selected) cellClass += 'bg-kado-red text-white shadow-md ring-2 ring-kado-red/30';
           else if (selectable) {
             if (status === 'booked' && !adminMode) {
               cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
             } else if (status === 'booked') {
               cellClass += onAdminDayClick
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer'
+                ? selected
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 ring-2 ring-kado-red ring-offset-1 cursor-pointer'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer'
                 : 'bg-kado-dark/8 text-kado-dark/35 cursor-not-allowed';
             } else {
               cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
@@ -166,11 +175,14 @@ export default function EventAvailabilityCalendar({
           <span className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" /> Available
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-red-50 border border-red-200" /> Unavailable
+          <span className="w-3 h-3 rounded bg-red-50 border border-red-200" /> Blocked
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-amber-50 border border-amber-200" /> Pending
         </span>
         {adminMode && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-kado-dark/10" /> Booked
+            <span className="w-3 h-3 rounded bg-emerald-100 border border-emerald-300" /> Booked
           </span>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarHeart, ChevronDown, ChevronUp, Plus, MapPin } from 'lucide-react';
@@ -10,18 +10,35 @@ import {
   BOOTH_BOOKING_STATUS_LABELS,
   BOOTH_STATUS_BADGE,
   customerShouldCallAdmin,
+  customerShowsPaymentPanel,
   getBookingDisplayEstimate,
   isOfficialQuote,
 } from '../../lib/boothBookingStatus';
+import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_BADGE, PAYMENT_STATUS_CUSTOMER } from '../../lib/orderStatus';
+import { boothAmountDue } from '../../lib/boothPayment';
 import BoothEstimateBreakdown from '../../components/booth/BoothEstimateBreakdown';
 import BoothContactCallCard from '../../components/booth/BoothContactCallCard';
+import BoothPaymentPanel from '../../components/booth/BoothPaymentPanel';
 import { formatPhp } from '../../lib/money';
 
 export default function AccountBoothBookings() {
   const user = useAuthStore((s) => s.user);
   const bookingsForCustomer = useBoothBookingStore((s) => s.bookingsForCustomer);
+  const hydrateFromRemote = useBoothBookingStore((s) => s.hydrateFromRemote);
   const branches = useBranchStore((s) => s.branches);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void hydrateFromRemote();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [hydrateFromRemote]);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));
@@ -84,6 +101,8 @@ export default function AccountBoothBookings() {
             const displayEstimate = getBookingDisplayEstimate(booking);
             const hasQuote = isOfficialQuote(booking);
             const showCall = customerShouldCallAdmin(booking.status);
+            const showPay = customerShowsPaymentPanel(booking);
+            const amountDue = boothAmountDue(booking);
 
             return (
               <motion.li
@@ -110,6 +129,11 @@ export default function AccountBoothBookings() {
                         Official quote
                       </span>
                     )}
+                    <span
+                      className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${PAYMENT_STATUS_BADGE[booking.paymentStatus]}`}
+                    >
+                      {PAYMENT_STATUS_LABELS[booking.paymentStatus]}
+                    </span>
                   </div>
                   <p className="font-bold text-kado-dark">{booking.eventName}</p>
                   <p className="text-xs text-kado-dark/50 mt-1 flex items-center gap-1">
@@ -124,12 +148,18 @@ export default function AccountBoothBookings() {
                     · {booking.guestCount} guests
                   </p>
                   <p className="mt-2 text-sm text-kado-dark/60">{BOOTH_BOOKING_STATUS_CUSTOMER[booking.status]}</p>
+                  <p className="mt-1 text-xs text-kado-dark/50">{PAYMENT_STATUS_CUSTOMER[booking.paymentStatus]}</p>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="font-display font-black text-kado-red text-xl">
                       {formatPhp(displayEstimate.total)}
                       {!hasQuote && (
                         <span className="text-[10px] font-bold text-kado-dark/40 uppercase tracking-wider ml-2">
                           est.
+                        </span>
+                      )}
+                      {amountDue != null && amountDue > 0 && booking.paymentStatus !== 'paid' && (
+                        <span className="block text-sm font-bold text-kado-dark/70 mt-0.5">
+                          Due now: {formatPhp(amountDue)}
                         </span>
                       )}
                     </span>
@@ -175,7 +205,21 @@ export default function AccountBoothBookings() {
                           </p>
                         )}
 
-                        {showCall && (
+                        {booking.paymentStatus === 'paid' && booking.paymentPaidAt && (
+                          <p className="text-xs text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                            Payment confirmed on{' '}
+                            {new Date(booking.paymentPaidAt).toLocaleDateString('en-PH', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                            .
+                          </p>
+                        )}
+
+                        {showPay && <BoothPaymentPanel booking={booking} />}
+
+                        {showCall && !showPay && (
                           <BoothContactCallCard message="Call us to confirm your date, adjust details, or accept your quote." />
                         )}
 

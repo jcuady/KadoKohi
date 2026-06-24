@@ -17,6 +17,7 @@ import {
 import {
   stopOperationsRealtime,
 } from '../lib/supabase/operationsRealtime';
+import { stopCustomerAccountRealtime } from '../lib/supabase/customerAccountRealtime';
 import { isInternalRole } from '../lib/roles';
 
 function normalizeProfile(profile: User): User {
@@ -103,6 +104,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
           const session = await authRepo.session();
           if (!session?.user) {
             stopOperationsRealtime();
+            stopCustomerAccountRealtime();
             set({ user: null, loading: false });
             return;
           }
@@ -155,6 +157,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
       },
       logout: async () => {
         stopOperationsRealtime();
+        stopCustomerAccountRealtime();
         await authRepo.signOut();
         set({ user: null });
       },

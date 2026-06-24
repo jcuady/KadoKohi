@@ -19,6 +19,14 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   refunded: 'Refunded',
 };
 
+/** Customer-facing payment copy (booth bookings + orders). */
+export const PAYMENT_STATUS_CUSTOMER: Record<PaymentStatus, string> = {
+  unpaid: 'Please pay the amount due and upload your proof when ready.',
+  proof_submitted: 'We received your payment proof and are verifying it.',
+  paid: 'Payment received — thank you!',
+  refunded: 'This payment was refunded. Contact us if you have questions.',
+};
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending',
   accepted: 'Accepted',

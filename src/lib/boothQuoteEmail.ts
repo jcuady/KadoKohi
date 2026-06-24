@@ -1,7 +1,9 @@
-import type { BoothBooking } from '../types/domain';
+import type { BoothBooking, BoothPaymentMethod } from '../types/domain';
+import type { BoothPaymentConfig } from '../store/settingsStore';
 import type { BookingPageKind } from './bookingPageKinds';
 import { BOOKING_PAGE_LABELS } from './bookingPageKinds';
 import { resolveBookingKind } from './boothBookingEstimate';
+import { buildBoothPaymentInstructionsHtml, buildBoothPaymentInstructionsPlain } from './boothPaymentEmail';
 import { formatPhp } from './money';
 
 export type BoothQuoteEmailInput = {
@@ -18,9 +20,13 @@ export type BoothQuoteEmailInput = {
     | 'startsAt'
     | 'endsAt'
     | 'quoteNotes'
+    | 'paymentMethod'
   >;
   quotedTotal: number;
+  amountDue: number;
   customMessage?: string;
+  boothPayment?: BoothPaymentConfig;
+  shopGcashQr?: string;
 };
 
 function serviceLabel(booking: BoothQuoteEmailInput['booking']): string {
@@ -43,7 +49,7 @@ function formatTimeRange(startsAt: string, endsAt: string): string {
 }
 
 export function buildBoothQuoteEmailPlain(input: BoothQuoteEmailInput): { subject: string; body: string } {
-  const { booking, quotedTotal, customMessage } = input;
+  const { booking, quotedTotal, amountDue, customMessage, boothPayment } = input;
   const subject = `Your Kado Kohi event quote — ${booking.shortCode}`;
   const lines = [
     `Hi ${booking.contactName},`,
@@ -57,12 +63,19 @@ export function buildBoothQuoteEmailPlain(input: BoothQuoteEmailInput): { subjec
     `Guests: ${booking.guestCount}`,
     '',
     `Quoted total: ${formatPhp(quotedTotal)}`,
+    amountDue !== quotedTotal ? `Amount due now: ${formatPhp(amountDue)}` : undefined,
     customMessage?.trim() ? '' : undefined,
     customMessage?.trim() || undefined,
     booking.quoteNotes?.trim() ? '' : undefined,
     booking.quoteNotes?.trim() ? booking.quoteNotes.trim() : undefined,
+    ...buildBoothPaymentInstructionsPlain({
+      shortCode: booking.shortCode,
+      amountDue,
+      paymentMethod: booking.paymentMethod,
+      boothPayment,
+    }),
     '',
-    'Reply to this email or call us to confirm or adjust your booking.',
+    'Reply to this email or visit kadokohi.com/account/booth to upload payment proof.',
     '',
     'Warm regards,',
     'Kado Kohi Events Team',
@@ -73,8 +86,15 @@ export function buildBoothQuoteEmailPlain(input: BoothQuoteEmailInput): { subjec
 }
 
 export function buildBoothQuoteEmailHtml(input: BoothQuoteEmailInput): string {
-  const { booking, quotedTotal, customMessage } = input;
+  const { booking, quotedTotal, amountDue, customMessage, boothPayment, shopGcashQr } = input;
   const msg = customMessage?.trim() || booking.quoteNotes?.trim();
+  const paymentBlock = buildBoothPaymentInstructionsHtml({
+    shortCode: booking.shortCode,
+    amountDue,
+    paymentMethod: booking.paymentMethod,
+    boothPayment,
+    shopGcashQr,
+  });
   return `
     <div style="font-family:system-ui,sans-serif;color:#191919;max-width:560px">
       <p style="font-size:22px;font-weight:bold;color:#9E181D;margin:0 0 8px">Kado Kohi</p>
@@ -88,9 +108,11 @@ export function buildBoothQuoteEmailHtml(input: BoothQuoteEmailInput): string {
         <tr><td style="padding:6px 0;color:#666">Time</td><td style="padding:6px 0">${escapeHtml(formatTimeRange(booking.startsAt, booking.endsAt))}</td></tr>
         <tr><td style="padding:6px 0;color:#666">Guests</td><td style="padding:6px 0">${booking.guestCount}</td></tr>
         <tr><td style="padding:6px 0;color:#666">Quoted total</td><td style="padding:6px 0;font-size:18px;font-weight:bold;color:#9E181D">${escapeHtml(formatPhp(quotedTotal))}</td></tr>
+        ${amountDue !== quotedTotal ? `<tr><td style="padding:6px 0;color:#666">Amount due</td><td style="padding:6px 0;font-weight:600">${escapeHtml(formatPhp(amountDue))}</td></tr>` : ''}
       </table>
       ${msg ? `<p style="background:#FAF7F2;padding:12px 14px;border-radius:8px;font-size:14px;line-height:1.5">${escapeHtml(msg).replace(/\n/g, '<br/>')}</p>` : ''}
-      <p style="font-size:13px;color:#666;margin-top:20px">Reply to confirm or adjust your booking. We look forward to celebrating with you.</p>
+      ${paymentBlock}
+      <p style="font-size:13px;color:#666;margin-top:20px">Upload payment proof at <a href="https://www.kadokohi.com/account/booth">your account</a> or reply to confirm.</p>
     </div>
   `;
 }

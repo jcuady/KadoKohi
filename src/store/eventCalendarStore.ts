@@ -7,6 +7,7 @@ type EventCalendarStore = {
   loading: boolean;
   loadMonth: (year: number, month: number) => Promise<EventCalendarMonth>;
   toggleBlockout: (dateKey: string, note?: string) => Promise<boolean>;
+  setDateKind: (dateKey: string, kind: 'available' | 'blocked' | 'pending', note?: string) => Promise<void>;
   invalidateMonth: (year: number, month: number) => void;
   refreshMonth: (year: number, month: number) => Promise<EventCalendarMonth>;
 };
@@ -43,7 +44,7 @@ export const useEventCalendarStore = create<EventCalendarStore>((set, get) => ({
       set({ cache: { ...get().cache, [key]: monthData } });
       return monthData;
     } catch {
-      const fallback: EventCalendarMonth = { year, month, blockouts: [], booked: [] };
+      const fallback: EventCalendarMonth = { year, month, blockouts: [], pending: [], booked: [] };
       set({ cache: { ...get().cache, [key]: fallback } });
       return fallback;
     } finally {
@@ -65,5 +66,11 @@ export const useEventCalendarStore = create<EventCalendarStore>((set, get) => ({
       await get().loadMonth(y, m);
     }
     return result.blocked;
+  },
+
+  setDateKind: async (dateKey, kind, note) => {
+    await orderingRepo.setEventDateKind(dateKey, kind, note);
+    const [y, m] = dateKey.split('-').map(Number);
+    await get().refreshMonth(y, m);
   },
 }));

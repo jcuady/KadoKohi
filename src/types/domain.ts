@@ -437,6 +437,8 @@ export interface BoothBookingSelectedAddonSnapshot {
 
 export type BoothBookingKind = 'coffee-cart' | 'matcha-bar';
 
+export type BoothPaymentMethod = 'gcash-qr' | 'bank-transfer' | 'gcash-or-bank';
+
 export interface BoothBooking {
   id: string;
   shortCode: string;
@@ -466,6 +468,13 @@ export interface BoothBooking {
   quoteNotes?: string;
   quotedAt?: string;
   status: BoothBookingStatus;
+  paymentMethod: BoothPaymentMethod;
+  paymentStatus: PaymentStatus;
+  /** Amount due (deposit or full quote); defaults to quoted total when unset. */
+  paymentAmount?: number;
+  paymentProofImage?: string;
+  paymentProofUploadedAt?: string;
+  paymentPaidAt?: string;
   assignedStaffId?: string;
   internalNotes?: string;
   createdAt: string;

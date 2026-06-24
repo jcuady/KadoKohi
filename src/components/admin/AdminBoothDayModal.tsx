@@ -1,16 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Ban, CalendarCheck } from 'lucide-react';
-import type { BoothBooking, BoothBookingKind } from '../../types/domain';
+import { X, Mail, CalendarCheck } from 'lucide-react';
+import type { BoothBooking, BoothBookingKind, BoothBookingStatus, BoothPaymentMethod, PaymentStatus } from '../../types/domain';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useEventCalendarStore } from '../../store/eventCalendarStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { BOOKING_PAGE_LABELS } from '../../lib/bookingPageKinds';
+import {
+  ALL_BOOTH_BOOKING_STATUSES,
+  BOOTH_BOOKING_STATUS_LABELS,
+} from '../../lib/boothBookingStatus';
+import { PAYMENT_STATUS_LABELS } from '../../lib/orderStatus';
+import { boothPaymentMethodLabel } from '../../lib/boothPayment';
 import { buildBoothQuoteEmailHtml, buildBoothQuoteEmailPlain } from '../../lib/boothQuoteEmail';
+import { toBoothQuoteEmailInput } from '../../lib/boothQuoteEmailInput';
 import { sendBoothQuoteToClient } from '../../lib/sendBoothEmail';
 import { buildProposalEstimate } from '../../lib/boothProposal';
 import { EVENT_PROPOSAL_PACKAGE_ID, EVENT_PROPOSAL_PACKAGE_NAME } from '../../lib/eventCalendar';
 import { formatPhp } from '../../lib/money';
 import { dayStatus, type EventCalendarMonth } from '../../lib/eventCalendar';
+import BoothPaymentProofPreview from '../booth/BoothPaymentProofPreview';
+
+const PAYMENT_METHODS: BoothPaymentMethod[] = ['gcash-or-bank', 'gcash-qr', 'bank-transfer'];
+const PAYMENT_STATUSES: PaymentStatus[] = ['unpaid', 'proof_submitted', 'paid', 'refunded'];
 
 type Props = {
   dateKey: string | null;
@@ -47,13 +59,19 @@ export default function AdminBoothDayModal({
   const createBooking = useBoothBookingStore((s) => s.createBooking);
   const setFinalQuote = useBoothBookingStore((s) => s.setFinalQuote);
   const updateBooking = useBoothBookingStore((s) => s.updateBooking);
-  const toggleBlockout = useEventCalendarStore((s) => s.toggleBlockout);
+  const markPaymentPaid = useBoothBookingStore((s) => s.markPaymentPaid);
+  const setDateKind = useEventCalendarStore((s) => s.setDateKind);
+  const settings = useSettingsStore((s) => s.settings);
 
   const [mode, setMode] = useState<EntryMode>('existing');
   const [existingId, setExistingId] = useState('');
   const [manual, setManual] = useState(EMPTY_MANUAL);
   const [emailMessage, setEmailMessage] = useState('');
   const [quotedTotal, setQuotedTotal] = useState('');
+  const [amountDue, setAmountDue] = useState('');
+  const [bookingStatus, setBookingStatus] = useState<BoothBookingStatus>('submitted');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('unpaid');
+  const [paymentMethod, setPaymentMethod] = useState<BoothPaymentMethod>('gcash-or-bank');
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
@@ -71,7 +89,6 @@ export default function AdminBoothDayModal({
   );
 
   const status = dateKey && calendar ? dayStatus(dateKey, calendar, '1970-01-01') : 'available';
-  const isBlocked = status === 'blocked';
 
   const activeBooking = activeBookingId
     ? bookings.find((b) => b.id === activeBookingId) ?? dayBookings.find((b) => b.id === activeBookingId) ?? null
@@ -87,33 +104,55 @@ export default function AdminBoothDayModal({
     setManual(EMPTY_MANUAL);
     setEmailMessage('');
     setQuotedTotal('');
+    setAmountDue('');
+    setBookingStatus('submitted');
+    setPaymentStatus('unpaid');
+    setPaymentMethod('gcash-or-bank');
   }, [dateKey, dayBookings, selectableExisting]);
+
+  useEffect(() => {
+    if (!activeBooking) return;
+    setBookingStatus(activeBooking.status);
+    setPaymentStatus(activeBooking.paymentStatus);
+    setPaymentMethod(activeBooking.paymentMethod);
+  }, [activeBooking?.id, activeBooking?.status, activeBooking?.paymentStatus, activeBooking?.paymentMethod]);
 
   useEffect(() => {
     if (mode !== 'existing' || !existingId) return;
     const picked = bookings.find((b) => b.id === existingId);
     if (!picked) return;
     setActiveBookingId(picked.id);
-    setQuotedTotal(String(picked.finalQuote?.total ?? picked.estimateSnapshot?.total ?? ''));
+    const total = picked.finalQuote?.total ?? picked.estimateSnapshot?.total ?? 0;
+    setQuotedTotal(String(total));
+    setAmountDue(String(picked.paymentAmount ?? total));
     setEmailMessage(picked.quoteNotes ?? '');
   }, [mode, existingId, bookings]);
 
   if (!dateKey) return null;
 
+  const dateKind: 'available' | 'blocked' | 'pending' =
+    status === 'blocked' ? 'blocked' : status === 'pending' ? 'pending' : 'available';
+
   const emailPreview = activeBooking
-    ? buildBoothQuoteEmailPlain({
-        booking: activeBooking,
-        quotedTotal: Number(quotedTotal) || 0,
-        customMessage: emailMessage,
-      })
+    ? buildBoothQuoteEmailPlain(
+        toBoothQuoteEmailInput(
+          { ...activeBooking, quoteNotes: emailMessage },
+          settings,
+          {
+            quotedTotal: Number(quotedTotal) || 0,
+            amountDue: Number(amountDue) || Number(quotedTotal) || 0,
+            customMessage: emailMessage,
+          },
+        ),
+      )
     : null;
 
-  const handleBlockToggle = async () => {
+  const handleDateKind = async (kind: 'available' | 'blocked' | 'pending') => {
     setSaving(true);
     setError('');
     try {
-      await toggleBlockout(dateKey);
-      setSuccess(isBlocked ? 'Date reopened.' : 'Date blocked.');
+      await setDateKind(dateKey, kind);
+      setSuccess(kind === 'available' ? 'Date is available.' : `Date marked ${kind}.`);
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update availability.');
@@ -221,19 +260,68 @@ export default function AdminBoothDayModal({
       await setFinalQuote(activeBooking.id, total, {
         quoteNotes: emailMessage.trim() || undefined,
         status: activeBooking.status === 'submitted' ? 'quoted' : activeBooking.status,
+        paymentAmount: Number(amountDue) || total,
       });
-      const result = await sendBoothQuoteToClient({
-        booking: { ...activeBooking, quoteNotes: emailMessage.trim() || activeBooking.quoteNotes },
-        quotedTotal: total,
-        customMessage: emailMessage.trim() || undefined,
-      });
+      const emailInput = toBoothQuoteEmailInput(
+        { ...activeBooking, quoteNotes: emailMessage.trim() || activeBooking.quoteNotes },
+        settings,
+        {
+          quotedTotal: total,
+          amountDue: Number(amountDue) || total,
+          customMessage: emailMessage.trim() || undefined,
+        },
+      );
+      const result = await sendBoothQuoteToClient(emailInput);
       if (!result.ok) throw new Error(result.error || 'Email failed.');
+      await updateBooking(activeBooking.id, { status: 'awaiting_confirmation' });
       setSuccess('Quote email sent to client.');
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send email.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSaveBookingOverrides = async () => {
+    if (!activeBooking) return;
+    setSaving(true);
+    setError('');
+    try {
+      await updateBooking(activeBooking.id, {
+        status: bookingStatus,
+        paymentStatus,
+        paymentMethod,
+        paymentAmount: Number(amountDue) || undefined,
+      });
+      if (Number(quotedTotal) > 0) {
+        await setFinalQuote(activeBooking.id, Number(quotedTotal), {
+          paymentAmount: Number(amountDue) || Number(quotedTotal),
+          paymentMethod,
+          status: bookingStatus,
+        });
+      }
+      setSuccess('Booking updated.');
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save booking.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!activeBooking) return;
+    setSaving(true);
+    setError('');
+    try {
+      await markPaymentPaid(activeBooking.id);
+      setSuccess('Marked paid and confirmed.');
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not mark paid.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -270,6 +358,25 @@ export default function AdminBoothDayModal({
             {success ? (
               <p className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{success}</p>
             ) : null}
+
+            <section className="rounded-xl border dash-border p-4 space-y-3">
+              <h3 className="font-display font-bold text-sm dash-heading">Date availability</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {(['available', 'pending', 'blocked'] as const).map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    disabled={saving || status === 'booked'}
+                    onClick={() => void handleDateKind(kind)}
+                    className={`rounded-xl py-2 text-[10px] font-bold uppercase tracking-wider border ${
+                      dateKind === kind ? 'bg-kado-dark text-kado-cream border-kado-dark' : 'dash-border dash-muted'
+                    }`}
+                  >
+                    {kind}
+                  </button>
+                ))}
+              </div>
+            </section>
 
             {dayBookings.length > 0 && (
               <section className="rounded-xl border dash-border p-4 space-y-2">
@@ -385,6 +492,84 @@ export default function AdminBoothDayModal({
 
             {activeBooking && (
               <section className="rounded-xl border dash-border p-4 space-y-3">
+                <h3 className="font-display font-bold text-sm dash-heading">Selected booking</h3>
+                <p className="text-xs dash-muted">
+                  {activeBooking.shortCode} · {activeBooking.contactName}
+                </p>
+                <BoothPaymentProofPreview booking={activeBooking} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">Booking status</span>
+                    <select
+                      value={bookingStatus}
+                      onChange={(e) => setBookingStatus(e.target.value as BoothBookingStatus)}
+                      className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
+                      disabled={saving}
+                    >
+                      {ALL_BOOTH_BOOKING_STATUSES.map((s) => (
+                        <option key={s} value={s}>{BOOTH_BOOKING_STATUS_LABELS[s]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">Payment status</span>
+                    <select
+                      value={paymentStatus}
+                      onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+                      className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
+                      disabled={saving}
+                    >
+                      {PAYMENT_STATUSES.map((ps) => (
+                        <option key={ps} value={ps}>{PAYMENT_STATUS_LABELS[ps]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1 sm:col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">Payment method</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as BoothPaymentMethod)}
+                      className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
+                      disabled={saving}
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m} value={m}>{boothPaymentMethodLabel(m)}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void handleSaveBookingOverrides()}
+                    className="flex-1 min-w-[140px] rounded-xl border dash-border py-2 text-[10px] font-bold uppercase tracking-wider dash-heading disabled:opacity-60"
+                  >
+                    Save overrides
+                  </button>
+                  {activeBooking.paymentStatus !== 'paid' && (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void handleMarkPaid()}
+                      className="flex-1 min-w-[140px] rounded-xl bg-emerald-700 text-white py-2 text-[10px] font-bold uppercase tracking-wider disabled:opacity-60"
+                    >
+                      Mark paid & confirm
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onOpenManage(activeBooking.id)}
+                    className="flex-1 min-w-[100px] rounded-xl text-[10px] font-bold uppercase tracking-wider text-kado-red"
+                  >
+                    Full manage
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {activeBooking && (
+              <section className="rounded-xl border dash-border p-4 space-y-3">
                 <h3 className="font-display font-bold text-sm dash-heading flex items-center gap-2">
                   <Mail className="w-4 h-4 text-kado-red" /> Email to client
                 </h3>
@@ -392,6 +577,7 @@ export default function AdminBoothDayModal({
                   {activeBooking.contactName} · {activeBooking.contactEmail}
                 </p>
                 <Field label="Quoted total (PHP)" value={quotedTotal} onChange={setQuotedTotal} type="number" />
+                <Field label="Amount due (PHP)" value={amountDue} onChange={setAmountDue} type="number" />
                 <Field label="Message" value={emailMessage} onChange={setEmailMessage} multiline />
                 {emailPreview && (
                   <div className="rounded-xl bg-kado-cream/60 border border-kado-dark/10 p-4 text-sm space-y-2">
@@ -401,11 +587,17 @@ export default function AdminBoothDayModal({
                     <div
                       className="mt-3 rounded-lg border border-kado-dark/10 bg-white p-3 text-xs"
                       dangerouslySetInnerHTML={{
-                        __html: buildBoothQuoteEmailHtml({
-                          booking: activeBooking,
-                          quotedTotal: Number(quotedTotal) || 0,
-                          customMessage: emailMessage,
-                        }),
+                        __html: buildBoothQuoteEmailHtml(
+                          toBoothQuoteEmailInput(
+                            { ...activeBooking, quoteNotes: emailMessage },
+                            settings,
+                            {
+                              quotedTotal: Number(quotedTotal) || 0,
+                              amountDue: Number(amountDue) || Number(quotedTotal) || 0,
+                              customMessage: emailMessage,
+                            },
+                          ),
+                        ),
                       }}
                     />
                   </div>
@@ -421,15 +613,6 @@ export default function AdminBoothDayModal({
               </section>
             )}
 
-            <button
-              type="button"
-              disabled={saving || status === 'booked'}
-              onClick={() => void handleBlockToggle()}
-              className="w-full rounded-xl border dash-border py-2.5 text-xs font-bold uppercase tracking-wider dash-heading inline-flex items-center justify-center gap-2 hover:border-kado-red/40 disabled:opacity-60"
-            >
-              <Ban className="w-4 h-4" />
-              {isBlocked ? 'Reopen this date' : 'Block this date'}
-            </button>
           </div>
         </motion.div>
       </motion.div>

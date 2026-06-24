@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSettingsStore, type DashTheme } from '../../store/settingsStore';
+import { useSettingsStore, type BoothPaymentConfig, type DashTheme } from '../../store/settingsStore';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
@@ -18,6 +18,7 @@ export default function AdminSettings() {
   const hydrateFromRemote = useSettingsStore((s) => s.hydrateFromRemote);
   const orderHours = useOnlineOrderHours();
   const fileRef = useRef<HTMLInputElement>(null);
+  const boothQrRef = useRef<HTMLInputElement>(null);
   const [hydrating, setHydrating] = useState(true);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -62,6 +63,25 @@ export default function AdminSettings() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not save GCash QR.';
       setUploadError(message);
+    } finally {
+      setGcashSaving(false);
+    }
+  };
+
+  const patchBoothPayment = (partial: Partial<BoothPaymentConfig>) => {
+    patch({ boothPayment: { ...settings.boothPayment, ...partial } });
+  };
+
+  const handleBoothGcashQr = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadError(null);
+    setGcashSaving(true);
+    try {
+      const publicUrl = await orderingRepo.uploadGcashShopQr(file);
+      patchBoothPayment({ gcashQrImage: publicUrl });
+      flashSaved();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Could not save booth GCash QR.');
     } finally {
       setGcashSaving(false);
     }
@@ -270,6 +290,90 @@ export default function AdminSettings() {
             </button>
           )}
           {uploadError && <p className="text-xs text-red-600 font-medium">{uploadError}</p>}
+        </div>
+
+        <div className="rounded-2xl dash-card border p-6 space-y-5">
+          <h2 className="font-display font-bold text-lg dash-heading">Booth payment details</h2>
+          <p className="text-xs dash-muted">
+            Shown in quote emails and on customer event bookings. Falls back to shop GCash QR when booth QR is empty.
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.boothPayment.gcashEnabled}
+              onChange={(e) => patchBoothPayment({ gcashEnabled: e.target.checked })}
+            />
+            Accept GCash for events
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.boothPayment.bankEnabled}
+              onChange={(e) => patchBoothPayment({ bankEnabled: e.target.checked })}
+            />
+            Accept bank transfer for events
+          </label>
+          <input
+            ref={boothQrRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              void handleBoothGcashQr(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          {(settings.boothPayment.gcashQrImage || settings.gcashQrImage) && settings.boothPayment.gcashEnabled && (
+            <img
+              src={settings.boothPayment.gcashQrImage || settings.gcashQrImage}
+              alt="Booth GCash QR"
+              className="w-40 h-40 rounded-xl border dash-border object-contain bg-white p-2"
+            />
+          )}
+          <button
+            type="button"
+            disabled={gcashSaving}
+            onClick={() => boothQrRef.current?.click()}
+            className="rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider"
+          >
+            {gcashSaving ? 'Uploading…' : 'Upload booth GCash QR (optional)'}
+          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Bank name</label>
+              <input
+                value={settings.boothPayment.bankName ?? ''}
+                onChange={(e) => patchBoothPayment({ bankName: e.target.value })}
+                className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Account name</label>
+              <input
+                value={settings.boothPayment.bankAccountName ?? ''}
+                onChange={(e) => patchBoothPayment({ bankAccountName: e.target.value })}
+                className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Account number</label>
+            <input
+              value={settings.boothPayment.bankAccountNumber ?? ''}
+              onChange={(e) => patchBoothPayment({ bankAccountNumber: e.target.value })}
+              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Bank instructions</label>
+            <textarea
+              rows={2}
+              value={settings.boothPayment.bankInstructions ?? ''}
+              onChange={(e) => patchBoothPayment({ bankInstructions: e.target.value })}
+              className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm resize-none"
+              placeholder="e.g. BPI Savings · send proof after transfer"
+            />
+          </div>
         </div>
 
         <div className="rounded-2xl dash-card border p-6 space-y-5">

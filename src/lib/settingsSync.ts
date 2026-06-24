@@ -1,4 +1,4 @@
-import type { AppSettings, DashTheme } from '../store/settingsStore';
+import type { AppSettings, BoothPaymentConfig, DashTheme } from '../store/settingsStore';
 import { KADO_LOCATION, isStaleMapsEmbedUrl, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
 /** JSON blob stored in `kk_app_settings.order_hours` (site + hours config). */
@@ -10,6 +10,7 @@ export type SiteConfigJson = {
   currency?: string;
   boothContactPhone?: string;
   boothContactName?: string;
+  boothPayment?: BoothPaymentConfig;
   contactEmail?: string;
   contactPhone?: string;
   contactAddress?: string;
@@ -29,6 +30,7 @@ export function siteConfigFromSettings(settings: AppSettings): SiteConfigJson {
     currency: settings.currency,
     boothContactPhone: settings.boothContactPhone,
     boothContactName: settings.boothContactName,
+    boothPayment: settings.boothPayment,
     contactEmail: settings.contactEmail,
     contactPhone: settings.contactPhone,
     contactAddress: settings.contactAddress,
@@ -65,6 +67,10 @@ export function settingsFromDbRow(row: {
     currency: site.currency,
     boothContactPhone: site.boothContactPhone,
     boothContactName: site.boothContactName,
+    boothPayment: site.boothPayment ?? {
+      gcashEnabled: true,
+      bankEnabled: true,
+    },
     contactEmail: site.contactEmail,
     contactPhone: site.contactPhone,
     contactAddress: resolveContactAddress(site.contactAddress),

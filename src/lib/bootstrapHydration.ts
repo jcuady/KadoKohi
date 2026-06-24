@@ -19,6 +19,10 @@ import {
   refreshOperationsData,
   startOperationsRealtime,
 } from './supabase/operationsRealtime';
+import {
+  startCustomerAccountRealtime,
+  stopCustomerAccountRealtime,
+} from './supabase/customerAccountRealtime';
 
 /** ponytail: idempotent once-guards — concurrent callers share the same in-flight promise. */
 const once = new Map<string, Promise<void>>();
@@ -101,6 +105,7 @@ export function hydrateCustomerAccount(customerId: string): Promise<void> {
     return Promise.resolve();
   }
   return runOnce(`customer-${customerId}`, async () => {
+    startCustomerAccountRealtime();
     await Promise.all([
       useOrderStore.getState().hydrateForCustomer(customerId),
       useLoyaltyStore.getState().hydrateFromRemote(),
