@@ -14,7 +14,6 @@ import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
 import { LANDING_CMS_TABS } from '../../lib/landingCmsTabs';
 import CmsTextField from '../../components/admin/CmsTextField';
 import type { CmsText } from '../../lib/cmsTypography';
-import { collabPastries, findPastriesCategory } from '../../lib/pastriesCategory';
 import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
@@ -38,7 +37,6 @@ export default function AdminLandingContent() {
   const updateTestimonials = useLandingContentStore((s) => s.updateTestimonials);
   const updateTestimonialItem = useLandingContentStore((s) => s.updateTestimonialItem);
   const updateTrustedBrand = useLandingContentStore((s) => s.updateTrustedBrand);
-  const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
   const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
   const reorderOrderingSteps = useLandingContentStore((s) => s.reorderOrderingSteps);
@@ -54,11 +52,6 @@ export default function AdminLandingContent() {
     if (menuDataSource !== 'remote') return [];
     return listVisibleCoffeeProducts(allProducts, categories);
   }, [allProducts, categories, menuDataSource]);
-  const collabProducts = useMemo(
-    () => collabPastries(categories, allProducts),
-    [categories, allProducts],
-  );
-  const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -573,77 +566,6 @@ export default function AdminLandingContent() {
         <LandingCmsSectionCard tab={LANDING_CMS_TABS[5]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match (homepage)</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <CmsField label="Eyebrow" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
-            <CmsField
-              label="Headline line 1 (blue)"
-              value={content.schedule.titleTop}
-              onChange={(v) => updateSchedule({ titleTop: v })}
-            />
-            <CmsField
-              label="Headline line 2 (red)"
-              value={content.schedule.titleBottom}
-              onChange={(v) => updateSchedule({ titleBottom: v })}
-            />
-            <CmsField
-              label="Bundle badge"
-              value={content.schedule.offerBadge}
-              onChange={(v) => updateSchedule({ offerBadge: v })}
-            />
-            <CmsField
-              label="Bundle note"
-              value={content.schedule.offerNote}
-              onChange={(v) => updateSchedule({ offerNote: v })}
-            />
-            <ImageUrlField
-              label="Poster image"
-              value={content.schedule.posterImageUrl}
-              onChange={(v) => updateSchedule({ posterImageUrl: v })}
-              onPickFile={(files) => onPickImage((url) => updateSchedule({ posterImageUrl: url }), files)}
-            />
-            <CmsField label="CTA label" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
-            <CmsField
-              label="Featured order button"
-              value={content.schedule.featuredCtaLabel}
-              onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
-            />
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Featured collab product</label>
-              <select
-                value={content.schedule.featuredProductId}
-                onChange={(e) => updateSchedule({ featuredProductId: e.target.value })}
-                className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm"
-              >
-                <option value="">— Auto (first collab) —</option>
-                {collabProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              {pastriesCategory ? (
-                <p className="mt-1 text-[10px] dash-muted">From Menu → Pastries (collab type). ID: {content.schedule.featuredProductId || 'auto'}</p>
-              ) : null}
-            </div>
-          </div>
-          <CmsField
-            label="Description"
-            value={content.schedule.description}
-            onChange={(v) => updateSchedule({ description: v })}
-            multiline
-          />
-          <p className="mt-3 text-xs dash-muted">
-            Drink and cookie lists pull from the live menu (Pastries tab + mix-match drink tags). Hours moved to Branches
-            and Contact.
-          </p>
-        </section>
-          </div>
-        </LandingCmsSectionCard>
-
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[6]} onUploadError={setUploadError}>
-          <div className="space-y-6">
-        <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <CmsField label="Badge" value={content.events.badge} onChange={(v) => updateEvents({ badge: v })} />
@@ -670,7 +592,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
@@ -695,7 +617,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[6]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
@@ -780,7 +702,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[9]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">FAQ</h2>
@@ -828,7 +750,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[10]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={LANDING_CMS_TABS[9]} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>

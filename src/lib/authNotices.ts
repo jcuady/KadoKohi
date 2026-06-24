@@ -5,7 +5,8 @@ export const SIGNUP_CHECK_EMAIL_NOTICE =
 export const SIGNUP_CHECK_EMAIL_QUERY = 'check-email';
 export const SIGNUP_EMAIL_QUERY = 'email';
 
-export const SIGNUP_PASSWORD_HINT = 'At least 8 characters.';
+export const SIGNUP_PASSWORD_HINT =
+  'At least 8 characters with uppercase, lowercase, and a number.';
 
 export const SIGNUP_CONFIRM_RESENT_NOTICE = 'We sent another confirmation email. Check your inbox (and spam folder).';
 

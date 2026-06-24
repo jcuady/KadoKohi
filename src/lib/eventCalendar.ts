@@ -48,7 +48,9 @@ export function isDateSelectable(
   calendar: Pick<EventCalendarMonth, 'blockouts' | 'booked'>,
   minDate = minEventDateKey(),
 ): boolean {
-  return dayStatus(key, calendar, minDate) === 'available';
+  if (key < minDate) return false;
+  if (calendar.blockouts.includes(key)) return false;
+  return true;
 }
 
 export const MONTH_LABELS = [

@@ -122,10 +122,16 @@ export default function EventAvailabilityCalendar({
             'aspect-square rounded-xl text-xs font-bold flex items-center justify-center transition-colors ';
           if (status === 'past') cellClass += 'text-kado-dark/25 cursor-default';
           else if (status === 'blocked') cellClass += 'bg-red-50 text-red-700 border border-red-200';
-          else if (status === 'booked') cellClass += 'bg-kado-dark/8 text-kado-dark/35 cursor-not-allowed';
           else if (selected) cellClass += 'bg-kado-red text-white shadow-md';
-          else if (selectable) cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
-          else cellClass += 'text-kado-dark/40';
+          else if (selectable) {
+            if (status === 'booked' && !adminMode) {
+              cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
+            } else if (status === 'booked') {
+              cellClass += 'bg-kado-dark/8 text-kado-dark/35 cursor-not-allowed';
+            } else {
+              cellClass += 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
+            }
+          } else cellClass += 'text-kado-dark/40';
 
           return (
             <button
@@ -150,10 +156,18 @@ export default function EventAvailabilityCalendar({
         <span className="inline-flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-red-50 border border-red-200" /> Unavailable
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-kado-dark/10" /> Booked
-        </span>
+        {adminMode && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-kado-dark/10" /> Booked
+          </span>
+        )}
       </div>
+
+      {!adminMode && (
+        <p className="text-xs text-kado-dark/55 mt-3 leading-relaxed">
+          Green dates are open for proposals. Red means our team blocked that day — all other dates can be requested.
+        </p>
+      )}
 
       {adminMode && (
         <p className="text-xs text-kado-dark/55 mt-3 leading-relaxed">

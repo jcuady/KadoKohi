@@ -10,7 +10,6 @@ import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
 import FeaturedCoffeesSection from './FeaturedCoffeesSection';
-import MixMatchHomeSection from './MixMatchHomeSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
 import { hydrateEvents } from '../../lib/bootstrapHydration';
@@ -84,11 +83,6 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       {showSection('ordering', sectionOnly) ? (
         <div id="landing-ordering">
           <KadoOrderingCarousel copy={landing.ordering} cmsEditMode={cmsEditMode} />
-        </div>
-      ) : null}
-      {showSection('schedule', sectionOnly) ? (
-        <div id="landing-schedule">
-          <MixMatchHomeSection copy={landing.schedule} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
       {showSection('events', sectionOnly) ? (

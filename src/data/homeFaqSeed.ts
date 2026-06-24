@@ -45,11 +45,6 @@ export const SEED_HOME_FAQ_ITEMS: FaqItemCopy[] = [
       'Yes. Scan the Kado QR on your table to open the dine-in menu, add items, and check out in your browser. We prepare your order for table service.',
   },
   {
-    question: 'What is Mix & Match?',
-    answer:
-      'Pair any Kado Kohi drink with a Kukidō cookie on the homepage or Pastries page. Bundle a drink and cookie together for 10% off the pair at checkout.',
-  },
-  {
     question: 'What is Kado Circle?',
     answer:
       'Our loyalty program. Create a free account, earn digital stamps on eligible drinks, and collect 10 stamps for a free drink. View your card under Account → Stamps.',

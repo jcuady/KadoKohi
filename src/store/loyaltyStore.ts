@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import type { LoyaltyConfig, LoyaltyReward } from '../types/domain';
-import { SEED_LOYALTY_CONFIG } from '../data/seed';
 import { newId } from '../lib/id';
 import { loyaltyRepo } from '../lib/supabase/repositories/loyalty';
 
 export interface LoyaltyStore {
   config: LoyaltyConfig;
   loading: boolean;
+  hydrated: boolean;
   hydrateFromRemote: () => Promise<void>;
   addReward: (reward: Omit<LoyaltyReward, 'id'>) => Promise<void>;
   updateReward: (id: string, patch: Partial<LoyaltyReward>) => Promise<void>;
@@ -15,18 +15,17 @@ export interface LoyaltyStore {
 }
 
 export const useLoyaltyStore = create<LoyaltyStore>()((set, get) => ({
-  config: SEED_LOYALTY_CONFIG,
+  config: { rewards: [] },
   loading: false,
+  hydrated: false,
 
   hydrateFromRemote: async () => {
     set({ loading: true });
     try {
       const rewards = await loyaltyRepo.fetchRewards();
-      if (rewards.length > 0) {
-        set({ config: { rewards } });
-      }
+      set({ config: { rewards }, hydrated: true });
     } catch {
-      // keep defaults
+      set({ config: { rewards: [] }, hydrated: true });
     } finally {
       set({ loading: false });
     }

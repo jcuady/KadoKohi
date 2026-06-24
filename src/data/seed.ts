@@ -400,6 +400,7 @@ export const SEED_BOOTH_BOOKINGS: BoothBooking[] = [
   {
     id: 'booking_1001',
     shortCode: 'BK-1001',
+    bookingKind: 'coffee-cart',
     branchId: 'branch_marikina',
     contactName: 'Maria Dela Cruz',
     contactEmail: 'maria@example.com',
@@ -432,6 +433,7 @@ export const SEED_BOOTH_BOOKINGS: BoothBooking[] = [
   {
     id: 'booking_1002',
     shortCode: 'BK-1002',
+    bookingKind: 'matcha-bar',
     branchId: 'branch_marikina',
     contactName: 'Jared Lim',
     contactEmail: 'jared@example.com',

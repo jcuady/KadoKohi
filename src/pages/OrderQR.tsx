@@ -20,7 +20,7 @@ import {
   ensureOrderReadiness,
   isOrderCatalogReady,
 } from '../lib/orderReadiness';
-import { buildQrCartTotals, type QrCartLine } from '../lib/qrOrderCart';
+import { buildQrCartTotals, qrLinesMatch, type QrCartLine } from '../lib/qrOrderCart';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import QrStickyCart from '../components/qr/QrStickyCart';
@@ -29,10 +29,8 @@ import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/g
 import { QrCode } from 'lucide-react';
 import { qrPillClass } from '../lib/qrGuestTheme';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
-import MixMatchQrSection from '../components/mix-match/MixMatchQrSection';
 import {
   qrGuestCategoryTabs,
-  qrGuestIsMixMatchSection,
   qrGuestProductsInCategory,
 } from '../lib/qrGuestMenu';
 
@@ -111,7 +109,7 @@ export default function OrderQR() {
   }, [categoryTabs, activeCat]);
 
   const list = useMemo(() => {
-    if (!activeCat || qrGuestIsMixMatchSection(activeCat)) return [];
+    if (!activeCat) return [];
     return qrGuestProductsInCategory(activeCat, categories, productsByCategory);
   }, [activeCat, categories, productsByCategory]);
 
@@ -124,13 +122,7 @@ export default function OrderQR() {
 
   const addLine = (payload: QrCartPayload) => {
     setCart((prev) => {
-      const match = prev.find(
-        (l) =>
-          l.productId === payload.productId &&
-          l.milkId === payload.milkId &&
-          l.temperature === payload.temperature &&
-          l.mixMatchCookieId === payload.mixMatchCookieId,
-      );
+      const match = prev.find((l) => qrLinesMatch(l, payload));
       if (match) {
         return prev.map((l) =>
           l.key === match.key ? { ...l, qty: l.qty + payload.qty } : l,
@@ -343,9 +335,7 @@ export default function OrderQR() {
       </header>
 
       <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-6 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2 ${mainPaddingBottom}`}>
-        {qrGuestIsMixMatchSection(activeCat) ? (
-          <MixMatchQrSection categories={categories} products={products} onAdd={addLine} />
-        ) : list.length === 0 ? (
+        {list.length === 0 ? (
           <p className="text-center text-sm text-kado-dark/50 py-16">
             No items in this category right now. Check another tab or ask staff.
           </p>

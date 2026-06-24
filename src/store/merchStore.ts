@@ -11,12 +11,12 @@ export interface MerchStore {
   hydrateFromRemote: () => Promise<void>;
   setCategories: (c: MerchCategory[]) => void;
   setProducts: (p: MerchProduct[]) => void;
-  addCategory: (name: string, order?: number) => void;
-  updateCategory: (id: string, patch: Partial<MerchCategory>) => void;
-  removeCategory: (id: string) => void;
-  addProduct: (product: Omit<MerchProduct, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
-  updateProduct: (id: string, patch: Partial<MerchProduct>) => void;
-  removeProduct: (id: string) => void;
+  addCategory: (name: string, order?: number) => Promise<void>;
+  updateCategory: (id: string, patch: Partial<MerchCategory>) => Promise<void>;
+  removeCategory: (id: string) => Promise<void>;
+  addProduct: (product: Omit<MerchProduct, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => Promise<void>;
+  updateProduct: (id: string, patch: Partial<MerchProduct>) => Promise<void>;
+  removeProduct: (id: string) => Promise<void>;
   productsByCategory: (categoryId: string) => MerchProduct[];
   reorderCategories: (fromIndex: number, toIndex: number) => void;
   reorderProductsInCategory: (categoryId: string, fromIndex: number, toIndex: number) => void;
@@ -24,30 +24,26 @@ export interface MerchStore {
 }
 
 export const useMerchStore = create<MerchStore>()((set, get) => ({
-      categories: SEED_MERCH_CATEGORIES,
-      products: SEED_MERCH_PRODUCTS,
+      categories: [],
+      products: [],
       remoteLoaded: false,
       hydrateFromRemote: async () => {
         try {
           const remote = await orderingRepo.fetchMerch();
-          if (remote.categories.length > 0 || remote.products.length > 0) {
-            set({
-              categories: remote.categories,
-              products: remote.products,
-              remoteLoaded: true,
-            });
-            return;
-          }
+          set({
+            categories: remote.categories,
+            products: remote.products,
+            remoteLoaded: true,
+          });
         } catch {
-          // Keep seed fallback when remote fetch fails.
+          set({ categories: [], products: [], remoteLoaded: true });
         }
-        set({ remoteLoaded: true });
       },
 
       setCategories: (categories) => set({ categories }),
       setProducts: (products) => set({ products }),
 
-      addCategory: (name, order) => {
+      addCategory: async (name, order) => {
         const list = get().categories;
         const c: MerchCategory = {
           id: newId(),
@@ -55,29 +51,29 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
           order: order ?? list.length,
           visible: true,
         };
+        await orderingRepo.upsertMerchCategory(c);
         set({ categories: [...list, c] });
-        void orderingRepo.upsertMerchCategory(c);
       },
 
-      updateCategory: (id, patch) =>
+      updateCategory: async (id, patch) => {
+        const existing = get().categories.find((c) => c.id === id);
+        if (!existing) return;
+        const updated = { ...existing, ...patch };
+        await orderingRepo.upsertMerchCategory(updated);
         set({
-          categories: get().categories.map((c) => {
-            if (c.id !== id) return c;
-            const updated = { ...c, ...patch };
-            void orderingRepo.upsertMerchCategory(updated);
-            return updated;
-          }),
-        }),
+          categories: get().categories.map((c) => (c.id === id ? updated : c)),
+        });
+      },
 
-      removeCategory: (id) => {
+      removeCategory: async (id) => {
+        await orderingRepo.deleteMerchCategory(id);
         set({
           categories: get().categories.filter((c) => c.id !== id),
           products: get().products.filter((p) => p.categoryId !== id),
         });
-        void orderingRepo.deleteMerchCategory(id);
       },
 
-      addProduct: (input) => {
+      addProduct: async (input) => {
         const t = new Date().toISOString();
         const p: MerchProduct = {
           id: input.id ?? newId(),
@@ -93,26 +89,23 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
           createdAt: t,
           updatedAt: t,
         };
+        await orderingRepo.upsertMerchProduct(p);
         set({ products: [...get().products, p] });
-        void orderingRepo.upsertMerchProduct(p);
       },
 
-      updateProduct: (id, patch) =>
+      updateProduct: async (id, patch) => {
+        const existing = get().products.find((pr) => pr.id === id);
+        if (!existing) return;
+        const updated = { ...existing, ...patch, updatedAt: new Date().toISOString() };
+        await orderingRepo.upsertMerchProduct(updated);
         set({
-          products: get().products.map((pr) =>
-            pr.id === id
-              ? (() => {
-                  const updated = { ...pr, ...patch, updatedAt: new Date().toISOString() };
-                  void orderingRepo.upsertMerchProduct(updated);
-                  return updated;
-                })()
-              : pr,
-          ),
-        }),
+          products: get().products.map((pr) => (pr.id === id ? updated : pr)),
+        });
+      },
 
-      removeProduct: (id) => {
+      removeProduct: async (id) => {
+        await orderingRepo.deleteMerchProduct(id);
         set({ products: get().products.filter((pr) => pr.id !== id) });
-        void orderingRepo.deleteMerchProduct(id);
       },
 
       productsByCategory: (categoryId) =>
@@ -120,19 +113,19 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
           .products.filter((pr) => pr.categoryId === categoryId && pr.visible)
           .sort((a, b) => a.order - b.order),
 
-      reorderCategories: (fromIndex, toIndex) => {
+      reorderCategories: async (fromIndex, toIndex) => {
         const sorted = [...get().categories].sort((a, b) => a.order - b.order);
         if (fromIndex < 0 || fromIndex >= sorted.length || toIndex < 0 || toIndex >= sorted.length) return;
         const [removed] = sorted.splice(fromIndex, 1);
         sorted.splice(toIndex, 0, removed);
         const updated = sorted.map((c, i) => ({ ...c, order: i }));
-        set({ categories: updated });
         for (const c of updated) {
-          void orderingRepo.upsertMerchCategory(c);
+          await orderingRepo.upsertMerchCategory(c);
         }
+        set({ categories: updated });
       },
 
-      reorderProductsInCategory: (categoryId, fromIndex, toIndex) => {
+      reorderProductsInCategory: async (categoryId, fromIndex, toIndex) => {
         const inCat = [...get().products.filter((p) => p.categoryId === categoryId)].sort(
           (a, b) => a.order - b.order,
         );
@@ -147,7 +140,7 @@ export const useMerchStore = create<MerchStore>()((set, get) => ({
         set({ products });
         for (const p of inCat) {
           const row = products.find((x) => x.id === p.id);
-          if (row) void orderingRepo.upsertMerchProduct(row);
+          if (row) await orderingRepo.upsertMerchProduct(row);
         }
       },
 

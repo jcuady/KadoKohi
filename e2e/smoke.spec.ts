@@ -14,6 +14,14 @@ test('home page loads with branding', async ({ page }) => {
   await expect(page.locator('#root')).not.toBeEmpty();
 });
 
+test('homepage does not show Mix & Match section', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#root')).not.toBeEmpty();
+  await expect(page.getByRole('heading', { name: /mix\s*&\s*match/i })).toHaveCount(0);
+  await expect(page.getByText(/view full mix & match menu/i)).toHaveCount(0);
+  await expect(page.getByText(/choose your kado kohi drink, a kukid/i)).toHaveCount(0);
+});
+
 test('no horizontal overflow on mobile home', async ({ page }) => {
   await page.goto('/');
   // Body should not be wider than the viewport (catches layout overflow bugs).

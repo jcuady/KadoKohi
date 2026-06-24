@@ -14,6 +14,10 @@
 
   --color-background: var(--color-kado-cream);
   --color-foreground: var(--color-kado-dark);
+  --color-border: rgba(25, 25, 25, 0.12);
+  --color-input: rgba(25, 25, 25, 0.12);
+  --color-ring: #9E181D;
+  --color-muted-foreground: rgba(25, 25, 25, 0.55);
 
   /* Dashboard theme tokens (light defaults) */
   --color-dash-bg: #FAF7F2;

@@ -1,22 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, MapPin, Percent, ShoppingBag } from 'lucide-react';
+import { ArrowRight, MapPin, ShoppingBag } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
-import {
-  collabPastries,
-  findPastriesCategory,
-  findFeaturedPastry,
-  pastryHasPrice,
-} from '../lib/pastriesCategory';
+import { findPastriesCategory, pastryHasPrice } from '../lib/pastriesCategory';
 import { formatPhp } from '../lib/money';
-import { getMenuProductImageUrl } from '../lib/menuCatalog';
 import { isProductInStock } from '../lib/productStock';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
-import MixMatchBundlePicker from '../components/mix-match/MixMatchBundlePicker';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import { PASTRIES_PAGE, MIX_MATCH_BLUE } from '../content/pastriesPage';
+import { PASTRIES_PAGE, PASTRIES_ACCENT } from '../content/pastriesPage';
 import Skeleton from '../components/ui/Skeleton';
+import MenuProductImage from '../components/catalog/MenuProductImage';
 
 export default function Pastries() {
   const categories = useMenuStore((s) => s.categories);
@@ -30,12 +24,14 @@ export default function Pastries() {
   }, [hydrateFromRemote]);
 
   const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
-  const collabs = useMemo(() => collabPastries(categories, products), [categories, products]);
-  const featured = useMemo(() => findFeaturedPastry(collabs) ?? collabs[0], [collabs]);
+  const pastryGrid = useMemo(() => {
+    if (!pastriesCategory) return [];
+    return products
+      .filter((p) => p.categoryId === pastriesCategory.id && p.visible && pastryHasPrice(p))
+      .sort((a, b) => a.order - b.order);
+  }, [pastriesCategory, products]);
 
   const { hero, poster, cta } = PASTRIES_PAGE;
-  const featuredInStock = featured ? isProductInStock(featured) : false;
-  const canOrderFeatured = featured && pastryHasPrice(featured) && featuredInStock;
 
   return (
     <div className="flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-kado-offwhite font-sans">
@@ -45,7 +41,7 @@ export default function Pastries() {
             <div className="order-2 text-center lg:order-1 lg:text-left">
               <p className="kado-label mb-2 text-kado-red sm:mb-3">{hero.eyebrow}</p>
               <h1 className="text-balance font-display text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl md:text-6xl">
-                <span style={{ color: MIX_MATCH_BLUE }}>{hero.headlineTop}</span>
+                <span style={{ color: PASTRIES_ACCENT }}>{hero.headlineTop}</span>
                 <br />
                 <span className="text-kado-red">{hero.headlineBottom}</span>
               </h1>
@@ -53,9 +49,9 @@ export default function Pastries() {
               <div className="mt-5 inline-flex w-full max-w-sm flex-col items-center gap-1 sm:mt-6 lg:max-w-none lg:items-start">
                 <span
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg sm:w-auto sm:px-5 sm:text-xs"
-                  style={{ backgroundColor: MIX_MATCH_BLUE }}
+                  style={{ backgroundColor: PASTRIES_ACCENT }}
                 >
-                  <Percent className="h-4 w-4 shrink-0" aria-hidden />
+                  <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden />
                   <span className="text-center">{hero.badge}</span>
                 </span>
                 <span className="kado-subtext text-center font-semibold uppercase tracking-wider text-kado-dark/45 lg:text-left">
@@ -66,7 +62,7 @@ export default function Pastries() {
             <div className="order-1 mx-auto w-full max-w-sm lg:order-2 lg:max-w-none">
               <img
                 src={poster.primaryImage}
-                alt="Kukidō x Kado Kohi Mix and Match poster"
+                alt="Kado Kohi pastries"
                 className="w-full rounded-[1rem] border border-kado-dark/10 shadow-xl sm:rounded-[1.25rem]"
                 loading="eager"
                 decoding="async"
@@ -95,58 +91,40 @@ export default function Pastries() {
                 </div>
               ))}
             </div>
+          ) : pastryGrid.length === 0 ? (
+            <p className="text-center kado-body text-kado-dark/55">Pastries will appear here once added in Menu Manager.</p>
           ) : (
-          <MixMatchBundlePicker
-            categories={categories}
-            products={products}
-            pastriesCategoryId={pastriesCategory?.id}
-          />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+              {pastryGrid.map((p) => {
+                const inStock = isProductInStock(p);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    disabled={!inStock}
+                    onClick={() => inStock && setSelected(p)}
+                    className={`overflow-hidden rounded-xl border border-kado-dark/10 bg-white text-left transition-colors ${
+                      inStock ? 'hover:border-kado-red/30' : 'opacity-55 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="relative aspect-square bg-kado-dark/5">
+                      <MenuProductImage
+                        product={p}
+                        alt={p.name}
+                        pastriesCategoryId={pastriesCategory?.id}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-bold text-kado-dark line-clamp-2">{p.name}</p>
+                      <p className="mt-1 text-xs font-semibold text-kado-dark/70">{formatPhp(p.basePrice)}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
-
-        {remoteLoaded && featured ? (
-          <div className="mx-auto mt-10 w-full max-w-5xl sm:mt-14">
-            <h2 className="mb-4 text-center kado-label text-kado-red sm:mb-5">Takeover exclusive</h2>
-            <article className="overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-white shadow-[0_20px_60px_rgba(25,25,25,0.08)] sm:rounded-[1.5rem] lg:grid lg:grid-cols-2">
-              <div className="relative aspect-[4/3] w-full bg-kado-red sm:aspect-[16/10] lg:aspect-auto lg:min-h-[300px]">
-                <img
-                  src={getMenuProductImageUrl(featured, { pastriesCategoryId: pastriesCategory?.id })}
-                  alt={featured.name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div className="flex flex-col justify-center p-5 sm:p-6 md:p-8">
-                <p className="kado-label text-kado-red">Kukidō x Kado Kohi</p>
-                <h3 className="mt-1 text-balance font-display text-2xl font-black uppercase tracking-tight text-kado-dark sm:text-3xl">
-                  {featured.name}
-                </h3>
-                {featured.description ? (
-                  <p className="mt-3 kado-body text-kado-dark/70">{featured.description}</p>
-                ) : null}
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                  {pastryHasPrice(featured) ? (
-                    <span className="kado-h2 text-kado-dark">{formatPhp(featured.basePrice)}</span>
-                  ) : null}
-                  {canOrderFeatured ? (
-                    <button
-                      type="button"
-                      onClick={() => setSelected(featured)}
-                      className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-6 kado-label text-kado-cream touch-manipulation hover:bg-kado-dark sm:w-auto"
-                    >
-                      <ShoppingBag className="h-4 w-4 shrink-0" />
-                      Order {featured.name}
-                    </button>
-                  ) : !featuredInStock ? (
-                    <span className="text-center text-xs font-bold uppercase tracking-wider text-amber-700 sm:text-left">
-                      Out today
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </article>
-          </div>
-        ) : null}
 
         <div className="mx-auto mt-10 w-full max-w-3xl rounded-[1.25rem] border border-kado-red/20 bg-kado-red px-5 py-7 text-center text-white sm:mt-12 sm:rounded-[1.5rem] sm:px-8 sm:py-8 md:px-10">
           <p className="kado-body text-white/90">{cta.body}</p>

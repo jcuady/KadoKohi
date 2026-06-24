@@ -435,9 +435,13 @@ export interface BoothBookingSelectedAddonSnapshot {
   lineTotal: number;
 }
 
+export type BoothBookingKind = 'coffee-cart' | 'matcha-bar';
+
 export interface BoothBooking {
   id: string;
   shortCode: string;
+  /** Coffee cart or matcha bar proposal source. */
+  bookingKind: BoothBookingKind;
   /** Optional — event booking is brand-wide, not tied to a single branch. */
   branchId?: string;
   customerId?: string;

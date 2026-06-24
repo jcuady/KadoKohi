@@ -19,6 +19,7 @@ import type {
 } from '../../../types/domain';
 import type { AppSettings } from '../../../store/settingsStore';
 import type { FetchOrdersScope } from '../../orderFetchScope';
+import { normalizeBookingEstimate, resolveBookingKind } from '../../boothBookingEstimate';
 
 function pgErrorFields(err: unknown): { message: string; code: string; details: string } {
   if (err && typeof err === 'object') {
@@ -260,9 +261,13 @@ function mapEventRegistration(row: any): EventRegistration {
 }
 
 function mapBooking(row: any): BoothBooking {
+  const packageBase = Number(row.package_base_price_snapshot ?? 0);
+  const createdAt = row.created_at ?? new Date().toISOString();
+  const shortCode = row.short_code ?? 'PENDING';
   return {
     id: row.id,
-    shortCode: row.short_code,
+    shortCode,
+    bookingKind: resolveBookingKind(row.booking_kind, row.special_requests),
     branchId: row.branch_id ?? undefined,
     customerId: row.customer_id ?? undefined,
     contactName: row.contact_name,
@@ -276,11 +281,17 @@ function mapBooking(row: any): BoothBooking {
     endsAt: row.ends_at,
     packageId: row.package_id,
     packageNameSnapshot: row.package_name_snapshot,
-    packageBasePriceSnapshot: Number(row.package_base_price_snapshot ?? 0),
+    packageBasePriceSnapshot: packageBase,
     selectedAddons: row.selected_addons ?? [],
     specialRequests: row.special_requests ?? undefined,
-    estimateSnapshot: row.estimate_snapshot ?? undefined,
-    finalQuote: row.final_quote ?? undefined,
+    estimateSnapshot: normalizeBookingEstimate(row.estimate_snapshot, {
+      fallbackTotal: packageBase,
+      shortCode,
+      createdAt,
+    }),
+    finalQuote: row.final_quote
+      ? normalizeBookingEstimate(row.final_quote, { fallbackTotal: packageBase, shortCode, createdAt })
+      : undefined,
     quoteNotes: row.quote_notes ?? undefined,
     quotedAt: row.quoted_at ?? undefined,
     status: row.status,
@@ -810,6 +821,7 @@ export const orderingRepo = {
       selected_addons: b.selectedAddons ?? [],
       special_requests: b.specialRequests ?? null,
       estimate_snapshot: b.estimateSnapshot ?? {},
+      booking_kind: b.bookingKind ?? 'coffee-cart',
     };
   },
   /** Server-validated booking submission (replaces direct table INSERT). */

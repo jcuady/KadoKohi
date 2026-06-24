@@ -1,21 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, ShoppingBag, Check } from 'lucide-react';
-import type { Product } from '../../types/domain';
+import type { OrderItemVariantSnapshot, Product } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { getProductDescription } from '../../lib/productImage';
 import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import { qrChipClass } from '../../lib/qrGuestTheme';
-import {
-  defaultMilkId,
-  defaultOrderTemperature,
-  getOrderableMilks,
-  resolveMilkPriceDelta,
-  resolveOrderTemperature,
-  showMilkChoice,
-  showTemperatureChoice,
-} from '../../lib/menuProductModifiers';
+import { resolveOrderTemperature } from '../../lib/menuProductModifiers';
+import { isPastriesCategoryId } from '../../lib/pastriesCategory';
+import { useMenuStore } from '../../store/menuStore';
+import ProductVariantSections from '../menu/ProductVariantSections';
+import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 
 export type QrCartPayload = {
   productId: string;
@@ -23,8 +19,9 @@ export type QrCartPayload = {
   milkId?: string;
   milkLabel?: string;
   temperature?: 'hot' | 'iced';
-  /** Mix & Match bundle partner cookie — server validates 10% bundle discount. */
-  mixMatchCookieId?: string;
+  sizeId?: string;
+  sizeLabel?: string;
+  customizations?: OrderItemVariantSnapshot[];
   productNameSnapshot?: string;
 };
 
@@ -41,41 +38,72 @@ function ChipSelectedMark({ active }: { active: boolean }) {
   return <Check className="h-3.5 w-3.5 shrink-0 stroke-[3]" aria-hidden />;
 }
 
+function QrChip({
+  active,
+  onClick,
+  children,
+  className,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={className ?? qrChipClass(active, 'default')}
+    >
+      <ChipSelectedMark active={active} />
+      {children}
+    </button>
+  );
+}
+
 export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Add to table order' }: Props) {
+  const categories = useMenuStore((s) => s.categories);
   const [qty, setQty] = useState(1);
-  const [milkId, setMilkId] = useState('');
-  const [temp, setTemp] = useState<'hot' | 'iced'>('hot');
+  const [lineConfig, setLineConfig] = useState<PosLineConfig | null>(null);
 
   useEffect(() => {
     if (!product) return;
     setQty(1);
-    setMilkId(defaultMilkId(product) ?? '');
-    setTemp(defaultOrderTemperature(product));
+    setLineConfig(defaultPosLineConfig(product));
   }, [product]);
 
-  const unitPrice = useMemo(() => {
-    if (!product) return 0;
-    return product.basePrice + resolveMilkPriceDelta(product, milkId);
-  }, [product, milkId]);
+  const isPastry = product ? isPastriesCategoryId(categories, product.categoryId) : false;
+
+  const resolved = useMemo(() => {
+    if (!product || !lineConfig) return null;
+    return resolvePosUnitPrice(product, lineConfig);
+  }, [product, lineConfig]);
+
+  const unitPrice = resolved?.unit ?? 0;
 
   if (!product) return null;
 
   const inStock = isProductInStock(product);
-  const showTemp = showTemperatureChoice(product);
-  const orderableMilks = getOrderableMilks(product);
-  const showMilk = showMilkChoice(product);
 
   const handleAdd = () => {
-    if (!inStock) return;
-    const milk = orderableMilks.find((m) => m.id === milkId);
+    if (!inStock || !lineConfig || !resolved) return;
     onAdd({
       productId: product.id,
       qty,
-      milkId: showMilk ? milk?.id : undefined,
-      milkLabel: showMilk ? milk?.label : undefined,
-      temperature: resolveOrderTemperature(product, temp),
+      milkId: lineConfig.milkId,
+      milkLabel: resolved.milkLabel,
+      sizeId: lineConfig.sizeId,
+      sizeLabel: resolved.sizeLabel,
+      temperature: resolveOrderTemperature(product, lineConfig.temperature),
+      customizations: lineConfig.customizations,
+      productNameSnapshot: product.name,
     });
     onClose();
+  };
+
+  const patchLineConfig = (patch: Partial<PosLineConfig>) => {
+    setLineConfig((prev) => (prev ? { ...prev, ...patch } : prev));
   };
 
   return (
@@ -134,63 +162,16 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                   <span className="font-display font-black text-lg text-kado-red shrink-0">{formatPhp(unitPrice)}</span>
                 </div>
 
-                {showMilk && (
-                  <div role="group" aria-label="Milk choice">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[var(--qr-text-subtle)] mb-2">
-                      Milk
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {orderableMilks.map((m) => {
-                        const active = milkId === m.id;
-                        return (
-                          <button
-                            key={m.id}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => setMilkId(m.id)}
-                            className={qrChipClass(active, 'default')}
-                          >
-                            <ChipSelectedMark active={active} />
-                            <span>
-                              {m.label}
-                              {m.priceDelta > 0 && (
-                                <span className={active ? 'opacity-90' : 'opacity-70'}>
-                                  {' '}
-                                  +{formatPhp(m.priceDelta)}
-                                </span>
-                              )}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {showTemp && (
-                  <div role="group" aria-label="Temperature">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[var(--qr-text-subtle)] mb-2">
-                      Temperature
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['hot', 'iced'] as const).map((t) => {
-                        const active = temp === t;
-                        return (
-                          <button
-                            key={t}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => setTemp(t)}
-                            className={`${qrChipClass(active, t)} uppercase tracking-wider`}
-                          >
-                            <ChipSelectedMark active={active} />
-                            {t === 'hot' ? 'Hot' : 'Iced'}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {lineConfig ? (
+                  <ProductVariantSections
+                    product={product}
+                    config={lineConfig}
+                    onChange={patchLineConfig}
+                    showTemperature={!isPastry}
+                    Chip={QrChip as ComponentType<{ active: boolean; onClick: () => void; children: ReactNode }>}
+                    sectionLabelClass="text-[9px] font-black uppercase tracking-widest text-[var(--qr-text-subtle)] mb-2"
+                  />
+                ) : null}
 
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-[var(--qr-text-subtle)] mb-2">
@@ -222,7 +203,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             <div className="shrink-0 p-4 border-t border-[var(--qr-border)] pb-[max(1rem,env(safe-area-inset-bottom))] bg-[var(--qr-sheet-bg)]">
               {!inStock && (
                 <p className="text-xs text-amber-800 font-medium text-center mb-3">
-                  This drink is out of stock right now. Ask staff when it is available again.
+                  This item is out of stock right now. Ask staff when it is available again.
                 </p>
               )}
               <button

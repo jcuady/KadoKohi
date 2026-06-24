@@ -3,16 +3,7 @@ import type { BoothAddon, BoothPackage } from '../types/domain';
 import { SEED_BOOTH_ADDONS, SEED_BOOTH_PACKAGES } from '../data/seed';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
-
-function normalizeCatalog(raw: unknown): { packages: BoothPackage[]; addons: BoothAddon[] } {
-  if (!raw || typeof raw !== 'object') {
-    return { packages: SEED_BOOTH_PACKAGES, addons: SEED_BOOTH_ADDONS };
-  }
-  const row = raw as { packages?: unknown; addons?: unknown };
-  const packages = Array.isArray(row.packages) ? (row.packages as BoothPackage[]) : SEED_BOOTH_PACKAGES;
-  const addons = Array.isArray(row.addons) ? (row.addons as BoothAddon[]) : SEED_BOOTH_ADDONS;
-  return { packages, addons };
-}
+import { normalizeCatalog } from './boothCatalogHydration';
 
 export interface BoothCatalogStore {
   packages: BoothPackage[];
@@ -38,8 +29,8 @@ export interface BoothCatalogStore {
 }
 
 export const useBoothCatalogStore = create<BoothCatalogStore>()((set, get) => ({
-  packages: SEED_BOOTH_PACKAGES,
-  addons: SEED_BOOTH_ADDONS,
+  packages: [],
+  addons: [],
   saveError: null,
   saving: false,
   hydrated: false,
@@ -47,14 +38,10 @@ export const useBoothCatalogStore = create<BoothCatalogStore>()((set, get) => ({
   hydrateFromRemote: async () => {
     try {
       const remote = await orderingRepo.fetchBoothCatalog();
-      if (remote) {
-        const { packages, addons } = normalizeCatalog(remote);
-        set({ packages, addons, saveError: null, hydrated: true });
-      } else {
-        set({ hydrated: true });
-      }
+      const { packages, addons } = normalizeCatalog(remote);
+      set({ packages, addons, saveError: null, hydrated: true });
     } catch {
-      set({ hydrated: true });
+      set({ packages: [], addons: [], hydrated: true });
     }
   },
 

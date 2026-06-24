@@ -4,7 +4,6 @@ export const LANDING_CMS_TABS = [
   { id: 'menu-seo', label: 'Menu SEO', hint: 'Matcha / signatures / classics / sodas & yuzu pillar cards and SEO body copy.' },
   { id: 'featured', label: 'Featured', hint: 'Three showcase drinks — copy, product picks, and optional card photos.' },
   { id: 'ordering', label: 'How to order', hint: 'Four-step ordering carousel copy.' },
-  { id: 'schedule', label: 'Mix & Match', hint: 'Homepage Mix & Match block — promo copy, bundle badge, and featured collab product.' },
   { id: 'events', label: 'Kado Events', hint: 'Events block headings and optional cover image override.' },
   { id: 'testimonials', label: 'Testimonials', hint: 'Google reviews section, trusted brands, and customer quotes.' },
   {

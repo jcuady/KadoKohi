@@ -20,6 +20,13 @@ const ADMIN_ROUTES = [
   '/admin/audit',
   '/admin/settings',
   '/admin/pos',
+  '/admin/booth-bookings',
+  '/admin/booth-catalog',
+  '/admin/booth-content',
+  '/admin/events',
+  '/admin/landing',
+  '/admin/blog',
+  '/admin/careers',
 ];
 
 test('admin can sign in via the internal portal', async ({ page }) => {

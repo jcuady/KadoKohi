@@ -26,7 +26,6 @@ export async function ensureOrderReadiness(): Promise<void> {
   // ponytail: only seed catalog when empty — kk_ensure_menu_catalog used to wipe uploaded images on every QR visit.
   if (menuMissing) {
     await orderingRepo.ensureMenuCatalog().catch(() => undefined);
-    await orderingRepo.ensureMixMatchCatalog().catch(() => undefined);
     await useMenuStore.getState().ensureCatalogInDatabase().catch(() => undefined);
     await useMenuStore.getState().hydrateFromRemote();
   }

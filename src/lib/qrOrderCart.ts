@@ -2,40 +2,24 @@ import type { OrderItem, Product } from '../types/domain';
 import type { QrCartPayload } from '../components/qr/QrProductSheet';
 import { computeOrderTotals } from './money';
 import { newId } from './id';
-import { resolveMilkLabel, resolveMilkPriceDelta } from './menuProductModifiers';
-import {
-  mixMatchSelectionLabel,
-  mixMatchUnitPrice,
-  resolveMixMatchMode,
-} from './mixMatchOrder';
-import { isMixMatchCookie } from './pastriesCategory';
+import { resolvePosUnitPrice } from './posPricing';
 
 export type QrCartLine = QrCartPayload & { key: string };
 
-function resolveUnit(
-  product: Product,
-  milkId?: string,
-  mixMatchCookie?: Product,
-): { unit: number; milkLabel?: string; name: string; itemType: OrderItem['itemType'] } {
-  if (mixMatchCookie) {
-    const mode = resolveMixMatchMode(product, mixMatchCookie);
-    if (mode === 'bundle') {
-      return {
-        unit: mixMatchUnitPrice(mode, product, mixMatchCookie, milkId),
-        milkLabel: resolveMilkLabel(product, milkId),
-        name: mixMatchSelectionLabel(mode, product, mixMatchCookie),
-        itemType: 'mix-match',
-      };
-    }
-  }
+function customizationKey(customizations: QrCartPayload['customizations']): string {
+  return JSON.stringify(
+    (customizations ?? []).map((c) => `${c.groupName}:${c.optionLabel}:${c.priceDelta}`).sort(),
+  );
+}
 
-  const unit = product.basePrice + resolveMilkPriceDelta(product, milkId);
-  return {
-    unit,
-    milkLabel: resolveMilkLabel(product, milkId),
-    name: product.name,
-    itemType: isMixMatchCookie(product) ? 'coffee' : 'coffee',
-  };
+export function qrLinesMatch(a: QrCartPayload, b: QrCartPayload): boolean {
+  return (
+    a.productId === b.productId &&
+    a.milkId === b.milkId &&
+    a.temperature === b.temperature &&
+    a.sizeId === b.sizeId &&
+    customizationKey(a.customizations) === customizationKey(b.customizations)
+  );
 }
 
 export function buildQrCartTotals(
@@ -51,30 +35,26 @@ export function buildQrCartTotals(
     const p = products.find((x) => x.id === line.productId);
     if (!p) continue;
 
-    const cookie = line.mixMatchCookieId
-      ? products.find((x) => x.id === line.mixMatchCookieId)
-      : undefined;
-
-    const { unit, milkLabel, name, itemType } = resolveUnit(p, line.milkId, cookie);
+    const { unit, milkLabel, sizeLabel } = resolvePosUnitPrice(p, {
+      milkId: line.milkId,
+      sizeId: line.sizeId,
+      customizations: line.customizations ?? [],
+    });
     const lineTotal = unit * line.qty;
-
-    if (cookie && itemType === 'mix-match') {
-      subtotal += (p.basePrice + cookie.basePrice) * line.qty;
-      modifiers += lineTotal - (p.basePrice + cookie.basePrice) * line.qty;
-    } else {
-      subtotal += p.basePrice * line.qty;
-      modifiers += (unit - p.basePrice) * line.qty;
-    }
+    subtotal += p.basePrice * line.qty;
+    modifiers += (unit - p.basePrice) * line.qty;
 
     lines.push({
       id: newId(),
       productId: p.id,
-      productNameSnapshot: line.productNameSnapshot ?? name,
-      itemType,
-      mixMatchCookieId: line.mixMatchCookieId,
+      productNameSnapshot: line.productNameSnapshot ?? p.name,
+      itemType: 'coffee',
       milkId: line.milkId,
       milkLabelSnapshot: milkLabel ?? line.milkLabel,
+      sizeId: line.sizeId,
+      sizeLabelSnapshot: sizeLabel ?? line.sizeLabel,
       temperature: line.temperature,
+      merchVariants: line.customizations?.length ? line.customizations : undefined,
       unitPrice: unit,
       qty: line.qty,
       lineTotal,
@@ -86,7 +66,7 @@ export function buildQrCartTotals(
 }
 
 export function qrCartIsStale(
-  cart: { productId: string; mixMatchCookieId?: string }[],
+  cart: { productId: string }[],
   lines: OrderItem[],
 ): boolean {
   if (cart.length === 0) return false;

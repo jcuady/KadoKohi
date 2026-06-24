@@ -1,4 +1,5 @@
 import type { BoothBooking, BoothBookingStatus, BookingEstimate } from '../types/domain';
+import { normalizeBookingEstimate } from './boothBookingEstimate';
 
 export const BOOTH_BOOKING_STATUS_LABELS: Record<BoothBookingStatus, string> = {
   submitted: 'Submitted',
@@ -46,7 +47,14 @@ export const ALL_BOOTH_BOOKING_STATUSES: BoothBookingStatus[] = [
 
 /** Price shown to customer — official quote when set, otherwise initial estimate. */
 export function getBookingDisplayEstimate(booking: BoothBooking): BookingEstimate {
-  return booking.finalQuote ?? booking.estimateSnapshot;
+  if (booking.finalQuote) {
+    return normalizeBookingEstimate(booking.finalQuote, {
+      fallbackTotal: booking.estimateSnapshot.total,
+      shortCode: booking.shortCode,
+      createdAt: booking.createdAt,
+    });
+  }
+  return booking.estimateSnapshot;
 }
 
 export function isOfficialQuote(booking: BoothBooking): boolean {

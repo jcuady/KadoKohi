@@ -220,6 +220,16 @@ export default function AdminBranches() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Hero image URL</label>
+            <input
+              value={form.heroImage}
+              onChange={(e) => setForm((f) => ({ ...f, heroImage: e.target.value }))}
+              className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
+              placeholder="https://… or /images/branch.jpg"
+            />
+          </div>
+
           {/* Lat / Lng */}
           <div className="grid grid-cols-2 gap-3">
             <div>

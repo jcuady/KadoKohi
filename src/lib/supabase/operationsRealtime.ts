@@ -166,6 +166,7 @@ export async function refreshOperationsData(): Promise<void> {
     useCareersStore.getState().hydrateFromRemote(),
     useBoothCatalogStore.getState().hydrateFromRemote(),
     useBlogStore.getState().hydrateFromRemote(),
+    useLoyaltyStore.getState().hydrateFromRemote(),
   ];
 
   if (user?.role === 'admin') {

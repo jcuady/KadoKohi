@@ -94,10 +94,6 @@ function applyImageField(
     if (Number.isFinite(pi)) store.updateMenuSeoPillar(pi, { imageUrl: url });
     return;
   }
-  if (section === 'schedule' && rest[0] === 'poster') {
-    store.updateSchedule({ posterImageUrl: url });
-    return;
-  }
   if (section === 'events' && rest[0] === 'cover') {
     store.updateEvents({ coverImageOverride: url });
     return;

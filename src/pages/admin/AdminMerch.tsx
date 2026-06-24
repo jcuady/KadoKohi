@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type DragEvent } from 'react';
+import { useEffect, useState, type FormEvent, type DragEvent } from 'react';
 import type { MerchCategory, MerchProduct, MerchVariantGroup, MerchVariantOption } from '../../types/domain';
 import { useMerchStore } from '../../store/merchStore';
 import { formatPhp } from '../../lib/money';
@@ -28,6 +28,8 @@ const emptyProductForm: ProductFormData = {
 export default function AdminMerch() {
   const categories = useMerchStore((s) => s.categories);
   const products = useMerchStore((s) => s.products);
+  const remoteLoaded = useMerchStore((s) => s.remoteLoaded);
+  const hydrateFromRemote = useMerchStore((s) => s.hydrateFromRemote);
   const addCategory = useMerchStore((s) => s.addCategory);
   const updateCategory = useMerchStore((s) => s.updateCategory);
   const removeCategory = useMerchStore((s) => s.removeCategory);
@@ -53,12 +55,23 @@ export default function AdminMerch() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [addingToCat, setAddingToCat] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyProductForm);
+  const [saveError, setSaveError] = useState('');
+  const [savingProduct, setSavingProduct] = useState(false);
 
-  const handleAddCategory = (e: FormEvent) => {
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
+
+  const handleAddCategory = async (e: FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
-    addCategory(newCatName.trim());
-    setNewCatName('');
+    setSaveError('');
+    try {
+      await addCategory(newCatName.trim());
+      setNewCatName('');
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not add category.');
+    }
   };
 
   const startEditProduct = (p: MerchProduct) => {
@@ -146,7 +159,7 @@ export default function AdminMerch() {
     }));
   };
 
-  const submitProduct = (e: FormEvent) => {
+  const submitProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.basePrice) return;
 
@@ -165,21 +178,40 @@ export default function AdminMerch() {
         .map((g) => ({ ...g, options: g.options.filter((o) => o.label.trim()) })),
     };
 
-    if (editingProduct) {
-      updateProduct(editingProduct, payload);
-    } else if (addingToCat) {
-      addProduct({
-        ...payload,
-        categoryId: addingToCat,
-        order: products.filter((p) => p.categoryId === addingToCat).length,
-      });
+    setSavingProduct(true);
+    setSaveError('');
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct, payload);
+      } else if (addingToCat) {
+        await addProduct({
+          ...payload,
+          categoryId: addingToCat,
+          order: products.filter((p) => p.categoryId === addingToCat).length,
+        });
+      }
+      cancelForm();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save product.');
+    } finally {
+      setSavingProduct(false);
     }
-    cancelForm();
   };
 
   return (
     <div className="max-w-4xl dash-page">
       <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Merch Manager</h1>
+      <p className="dash-muted mb-2">
+        Categories and products sync to Supabase — changes appear on the public merch store.
+      </p>
+      {!remoteLoaded ? (
+        <p className="text-xs dash-muted mb-4">Loading catalog from database…</p>
+      ) : null}
+      {saveError ? (
+        <p className="text-sm text-red-600 font-medium mb-4" role="alert">
+          {saveError}
+        </p>
+      ) : null}
       <p className="dash-muted mb-6">
         {categories.length} categories · {products.length} products
       </p>
@@ -531,9 +563,10 @@ export default function AdminMerch() {
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors"
+                disabled={savingProduct}
+                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
               >
-                {editingProduct ? 'Update' : 'Create'}
+                {savingProduct ? 'Saving…' : editingProduct ? 'Update' : 'Create'}
               </button>
             </div>
           </form>

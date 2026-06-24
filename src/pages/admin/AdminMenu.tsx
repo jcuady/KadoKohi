@@ -33,17 +33,9 @@ import {
   findPastriesCategory,
   isPastriesCategory,
   isPastriesCategoryId,
-  isCollabPastry,
-  isMixMatchCookie,
   pastryHasPrice,
   PASTRIES_CATEGORY_NAME,
 } from '../../lib/pastriesCategory';
-import {
-  PASTRY_KIND_OPTIONS,
-  pastryKindFromTags,
-  tagsForPastryKind,
-  type PastryKind,
-} from '../../content/pastriesPage';
 
 type MenuManagerTab = 'coffee' | 'pastries';
 
@@ -166,7 +158,6 @@ export default function AdminMenu() {
   const [uploadPreviewLabel, setUploadPreviewLabel] = useState<string>('');
   const [savingProduct, setSavingProduct] = useState(false);
   const [preparingImage, setPreparingImage] = useState(false);
-  const [pastryKind, setPastryKind] = useState<PastryKind>('mix-match');
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
   const [deleteConfirmProductId, setDeleteConfirmProductId] = useState<string | null>(null);
@@ -230,9 +221,6 @@ export default function AdminMenu() {
     clearPendingImageFile();
     setOriginalImage(p.image ?? '');
     setImageSource(inferMenuImageSource(p.image));
-    if (isPastriesCategoryId(categories, p.categoryId)) {
-      setPastryKind(pastryKindFromTags(p.tags));
-    }
   };
 
   const startAddProduct = (catId: string) => {
@@ -243,9 +231,6 @@ export default function AdminMenu() {
     clearPendingImageFile();
     setOriginalImage('');
     setImageSource('none');
-    if (isPastriesCategoryId(categories, catId)) {
-      setPastryKind('mix-match');
-    }
   };
 
   const cancelForm = () => {
@@ -447,17 +432,15 @@ export default function AdminMenu() {
       basePrice,
       temperature: isPastryForm ? ('both' as const) : form.temperature,
       visible: form.visible,
-      tags: isPastryForm
-        ? tagsForPastryKind(pastryKind)
-        : form.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
-      milks: isPastryForm ? [] : form.milks.filter((m) => m.label.trim()),
-      sizes: isPastryForm ? [] : form.sizes.filter((s) => s.label.trim()),
-      customFields: isPastryForm
-        ? []
-        : form.customFields.filter((field) => field.label.trim() && field.key.trim() && field.value.trim()),
+      tags: form.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      milks: form.milks.filter((m) => m.label.trim()),
+      sizes: form.sizes.filter((s) => s.label.trim()),
+      customFields: form.customFields.filter(
+        (field) => field.label.trim() && field.key.trim() && field.value.trim(),
+      ),
     };
 
     let saved: Product;
@@ -682,7 +665,7 @@ export default function AdminMenu() {
 
       {menuTab === 'pastries' && (
         <p className="text-xs dash-muted -mt-2">
-          Quick-add by name — price, photo, and description are optional for pastries.
+          Only the name is required. Add price, sizes, custom options, photo, and tags when ready — same controls as drinks.
         </p>
       )}
 
@@ -868,25 +851,11 @@ export default function AdminMenu() {
                             ) : (
                               <span className="font-semibold text-kado-dark/80">{formatPhp(p.basePrice)}</span>
                             )}
-                            {catIsPastry && isMixMatchCookie(p) ? (
-                              <span className="rounded-full bg-[#1e4d8c]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#1e4d8c]">
-                                Mix &amp; Match
-                              </span>
-                            ) : null}
-                            {catIsPastry && isCollabPastry(p) ? (
-                              <span className="rounded-full bg-kado-red/10 px-2 py-0.5 text-[9px] font-bold uppercase text-kado-red">
-                                Collab
-                              </span>
-                            ) : null}
-                            {!catIsPastry && (
-                              <>
-                                <span>{p.temperature}</span>
-                                {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
-                                {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
-                                {p.customFields?.length > 0 && <span>{p.customFields.length} custom</span>}
-                                {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
-                              </>
-                            )}
+                            {p.sizes?.length > 0 && <span>{p.sizes.length} size(s)</span>}
+                            {p.milks?.length > 0 && <span>{p.milks.length} milk(s)</span>}
+                            {p.customFields?.length > 0 && <span>{p.customFields.length} custom</span>}
+                            {p.tags?.length ? <span>{p.tags.join(', ')}</span> : null}
+                            {!catIsPastry && <span>{p.temperature}</span>}
                           </div>
                         </div>
                       </div>
@@ -966,9 +935,9 @@ export default function AdminMenu() {
 
             {isPastryForm && (
               <p className="mb-4 rounded-xl border border-kado-red/15 bg-kado-cream/40 px-4 py-3 text-xs dash-muted leading-relaxed">
-                Only the <strong className="dash-heading">name</strong> is required. Choose a{' '}
-                <strong className="dash-heading">pastry type</strong> so it appears in the right Mix &amp; Match
-                section. Mix &amp; Match cookies need a price for online bundle ordering.
+                Only the <strong className="dash-heading">name</strong> is required. Set a price when customers can order
+                online. Use sizes and option groups for packs or flavors (e.g.{' '}
+                <span className="font-mono text-[10px]">Single|0, Box of 6|250</span>).
               </p>
             )}
 
@@ -997,28 +966,6 @@ export default function AdminMenu() {
                   className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 resize-none"
                 />
               </div>
-
-              {isPastryForm && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-                    Pastry type
-                  </label>
-                  <select
-                    value={pastryKind}
-                    onChange={(e) => setPastryKind(e.target.value as PastryKind)}
-                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-                  >
-                    {PASTRY_KIND_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1.5 text-[11px] dash-muted">
-                    {PASTRY_KIND_OPTIONS.find((o) => o.value === pastryKind)?.hint}
-                  </p>
-                </div>
-              )}
 
               <div className={isPastryForm ? '' : 'grid grid-cols-2 gap-4'}>
                 <div className={isPastryForm ? '' : undefined}>
@@ -1207,20 +1154,18 @@ export default function AdminMenu() {
                 )}
               </div>
 
-              {!isPastryForm && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Tags (comma-separated)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  Tags (comma-separated){isPastryForm ? ' (optional)' : ''}
+                </label>
                 <input
                   value={form.tags}
                   onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                  placeholder="bestseller, new, iced-only"
+                  placeholder={isPastryForm ? 'bestseller, seasonal, cookie' : 'bestseller, new, iced-only'}
                   className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 />
               </div>
-              )}
 
-              {!isPastryForm && (
-              <>
               {/* Milk modifiers */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1344,8 +1289,6 @@ export default function AdminMenu() {
                   ))}
                 </div>
               </div>
-              </>
-              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

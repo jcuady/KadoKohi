@@ -93,4 +93,22 @@ test.describe('Guest ordering surfaces', () => {
     await expect(placeBtn).toBeEnabled();
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
+
+  test('takeout and QR menus do not show Mix & Match tab', async ({ page, request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured');
+
+    const code = await fetchActiveTableCode(request);
+    test.skip(!code, 'No active table in seed data');
+
+    await page.goto('/order/takeout');
+    await expect(page.getByText(/grab & go/i)).toBeVisible({ timeout: 25000 });
+    await expect(page.getByRole('button', { name: /mix\s*&\s*match/i })).toHaveCount(0);
+    await expect(page.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
+
+    await page.goto(`/order/qr/${encodeURIComponent(code)}`);
+    await expect(page.getByText(/dine-in ·/i)).toBeVisible({ timeout: 25000 });
+    await expect(page.getByRole('button', { name: /mix\s*&\s*match/i })).toHaveCount(0);
+    await expect(page.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
+  });
 });

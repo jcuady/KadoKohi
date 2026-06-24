@@ -11,6 +11,8 @@ import {
   getBookingDisplayEstimate,
   isOfficialQuote,
 } from '../../lib/boothBookingStatus';
+import { bookingInitialTotal, resolveBookingKind } from '../../lib/boothBookingEstimate';
+import { BOOKING_PAGE_LABELS } from '../../lib/bookingPageKinds';
 import { formatPhp } from '../../lib/money';
 import BoothEstimateBreakdown from '../booth/BoothEstimateBreakdown';
 import BoothContactCallCard from '../booth/BoothContactCallCard';
@@ -32,6 +34,8 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
   const [quoteNotes, setQuoteNotes] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [staffId, setStaffId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const staffUsers = users.filter((u) => u.role === 'staff' || u.role === 'admin');
   useEffect(() => {
@@ -42,25 +46,48 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
     setQuoteNotes(booking.quoteNotes ?? '');
     setInternalNotes(booking.internalNotes ?? '');
     setStaffId(booking.assignedStaffId ?? '');
+    setSaveError('');
   }, [booking]);
 
   if (!booking) return null;
 
+  const serviceKind = resolveBookingKind(booking.bookingKind, booking.specialRequests);
+  const initialTotal = bookingInitialTotal(booking);
+
+  const persistChanges = async (includeQuote: boolean) => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      if (includeQuote) {
+        const total = Number(officialTotal);
+        if (!Number.isFinite(total) || total < 0) {
+          setSaveError('Enter a valid quoted total.');
+          return;
+        }
+        await setFinalQuote(booking.id, total, {
+          quoteNotes,
+          status: status === 'submitted' ? 'quoted' : status,
+        });
+      } else {
+        await setStatus(booking.id, status);
+      }
+      await updateBooking(booking.id, { internalNotes: internalNotes.trim() || undefined });
+      await assignStaff(booking.id, staffId || undefined);
+      onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save booking changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveQuote = (e: FormEvent) => {
     e.preventDefault();
-    const total = Number(officialTotal);
-    if (!Number.isFinite(total) || total < 0) return;
-    setFinalQuote(booking.id, total, { quoteNotes, status: status === 'submitted' ? 'quoted' : status });
-    updateBooking(booking.id, { internalNotes: internalNotes.trim() || undefined });
-    assignStaff(booking.id, staffId || undefined);
-    onClose();
+    void persistChanges(true);
   };
 
   const handleStatusOnly = () => {
-    setStatus(booking.id, status);
-    updateBooking(booking.id, { internalNotes: internalNotes.trim() || undefined });
-    assignStaff(booking.id, staffId || undefined);
-    onClose();
+    void persistChanges(false);
   };
 
   return (
@@ -90,7 +117,16 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
           </div>
 
           <div className="p-5 space-y-5">
+            {saveError ? (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+                {saveError}
+              </p>
+            ) : null}
+
             <div className="flex flex-wrap gap-2 text-xs">
+              <span className="px-2.5 py-1 rounded-full border font-bold uppercase tracking-wider bg-kado-cream text-kado-dark border-kado-dark/15">
+                {BOOKING_PAGE_LABELS[serviceKind]}
+              </span>
               <span className={`px-2.5 py-1 rounded-full border font-bold uppercase tracking-wider ${BOOTH_STATUS_BADGE[booking.status]}`}>
                 {BOOTH_BOOKING_STATUS_LABELS[booking.status]}
               </span>
@@ -129,9 +165,10 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
                   value={officialTotal}
                   onChange={(e) => setOfficialTotal(e.target.value)}
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm font-semibold"
+                  disabled={saving}
                 />
                 <p className="text-[10px] dash-muted mt-1">
-                  Estimate was {formatPhp(booking.estimateSnapshot.total)}
+                  Estimate was {formatPhp(initialTotal)}
                 </p>
               </div>
               <div>
@@ -144,13 +181,15 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
                   rows={2}
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm resize-none"
                   placeholder="e.g. Includes setup, 3-hour service, and curated menu…"
+                  disabled={saving}
                 />
               </div>
               <button
                 type="submit"
-                className="w-full rounded-xl bg-kado-red text-white py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red/90"
+                disabled={saving}
+                className="w-full rounded-xl bg-kado-red text-white py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red/90 disabled:opacity-60"
               >
-                Save official quote
+                {saving ? 'Saving…' : 'Save official quote'}
               </button>
             </form>
 
@@ -168,6 +207,7 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
                 value={status}
                 onChange={(e) => setStatusLocal(e.target.value as BoothBookingStatus)}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm font-semibold"
+                disabled={saving}
               >
                 {ALL_BOOTH_BOOKING_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -178,9 +218,10 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
               <button
                 type="button"
                 onClick={handleStatusOnly}
-                className="w-full rounded-xl border dash-border py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40"
+                disabled={saving}
+                className="w-full rounded-xl border dash-border py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 disabled:opacity-60"
               >
-                Update status only
+                {saving ? 'Saving…' : 'Update status only'}
               </button>
             </div>
 
@@ -192,6 +233,7 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm"
+                disabled={saving}
               >
                 <option value="">Unassigned</option>
                 {staffUsers.map((u) => (
@@ -211,6 +253,7 @@ export default function BoothBookingManageModal({ booking, onClose }: Props) {
                 onChange={(e) => setInternalNotes(e.target.value)}
                 rows={2}
                 className="w-full rounded-xl dash-input px-4 py-2.5 text-sm resize-none"
+                disabled={saving}
               />
             </div>
 

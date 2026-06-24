@@ -13,9 +13,9 @@ type Props = {
 };
 
 const DEFAULT_STEPS: BoothHowItWorksStep[] = [
-  { title: 'Share your event', body: 'Tell us the occasion, guest count, and what you have in mind — no packages to pick.' },
-  { title: 'Choose an open date', body: 'Use the calendar to see which days are available. Unavailable dates are blocked by our team.' },
-  { title: 'Submit your proposal', body: 'We save your request and open email so you can reach our events team to discuss pricing.' },
+  { title: 'Share your details', body: 'Step through contact info, event details, and your preferred package — one section at a time.' },
+  { title: 'Pick your date', body: 'Choose any open day on the calendar. Only dates our team marks unavailable are blocked.' },
+  { title: 'Submit your proposal', body: 'Review your request, then submit — we save it and open email so you can reach our events team about pricing.' },
 ];
 
 export default function BookingSteps({ eyebrow, title, steps }: Props) {

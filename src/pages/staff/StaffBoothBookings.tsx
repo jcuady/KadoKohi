@@ -9,6 +9,7 @@ import {
   BOOTH_STATUS_BADGE,
   isOfficialQuote,
 } from '../../lib/boothBookingStatus';
+import { bookingInitialTotal, bookingQuotedTotal, resolveBookingKind } from '../../lib/boothBookingEstimate';
 import { formatPhp } from '../../lib/money';
 import BoothBookingManageModal from '../../components/admin/BoothBookingManageModal';
 
@@ -75,12 +76,18 @@ export default function StaffBoothBookings() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {list.map((booking) => (
+          {list.map((booking) => {
+            const kind = resolveBookingKind(booking.bookingKind, booking.specialRequests);
+            const quotedTotal = bookingQuotedTotal(booking);
+            return (
             <li key={booking.id} className="rounded-2xl dash-card border p-5">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="font-display font-bold dash-heading text-lg">{booking.shortCode}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-kado-cream text-kado-dark border-kado-dark/15">
+                      {kind === 'matcha-bar' ? 'Matcha bar' : 'Coffee cart'}
+                    </span>
                     <span
                       className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${BOOTH_STATUS_BADGE[booking.status]}`}
                     >
@@ -95,8 +102,8 @@ export default function StaffBoothBookings() {
                     {booking.eventName} · {booking.guestCount} guests · {booking.contactName}
                   </p>
                   <p className="text-xs dash-muted mt-1">
-                    Est. {formatPhp(booking.estimateSnapshot.total)}
-                    {booking.finalQuote && <> · Quote {formatPhp(booking.finalQuote.total)}</>}
+                    Est. {formatPhp(bookingInitialTotal(booking))}
+                    {quotedTotal != null && <> · Quote {formatPhp(quotedTotal)}</>}
                   </p>
                 </div>
                 <button
@@ -108,7 +115,8 @@ export default function StaffBoothBookings() {
                 </button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 

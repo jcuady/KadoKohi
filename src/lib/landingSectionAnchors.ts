@@ -7,7 +7,6 @@ export const LANDING_SECTION_IDS: Record<LandingTabId, string> = {
   'menu-seo': 'landing-menu-seo',
   featured: 'landing-featured',
   ordering: 'landing-ordering',
-  schedule: 'landing-schedule',
   events: 'landing-events',
   testimonials: 'landing-testimonials',
   branches: 'landing-branches',

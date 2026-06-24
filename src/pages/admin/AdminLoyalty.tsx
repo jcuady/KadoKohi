@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Gift, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
@@ -40,6 +40,7 @@ export default function AdminLoyalty() {
   const branches = useBranchStore((s) => s.branches);
   const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
   const config = useLoyaltyStore((s) => s.config);
+  const hydrateFromRemote = useLoyaltyStore((s) => s.hydrateFromRemote);
   const addReward = useLoyaltyStore((s) => s.addReward);
   const updateReward = useLoyaltyStore((s) => s.updateReward);
   const removeReward = useLoyaltyStore((s) => s.removeReward);
@@ -50,6 +51,10 @@ export default function AdminLoyalty() {
   const [deleteRewardId, setDeleteRewardId] = useState<string | null>(null);
   const [section, setSection] = useState<'members' | 'rewards'>('members');
   const [form, setForm] = useState<Omit<LoyaltyReward, 'id'>>(EMPTY_FORM);
+
+  useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
 
   const activeCount = config.rewards.filter((r) => r.active).length;
   const showValue = form.type === 'discount_percent' || form.type === 'discount_fixed';

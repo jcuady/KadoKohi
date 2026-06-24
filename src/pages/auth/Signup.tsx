@@ -5,17 +5,18 @@ import { clampText, isValidEmail, requirePhilippinePhone } from '../../lib/valid
 import { normalizePhilippinePhone } from '../../lib/phonePhilippines';
 import PhilippinePhoneField from '../../components/PhilippinePhoneField';
 import SignupTermsConsent from '../../components/auth/SignupTermsConsent';
+import SignupPasswordField from '../../components/auth/SignupPasswordField';
 import PasswordField from '../../components/auth/PasswordField';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
 import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
 import { clearLocalAuthBeforeSignup, formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { isPasswordStrong } from '../../lib/passwordStrength';
 import {
   SIGNUP_CHECK_EMAIL_NOTICE,
   SIGNUP_CHECK_EMAIL_QUERY,
   SIGNUP_EMAIL_QUERY,
   SIGNUP_FORM_GUIDE,
-  SIGNUP_PASSWORD_HINT,
 } from '../../lib/authNotices';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
 
@@ -74,8 +75,8 @@ export default function Signup() {
       setError('Name must be at least 2 characters.');
       return;
     }
-    if (password.trim().length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (!isPasswordStrong(password)) {
+      setError('Password must meet all requirements shown below.');
       return;
     }
     if (password !== confirmPassword) {
@@ -160,18 +161,12 @@ export default function Signup() {
           onChange={setPhoneLocal}
           required
         />
-        <div>
-          <PasswordField
-            id="signup-password"
-            label="Password"
-            autoComplete="new-password"
-            minLength={8}
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-            required
-          />
-          <p className="mt-1.5 text-[11px] text-kado-dark/50">{SIGNUP_PASSWORD_HINT}</p>
-        </div>
+        <SignupPasswordField
+          id="signup-password"
+          value={password}
+          onChange={setPassword}
+          disabled={submitting}
+        />
         <PasswordField
           id="signup-confirm"
           label="Confirm password"
