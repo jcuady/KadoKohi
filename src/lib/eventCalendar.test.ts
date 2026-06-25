@@ -8,11 +8,11 @@ describe('eventCalendar date policy', () => {
     booked: ['2026-06-25', '2026-06-28'],
   };
 
-  it('blocks admin blockouts, pending holds, and past dates', () => {
+  it('blocks admin blockouts, pending holds, booked dates, and past dates', () => {
     expect(isDateSelectable('2026-06-27', calendar, '2026-06-01')).toBe(false);
     expect(isDateSelectable('2026-06-26', calendar, '2026-06-01')).toBe(false);
-    expect(isDateSelectable('2026-06-25', calendar, '2026-06-01')).toBe(true);
-    expect(isDateSelectable('2026-06-28', calendar, '2026-06-01')).toBe(true);
+    expect(isDateSelectable('2026-06-25', calendar, '2026-06-01')).toBe(false);
+    expect(isDateSelectable('2026-06-28', calendar, '2026-06-01')).toBe(false);
     expect(isDateSelectable('2026-05-30', calendar, '2026-06-01')).toBe(false);
   });
 

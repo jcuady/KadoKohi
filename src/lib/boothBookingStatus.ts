@@ -16,8 +16,8 @@ export const BOOTH_BOOKING_STATUS_LABELS: Record<BoothBookingStatus, string> = {
 export const BOOTH_BOOKING_STATUS_CUSTOMER: Record<BoothBookingStatus, string> = {
   submitted: 'We received your proposal. Email us or wait for our team to reply about pricing and details.',
   under_review: 'We are reviewing your event and preparing a quote to discuss with you.',
-  quoted: 'We sent a quote — reply by email or call us to confirm or adjust.',
-  awaiting_confirmation: 'Almost set — confirm with us by email or phone when you are ready.',
+  quoted: 'We sent your quote — pay the amount due below or reply by email if you have questions.',
+  awaiting_confirmation: 'Pay the amount due below to reserve your date, or contact us to adjust details.',
   confirmed: 'Your event date is confirmed. See you on the day!',
   declined: 'This proposal was declined. Contact us if you have questions.',
   cancelled: 'This proposal was cancelled.',

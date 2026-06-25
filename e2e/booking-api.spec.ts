@@ -3,7 +3,7 @@ import { supabaseAnonConfig, uniqueTestId } from './helpers';
 
 /**
  * Booth booking RPC contracts — calendar fetch + kk_place_booth_booking.
- * Verifies only admin blockouts reject submissions (not existing bookings).
+ * Confirmed dates are booked (not selectable); proposals still allowed on quoted days until confirmed.
  */
 
 const cfg = supabaseAnonConfig();
@@ -37,7 +37,13 @@ async function findOpenFutureDate(
     const key = manilaDateKey(offset);
     const [year, month] = key.split('-').map(Number);
     const calendar = await fetchCalendar(request, year, month);
-    if (!calendar.blockouts?.includes(key)) return key;
+    if (
+      !calendar.blockouts?.includes(key) &&
+      !calendar.pending?.includes(key) &&
+      !calendar.booked?.includes(key)
+    ) {
+      return key;
+    }
   }
   throw new Error('Could not find an open future date within 60 days');
 }
@@ -106,7 +112,7 @@ async function fetchCalendar(
     data: { p_year: year, p_month: month },
   });
   expect(res.ok()).toBe(true);
-  return (await res.json()) as { blockouts?: string[]; booked?: string[] };
+  return (await res.json()) as { blockouts?: string[]; pending?: string[]; booked?: string[] };
 }
 
 describeApi('Booth booking API', () => {
@@ -131,23 +137,22 @@ describeApi('Booth booking API', () => {
     expect(msg.toLowerCase()).toMatch(/not available|blocked/);
   });
 
-  test('should accept a second proposal on a day that already has bookings', async ({ request }) => {
+  test('should reject submissions on confirmed booked dates', async ({ request }) => {
     const now = new Date();
     const calendar = await fetchCalendar(request, now.getFullYear(), now.getMonth() + 1);
-    const bookedDay = calendar.booked?.find((d) => !calendar.blockouts?.includes(d));
+    const bookedDay = calendar.booked?.find(
+      (d) => !calendar.blockouts?.includes(d) && d >= manilaDateKey(1),
+    );
     if (!bookedDay) {
-      test.skip(true, 'No booked (non-blocked) days in current month');
+      test.skip(true, 'No confirmed booked days in current month');
       return;
     }
 
-    const id = uniqueTestId('double-book');
+    const id = uniqueTestId('booked-day');
     const result = await placeBoothBooking(request, buildPayload(bookedDay, id));
+    expect(result.status).toBeGreaterThanOrEqual(400);
     const msg = typeof result.body === 'string' ? result.body : String(result.body.message ?? '');
-    expect(
-      result.status,
-      `expected 200 on booked day ${bookedDay}; got ${result.status}: ${msg}`,
-    ).toBeLessThan(400);
-    expect(typeof result.body === 'object' ? result.body.short_code : '').toBeTruthy();
+    expect(msg.toLowerCase()).toMatch(/already booked|not available/);
   });
 
   test('should accept proposals on open future dates', async ({ request }) => {

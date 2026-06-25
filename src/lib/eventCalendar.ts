@@ -53,6 +53,7 @@ export function isDateSelectable(
   if (key < minDate) return false;
   if (calendar.blockouts.includes(key)) return false;
   if (calendar.pending.includes(key)) return false;
+  if (calendar.booked.includes(key)) return false;
   return true;
 }
 

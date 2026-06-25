@@ -3,6 +3,7 @@ import { QrCode, ImageIcon, Building2 } from 'lucide-react';
 import type { BoothBooking } from '../../types/domain';
 import { formatPhp } from '../../lib/money';
 import { boothAmountDue, resolveBoothGcashQr } from '../../lib/boothPayment';
+import { bookingQuotedTotal } from '../../lib/boothBookingEstimate';
 import { customerCanUploadProof } from '../../lib/boothBookingStatus';
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_BADGE } from '../../lib/orderStatus';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -29,6 +30,8 @@ export default function BoothPaymentPanel({ booking }: Props) {
   const { url: proofUrl } = usePaymentProofDisplayUrl(booking.paymentProofImage);
 
   const amountDue = boothAmountDue(booking);
+  const quotedTotal = bookingQuotedTotal(booking);
+  const isDeposit = quotedTotal != null && amountDue != null && amountDue < quotedTotal;
   const bp = settings.boothPayment;
   const showGcash =
     (booking.paymentMethod === 'gcash-qr' || booking.paymentMethod === 'gcash-or-bank') && bp.gcashEnabled;
@@ -78,7 +81,21 @@ export default function BoothPaymentPanel({ booking }: Props) {
       </div>
 
       <p className="font-display text-2xl font-bold text-kado-dark">{formatPhp(amountDue)}</p>
-      <p className="text-xs text-kado-dark/55">Amount due for reference {booking.shortCode}</p>
+      <p className="text-xs text-kado-dark/55">
+        {isDeposit ? (
+          <>
+            Deposit / reservation due now · Full quote {formatPhp(quotedTotal!)} · Ref {booking.shortCode}
+          </>
+        ) : (
+          <>Amount due for reference {booking.shortCode}</>
+        )}
+      </p>
+
+      {booking.paymentStatus === 'unpaid' && (showGcash || showBank) && (
+        <p className="text-xs text-kado-dark/55 leading-relaxed">
+          Pay {formatPhp(amountDue)} via {showGcash && showBank ? 'GCash or bank transfer' : showGcash ? 'GCash' : 'bank transfer'}, then upload your receipt screenshot.
+        </p>
+      )}
 
       {showGcash && gcashQr && (
         <button
@@ -128,7 +145,23 @@ export default function BoothPaymentPanel({ booking }: Props) {
       )}
 
       {booking.paymentProofImage && proofUrl && (
-        <img src={proofUrl} alt="Payment proof" className="w-full max-w-[200px] rounded-lg border border-kado-dark/10" />
+        <div className="flex flex-col sm:flex-row items-start gap-3">
+          <img src={proofUrl} alt="Payment proof" className="w-full sm:w-20 max-w-[200px] rounded-lg border border-kado-dark/10 object-cover" />
+          <div className="text-xs text-kado-dark/50 min-w-0">
+            <p className="font-bold text-kado-dark/70">Proof uploaded</p>
+            {booking.paymentProofUploadedAt && (
+              <p className="mt-0.5">
+                {new Date(booking.paymentProofUploadedAt).toLocaleString('en-PH', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </p>
+            )}
+            {booking.paymentStatus === 'proof_submitted' && (
+              <p className="mt-1 text-amber-700/80">Waiting for our team to verify payment.</p>
+            )}
+          </div>
+        </div>
       )}
 
       {error && <p className="text-xs text-red-600">{error}</p>}

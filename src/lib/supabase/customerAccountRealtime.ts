@@ -3,6 +3,7 @@ import { supabase } from './client';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useAuthStore } from '../../store/authStore';
+import { useEventCalendarStore } from '../../store/eventCalendarStore';
 
 let channel: RealtimeChannel | null = null;
 
@@ -15,6 +16,14 @@ function debounce(fn: () => void, ms: number) {
 }
 
 const refreshBookings = debounce(() => void useBoothBookingStore.getState().hydrateFromRemote(), 300);
+
+function invalidateCalendarFromPayload(payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) {
+  const cal = useEventCalendarStore.getState();
+  for (const row of [payload.new, payload.old]) {
+    const eventDate = row?.event_date;
+    if (typeof eventDate === 'string') cal.invalidateForDateKey(eventDate);
+  }
+}
 
 const refreshOrders = debounce(() => {
   const user = useAuthStore.getState().user;
@@ -32,7 +41,10 @@ export function startCustomerAccountRealtime(): void {
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'kk_booth_bookings' },
-      () => refreshBookings(),
+      (payload) => {
+        refreshBookings();
+        invalidateCalendarFromPayload(payload as { new?: Record<string, unknown>; old?: Record<string, unknown> });
+      },
     )
     .on(
       'postgres_changes',

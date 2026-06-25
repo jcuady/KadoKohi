@@ -9,6 +9,7 @@ type EventCalendarStore = {
   toggleBlockout: (dateKey: string, note?: string) => Promise<boolean>;
   setDateKind: (dateKey: string, kind: 'available' | 'blocked' | 'pending', note?: string) => Promise<void>;
   invalidateMonth: (year: number, month: number) => void;
+  invalidateForDateKey: (dateKey: string) => void;
   refreshMonth: (year: number, month: number) => Promise<EventCalendarMonth>;
 };
 
@@ -25,6 +26,11 @@ export const useEventCalendarStore = create<EventCalendarStore>((set, get) => ({
     const next = { ...get().cache };
     delete next[key];
     set({ cache: next });
+  },
+
+  invalidateForDateKey: (dateKey) => {
+    const [y, m] = dateKey.split('-').map(Number);
+    if (y && m) get().invalidateMonth(y, m);
   },
 
   refreshMonth: async (year, month) => {

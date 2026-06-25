@@ -59,7 +59,7 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
   const matchaPageCopy = useMatchaShowcaseStore((s) => s.pageCopy);
   const pageCopy = bookingKind === 'matcha-bar' ? matchaPageCopy : coffeePageCopy;
   const createBooking = useBoothBookingStore((s) => s.createBooking);
-  const loadMonth = useEventCalendarStore((s) => s.loadMonth);
+  const refreshMonth = useEventCalendarStore((s) => s.refreshMonth);
   const allPackages = useBoothCatalogStore((s) => s.packages);
   const allAddons = useBoothCatalogStore((s) => s.addons);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
@@ -110,8 +110,8 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
   useEffect(() => {
     if (!eventDate) return;
     const [y, m] = eventDate.split('-').map(Number);
-    void loadMonth(y, m);
-  }, [eventDate, loadMonth]);
+    void refreshMonth(y, m);
+  }, [eventDate, refreshMonth]);
 
   useEffect(() => {
     if (packageDefaulted.current || catalogPackages.length === 0) return;
@@ -213,9 +213,13 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
         return false;
       }
       const [y, m] = eventDate.split('-').map(Number);
-      const month = await loadMonth(y, m);
+      const month = await refreshMonth(y, m);
+      if (month.booked.includes(eventDate)) {
+        setError('That date is already booked. Please choose another day.');
+        return false;
+      }
       if (!isDateSelectable(eventDate, month)) {
-        setError('That date is blocked by our team. Please choose another day.');
+        setError('That date is not available. Please choose another day on the calendar.');
         return false;
       }
     }

@@ -12,6 +12,7 @@ import { useMerchStore } from '../../store/merchStore';
 import { useEventStore } from '../../store/eventStore';
 import { useEventFormStore } from '../../store/eventFormStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
+import { useEventCalendarStore } from '../../store/eventCalendarStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
@@ -88,7 +89,10 @@ const refresh = {
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
 };
 
-function onTableChange(table: OpsTable) {
+function onTableChange(
+  table: OpsTable,
+  payload?: { new?: Record<string, unknown>; old?: Record<string, unknown> },
+) {
   switch (table) {
     case 'kk_orders':
       refresh.orders();
@@ -127,6 +131,13 @@ function onTableChange(table: OpsTable) {
       refresh.eventForms();
       break;
     case 'kk_booth_bookings':
+      if (payload) {
+        const cal = useEventCalendarStore.getState();
+        for (const row of [payload.new, payload.old]) {
+          const eventDate = row?.event_date;
+          if (typeof eventDate === 'string') cal.invalidateForDateKey(eventDate);
+        }
+      }
       refresh.bookings();
       break;
     case 'kk_loyalty_rewards':
@@ -203,7 +214,8 @@ export function startOperationsRealtime(): void {
       filter
         ? { event: '*', schema: 'public', table, filter }
         : { event: '*', schema: 'public', table },
-      () => onTableChange(table),
+      (payload) =>
+        onTableChange(table, payload as { new?: Record<string, unknown>; old?: Record<string, unknown> }),
     );
   }
   channel.subscribe();

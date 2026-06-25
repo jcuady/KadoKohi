@@ -6,6 +6,7 @@ import { boothAmountDue } from '../lib/boothPayment';
 import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
+import { useEventCalendarStore } from './eventCalendarStore';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -34,6 +35,11 @@ async function patchBookingRemote(id: string, patch: Partial<BoothBooking>): Pro
   useBoothBookingStore.setState({
     bookings: store.bookings.map((b) => (b.id === id ? merged : b)),
   });
+  const cal = useEventCalendarStore.getState();
+  cal.invalidateForDateKey(current.eventDate);
+  if (merged.eventDate.slice(0, 10) !== current.eventDate.slice(0, 10)) {
+    cal.invalidateForDateKey(merged.eventDate);
+  }
 }
 
 export interface BoothBookingStore {

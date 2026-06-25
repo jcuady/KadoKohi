@@ -159,7 +159,9 @@ export default function AccountBoothBookings() {
                       )}
                       {amountDue != null && amountDue > 0 && booking.paymentStatus !== 'paid' && (
                         <span className="block text-sm font-bold text-kado-dark/70 mt-0.5">
-                          Due now: {formatPhp(amountDue)}
+                          {hasQuote && amountDue < displayEstimate.total
+                            ? `Deposit due: ${formatPhp(amountDue)}`
+                            : `Due now: ${formatPhp(amountDue)}`}
                         </span>
                       )}
                     </span>
