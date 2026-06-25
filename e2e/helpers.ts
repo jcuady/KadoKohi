@@ -144,8 +144,8 @@ export async function fillSignupForm(
     name: 'QA Tester',
     email: `qa+${uniqueTestId('signup')}@example.com`,
     phone: '9171234567',
-    password: 'password123',
-    confirm: 'password123',
+    password: 'TestPass1',
+    confirm: 'TestPass1',
     terms: true,
     ...overrides,
   };

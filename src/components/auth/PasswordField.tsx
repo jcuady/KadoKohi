@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 type PasswordFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   label: string;
   variant?: 'customer' | 'internal';
+  error?: string | null;
 };
 
 export default function PasswordField({
@@ -12,10 +13,12 @@ export default function PasswordField({
   id,
   variant = 'customer',
   className,
+  error,
   ...props
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const isInternal = variant === 'internal';
+  const errorId = id ? `${id}-error` : undefined;
 
   return (
     <div>
@@ -32,11 +35,15 @@ export default function PasswordField({
         <input
           id={id}
           type={visible ? 'text' : 'password'}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : props['aria-describedby']}
           className={cn(
             'w-full rounded-xl border px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 focus:border-kado-red transition-shadow',
             isInternal
               ? 'border-white/15 bg-[#232323] text-white placeholder:text-white/35'
-              : 'border-kado-dark/12 bg-white text-kado-dark placeholder:text-kado-dark/35',
+              : error
+                ? 'border-red-400 bg-white text-kado-dark placeholder:text-kado-dark/35'
+                : 'border-kado-dark/12 bg-white text-kado-dark placeholder:text-kado-dark/35',
             className,
           )}
           {...props}
@@ -53,6 +60,11 @@ export default function PasswordField({
           {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
+      {error ? (
+        <p id={errorId} role="alert" className="mt-1.5 text-xs font-medium text-red-600 leading-snug">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -25,12 +25,6 @@ export const SIGNUP_EMAIL_NEXT_STEPS = [
   },
 ] as const;
 
-export const SIGNUP_FORM_GUIDE = [
-  'Enter your name, email, and mobile number',
-  'We send a confirmation link to your email',
-  'Tap the link — you are signed in and ready to order',
-] as const;
-
 export const PASSWORD_RESET_SENT_STEPS = [
   'Open the reset email from Kado Kohi',
   'Choose a new password on the secure page',

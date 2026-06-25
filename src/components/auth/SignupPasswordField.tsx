@@ -14,13 +14,16 @@ type Props = {
   id?: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   disabled?: boolean;
+  error?: string | null;
 };
 
-export default function SignupPasswordField({ id: idProp, value, onChange, disabled }: Props) {
+export default function SignupPasswordField({ id: idProp, value, onChange, onBlur, disabled, error }: Props) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const descriptionId = `${id}-description`;
+  const errorId = `${id}-error`;
   const [visible, setVisible] = useState(false);
 
   const strength = useMemo(() => evaluatePasswordStrength(value), [value]);
@@ -38,14 +41,18 @@ export default function SignupPasswordField({ id: idProp, value, onChange, disab
         <div className="relative">
           <Input
             id={id}
-            className="h-auto rounded-xl border-kado-dark/12 bg-white py-3 pe-9 text-kado-dark shadow-none focus-visible:ring-kado-red/25"
+            className={cn(
+              'h-auto rounded-xl bg-white py-3 pe-9 text-kado-dark shadow-none focus-visible:ring-kado-red/25',
+              error ? 'border-red-400' : 'border-kado-dark/12',
+            )}
             placeholder="Password"
             type={visible ? 'text' : 'password'}
             autoComplete="new-password"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            aria-invalid={strengthScore < 4}
-            aria-describedby={descriptionId}
+            onBlur={onBlur}
+            aria-invalid={error || strengthScore < 4 ? true : undefined}
+            aria-describedby={error ? `${descriptionId} ${errorId}` : descriptionId}
             disabled={disabled}
             required
           />
@@ -100,6 +107,12 @@ export default function SignupPasswordField({ id: idProp, value, onChange, disab
           </li>
         ))}
       </ul>
+
+      {error ? (
+        <p id={errorId} role="alert" className="mt-2 text-xs font-medium text-red-600 leading-snug">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

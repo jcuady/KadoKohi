@@ -71,10 +71,10 @@ test.describe('Customer signup', () => {
     await expect(page.locator('#login-email')).toHaveValue('new.user@example.com');
   });
 
-  test('signup shows how sign-up works guide', async ({ page }) => {
+  test('signup page does not show the old how sign-up works guide', async ({ page }) => {
     await gotoAuth(page, '/auth/signup');
-    await expect(page.getByText(/how sign-up works/i)).toBeVisible();
-    await expect(page.getByText(/confirmation link to your email/i)).toBeVisible();
+    await expect(page.getByText(/how sign-up works/i)).toHaveCount(0);
+    await expect(page.getByText(/confirmation link to this address after you create/i)).toBeVisible();
   });
 
   test('email confirm page shows error when opened without a token', async ({ page }) => {

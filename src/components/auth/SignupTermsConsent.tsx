@@ -4,15 +4,22 @@ type Props = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   id?: string;
+  error?: string | null;
 };
 
-export default function SignupTermsConsent({ checked, onChange, id = 'signup-terms' }: Props) {
+export default function SignupTermsConsent({ checked, onChange, id = 'signup-terms', error }: Props) {
+  const errorId = `${id}-error`;
   return (
-    <div
-      className={`rounded-xl border px-3 py-3 sm:px-3.5 transition-colors touch-manipulation ${
-        checked ? 'border-kado-red/25 bg-kado-red/[0.03]' : 'border-kado-dark/12 bg-kado-offwhite/40'
-      }`}
-    >
+    <div>
+      <div
+        className={`rounded-xl border px-3 py-3 sm:px-3.5 transition-colors touch-manipulation ${
+          error
+            ? 'border-red-400 bg-red-50/40'
+            : checked
+              ? 'border-kado-red/25 bg-kado-red/[0.03]'
+              : 'border-kado-dark/12 bg-kado-offwhite/40'
+        }`}
+      >
       <label
         htmlFor={id}
         className="flex items-start gap-3 cursor-pointer select-none min-h-[44px]"
@@ -24,7 +31,8 @@ export default function SignupTermsConsent({ checked, onChange, id = 'signup-ter
           onChange={(e) => onChange(e.target.checked)}
           className="mt-1 h-[18px] w-[18px] sm:h-4 sm:w-4 shrink-0 rounded border-kado-dark/25 text-kado-red focus:ring-2 focus:ring-kado-red/30 focus:ring-offset-0"
           required
-          aria-describedby={`${id}-desc`}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-desc ${errorId}` : `${id}-desc`}
         />
         <span id={`${id}-desc`} className="text-xs sm:text-[13px] text-kado-dark/70 leading-relaxed break-words">
           I have read and agree to the{' '}
@@ -51,6 +59,12 @@ export default function SignupTermsConsent({ checked, onChange, id = 'signup-ter
           described there.
         </span>
       </label>
+      </div>
+      {error ? (
+        <p id={errorId} role="alert" className="mt-1.5 text-xs font-medium text-red-600 leading-snug">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
