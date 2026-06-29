@@ -153,7 +153,7 @@ export default function BaristaLayout() {
             This barista account has no branch assigned. Ask an administrator to set your branch under Admin → Users.
           </div>
         )}
-        <div className="dash-main-body min-h-0 flex-1 overflow-auto">
+        <div className="dash-main-body min-h-0 flex-1 overflow-auto" data-scroll-top>
           <Outlet />
         </div>
       </div>

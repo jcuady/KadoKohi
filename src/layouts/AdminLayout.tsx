@@ -440,7 +440,7 @@ export default function AdminLayout() {
             Admin · Operations
           </span>
         </header>
-        <div className="dash-main-body flex-1 overflow-auto p-4 md:p-8">
+        <div className="dash-main-body flex-1 overflow-auto p-4 md:p-8" data-scroll-top>
           <Outlet />
         </div>
       </div>

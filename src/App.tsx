@@ -29,6 +29,7 @@ import BookBooth from './pages/BookBooth';
 import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
+import ScrollToTop from './components/ScrollToTop';
 import PublicDocumentTheme from './components/PublicDocumentTheme';
 import SiteCookieConsent from './components/SiteCookieConsent';
 
@@ -93,6 +94,7 @@ export default function App() {
     <BrowserRouter>
       <PublicDocumentTheme />
       <RouteSeo />
+      <ScrollToTop />
       <SiteCookieConsent />
       <Routes>
         {/* Standalone utility pages */}
