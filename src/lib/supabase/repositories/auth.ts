@@ -9,6 +9,8 @@ import {
   recoverStaleAuthSession,
 } from '../authSession';
 
+export type ResetScope = 'all' | 'transactional' | 'orders' | 'bookings' | 'loyalty_activity' | 'customers';
+
 function parseEdgePayload(data: unknown): void {
   if (data && typeof data === 'object' && 'error' in data && data.error) {
     throw new Error(String((data as { error: unknown }).error));
@@ -176,11 +178,17 @@ export const authRepo = {
     });
   },
   async resetAllData(confirmPhrase: string) {
+    return this.resetData('all', confirmPhrase);
+  },
+  async resetData(scope: ResetScope, confirmPhrase: string) {
     return invokeAdminUsers<{
       success: boolean;
+      scope: string;
       deleted: Record<string, number | boolean>;
+      usersRemoved?: number;
     }>({
-      action: 'reset_all_data',
+      action: 'reset_scope',
+      scope,
       confirmPhrase,
     });
   },

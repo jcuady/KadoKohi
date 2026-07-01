@@ -21,6 +21,7 @@ Cursor loads `.cursor/rules/project-context.mdc` automatically in every chat.
 | Internal login | `/management-portal` only (not on customer `/auth/login`) |
 | Auth | Supabase Auth for all roles; `VITE_SUPABASE_*` + `VITE_SITE_URL` on Vercel; Resend SMTP in Supabase dashboard for auth emails |
 | Ground truth | `src/App.tsx` → `src/types/domain.ts` → `supabase/migrations/` → this doc |
+| Supabase MCP | **Always** `plugin-supabase-supabase` with `project_id=idwtlujcdfnnndxmlaco` — never `user-supabase` |
 
 ## Verify changes
 
@@ -29,7 +30,7 @@ npm run lint
 npm run build
 ```
 
-Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills_branch.py`
+Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills_branch.py`, `scripts/probe_storage_buckets.py`
 
 ## Key entry points
 
@@ -51,6 +52,7 @@ Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills
 
 ## Production
 
-- **Supabase:** `idwtlujcdfnnndxmlaco`
+- **Supabase:** `idwtlujcdfnnndxmlaco` — `https://idwtlujcdfnnndxmlaco.supabase.co`
+- **Supabase MCP:** `plugin-supabase-supabase` + `project_id=idwtlujcdfnnndxmlaco` for all DDL/SQL
 - **Site:** https://www.kadokohi.com
 - **Super admin:** `admin@kadokohi.com`

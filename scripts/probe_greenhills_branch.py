@@ -65,6 +65,29 @@ def rpc(name: str, args: dict) -> object:
     return data
 
 
+def rpc_as(token: str, name: str, args: dict) -> None:
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/rpc/{name}",
+        data=json.dumps(args).encode(),
+        headers={
+            "apikey": ANON_KEY,
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode()
+        try:
+            body = json.loads(raw)
+        except json.JSONDecodeError:
+            body = raw
+        raise RuntimeError(f"RPC {name} failed ({e.code}): {body}") from e
+
+
 def item_line() -> dict:
     return {
         "id": str(uuid.uuid4()),
@@ -88,6 +111,39 @@ def place(channel: str, *, table_id: str | None = None, guest_name: str | None =
         "items": [item_line()],
     }
     return rpc("kk_place_order", {"payload": payload})
+
+
+def password_token(email: str, password: str) -> str:
+    status, data = api(
+        "POST",
+        "/auth/v1/token?grant_type=password",
+        {"email": email, "password": password},
+    )
+    if status != 200 or not isinstance(data, dict) or not data.get("access_token"):
+        raise RuntimeError(f"Auth failed for {email} ({status}): {data}")
+    return data["access_token"]
+
+
+def rest_get_as(token: str, table: str, query: str) -> tuple[int, list]:
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/{table}?{query}",
+        headers={
+            "apikey": ANON_KEY,
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read()
+            return resp.status, json.loads(raw) if raw else []
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode()
+        try:
+            return e.code, json.loads(raw)
+        except json.JSONDecodeError:
+            return e.code, []
 
 
 def main() -> int:
@@ -118,17 +174,73 @@ def main() -> int:
         ("online", lambda: place("online", guest_name="Greenhills Online Test")),
     ]
 
+    placed_ids: list[str] = []
     for label, fn in scenarios:
         try:
             result = fn()
             order_id = result.get("id") if isinstance(result, dict) else None
             short = result.get("short_code") if isinstance(result, dict) else None
+            if order_id:
+                placed_ids.append(order_id)
             print(f"OK order {label}:", short or order_id, result)
             if order_id:
                 tracked = rpc("kk_track_order", {"order_id": order_id})
                 print(f"  track {label}:", tracked)
         except Exception as exc:  # noqa: BLE001
             failures.append(f"{label}: {exc}")
+
+    # ponytail: one Greenhills order must not leak to Marikina staff/barista REST scope
+    probe_id = placed_ids[0] if placed_ids else None
+    if probe_id:
+        password = "KadoKohi2026!"
+        try:
+            staff_tok = password_token("staff@kadokohi.com", password)
+            barista_tok = password_token("barista@kadokohi.com", password)
+            admin_tok = password_token("admin@kadokohi.com", password)
+            for role, tok in (("staff", staff_tok), ("barista", barista_tok)):
+                status, rows = rest_get_as(
+                    tok,
+                    "kk_orders",
+                    f"select=id,branch_id&id=eq.{probe_id}",
+                )
+                if status == 200 and isinstance(rows, list) and len(rows) == 0:
+                    print(f"OK isolate: {role} cannot read Greenhills order by id")
+                else:
+                    failures.append(f"isolate: {role} saw Greenhills order ({status}) {rows}")
+            status, rows = rest_get_as(
+                admin_tok,
+                "kk_orders",
+                f"select=id,branch_id&id=eq.{probe_id}",
+            )
+            if status == 200 and isinstance(rows, list) and len(rows) == 1:
+                print("OK isolate: admin can read Greenhills order")
+            else:
+                failures.append(f"isolate: admin missing Greenhills order ({status}) {rows}")
+            try:
+                gh_staff_tok = password_token("staff-greenhills@kadokohi.com", password)
+                status, rows = rest_get_as(
+                    gh_staff_tok,
+                    "kk_orders",
+                    f"select=id,branch_id&id=eq.{probe_id}",
+                )
+                if (
+                    status == 200
+                    and isinstance(rows, list)
+                    and len(rows) == 1
+                    and rows[0].get("branch_id") == BRANCH_ID
+                ):
+                    print("OK scope: Greenhills staff can read Greenhills order")
+                else:
+                    failures.append(
+                        f"scope: Greenhills staff missing order ({status}) {rows}"
+                    )
+            except Exception as exc:  # noqa: BLE001
+                failures.append(f"scope: Greenhills staff login/read failed: {exc}")
+            for oid in placed_ids:
+                rpc_as(admin_tok, "kk_admin_delete_order", {"p_order_id": oid})
+            print(f"OK cleanup: deleted {len(placed_ids)} probe order(s)")
+        except Exception as exc:  # noqa: BLE001
+            failures.append(f"isolate/cleanup: {exc}")
 
     if failures:
         print("\nFAILED:")

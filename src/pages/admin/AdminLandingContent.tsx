@@ -5,13 +5,13 @@ import {
   useLandingDraftContent,
   type AccentHeadlineCopy,
 } from '../../store/landingContentStore';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
 import LandingEditorToolbar from '../../components/admin/LandingEditorToolbar';
 import LandingCmsSectionCard from '../../components/admin/LandingCmsSectionCard';
 import CmsReorderList from '../../components/admin/CmsReorderList';
 import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
-import { LANDING_CMS_TABS } from '../../lib/landingCmsTabs';
+import { LANDING_CMS_TABS, type LandingTabId } from '../../lib/landingCmsTabs';
 import CmsTextField from '../../components/admin/CmsTextField';
 import type { CmsText } from '../../lib/cmsTypography';
 import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
@@ -20,6 +20,12 @@ const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', '
 const HERO_CARD_SLOTS = 4;
 const TRUSTED_BRAND_SLOTS = 5;
 const SPONSOR_SLOTS = 8;
+
+function cmsTab(id: LandingTabId) {
+  const tab = LANDING_CMS_TABS.find((item) => item.id === id);
+  if (!tab) throw new Error(`Unknown landing CMS tab: ${id}`);
+  return tab;
+}
 
 export default function AdminLandingContent() {
   const content = useLandingDraftContent();
@@ -45,6 +51,7 @@ export default function AdminLandingContent() {
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
   const updateFaq = useLandingContentStore((s) => s.updateFaq);
   const updateFaqItem = useLandingContentStore((s) => s.updateFaqItem);
+  const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const categories = useMenuStore((s) => s.categories);
   const allProducts = useMenuStore((s) => s.products);
   const menuDataSource = useMenuStore((s) => s.dataSource);
@@ -70,18 +77,19 @@ export default function AdminLandingContent() {
     writeLandingPreviewDraft(draft ?? published);
   };
 
-  const onPickImage = async (onDone: (dataUrl: string) => void, fileList: FileList | null) => {
+  const onPickImage = async (
+    prefix: string,
+    onDone: (url: string) => void,
+    fileList: FileList | null,
+  ) => {
     const file = fileList?.[0];
     if (!file) return;
     setUploadError(null);
-    const res = await readImageDataUrl(file);
-    switch (res.ok) {
-      case true:
-        onDone(res.dataUrl);
-        break;
-      case false:
-        setUploadError(res.error);
-        break;
+    try {
+      const url = await uploadCmsImageFile(file, prefix);
+      onDone(url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Could not upload image.');
     }
   };
 
@@ -124,7 +132,7 @@ export default function AdminLandingContent() {
       </nav>
 
       <div className="mt-6 space-y-6">
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[0]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('hero')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero — Labels & CTAs</h2>
@@ -194,7 +202,7 @@ export default function AdminLandingContent() {
                     value={slide.image}
                     onChange={(v) => updateHeroSlide(index, { image: v })}
                     onPickFile={(files) =>
-                      onPickImage((dataUrl) => updateHeroSlide(index, { image: dataUrl }), files)
+                      onPickImage(`landing/hero/slides/${index}`, (url) => updateHeroSlide(index, { image: url }), files)
                     }
                   />
                   <PlainField
@@ -225,7 +233,11 @@ export default function AdminLandingContent() {
                           value={card.src}
                           onChange={(v) => updateHeroCard(index, ci, { src: v })}
                           onPickFile={(files) =>
-                            onPickImage((dataUrl) => updateHeroCard(index, ci, { src: dataUrl }), files)
+                            onPickImage(
+                              `landing/hero/cards/${index}-${ci}`,
+                              (url) => updateHeroCard(index, ci, { src: url }),
+                              files,
+                            )
                           }
                         />
                       </div>
@@ -239,7 +251,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[1]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('story')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Brand story (SEO intro)</h2>
@@ -313,7 +325,7 @@ export default function AdminLandingContent() {
                   value={pillar.imageUrl}
                   onChange={(v) => updateStorySeoPillar(pi, { imageUrl: v })}
                   onPickFile={(files) =>
-                    onPickImage((dataUrl) => updateStorySeoPillar(pi, { imageUrl: dataUrl }), files)
+                    onPickImage(`landing/story/pillars/${pi}`, (url) => updateStorySeoPillar(pi, { imageUrl: url }), files)
                   }
                 />
                 <PlainField
@@ -328,7 +340,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[2]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('menu-seo')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-2">Menu SEO pillars</h2>
@@ -396,7 +408,7 @@ export default function AdminLandingContent() {
                   value={pillar.imageUrl}
                   onChange={(v) => updateMenuSeoPillar(pi, { imageUrl: v })}
                   onPickFile={(files) =>
-                    onPickImage((dataUrl) => updateMenuSeoPillar(pi, { imageUrl: dataUrl }), files)
+                    onPickImage(`landing/menu-seo/pillars/${pi}`, (url) => updateMenuSeoPillar(pi, { imageUrl: url }), files)
                   }
                 />
                 <PlainField
@@ -411,7 +423,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[3]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('featured')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Featured section</h2>
@@ -497,13 +509,13 @@ export default function AdminLandingContent() {
                   updateFeatured({ cardImageOverrides: next });
                 }}
                 onPickFile={(files) =>
-                  onPickImage((dataUrl) => {
+                  onPickImage(`landing/featured/cards/${slot}`, (url) => {
                     const next: [string, string, string] = [...content.featured.cardImageOverrides] as [
                       string,
                       string,
                       string,
                     ];
-                    next[slot] = dataUrl;
+                    next[slot] = url;
                     updateFeatured({ cardImageOverrides: next });
                   }, files)
                 }
@@ -515,7 +527,45 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[4]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('mix-match')} onUploadError={setUploadError}>
+          <div className="space-y-6">
+        <section className="rounded-2xl dash-card border p-5 md:p-6">
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match collab</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <CmsField label="Badge" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
+            <CmsField label="Title top" value={content.schedule.titleTop} onChange={(v) => updateSchedule({ titleTop: v })} />
+            <CmsField label="Title bottom" value={content.schedule.titleBottom} onChange={(v) => updateSchedule({ titleBottom: v })} />
+            <CmsField
+              label="Description"
+              value={content.schedule.description}
+              onChange={(v) => updateSchedule({ description: v })}
+              multiline
+            />
+            <CmsField label="Offer badge" value={content.schedule.offerBadge} onChange={(v) => updateSchedule({ offerBadge: v })} />
+            <CmsField label="Offer note" value={content.schedule.offerNote} onChange={(v) => updateSchedule({ offerNote: v })} />
+            <CmsField label="Pastries CTA" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
+            <CmsField
+              label="Featured drink CTA"
+              value={content.schedule.featuredCtaLabel}
+              onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
+            />
+            <PlainField
+              label="Featured product id (menu)"
+              value={content.schedule.featuredProductId}
+              onChange={(v) => updateSchedule({ featuredProductId: v })}
+            />
+            <ImageUrlField
+              label="Poster image"
+              value={content.schedule.posterImageUrl}
+              onChange={(v) => updateSchedule({ posterImageUrl: v })}
+              onPickFile={(files) => onPickImage('landing/mix-match/poster', (url) => updateSchedule({ posterImageUrl: url }), files)}
+            />
+          </div>
+        </section>
+          </div>
+        </LandingCmsSectionCard>
+
+        <LandingCmsSectionCard tab={cmsTab('ordering')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">How to order</h2>
@@ -563,7 +613,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[5]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('events')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Events block</h2>
@@ -575,7 +625,7 @@ export default function AdminLandingContent() {
               label="Cover image override (optional)"
               value={content.events.coverImageOverride}
               onChange={(v) => updateEvents({ coverImageOverride: v })}
-              onPickFile={(files) => onPickImage((dataUrl) => updateEvents({ coverImageOverride: dataUrl }), files)}
+              onPickFile={(files) => onPickImage('landing/events/cover', (url) => updateEvents({ coverImageOverride: url }), files)}
             />
             <CmsField
               label="No-event message"
@@ -592,7 +642,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[7]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('branches')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Branches strip</h2>
@@ -617,7 +667,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[6]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('testimonials')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Testimonials</h2>
@@ -654,7 +704,7 @@ export default function AdminLandingContent() {
                     value={brand.imageUrl ?? ''}
                     onChange={(v) => updateTrustedBrand(i, { imageUrl: v })}
                     onPickFile={(files) =>
-                      onPickImage((dataUrl) => updateTrustedBrand(i, { imageUrl: dataUrl }), files)
+                      onPickImage(`landing/testimonials/brands/${i}`, (url) => updateTrustedBrand(i, { imageUrl: url }), files)
                     }
                   />
                 </div>
@@ -693,7 +743,9 @@ export default function AdminLandingContent() {
                   label="Avatar image"
                   value={t.avatar}
                   onChange={(v) => updateTestimonialItem(ti, { avatar: v })}
-                  onPickFile={(files) => onPickImage((dataUrl) => updateTestimonialItem(ti, { avatar: dataUrl }), files)}
+                  onPickFile={(files) =>
+                    onPickImage(`landing/testimonials/avatars/${ti}`, (url) => updateTestimonialItem(ti, { avatar: url }), files)
+                  }
                 />
               </div>
             ))}
@@ -702,7 +754,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[8]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('faq')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">FAQ</h2>
@@ -750,7 +802,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
 
-        <LandingCmsSectionCard tab={LANDING_CMS_TABS[9]} onUploadError={setUploadError}>
+        <LandingCmsSectionCard tab={cmsTab('kado-circle')} onUploadError={setUploadError}>
           <div className="space-y-6">
         <section className="rounded-2xl dash-card border p-5 md:p-6">
           <h2 className="font-display font-bold text-xl dash-heading mb-4">Kado Circle</h2>
@@ -816,7 +868,7 @@ export default function AdminLandingContent() {
                     value={sponsor.imageUrl ?? ''}
                     onChange={(v) => updateKadoCircleSponsor(i, { imageUrl: v })}
                     onPickFile={(files) =>
-                      onPickImage((dataUrl) => updateKadoCircleSponsor(i, { imageUrl: dataUrl }), files)
+                      onPickImage(`landing/kado-circle/sponsors/${i}`, (url) => updateKadoCircleSponsor(i, { imageUrl: url }), files)
                     }
                   />
                 </div>

@@ -2,8 +2,14 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Event, EventRegistration } from '../../types/domain';
 import { useEventStore } from '../../store/eventStore';
 import { useBranchStore } from '../../store/branchStore';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
-import { eventDurationLabel, eventImages, signupClosesBeforeEventStart } from '../../lib/eventTiming';
+import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
+import { newId } from '../../lib/id';
+import {
+  eventDurationLabel,
+  eventImages,
+  signupClosesBeforeEventStart,
+  signupDaysBeforeFromCloses,
+} from '../../lib/eventTiming';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { useEventFormStore } from '../../store/eventFormStore';
 import EventFormBuilder from '../../components/admin/EventFormBuilder';
@@ -118,7 +124,7 @@ export default function AdminEvents() {
       signupEnabled: evt.signupEnabled ?? false,
       signupOpensAt: toLocalDatetime(evt.signupOpensAt),
       signupClosesAt: toLocalDatetime(evt.signupClosesAt),
-      signupDaysBefore: '1',
+      signupDaysBefore: String(signupDaysBeforeFromCloses(evt.startsAt, evt.signupClosesAt)),
       maxSignups: evt.maxSignups != null ? String(evt.maxSignups) : '',
       signupFormId: evt.signupFormId ?? '',
     });
@@ -146,11 +152,12 @@ export default function AdminEvents() {
       return;
     }
     setImageError('');
-    const result = await readImageDataUrl(file);
-    if ('dataUrl' in result) {
-      setForm((f) => ({ ...f, images: [...f.images, result.dataUrl] }));
-    } else {
-      setImageError(result.error);
+    try {
+      const eventKey = editingId ?? newId();
+      const url = await uploadCmsImageFile(file, `events/${eventKey}/${form.images.length}`);
+      setForm((f) => ({ ...f, images: [...f.images, url] }));
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Could not upload image.');
     }
   };
 

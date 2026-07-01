@@ -3,7 +3,8 @@ import CmsTextField from './CmsTextField';
 import { boothChipKey, type BoothPageCopy } from '../../lib/boothPageContent';
 import type { BookingShowcaseMedia } from '../../types/domain';
 import type { CmsText } from '../../lib/cmsTypography';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
 
 type MediaForm = {
   title: string;
@@ -38,6 +39,7 @@ export default function BoothPageContentForm({
   const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [mediaForm, setMediaForm] = useState<MediaForm>(EMPTY_MEDIA_FORM);
+  const [mediaUploadError, setMediaUploadError] = useState('');
 
   const sortedMedia = useMemo(() => [...media].sort((a, b) => a.order - b.order), [media]);
 
@@ -160,7 +162,41 @@ export default function BoothPageContentForm({
             <h3 className="font-display text-xl font-bold dash-heading">{editingMediaId ? 'Edit Media' : 'New Media'}</h3>
             <Field label="Title" value={mediaForm.title} onChange={(v) => setMediaForm((s) => ({ ...s, title: v }))} required />
             <Field label="Caption" value={mediaForm.caption} onChange={(v) => setMediaForm((s) => ({ ...s, caption: v }))} />
-            <Field label="Image URL" value={mediaForm.image} onChange={(v) => setMediaForm((s) => ({ ...s, image: v }))} required />
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Image URL</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={mediaForm.image}
+                  required
+                  onChange={(e) => setMediaForm((s) => ({ ...s, image: e.target.value }))}
+                  placeholder="/path, https://…, or upload"
+                  className="flex-1 min-w-0 rounded-xl dash-input border px-4 py-2.5 text-sm"
+                />
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 shrink-0">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      setMediaUploadError('');
+                      const key = editingMediaId ?? 'new';
+                      void uploadCmsImageFile(file, `booth/showcase/${key}`)
+                        .then((url) => setMediaForm((s) => ({ ...s, image: url })))
+                        .catch((err) =>
+                          setMediaUploadError(err instanceof Error ? err.message : 'Could not upload image.'),
+                        );
+                    }}
+                  />
+                </label>
+              </div>
+              {mediaUploadError ? <p className="mt-1 text-xs text-red-600">{mediaUploadError}</p> : null}
+            </div>
             <label className="text-xs dash-muted flex items-center gap-2">
               <input type="checkbox" checked={mediaForm.visible} onChange={(e) => setMediaForm((s) => ({ ...s, visible: e.target.checked }))} />
               Visible

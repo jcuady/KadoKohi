@@ -561,7 +561,7 @@ export const orderingRepo = {
     };
   },
   async upsertMerchCategory(c: MerchCategory) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_merch_categories').upsert({
       id: c.id,
       name: c.name,
@@ -571,12 +571,12 @@ export const orderingRepo = {
     if (error) throw error;
   },
   async deleteMerchCategory(id: string) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_merch_categories').delete().eq('id', id);
     if (error) throw error;
   },
   async upsertMerchProduct(p: MerchProduct) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_merch_products').upsert({
       id: p.id,
       category_id: p.categoryId,
@@ -592,7 +592,7 @@ export const orderingRepo = {
     if (error) throw error;
   },
   async deleteMerchProduct(id: string) {
-    if (!supabase) return;
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_merch_products').delete().eq('id', id);
     if (error) throw error;
   },
@@ -1211,6 +1211,40 @@ export const orderingRepo = {
     return `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   },
 
+  /** Upload CMS image (landing, events, booth, pastries) to public storage; returns HTTPS URL. */
+  async uploadCmsImage(file: File, path: string): Promise<string> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const safePath = path.replace(/^\/+/, '').trim();
+    if (!safePath) throw new Error('Storage path is required for CMS image upload.');
+
+    const prepared = await prepareMenuProductImage(file);
+    if (prepared.ok === false) throw new Error(prepared.error);
+    const uploadFile = prepared.file;
+
+    if (uploadFile.size > MENU_PRODUCT_IMAGE_MAX_BYTES) {
+      throw new Error(menuImageUploadSizeError(uploadFile.size));
+    }
+
+    const { error } = await supabase.storage.from('kado-cms-images').upload(safePath, uploadFile, {
+      upsert: true,
+      contentType: uploadFile.type || 'image/jpeg',
+      cacheControl: '31536000',
+    });
+    if (error) {
+      if (/Bucket not found|storage/i.test(error.message)) {
+        throw new Error('CMS image storage is not configured. Run migration 0080_cms_images_storage.');
+      }
+      if (/file size|too large|payload|413|entity too large/i.test(error.message)) {
+        throw new Error(menuImageUploadSizeError(uploadFile.size));
+      }
+      throw error;
+    }
+    const { data } = supabase.storage.from('kado-cms-images').getPublicUrl(safePath);
+    const url = data.publicUrl;
+    if (!url) throw new Error('Could not get public URL for CMS image.');
+    return `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  },
+
   /** Upload shop GCash QR to public storage; returns HTTPS URL saved in kk_app_settings.gcash_qr_image. */
   async uploadGcashShopQr(file: File): Promise<string> {
     if (!supabase) throw new Error('Supabase is not configured.');
@@ -1251,14 +1285,8 @@ export const orderingRepo = {
   },
   async upsertLandingContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .update({ landing_content: content })
-      .eq('id', true)
-      .select('id')
-      .maybeSingle();
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, landing_content: content });
     if (error) throw error;
-    if (!data) throw new Error('Homepage settings row not found (kk_app_settings.id = true).');
   },
   async fetchBoothPageContent(): Promise<unknown | null> {
     if (!supabase) return null;
@@ -1315,6 +1343,25 @@ export const orderingRepo = {
   async upsertCareersContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, careers_content: content });
+    if (error) throw error;
+  },
+  async fetchPastriesContent(): Promise<unknown | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('kk_app_settings')
+      .select('pastries_content')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') return null;
+      return null;
+    }
+    if (!data) return null;
+    return (data as { pastries_content?: unknown }).pastries_content ?? null;
+  },
+  async upsertPastriesContent(content: unknown) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_app_settings').upsert({ id: true, pastries_content: content });
     if (error) throw error;
   },
   async submitCareerApplication(input: {

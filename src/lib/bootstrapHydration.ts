@@ -4,6 +4,7 @@ import { useBoothCatalogStore } from '../store/boothCatalogStore';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useBranchStore } from '../store/branchStore';
 import { useCareersStore } from '../store/careersStore';
+import { usePastriesContentStore } from '../store/pastriesContentStore';
 import { useEventFormStore } from '../store/eventFormStore';
 import { useEventStore } from '../store/eventStore';
 import { useLandingContentStore } from '../store/landingContentStore';
@@ -73,6 +74,12 @@ export function hydrateCareers(): Promise<void> {
   });
 }
 
+export function hydratePastries(): Promise<void> {
+  return runOnce('pastries', async () => {
+    await usePastriesContentStore.getState().hydrateFromRemote();
+  });
+}
+
 export function hydrateEvents(): Promise<void> {
   return runOnce('events', async () => {
     await Promise.all([
@@ -128,6 +135,7 @@ export function hydrateForPublicPath(pathname: string): void {
   if (pathname.startsWith('/merch')) void hydrateMerch();
   if (pathname.startsWith('/blog')) void hydrateBlog();
   if (pathname === '/careers') void hydrateCareers();
+  if (pathname.startsWith('/pastries')) void hydratePastries();
   if (pathname.startsWith('/events')) void hydrateEvents();
   if (pathname.startsWith('/book/coffee-cart') || pathname === '/book/booth') void hydrateBookingCoffee();
   if (pathname.startsWith('/book/matcha-bar')) void hydrateBookingMatcha();

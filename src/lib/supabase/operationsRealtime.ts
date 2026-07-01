@@ -20,6 +20,7 @@ import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useBlogStore } from '../../store/blogStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
+import { usePastriesContentStore } from '../../store/pastriesContentStore';
 import { useAuthStore } from '../../store/authStore';
 import { orderScopeForUser } from '../orderFetchScope';
 
@@ -77,6 +78,7 @@ const refresh = {
     void useMatchaShowcaseStore.getState().hydrateFromRemote();
     void useBoothCatalogStore.getState().hydrateFromRemote();
     void useCareersStore.getState().hydrateFromRemote();
+    void usePastriesContentStore.getState().hydrateFromRemote();
   }, 300),
   audit: debounce(() => void useAuditStore.getState().refresh(), 300),
   promos: debounce(() => void usePromoStore.getState().fetchAll(), 300),
@@ -175,6 +177,7 @@ export async function refreshOperationsData(): Promise<void> {
     useBoothShowcaseStore.getState().hydrateFromRemote(),
     useMatchaShowcaseStore.getState().hydrateFromRemote(),
     useCareersStore.getState().hydrateFromRemote(),
+    usePastriesContentStore.getState().hydrateFromRemote(),
     useBoothCatalogStore.getState().hydrateFromRemote(),
     useBlogStore.getState().hydrateFromRemote(),
     useLoyaltyStore.getState().hydrateFromRemote(),

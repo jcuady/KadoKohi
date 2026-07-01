@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '../../lib/utils';
 import BoothPageContentForm from '../../components/admin/BoothPageContentForm';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
@@ -13,8 +13,15 @@ export default function AdminBoothContent() {
   const coffee = useBoothShowcaseStore();
   const matcha = useMatchaShowcaseStore();
   const active = tab === 'coffee-cart' ? coffee : matcha;
+  const hydrated = tab === 'coffee-cart' ? coffee.hydrated : matcha.hydrated;
+
+  useEffect(() => {
+    void coffee.hydrateFromRemote();
+    void matcha.hydrateFromRemote();
+  }, [coffee.hydrateFromRemote, matcha.hydrateFromRemote]);
 
   const handlePublish = async () => {
+    if (!hydrated) return;
     setSavedMsg('');
     try {
       await active.saveToRemote();
@@ -37,10 +44,10 @@ export default function AdminBoothContent() {
         <button
           type="button"
           onClick={() => void handlePublish()}
-          disabled={active.saving}
+          disabled={active.saving || !hydrated}
           className="shrink-0 rounded-xl bg-kado-red text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-60"
         >
-          {active.saving ? 'Publishing…' : tab === 'coffee-cart' ? 'Publish coffee cart' : 'Publish matcha bar'}
+          {active.saving ? 'Publishing…' : !hydrated ? 'Loading…' : tab === 'coffee-cart' ? 'Publish coffee cart' : 'Publish matcha bar'}
         </button>
       </div>
 
@@ -77,6 +84,9 @@ export default function AdminBoothContent() {
         </a>
       </p>
 
+      {!hydrated ? (
+        <p className="mb-4 text-sm dash-muted">Loading page content from the database…</p>
+      ) : null}
       {active.saveError ? <p className="mb-4 text-sm text-red-600 font-medium">{active.saveError}</p> : null}
       {savedMsg ? <p className="mb-4 text-sm text-emerald-700 font-medium">{savedMsg}</p> : null}
 

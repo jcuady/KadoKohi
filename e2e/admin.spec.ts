@@ -27,6 +27,7 @@ const ADMIN_ROUTES = [
   '/admin/landing',
   '/admin/blog',
   '/admin/careers',
+  '/admin/pastries',
 ];
 
 test('admin can sign in via the internal portal', async ({ page }) => {
@@ -86,11 +87,11 @@ test('booth bookings calendar sidebar filters and day modal', async ({ page }) =
   await internalLogin(page, 'admin');
   await page.goto('/admin/booth-bookings');
 
-  await expect(page.getByText(/availability calendar/i)).toBeVisible();
+  await expect(page.getByText('Availability calendar', { exact: true })).toBeVisible();
   await expect(page.getByLabel(/search bookings/i)).toBeVisible();
 
-  const serviceFilter = page.locator('label').filter({ hasText: /^Service$/i }).locator('select');
-  await expect(serviceFilter).toBeVisible();
+  const serviceFilter = page.locator('label').filter({ has: page.getByText('Service', { exact: true }) }).locator('select');
+  await expect(serviceFilter).toBeVisible({ timeout: 15000 });
   await serviceFilter.selectOption('coffee-cart');
 
   const openDay = page.locator('button[aria-label*="available"], button[aria-label*="pending"], button[aria-label*="blocked"], button[aria-label*="booked"]').first();

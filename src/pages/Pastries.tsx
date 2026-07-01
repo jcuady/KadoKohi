@@ -9,6 +9,8 @@ import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { PASTRIES_PAGE, PASTRIES_ACCENT } from '../content/pastriesPage';
+import { hydratePastries } from '../lib/bootstrapHydration';
+import { usePastriesContentStore } from '../store/pastriesContentStore';
 import Skeleton from '../components/ui/Skeleton';
 import MenuProductImage from '../components/catalog/MenuProductImage';
 
@@ -17,10 +19,13 @@ export default function Pastries() {
   const products = useMenuStore((s) => s.products);
   const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const hydrateFromRemote = useMenuStore((s) => s.hydrateFromRemote);
+  const cmsContent = usePastriesContentStore((s) => s.content);
+  const pastriesHydrated = usePastriesContentStore((s) => s.hydrated);
   const [selected, setSelected] = useState<Product | null>(null);
 
   useEffect(() => {
     void hydrateFromRemote();
+    void hydratePastries();
   }, [hydrateFromRemote]);
 
   const pastriesCategory = useMemo(() => findPastriesCategory(categories), [categories]);
@@ -31,7 +36,7 @@ export default function Pastries() {
       .sort((a, b) => a.order - b.order);
   }, [pastriesCategory, products]);
 
-  const { hero, poster, cta } = PASTRIES_PAGE;
+  const { hero, poster, cta } = pastriesHydrated ? cmsContent : PASTRIES_PAGE;
 
   return (
     <div className="flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-kado-offwhite font-sans">

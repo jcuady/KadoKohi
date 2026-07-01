@@ -50,6 +50,8 @@ export default function AdminCareers() {
   const saveToRemote = useCareersStore((s) => s.saveToRemote);
   const saving = useCareersStore((s) => s.saving);
   const saveError = useCareersStore((s) => s.saveError);
+  const hydrated = useCareersStore((s) => s.hydrated);
+  const hydrateFromRemote = useCareersStore((s) => s.hydrateFromRemote);
 
   const [savedMsg, setSavedMsg] = useState('');
   const [showListingModal, setShowListingModal] = useState(false);
@@ -79,10 +81,15 @@ export default function AdminCareers() {
   };
 
   useEffect(() => {
+    void hydrateFromRemote();
+  }, [hydrateFromRemote]);
+
+  useEffect(() => {
     void loadApplications();
   }, []);
 
   const handlePublish = async () => {
+    if (!hydrated) return;
     setSavedMsg('');
     updatePageCopy({
       heroBenefits: benefitsText
@@ -159,12 +166,16 @@ export default function AdminCareers() {
         <button
           type="button"
           onClick={() => void handlePublish()}
-          disabled={saving}
+          disabled={saving || !hydrated}
           className="shrink-0 rounded-xl bg-kado-red text-kado-cream px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-60"
         >
-          {saving ? 'Publishing…' : 'Publish careers page'}
+          {saving ? 'Publishing…' : !hydrated ? 'Loading…' : 'Publish careers page'}
         </button>
       </div>
+
+      {!hydrated ? (
+        <p className="mb-4 text-sm dash-muted">Loading careers content from the database…</p>
+      ) : null}
 
       {saveError ? <p className="mb-4 text-sm text-red-600 font-medium">{saveError}</p> : null}
       {savedMsg ? <p className="mb-4 text-sm text-emerald-700 font-medium">{savedMsg}</p> : null}

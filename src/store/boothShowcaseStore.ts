@@ -16,6 +16,7 @@ export interface BoothShowcaseStore {
   pageCopy: BoothPageCopy;
   saveError: string | null;
   saving: boolean;
+  hydrated: boolean;
   hydrateFromRemote: () => Promise<void>;
   saveToRemote: () => Promise<void>;
   updatePageCopy: (patch: Partial<BoothPageCopy>) => void;
@@ -36,15 +37,19 @@ export const useBoothShowcaseStore = create<BoothShowcaseStore>()(
       pageCopy: DEFAULT_BOOTH_PAGE_COPY,
       saveError: null,
       saving: false,
+      hydrated: false,
 
       hydrateFromRemote: async () => {
         try {
           const remote = await orderingRepo.fetchBoothPageContent();
-          if (!remote || typeof remote !== 'object') return;
+          if (!remote || typeof remote !== 'object') {
+            set({ hydrated: true });
+            return;
+          }
           const normalized = normalizeBoothPageContent(remote, get().media);
-          set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null });
+          set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null, hydrated: true });
         } catch {
-          // Keep local persisted content when remote fetch fails.
+          set({ hydrated: true });
         }
       },
 

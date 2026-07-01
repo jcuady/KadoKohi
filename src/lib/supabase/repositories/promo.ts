@@ -104,8 +104,7 @@ export const promoRepo = {
       discount_amount: input.discountAmount,
     });
     if (insertErr) throw insertErr;
-    // Increment the counter directly.
-    await supabase.rpc('increment_promo_uses', { code_id: input.promoCodeId });
+    // Usage counter is incremented server-side by kk_place_order only.
   },
 
   /** Admin: fetch claims per code for analytics. */

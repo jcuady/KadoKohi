@@ -26,6 +26,7 @@ import {
   ChevronDown,
   Layers,
   PenLine,
+  Cake,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
@@ -118,6 +119,7 @@ const NAV: NavEntry[] = [
       { to: '/admin/landing', label: 'Homepage', icon: Image },
       { to: '/admin/blog', label: 'Blog', icon: Newspaper },
       { to: '/admin/careers', label: 'Careers', icon: PenLine },
+      { to: '/admin/pastries', label: 'Pastries', icon: Cake },
     ],
   },
   {

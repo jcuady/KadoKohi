@@ -50,6 +50,15 @@ export async function customerLogin(page: Page): Promise<void> {
   await page.waitForURL(/\/account/, { timeout: 45000 });
 }
 
+/** Clear Supabase auth token so the next login starts from a clean session. */
+export async function clearSupabaseSession(page: Page): Promise<void> {
+  const cfg = supabaseAnonConfig();
+  if (!cfg) return;
+  const projectRef = new URL(cfg.url).hostname.split('.')[0];
+  const storageKey = `sb-${projectRef}-auth-token`;
+  await page.evaluate((key) => localStorage.removeItem(key), storageKey);
+}
+
 type InternalRole = 'admin' | 'barista' | 'staff';
 
 /** Sign in via the internal portal for admin, barista, or staff. */
@@ -154,10 +163,12 @@ export async function fillSignupForm(
   await page.locator('input#signup-phone').fill(values.phone);
   await page.locator('input#signup-password').fill(values.password);
   await page.locator('input#signup-confirm').fill(values.confirm);
-  if (values.terms) {
-    await page.locator('#signup-terms').check();
-  } else {
-    await page.locator('#signup-terms').uncheck();
+  const termsCheckbox = page.getByRole('checkbox', { name: /terms of service/i });
+  const termsChecked = await termsCheckbox.isChecked();
+  if (values.terms && !termsChecked) {
+    await page.locator('label[for="signup-terms"]').click();
+  } else if (!values.terms && termsChecked) {
+    await page.locator('label[for="signup-terms"]').click();
   }
 }
 

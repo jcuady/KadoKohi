@@ -3,6 +3,7 @@ import { SEED_CONTENT } from '../store/landingContentStore';
 import { DEFAULT_BOOTH_PAGE_COPY } from './boothPageContent';
 import { DEFAULT_MATCHA_PAGE_COPY, SEED_MATCHA_SHOWCASE_GALLERY } from './matchaPageContent';
 import { DEFAULT_CAREERS_PAGE_COPY, DEFAULT_CAREER_APPLICATION_FORM, SEED_CAREER_LISTINGS } from './careersPageContent';
+import { DEFAULT_PASTRIES_PAGE_CONTENT } from './pastriesPageContent';
 import { orderingRepo } from './supabase/repositories/ordering';
 import { supabase } from './supabase/client';
 
@@ -11,11 +12,12 @@ export async function ensurePublishedCms(): Promise<void> {
   if (!supabase) return;
 
   try {
-    const [landing, booth, matcha, careers, catalog] = await Promise.all([
+    const [landing, booth, matcha, careers, pastries, catalog] = await Promise.all([
       orderingRepo.fetchLandingContent(),
       orderingRepo.fetchBoothPageContent(),
       orderingRepo.fetchMatchaPageContent(),
       orderingRepo.fetchCareersContent(),
+      orderingRepo.fetchPastriesContent(),
       orderingRepo.fetchBoothCatalog(),
     ]);
 
@@ -51,6 +53,10 @@ export async function ensurePublishedCms(): Promise<void> {
           applicationForm: DEFAULT_CAREER_APPLICATION_FORM,
         }),
       );
+    }
+
+    if (!pastries || typeof pastries !== 'object') {
+      writes.push(orderingRepo.upsertPastriesContent(DEFAULT_PASTRIES_PAGE_CONTENT));
     }
 
     const hasCatalog =

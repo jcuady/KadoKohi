@@ -57,6 +57,7 @@ const AdminBoothCatalog = lazy(() => import('./pages/admin/AdminBoothCatalog'));
 const AdminBoothContent = lazy(() => import('./pages/admin/AdminBoothContent'));
 const AdminLandingContent = lazy(() => import('./pages/admin/AdminLandingContent'));
 const AdminCareers = lazy(() => import('./pages/admin/AdminCareers'));
+const AdminPastries = lazy(() => import('./pages/admin/AdminPastries'));
 const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
 
 const StaffMerchOrders = lazy(() => import('./pages/staff/StaffMerchOrders'));
@@ -159,6 +160,7 @@ export default function App() {
             <Route path="landing" element={<LazyRoutes><AdminLandingContent /></LazyRoutes>} />
             <Route path="blog" element={<LazyRoutes><AdminBlog /></LazyRoutes>} />
             <Route path="careers" element={<LazyRoutes><AdminCareers /></LazyRoutes>} />
+            <Route path="pastries" element={<LazyRoutes><AdminPastries /></LazyRoutes>} />
             <Route path="pastries" element={<Navigate to="/admin/menu?tab=pastries" replace />} />
             <Route path="users" element={<LazyRoutes><AdminUsers /></LazyRoutes>} />
             <Route path="audit" element={<LazyRoutes><AdminAuditLog /></LazyRoutes>} />

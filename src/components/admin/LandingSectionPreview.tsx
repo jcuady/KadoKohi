@@ -3,7 +3,7 @@ import type { LandingTabId } from '../../lib/landingCmsTabs';
 import HomePageContent from '../home/HomePageContent';
 import { LandingCmsEditProvider } from '../../contexts/LandingCmsEditContext';
 import LandingCmsFormatToolbar from './LandingCmsFormatToolbar';
-import { readImageDataUrl } from '../../lib/readImageDataUrl';
+import { cmsImagePrefixForField, uploadCmsImageFile } from '../../lib/cmsImageUpload';
 import { useLandingDraftContent, useLandingContentStore, type LandingContentState } from '../../store/landingContentStore';
 
 type Props = {
@@ -25,14 +25,14 @@ export default function LandingSectionPreview({
   const ctx = useMemo(() => landing, [landing]);
 
   const onPickImage = useCallback(async (fieldId: string, file: File) => {
-    const res = await readImageDataUrl(file);
-    if (res.ok === false) {
-      onUploadError?.(res.error);
-      return;
+    try {
+      const url = await uploadCmsImageFile(file, cmsImagePrefixForField(fieldId));
+      const provider = useLandingContentStore.getState();
+      const draft = provider.draft ?? provider.published;
+      applyImageField(fieldId, url, draft, provider);
+    } catch (err) {
+      onUploadError?.(err instanceof Error ? err.message : 'Could not upload image.');
     }
-    const provider = useLandingContentStore.getState();
-    const draft = provider.draft ?? provider.published;
-    applyImageField(fieldId, res.dataUrl, draft, provider);
   }, [onUploadError]);
 
   return (
@@ -96,6 +96,10 @@ function applyImageField(
   }
   if (section === 'events' && rest[0] === 'cover') {
     store.updateEvents({ coverImageOverride: url });
+    return;
+  }
+  if (section === 'mix-match' && rest[0] === 'poster') {
+    store.updateSchedule({ posterImageUrl: url });
     return;
   }
   if (section === 'featured' && rest[0] === 'card' && rest[2] === 'image') {

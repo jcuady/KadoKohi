@@ -4,7 +4,14 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const RESET_CONFIRM_PHRASE = "RESET ALL DATA";
+const VALID_RESET_SCOPES: Record<string, string> = {
+  all: "RESET ALL DATA",
+  transactional: "RESET TRANSACTIONAL DATA",
+  orders: "RESET ORDERS",
+  bookings: "RESET BOOKINGS",
+  loyalty_activity: "RESET LOYALTY",
+  customers: "RESET CUSTOMERS",
+};
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -18,39 +25,6 @@ function json(body: Record<string, unknown>, status = 200) {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
-
-const DEFAULT_SITE_CONFIG = {
-  defaultOpenTime: "07:00",
-  defaultCloseTime: "23:00",
-  brandMode: "light",
-  shopName: "Kado Kohi",
-  currency: "PHP",
-  boothContactPhone: "+63 917 123 4567",
-  boothContactName: "Kado Kohi Events",
-  contactEmail: "kadocoffeeph@gmail.com",
-  contactPhone: "+63 920 948 2934",
-  contactAddress: "J.P. Laurel St. corner Mt. Everest, Marikina City, Philippines 1807",
-  contactHours: "Mon – Sun: 7 AM – 11 PM",
-  mapsEmbedUrl:
-    "https://maps.google.com/maps?q=Kado%20Coffee%2C%20J.P.%20Laurel%20St.%20corner%20Mt.%20Everest%2C%20Marikina%20City%2C%20Philippines%201807&hl=en&z=18&iwloc=near&output=embed",
-  socialInstagram: "",
-  socialFacebook: "",
-  socialTiktok: "",
-};
-
-/** Tables wiped on reset ? order respects foreign keys (children before parents). */
-const RESET_DELETE_TABLES: Array<{ table: string; column?: string; sentinel?: string }> = [
-  { table: "kk_order_items" },
-  { table: "kk_orders" },
-  { table: "kk_audit_logs" },
-  { table: "kk_push_subscriptions", column: "endpoint", sentinel: "__never__" },
-  { table: "kk_promo_claims" },
-  { table: "kk_promo_codes" },
-  { table: "kk_tables" },
-  { table: "kk_products" },
-  { table: "kk_menu_categories" },
-  { table: "kk_branches" },
-];
 
 async function detachUserReferences(
   adminClient: ReturnType<typeof createClient>,
@@ -304,79 +278,58 @@ Deno.serve(async (req: Request) => {
     return json({ users, profiles });
   }
 
+  // Legacy alias — forward to reset_scope
   if (action === "reset_all_data") {
-    const { confirmPhrase } = body;
-    if (confirmPhrase !== RESET_CONFIRM_PHRASE) {
-      return json({ error: `Type "${RESET_CONFIRM_PHRASE}" to confirm.` }, 400);
+    body.action = "reset_scope";
+    body.scope = "all";
+  }
+
+  if (action === "reset_scope" || body.action === "reset_scope") {
+    const scope: string = body.scope ?? "all";
+    const confirmPhrase: string = body.confirmPhrase ?? "";
+
+    const expectedPhrase = VALID_RESET_SCOPES[scope];
+    if (!expectedPhrase) {
+      return json({ error: `Unknown reset scope: ${scope}` }, 400);
+    }
+    if (confirmPhrase !== expectedPhrase) {
+      return json({ error: `Type "${expectedPhrase}" to confirm.` }, 400);
     }
 
-    const deleted: Record<string, number | boolean> = {
-      settingsReset: false,
-      adminsPreserved: 0,
-      usersRemoved: 0,
-    };
-
-    const countRows = async (table: string) => {
-      const { count, error } = await adminClient
-        .from(table)
-        .select("*", { count: "exact", head: true });
-      if (error) throw error;
-      return count ?? 0;
-    };
-
-    const deleteAllRows = async (
-      table: string,
-      column = "id",
-      sentinel = "00000000-0000-0000-0000-000000000000",
-    ) => {
-      const { error } = await adminClient.from(table).delete().neq(column, sentinel);
-      if (error) throw error;
-    };
-
     try {
-      for (const { table, column, sentinel } of RESET_DELETE_TABLES) {
-        deleted[table] = await countRows(table);
-        await deleteAllRows(table, column, sentinel);
+      // Scopes that delete non-admin users need auth.users cleanup beforehand.
+      // Collect non-admin user IDs so we can delete them from auth after the RPC.
+      let usersRemoved = 0;
+      const deletesUsers = ["all", "transactional", "customers"].includes(scope);
+
+      if (deletesUsers) {
+        const { data: nonAdminProfiles } = await adminClient
+          .from("kk_profiles")
+          .select("id")
+          .neq("role", "admin");
+
+        for (const row of nonAdminProfiles ?? []) {
+          if (row.id === user.id) continue;
+          await adminClient.auth.admin.deleteUser(row.id).catch((err: Error) => {
+            console.warn(`auth delete failed for ${row.id}:`, err.message);
+          });
+          usersRemoved++;
+        }
       }
 
-      const { error: settingsErr } = await adminClient.from("kk_app_settings").upsert({
-        id: true,
-        tax_rate: 0,
-        gcash_qr_image: null,
-        order_hours: DEFAULT_SITE_CONFIG,
-      });
-      if (settingsErr) throw settingsErr;
-      deleted.settingsReset = true;
+      // Call the atomic RPC — handles all table deletes in one transaction
+      const { data: rpcResult, error: rpcErr } = await adminClient.rpc(
+        "kk_admin_reset_data",
+        { p_scope: scope, p_confirm_phrase: confirmPhrase },
+      );
+      if (rpcErr) throw rpcErr;
 
-      const { data: nonAdminProfiles, error: profileErr } = await adminClient
-        .from("kk_profiles")
-        .select("id")
-        .neq("role", "admin");
-      if (profileErr) throw profileErr;
-
-      for (const profileRow of nonAdminProfiles ?? []) {
-        if (profileRow.id === user.id) continue;
-        await detachUserReferences(adminClient, profileRow.id);
-        await adminClient.auth.admin.deleteUser(profileRow.id).catch((err) => {
-          console.warn(`auth delete failed for ${profileRow.id}:`, err.message);
-        });
-        await adminClient.from("kk_profiles").delete().eq("id", profileRow.id);
-        deleted.usersRemoved = (deleted.usersRemoved as number) + 1;
+      const result = (rpcResult as Record<string, unknown>) ?? {};
+      if (deletesUsers) {
+        result.usersRemoved = usersRemoved;
       }
 
-      const { data: adminProfiles, error: adminErr } = await adminClient
-        .from("kk_profiles")
-        .select("id")
-        .eq("role", "admin");
-      if (adminErr) throw adminErr;
-
-      await adminClient
-        .from("kk_profiles")
-        .update({ loyalty_stamps: 0, branch_id: null })
-        .eq("role", "admin");
-      deleted.adminsPreserved = adminProfiles?.length ?? 0;
-
-      return json({ success: true, deleted });
+      return json(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Reset failed.";
       return json({ error: message }, 500);

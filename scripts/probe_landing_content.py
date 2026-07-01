@@ -2,20 +2,29 @@
 """Verify landing CMS round-trip on kk_app_settings.landing_content (prod)."""
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 PROJECT = "idwtlujcdfnnndxmlaco"
 BASE = f"https://{PROJECT}.supabase.co/rest/v1"
+ROOT = Path(__file__).resolve().parent.parent
+ENV = ROOT / ".env"
 
 
-def env(name: str) -> str:
-    v = os.environ.get(name, "").strip()
-    if not v:
-        print(f"Missing {name}", file=sys.stderr)
-        sys.exit(1)
-    return v
+def load_service_key() -> str:
+    v = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if v:
+        return v
+    if ENV.exists():
+        text = ENV.read_text(encoding="utf-8")
+        match = re.search(r'SUPABASE_SERVICE_ROLE_KEY="([^"]+)"', text)
+        if match:
+            return match.group(1)
+    print("Missing SUPABASE_SERVICE_ROLE_KEY", file=sys.stderr)
+    sys.exit(1)
 
 
 def rest(method: str, path: str, key: str, body=None):
@@ -38,7 +47,7 @@ def rest(method: str, path: str, key: str, body=None):
 
 
 def main():
-    service = env("SUPABASE_SERVICE_ROLE_KEY")
+    service = load_service_key()
     print(f"[1] Read landing_content from {PROJECT}")
     rows = rest("GET", "kk_app_settings?select=landing_content&id=eq.true", service)
     if not rows:

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "kadokohi-supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=idwtlujcdfnnndxmlaco",
+      "headers": {
+        "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}"
+      }
+    }
+  },
+  "_note": "Kado Coffee production: idwtlujcdfnnndxmlaco only. Cursor agents MUST use plugin-supabase-supabase with project_id=idwtlujcdfnnndxmlaco for apply_migration, execute_sql, etc. Do NOT use user-supabase (wrong project)."
+}

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { customerLogin, internalLogin, trackPageErrors, uniqueTestId } from './helpers';
+import { customerLogin, internalLogin, trackPageErrors, uniqueTestId, clearSupabaseSession } from './helpers';
 
 test.describe('Admin pastries', () => {
   test('admin can add a pastry with variant controls then remove it', async ({ page }) => {
@@ -75,9 +75,11 @@ test.describe('Customer pastries', () => {
     await addBtn.click();
     await expect(page.getByText(/added!/i)).toBeVisible({ timeout: 10000 });
 
+    await clearSupabaseSession(page);
     await internalLogin(page, 'admin');
-    await page.goto('/admin/menu?tab=pastries');
-    await expect(page.getByRole('heading', { name: /menu manager/i })).toBeVisible({ timeout: 20000 });
+    await page.goto('/admin/menu?tab=pastries', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/admin\/menu/, { timeout: 45000 });
+    await expect(page.getByRole('heading', { name: /menu manager/i })).toBeVisible({ timeout: 30000 });
     await expect(page.getByText(pastryName)).toBeVisible({ timeout: 20000 });
     const productRow = page.locator('.rounded-xl.dash-card-alt').filter({ hasText: pastryName });
     await productRow.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') }).click();

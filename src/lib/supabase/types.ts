@@ -271,6 +271,12 @@ export interface Database {
           tax_rate: number;
           gcash_qr_image: string | null;
           order_hours: Json;
+          landing_content: Json | null;
+          booth_content: Json | null;
+          matcha_content: Json | null;
+          careers_content: Json | null;
+          booth_catalog: Json | null;
+          pastries_content: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -279,6 +285,12 @@ export interface Database {
           tax_rate?: number;
           gcash_qr_image?: string | null;
           order_hours?: Json;
+          landing_content?: Json | null;
+          booth_content?: Json | null;
+          matcha_content?: Json | null;
+          careers_content?: Json | null;
+          booth_catalog?: Json | null;
+          pastries_content?: Json | null;
         };
         Update: Partial<Database['public']['Tables']['kk_app_settings']['Insert']>;
       };

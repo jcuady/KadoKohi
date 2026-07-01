@@ -15,6 +15,7 @@ export interface MatchaShowcaseStore {
   pageCopy: BoothPageCopy;
   saveError: string | null;
   saving: boolean;
+  hydrated: boolean;
   hydrateFromRemote: () => Promise<void>;
   saveToRemote: () => Promise<void>;
   updatePageCopy: (patch: Partial<BoothPageCopy>) => void;
@@ -35,15 +36,19 @@ export const useMatchaShowcaseStore = create<MatchaShowcaseStore>()(
       pageCopy: DEFAULT_MATCHA_PAGE_COPY,
       saveError: null,
       saving: false,
+      hydrated: false,
 
       hydrateFromRemote: async () => {
         try {
           const remote = await orderingRepo.fetchMatchaPageContent();
-          if (!remote || typeof remote !== 'object') return;
+          if (!remote || typeof remote !== 'object') {
+            set({ hydrated: true });
+            return;
+          }
           const normalized = normalizeMatchaPageContent(remote, get().media);
-          set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null });
+          set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null, hydrated: true });
         } catch {
-          // Keep local persisted content when remote fetch fails.
+          set({ hydrated: true });
         }
       },
 

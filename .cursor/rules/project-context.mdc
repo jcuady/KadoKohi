@@ -13,7 +13,7 @@ alwaysApply: true
 |------|--------|
 | Stack | React 19 + Vite + TypeScript + Tailwind + Zustand + Supabase |
 | Production site | `https://www.kadokohi.com` |
-| Supabase project | `idwtlujcdfnnndxmlaco` |
+| Supabase project | `idwtlujcdfnnndxmlaco` (`https://idwtlujcdfnnndxmlaco.supabase.co`) |
 | Orders | Always via `kk_place_order` RPC — never direct INSERT |
 | Branches (active) | `branch_marikina` / `marikina`, `branch_greenhills` / `greenhills` |
 | Internal login | `/management-portal` (admin, barista, staff) |
@@ -28,10 +28,33 @@ alwaysApply: true
 npm run lint && npm run build
 ```
 
-Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills_branch.py`
+Optional smoke probes: `scripts/probe_branch_crud.py`, `scripts/probe_greenhills_branch.py`, `scripts/probe_storage_buckets.py`
+
+## Storage buckets (prod `idwtlujcdfnnndxmlaco`)
+
+| Bucket | Public | Used for |
+|--------|--------|----------|
+| `kado-menu-images` | yes | Admin → Menu product photos |
+| `kado-cms-images` | yes | Landing, events, booth, pastries CMS uploads |
+| `kado-blog-images` | yes | Blog cover images |
+| `kado-gcash-qr` | yes | Shop GCash QR (`kk_app_settings.gcash_qr_image`) |
+| `kado-payment-proofs` | no | GCash payment proof screenshots |
+
+Reconcile migration: `0082_storage_buckets_reconcile.sql`. Legacy unused buckets (`kado-product-images`, `kado-settings`) may exist in dashboard — app code does not reference them.
 
 ## Rules
 
 - Follow `.cursor/rules/karpathy-guidelines.mdc` (surgical, verifiable changes).
 - Match existing patterns in `src/store/*`, `src/lib/supabase/repositories/ordering.ts`.
 - Do not commit secrets (`.env`, service role keys).
+
+## Supabase MCP (required)
+
+**Kado Coffee production only:** `idwtlujcdfnnndxmlaco`
+
+For any Supabase MCP call (`apply_migration`, `execute_sql`, `list_tables`, etc.):
+
+- **Server:** `plugin-supabase-supabase`
+- **Always pass:** `project_id: "idwtlujcdfnnndxmlaco"`
+
+Do **not** use `user-supabase` or any other MCP server for this repo — it may point at a different project (`ytulzzftxjlmtqwukdqq`). Probes and `.env` must also target `idwtlujcdfnnndxmlaco`.

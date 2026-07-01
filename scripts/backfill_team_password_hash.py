@@ -16,6 +16,8 @@ PROJECT_REF = "idwtlujcdfnnndxmlaco"
 INTERNAL_EMAILS = [
     "admin@kadokohi.com",
     "barista@kadokohi.com",
+    "barista-greenhills@kadokohi.com",
+    "staff-greenhills@kadokohi.com",
     "staff.flow.8facde69@kadokohi.com",
 ]
 

@@ -69,6 +69,16 @@ export function eventDurationLabel(evt: Event): string | null {
   return `${mins}m`;
 }
 
+/** Reverse of signupClosesBeforeEventStart — for repopulating the admin duration preset. */
+export function signupDaysBeforeFromCloses(startsAtIso: string, closesAtIso?: string): number {
+  if (!closesAtIso?.trim()) return 1;
+  const start = new Date(startsAtIso).getTime();
+  const closes = new Date(closesAtIso).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(closes)) return 1;
+  const days = Math.round((start - closes) / 86_400_000);
+  return Math.max(0, Math.min(365, days));
+}
+
 /** Admin helper: set sign-up close to N days before event start. */
 export function signupClosesBeforeEventStart(startsAtIso: string, daysBefore: number): string {
   const start = new Date(startsAtIso);

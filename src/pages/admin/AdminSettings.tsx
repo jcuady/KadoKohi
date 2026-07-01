@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettingsStore, type BoothPaymentConfig, type DashTheme } from '../../store/settingsStore';
-import { authRepo } from '../../lib/supabase/repositories/auth';
+import { authRepo, type ResetScope } from '../../lib/supabase/repositories/auth';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { useBranchStore } from '../../store/branchStore';
@@ -10,7 +10,99 @@ import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
 import { AlertTriangle, Check, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { clampTaxRate } from '../../lib/validation';
 
-const RESET_PHRASE = 'RESET ALL DATA';
+type ResetCardDef = {
+  scope: ResetScope;
+  label: string;
+  phrase: string;
+  severity: 'amber' | 'red';
+  description: string;
+  willDelete: string[];
+  willKeep: string[];
+};
+
+const RESET_CARDS: ResetCardDef[] = [
+  {
+    scope: 'transactional',
+    label: 'Reset transactional data',
+    phrase: 'RESET TRANSACTIONAL DATA',
+    severity: 'amber',
+    description: 'Clears all orders, bookings, activity, and non-admin accounts. Keeps Marikina branch, full menu, merch, CMS, and settings.',
+    willDelete: [
+      'All orders, line items, and payment records',
+      'All booth bookings and event registrations',
+      'All customer, barista, and staff accounts',
+      'Non-Marikina branches (Greenhills, etc.)',
+      'Loyalty vouchers, promo claims, audit logs',
+      'Career applications, push subscriptions',
+    ],
+    willKeep: [
+      'Admin login (email + password)',
+      'Marikina branch and all its tables/QR codes',
+      'Full menu, merch catalog, and promo code definitions',
+      'Events, blog, CMS content, and shop settings',
+    ],
+  },
+  {
+    scope: 'orders',
+    label: 'Reset orders only',
+    phrase: 'RESET ORDERS',
+    severity: 'amber',
+    description: 'Clears the order pipeline only — all orders, line items, promo claims, and payment records.',
+    willDelete: ['All orders, line items, and payment records', 'Promo claims (code definitions kept)'],
+    willKeep: ['All accounts, branches, menu, settings, bookings, and everything else'],
+  },
+  {
+    scope: 'bookings',
+    label: 'Reset booth bookings',
+    phrase: 'RESET BOOKINGS',
+    severity: 'amber',
+    description: 'Clears all booth bookings and calendar date blocks.',
+    willDelete: ['All booth bookings', 'Event date blockouts'],
+    willKeep: ['All accounts, orders, menu, settings, events, and everything else'],
+  },
+  {
+    scope: 'loyalty_activity',
+    label: 'Reset loyalty activity',
+    phrase: 'RESET LOYALTY',
+    severity: 'amber',
+    description: 'Deletes all issued vouchers and zeros every user\'s loyalty stamp count. Reward catalog stays.',
+    willDelete: ['All issued loyalty vouchers', 'All stamp balances (set to 0)'],
+    willKeep: ['Loyalty reward definitions', 'All accounts, orders, and everything else'],
+  },
+  {
+    scope: 'customers',
+    label: 'Reset customer accounts',
+    phrase: 'RESET CUSTOMERS',
+    severity: 'red',
+    description: 'Deletes all customer accounts plus their orders, bookings, vouchers, and activity. Internal accounts survive.',
+    willDelete: [
+      'All customer accounts and profiles',
+      'All orders, bookings, and vouchers',
+      'Event registrations and push subscriptions',
+    ],
+    willKeep: [
+      'Admin, barista, and staff accounts',
+      'Menu, branches, settings, CMS, and all catalog data',
+    ],
+  },
+  {
+    scope: 'all',
+    label: 'Reset all data (nuclear)',
+    phrase: 'RESET ALL DATA',
+    severity: 'red',
+    description: 'Full nuclear wipe — admin login survives, everything else is removed including CMS, blog, merch, events, catalog.',
+    willDelete: [
+      'All orders, customers, baristas, and staff accounts',
+      'All branches, menu, merch, tables, and QR codes',
+      'Events, blog, CMS, loyalty, vouchers, promo codes',
+      'Audit logs, push subscriptions, career applications',
+      'Shop settings reset to bare defaults',
+    ],
+    willKeep: [
+      'Admin login (email + password) — you stay signed in',
+    ],
+  },
+];
 
 export default function AdminSettings() {
   const settings = useSettingsStore((s) => s.settings);
@@ -25,7 +117,7 @@ export default function AdminSettings() {
   const [gcashSaving, setGcashSaving] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [resetOpen, setResetOpen] = useState(false);
+  const [activeReset, setActiveReset] = useState<ResetScope | null>(null);
   const [resetPhrase, setResetPhrase] = useState('');
   const [resetBusy, setResetBusy] = useState(false);
   const [resetError, setResetError] = useState('');
@@ -87,32 +179,30 @@ export default function AdminSettings() {
     }
   };
 
-  const handleResetAllData = async (e: FormEvent) => {
+  const handleResetScope = async (e: FormEvent, card: ResetCardDef) => {
     e.preventDefault();
     setResetError('');
     setResetSuccess('');
-    if (resetPhrase.trim() !== RESET_PHRASE) {
-      setResetError(`Type "${RESET_PHRASE}" exactly to confirm.`);
+    if (resetPhrase.trim() !== card.phrase) {
+      setResetError(`Type "${card.phrase}" exactly to confirm.`);
       return;
     }
     setResetBusy(true);
     try {
-      const result = await authRepo.resetAllData(RESET_PHRASE);
+      const result = await authRepo.resetData(card.scope, card.phrase);
       useBranchStore.getState().setAdminPosBranchId(null);
       const currentUser = useAuthStore.getState().user;
       if (currentUser?.role === 'admin') {
         useAuthStore.setState({ user: { ...currentUser, branchId: undefined, loyaltyStamps: undefined } });
       }
       await refreshOperationsData();
-      setResetOpen(false);
+      setActiveReset(null);
       setResetPhrase('');
-      const d = result.deleted;
+      const d = result.deleted ?? {};
       const orders = Number(d.kk_orders ?? 0);
-      const branches = Number(d.kk_branches ?? 0);
-      const usersRemoved = Number(d.usersRemoved ?? 0);
-      const adminsKept = Number(d.adminsPreserved ?? 0);
+      const usersRemoved = Number(result.usersRemoved ?? d.profiles_removed ?? 0);
       setResetSuccess(
-        `Reset complete — cleared ${orders} orders, ${branches} branches, and ${usersRemoved} non-admin accounts. ${adminsKept} admin login(s) preserved with access to all branches. Shop settings restored to defaults.`,
+        `${card.label} complete — cleared ${orders} orders and ${usersRemoved} non-admin accounts. Admin login preserved.`,
       );
     } catch (err) {
       setResetError(err instanceof Error ? err.message : 'Unable to reset data. Try again or redeploy the admin edge function.');
@@ -525,32 +615,17 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <div className="rounded-2xl border-2 border-red-200 bg-red-50/40 p-6 space-y-5">
-          <div className="flex items-start gap-3">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 pt-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg text-red-900">Reset all data</h2>
+              <h2 className="font-display font-bold text-lg text-red-900">Danger zone</h2>
               <p className="text-xs text-red-800/80 mt-1 leading-relaxed">
-                Wipes the entire shop back to a clean slate. Your admin email and password stay — everything else in the database is removed or reset to defaults.
+                Destructive operations that cannot be undone. Each reset requires a unique typed confirmation phrase.
               </p>
             </div>
-          </div>
-
-          <div className="rounded-xl border border-red-200 bg-white/70 p-4 text-xs text-red-900/80 space-y-2">
-            <p className="font-bold uppercase tracking-wider text-[10px] text-red-700">Will be deleted</p>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>All orders, customers, baristas, and staff accounts</li>
-              <li>All branches, menu items, tables, and QR codes</li>
-              <li>Audit logs, push subscriptions, vouchers, and GCash QR</li>
-              <li>Shop settings restored to factory defaults</li>
-            </ul>
-            <p className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 pt-2">Will be kept</p>
-            <ul className="list-disc pl-4 space-y-1 text-emerald-900/80">
-              <li>Admin login (email + password) — you stay signed in</li>
-              <li>Super admin access to all branches (no branch lock)</li>
-            </ul>
           </div>
 
           {resetSuccess && (
@@ -560,58 +635,88 @@ export default function AdminSettings() {
             </div>
           )}
 
-          {!resetOpen ? (
-            <button
-              type="button"
-              onClick={() => {
-                setResetOpen(true);
-                setResetError('');
-                setResetSuccess('');
-                setResetPhrase('');
-              }}
-              className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-red-700 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Reset all data
-            </button>
-          ) : (
-            <form onSubmit={(e) => void handleResetAllData(e)} className="space-y-3 rounded-xl border border-red-300 bg-white p-4">
-              <p className="text-xs text-red-900 font-medium">
-                This cannot be undone. Type <span className="font-black">{RESET_PHRASE}</span> below to confirm.
-              </p>
-              <input
-                type="text"
-                value={resetPhrase}
-                onChange={(e) => setResetPhrase(e.target.value)}
-                placeholder={RESET_PHRASE}
-                autoComplete="off"
-                className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              />
-              {resetError && <p className="text-xs text-red-600 font-medium">{resetError}</p>}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={resetBusy || resetPhrase.trim() !== RESET_PHRASE}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-2.5 text-xs font-black uppercase tracking-wider hover:bg-red-700 transition-colors disabled:opacity-50"
-                >
-                  {resetBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  {resetBusy ? 'Resetting…' : 'Confirm reset'}
-                </button>
-                <button
-                  type="button"
-                  disabled={resetBusy}
-                  onClick={() => {
-                    setResetOpen(false);
-                    setResetPhrase('');
-                    setResetError('');
-                  }}
-                  className="rounded-xl border border-red-200 text-red-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
+          {RESET_CARDS.map((card) => {
+            const isAmber = card.severity === 'amber';
+            const borderColor = isAmber ? 'border-amber-200' : 'border-red-200';
+            const bgColor = isAmber ? 'bg-amber-50/40' : 'bg-red-50/40';
+            const btnBg = isAmber ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700';
+            const textColor = isAmber ? 'text-amber-900' : 'text-red-900';
+            const labelColor = isAmber ? 'text-amber-700' : 'text-red-700';
+            const isOpen = activeReset === card.scope;
+
+            return (
+              <div key={card.scope} className={`rounded-2xl border-2 ${borderColor} ${bgColor} p-5 space-y-4`}>
+                <div>
+                  <h3 className={`font-display font-bold text-sm ${textColor}`}>{card.label}</h3>
+                  <p className={`text-xs ${textColor} opacity-80 mt-0.5 leading-relaxed`}>{card.description}</p>
+                </div>
+
+                <div className="rounded-xl border border-kado-dark/10 bg-white/70 p-3.5 text-xs space-y-2">
+                  <p className={`font-bold uppercase tracking-wider text-[10px] ${labelColor}`}>Will be deleted</p>
+                  <ul className={`list-disc pl-4 space-y-0.5 ${textColor} opacity-80`}>
+                    {card.willDelete.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                  <p className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 pt-1.5">Will be kept</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-emerald-900/80">
+                    {card.willKeep.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+
+                {!isOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveReset(card.scope);
+                      setResetError('');
+                      setResetSuccess('');
+                      setResetPhrase('');
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-xl ${btnBg} text-white px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-colors`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {card.label}
+                  </button>
+                ) : (
+                  <form onSubmit={(e) => void handleResetScope(e, card)} className={`space-y-3 rounded-xl border ${borderColor} bg-white p-4`}>
+                    <p className={`text-xs ${textColor} font-medium`}>
+                      This cannot be undone. Type <span className="font-black">{card.phrase}</span> below to confirm.
+                    </p>
+                    <input
+                      type="text"
+                      value={resetPhrase}
+                      onChange={(e) => setResetPhrase(e.target.value)}
+                      placeholder={card.phrase}
+                      autoComplete="off"
+                      className={`w-full rounded-xl border ${borderColor} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300`}
+                    />
+                    {resetError && <p className="text-xs text-red-600 font-medium">{resetError}</p>}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="submit"
+                        disabled={resetBusy || resetPhrase.trim() !== card.phrase}
+                        className={`inline-flex items-center gap-2 rounded-xl ${btnBg} text-white px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50`}
+                      >
+                        {resetBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        {resetBusy ? 'Resetting…' : 'Confirm reset'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={resetBusy}
+                        onClick={() => {
+                          setActiveReset(null);
+                          setResetPhrase('');
+                          setResetError('');
+                        }}
+                        className={`rounded-xl border ${borderColor} ${textColor} px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-white/50 transition-colors disabled:opacity-50`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
-            </form>
-          )}
+            );
+          })}
         </div>
 
         <p className="text-xs dash-muted">

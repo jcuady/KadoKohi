@@ -55,6 +55,7 @@ export default function SignupPasswordField({ id: idProp, value, onChange, onBlu
             aria-describedby={error ? `${descriptionId} ${errorId}` : descriptionId}
             disabled={disabled}
             required
+            minLength={8}
           />
           <button
             className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-xl text-kado-dark/40 outline-offset-2 transition-colors hover:text-kado-dark focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-kado-red/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"

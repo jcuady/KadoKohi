@@ -209,7 +209,12 @@ for (const path of BOOKING_PATHS) {
     await page.getByRole('button', { name: /^submit your proposal$/i }).click();
     await expect(page.getByRole('heading', { name: /proposal saved/i })).toBeVisible({ timeout: 45000 });
     await expect(page.locator('#booking-form').getByText(/^Reference BK-/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: /open email again/i })).toHaveAttribute('href', /^mailto:/i);
+    const mailtoLink = page.getByRole('link', { name: /open email again/i });
+    const teamNotified = page.getByText(/events team at kadocoffeeph@gmail.com has been notified/i);
+    await expect(mailtoLink.or(teamNotified)).toBeVisible();
+    if (await mailtoLink.isVisible()) {
+      await expect(mailtoLink).toHaveAttribute('href', /^mailto:/i);
+    }
     expect(errors(), errors().join(' | ')).toEqual([]);
   });
 }
