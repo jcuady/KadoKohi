@@ -14,16 +14,6 @@ test.describe('Admin CMS', () => {
     expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
   });
 
-  test('landing CMS includes Mix & Match section', async ({ page }) => {
-    await internalLogin(page, 'admin');
-    await page.goto('/admin/landing');
-    const jumpLink = page.getByRole('link', { name: 'Mix & Match', exact: true });
-    await expect(jumpLink).toBeVisible({ timeout: 20000 });
-    await jumpLink.click();
-    await expect(page.locator('#cms-section-mix-match')).toBeInViewport();
-    await expect(page.locator('#cms-section-mix-match header h2')).toHaveText('Mix & Match');
-  });
-
   test('blog new-post modal opens and cancels cleanly', async ({ page }) => {
     await internalLogin(page, 'admin');
     await page.goto('/admin/blog');

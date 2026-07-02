@@ -51,7 +51,6 @@ export default function AdminLandingContent() {
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
   const updateFaq = useLandingContentStore((s) => s.updateFaq);
   const updateFaqItem = useLandingContentStore((s) => s.updateFaqItem);
-  const updateSchedule = useLandingContentStore((s) => s.updateSchedule);
   const categories = useMenuStore((s) => s.categories);
   const allProducts = useMenuStore((s) => s.products);
   const menuDataSource = useMenuStore((s) => s.dataSource);
@@ -522,44 +521,6 @@ export default function AdminLandingContent() {
               />
               </div>
             ))}
-          </div>
-        </section>
-          </div>
-        </LandingCmsSectionCard>
-
-        <LandingCmsSectionCard tab={cmsTab('mix-match')} onUploadError={setUploadError}>
-          <div className="space-y-6">
-        <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Mix &amp; Match collab</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <CmsField label="Badge" value={content.schedule.badge} onChange={(v) => updateSchedule({ badge: v })} />
-            <CmsField label="Title top" value={content.schedule.titleTop} onChange={(v) => updateSchedule({ titleTop: v })} />
-            <CmsField label="Title bottom" value={content.schedule.titleBottom} onChange={(v) => updateSchedule({ titleBottom: v })} />
-            <CmsField
-              label="Description"
-              value={content.schedule.description}
-              onChange={(v) => updateSchedule({ description: v })}
-              multiline
-            />
-            <CmsField label="Offer badge" value={content.schedule.offerBadge} onChange={(v) => updateSchedule({ offerBadge: v })} />
-            <CmsField label="Offer note" value={content.schedule.offerNote} onChange={(v) => updateSchedule({ offerNote: v })} />
-            <CmsField label="Pastries CTA" value={content.schedule.ctaLabel} onChange={(v) => updateSchedule({ ctaLabel: v })} />
-            <CmsField
-              label="Featured drink CTA"
-              value={content.schedule.featuredCtaLabel}
-              onChange={(v) => updateSchedule({ featuredCtaLabel: v })}
-            />
-            <PlainField
-              label="Featured product id (menu)"
-              value={content.schedule.featuredProductId}
-              onChange={(v) => updateSchedule({ featuredProductId: v })}
-            />
-            <ImageUrlField
-              label="Poster image"
-              value={content.schedule.posterImageUrl}
-              onChange={(v) => updateSchedule({ posterImageUrl: v })}
-              onPickFile={(files) => onPickImage('landing/mix-match/poster', (url) => updateSchedule({ posterImageUrl: url }), files)}
-            />
           </div>
         </section>
           </div>

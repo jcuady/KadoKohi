@@ -1,7 +1,7 @@
 """
-Seed full Kukidō Mix & Match catalog on production.
+Seed Mix & Match pastries catalog on production.
 - Removes stale pastry rows
-- Inserts 6 poster cookies + Kado Kukilatte with prices
+- Inserts 6 cookies + Cookie Latte featured drink
 - Tags mix-match drinks
 - Uploads images from Mix&Match/
 """
@@ -24,7 +24,7 @@ PASTRIES_CATEGORY_ID = "96542660-85f9-40b0-9a20-f2607c8f773c"
 KUKILATTE_ID = "c8f3a1b2-6d4e-4f9a-b7c2-8e1d0f9a3b4c"
 
 COOKIES = [
-    ("b1000001-0001-4000-8000-000000000001", "Klassic Kuki", 98, 10),
+    ("b1000001-0001-4000-8000-000000000001", "Klassic Cookie", 98, 10),
     ("b1000001-0001-4000-8000-000000000002", "Campfire", 108, 11),
     ("b1000001-0001-4000-8000-000000000003", "Double Dark", 118, 12),
     ("b1000001-0001-4000-8000-000000000004", "Birthday Bake", 118, 13),
@@ -119,35 +119,36 @@ def main() -> None:
         print(f"Deleted stale product {stale_id}")
 
     cookie_image = ASSETS / "kukido2.jpg"
-    kukilatte_image = ASSETS / "image.png"
-    if not kukilatte_image.is_file():
-        kukilatte_image = ROOT / "image.png"
+    if not cookie_image.is_file():
+        cookie_image = ASSETS / "cookies-plate.jpg"
+    featured_image = ASSETS / "image.png"
+    if not featured_image.is_file():
+        featured_image = ROOT / "image.png"
 
-    kukilatte_url = upload_file(key, KUKILATTE_ID, kukilatte_image)
-    print(f"Kukilatte image -> {kukilatte_url}")
+    featured_url = upload_file(key, KUKILATTE_ID, featured_image)
+    print(f"Cookie Latte image -> {featured_url}")
 
-    kukilatte_row = {
+    featured_row = {
         "id": KUKILATTE_ID,
         "category_id": PASTRIES_CATEGORY_ID,
-        "name": "Kado Kukilatte",
+        "name": "Cookie Latte",
         "description": (
-            "Kukidō x Kado Kohi takeover exclusive. Iced Kado Latte layered with muscovado brûlée "
-            "and Klassic cookie bits — topped with cold foam and Kukidō handcrafted cookie crumble. "
-            "Layers: Kado Latte · Muscovado Brûlée · Klassic Cookie Bits."
+            "Iced Kado Latte layered with muscovado brûlée and cookie bits — "
+            "topped with cold foam and cookie crumble."
         ),
         "base_price": 220,
-        "image": kukilatte_url,
+        "image": featured_url,
         "temperature": "both",
         "sizes": [],
         "milks": [],
-        "tags": ["collab", "takeover", "exclusive", "kukilatte", "featured"],
+        "tags": ["featured", "featured-drink"],
         "custom_fields": [],
         "visible": True,
         "in_stock": True,
         "sort_order": 0,
     }
-    upsert_product(key, kukilatte_row)
-    print("Upserted Kado Kukilatte")
+    upsert_product(key, featured_row)
+    print("Upserted Cookie Latte")
 
     cookie_img_url = None
     if cookie_image.is_file():
@@ -158,7 +159,7 @@ def main() -> None:
             "id": pid,
             "category_id": PASTRIES_CATEGORY_ID,
             "name": name,
-            "description": f"Kukidō handcrafted cookie — part of the Mix & Match bundle with any Kado Kohi drink.",
+            "description": "Handcrafted cookie — part of the Mix & Match bundle with any Kado Kohi drink.",
             "base_price": price,
             "image": cookie_img_url,
             "temperature": "both",

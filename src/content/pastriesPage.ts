@@ -15,8 +15,8 @@ export const PASTRIES_PAGE = {
     badgeNote: 'Selection updates daily',
   },
   poster: {
-    primaryImage: '/mix-match/kukido1.jpg',
-    secondaryImage: '/mix-match/kukido2.jpg',
+    primaryImage: '/featuredmarikina/kadom1.jpg',
+    secondaryImage: '/social/cafe-latte.png',
   },
   cta: {
     title: 'Our pastries',

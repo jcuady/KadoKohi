@@ -14,10 +14,10 @@ test('home page loads with branding', async ({ page }) => {
   await expect(page.locator('#root')).not.toBeEmpty();
 });
 
-test('homepage shows Mix & Match section when published', async ({ page }) => {
+test('homepage shows featured drinks section', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#root')).not.toBeEmpty();
-  await expect(page.getByRole('heading', { name: /mix\s*&\s*match/i })).toBeVisible();
+  await expect(page.locator('#featured-coffees-heading')).toBeVisible();
 });
 
 test('no horizontal overflow on mobile home', async ({ page }) => {

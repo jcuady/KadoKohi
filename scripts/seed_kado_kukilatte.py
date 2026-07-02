@@ -1,4 +1,4 @@
-"""Seed example pastry: Kado Kukilatte (Kukidō x Kado Kohi takeover exclusive)."""
+"""Seed example pastry: Cookie Latte (featured iced latte)."""
 from __future__ import annotations
 
 import json
@@ -84,18 +84,17 @@ def main() -> None:
         "id": PRODUCT_ID,
         "category_id": PASTRIES_CATEGORY_ID,
         "branch_id": None,
-        "name": "Kado Kukilatte",
+        "name": "Cookie Latte",
         "description": (
-            "Kukidō x Kado Kohi takeover exclusive. Iced Kado Latte layered with muscovado brûlée "
-            "and Klassic cookie bits — topped with cold foam and Kukidō handcrafted cookie crumble. "
-            "Layers: Kado Latte · Muscovado Brûlée · Klassic Cookie Bits."
+            "Iced Kado Latte layered with muscovado brûlée and cookie bits — "
+            "topped with cold foam and cookie crumble."
         ),
         "base_price": 220,
         "image": public_url,
         "temperature": "both",
         "sizes": [],
         "milks": [],
-        "tags": ["collab", "takeover", "exclusive", "kukilatte", "featured"],
+        "tags": ["featured", "featured-drink"],
         "custom_fields": [],
         "visible": True,
         "in_stock": True,

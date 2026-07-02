@@ -98,10 +98,6 @@ function applyImageField(
     store.updateEvents({ coverImageOverride: url });
     return;
   }
-  if (section === 'mix-match' && rest[0] === 'poster') {
-    store.updateSchedule({ posterImageUrl: url });
-    return;
-  }
   if (section === 'featured' && rest[0] === 'card' && rest[2] === 'image') {
     const slot = Number(rest[1]);
     if (Number.isFinite(slot)) {

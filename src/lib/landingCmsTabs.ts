@@ -3,11 +3,6 @@ export const LANDING_CMS_TABS = [
   { id: 'story', label: 'Brand story', hint: 'SEO intro below the hero — headline, pillars, and social block.' },
   { id: 'menu-seo', label: 'Menu SEO', hint: 'Matcha / signatures / classics / sodas & yuzu pillar cards and SEO body copy.' },
   { id: 'featured', label: 'Featured', hint: 'Three showcase drinks — copy, product picks, and optional card photos.' },
-  {
-    id: 'mix-match',
-    label: 'Mix & Match',
-    hint: 'Kukidō collab promo — bundle copy, poster image, and featured drink link.',
-  },
   { id: 'ordering', label: 'How to order', hint: 'Four-step ordering carousel copy.' },
   { id: 'events', label: 'Kado Events', hint: 'Events block headings and optional cover image override.' },
   { id: 'testimonials', label: 'Testimonials', hint: 'Google reviews section, trusted brands, and customer quotes.' },

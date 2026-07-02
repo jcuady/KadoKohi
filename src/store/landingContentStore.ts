@@ -59,22 +59,6 @@ export interface StoredTestimonial {
   avatar: string;
 }
 
-export interface MixMatchSectionCopy {
-  badge: CmsText;
-  titleTop: CmsText;
-  titleBottom: CmsText;
-  description: CmsText;
-  offerBadge: CmsText;
-  offerNote: CmsText;
-  posterImageUrl: string;
-  ctaLabel: CmsText;
-  featuredCtaLabel: CmsText;
-  featuredProductId: string;
-}
-
-/** @deprecated CMS key `schedule` — homepage Mix & Match section (replaces cafe hours). */
-export type ScheduleCopy = MixMatchSectionCopy;
-
 export interface BrandMarqueeItem {
   label: CmsText;
   imageUrl?: string;
@@ -188,7 +172,6 @@ export interface LandingContentState {
   testimonials: TestimonialsCopy;
   testimonialItems: StoredTestimonial[];
   trustedBrands: BrandMarqueeItem[];
-  schedule: ScheduleCopy;
   ordering: OrderingCopy;
   branchesStrip: BranchesStripCopy;
   faq: FaqCopy;
@@ -232,7 +215,6 @@ interface LandingContentStore {
   setTrustedBrands: (brands: BrandMarqueeItem[]) => void;
   updateTrustedBrand: (index: number, patch: Partial<BrandMarqueeItem>) => void;
   updateKadoCircleSponsor: (index: number, patch: Partial<BrandMarqueeItem>) => void;
-  updateSchedule: (patch: Partial<ScheduleCopy>) => void;
   updateOrdering: (patch: Partial<OrderingCopy>) => void;
   updateOrderingStep: (index: number, patch: Partial<OrderingStepCopy>) => void;
   reorderOrderingSteps: (fromIndex: number, toIndex: number) => void;
@@ -439,18 +421,6 @@ export const SEED_CONTENT: LandingContentState = {
   },
   testimonialItems: SEED_TESTIMONIALS,
   trustedBrands: SEED_TRUSTED_BRANDS,
-  schedule: {
-    badge: 'Kukidō x Kado Kohi',
-    titleTop: 'Mix',
-    titleBottom: '& Match',
-    description: 'Pair any Kado Kohi drink with a Kukidō handcrafted cookie — build your bundle on the homepage or pastries page.',
-    offerBadge: '10% off on your bundle',
-    offerNote: 'In-store bundle · ask your barista',
-    posterImageUrl: '/mix-match/kukido1.jpg',
-    ctaLabel: 'View pastries & collabs',
-    featuredCtaLabel: 'Order Kado Kukilatte',
-    featuredProductId: 'c8f3a1b2-6d4e-4f9a-b7c2-8e1d0f9a3b4c',
-  },
   ordering: {
     badge: 'How it works',
     title: 'Order your way.',
@@ -500,26 +470,6 @@ function clampCardOverrides(tuple: [string, string, string] | undefined): [strin
 function clampFeaturedProducts(tuple: [string, string, string] | undefined): [string, string, string] {
   if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return ['', '', ''];
   return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
-}
-
-function clampMixMatchSection(
-  raw: (Partial<MixMatchSectionCopy> & { title?: string }) | undefined,
-): MixMatchSectionCopy {
-  const base = SEED_CONTENT.schedule;
-  if (!raw) return { ...base };
-  const legacyHours = Boolean(raw.title && !raw.titleTop);
-  return {
-    badge: clampCmsTextField(raw.badge, base.badge),
-    titleTop: legacyHours ? base.titleTop : clampCmsTextField(raw.titleTop, base.titleTop),
-    titleBottom: legacyHours ? base.titleBottom : clampCmsTextField(raw.titleBottom, base.titleBottom),
-    description: legacyHours ? base.description : clampCmsTextField(raw.description, base.description),
-    offerBadge: clampCmsTextField(raw.offerBadge, base.offerBadge),
-    offerNote: clampCmsTextField(raw.offerNote, base.offerNote),
-    posterImageUrl: raw.posterImageUrl?.trim() || base.posterImageUrl,
-    ctaLabel: clampCmsTextField(raw.ctaLabel, base.ctaLabel),
-    featuredCtaLabel: clampCmsTextField(raw.featuredCtaLabel, base.featuredCtaLabel),
-    featuredProductId: raw.featuredProductId ?? base.featuredProductId,
-  };
 }
 
 function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
@@ -777,7 +727,6 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
     ]),
     testimonialItems: clampTestimonials(raw.testimonialItems),
     trustedBrands: clampBrandList(raw.trustedBrands as unknown[] | undefined, SEED_TRUSTED_BRANDS),
-    schedule: clampMixMatchSection(raw.schedule as Partial<MixMatchSectionCopy> & { title?: string }),
     ordering: {
       ...clampCmsSection(SEED_CONTENT.ordering, raw.ordering, [
         'badge',
@@ -816,6 +765,13 @@ const MAX_UNDO = 50;
 
 function cloneContent(state: LandingContentState): LandingContentState {
   return JSON.parse(JSON.stringify(state)) as LandingContentState;
+}
+
+/** Drop retired CMS keys before persisting (e.g. legacy Mix & Match `schedule`). */
+function stripLegacyLandingFields(state: LandingContentState): LandingContentState {
+  const payload = JSON.parse(JSON.stringify(state)) as LandingContentState & { schedule?: unknown };
+  delete payload.schedule;
+  return payload;
 }
 
 function pushUndoSnapshot(
@@ -860,7 +816,7 @@ export const useLandingContentStore = create<LandingContentStore>()(
         try {
           const remote = await orderingRepo.fetchLandingContent();
           if (remote && typeof remote === 'object') {
-            set({ published: normalizeLandingContent(remote as Partial<LandingContentState>) });
+            set({ published: stripLegacyLandingFields(normalizeLandingContent(remote as Partial<LandingContentState>)) });
           }
         } catch {
           // Keep current published content when remote fetch fails.
@@ -908,7 +864,7 @@ export const useLandingContentStore = create<LandingContentStore>()(
         const { draft } = get();
         if (!draft) return;
         set({ publishError: null });
-        const nextPublished = cloneContent(draft);
+        const nextPublished = stripLegacyLandingFields(cloneContent(draft));
         try {
           await orderingRepo.upsertLandingContent(nextPublished);
           clearLandingPreviewDraft();
@@ -1072,9 +1028,6 @@ export const useLandingContentStore = create<LandingContentStore>()(
           };
         }),
 
-      updateSchedule: (patch) =>
-        patchDraft(set, get, (d) => ({ ...d, schedule: { ...d.schedule, ...patch } })),
-
       updateOrdering: (patch) =>
         patchDraft(set, get, (d) => ({
           ...d,
@@ -1149,7 +1102,9 @@ export const useLandingContentStore = create<LandingContentStore>()(
         const legacy = p?.content ?? p?.published;
         return {
           ...c,
-          published: normalizeLandingContent(legacy ? { ...c.published, ...legacy } : c.published),
+          published: stripLegacyLandingFields(
+            normalizeLandingContent(legacy ? { ...c.published, ...legacy } : c.published),
+          ),
         };
       },
     },

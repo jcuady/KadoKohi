@@ -10,7 +10,6 @@ import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
 import FeaturedCoffeesSection from './FeaturedCoffeesSection';
-import MixMatchHomeSection from './MixMatchHomeSection';
 import { useBranchStore } from '../../store/branchStore';
 import { useEventStore } from '../../store/eventStore';
 import { hydrateEvents } from '../../lib/bootstrapHydration';
@@ -79,11 +78,6 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       {showSection('featured', sectionOnly) ? (
         <div id="landing-featured">
           <FeaturedCoffeesSection copy={landing.featured} cmsEditMode={cmsEditMode} />
-        </div>
-      ) : null}
-      {showSection('mix-match', sectionOnly) ? (
-        <div id="landing-mix-match">
-          <MixMatchHomeSection copy={landing.schedule} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
       {showSection('ordering', sectionOnly) ? (

@@ -30,6 +30,5 @@ export function cmsImagePrefixForField(fieldId: string): string {
   if (section === 'menu-seo' && rest[0] === 'pillar') return `landing/menu-seo/pillars/${rest[1] ?? '0'}`;
   if (section === 'events') return 'landing/events/cover';
   if (section === 'featured' && rest[0] === 'card') return `landing/featured/cards/${rest[1] ?? '0'}`;
-  if (section === 'mix-match') return 'landing/mix-match/poster';
   return `landing/misc/${fieldId.replace(/\./g, '-')}`;
 }

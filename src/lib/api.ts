@@ -223,7 +223,6 @@ export const api = {
     updateTrustedBrand: useLandingContentStore.getState().updateTrustedBrand,
     updateKadoCircleSponsor: useLandingContentStore.getState().updateKadoCircleSponsor,
     updateOrderingStep: useLandingContentStore.getState().updateOrderingStep,
-    updateSchedule: useLandingContentStore.getState().updateSchedule,
     updateOrdering: useLandingContentStore.getState().updateOrdering,
     updateBranchesStrip: useLandingContentStore.getState().updateBranchesStrip,
     updateKadoCircle: useLandingContentStore.getState().updateKadoCircle,
