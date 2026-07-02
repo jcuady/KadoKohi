@@ -4,6 +4,7 @@ import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useOrderStore } from '../../store/orderStore';
 import { useAuthStore } from '../../store/authStore';
 import { useEventCalendarStore } from '../../store/eventCalendarStore';
+import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
 
 let channel: RealtimeChannel | null = null;
 
@@ -35,6 +36,7 @@ const refreshOrders = debounce(() => {
 /** Live booth booking + order sync for signed-in customers (RLS-scoped). */
 export function startCustomerAccountRealtime(): void {
   if (!supabase || channel) return;
+  cancelDeferredRealtimeStop();
 
   channel = supabase
     .channel('kk_customer_account_live')
@@ -56,6 +58,9 @@ export function startCustomerAccountRealtime(): void {
 
 export function stopCustomerAccountRealtime(): void {
   if (!channel || !supabase) return;
-  void supabase.removeChannel(channel);
+  const ch = channel;
   channel = null;
+  deferRealtimeStop(() => {
+    if (supabase) void supabase.removeChannel(ch);
+  });
 }

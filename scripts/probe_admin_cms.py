@@ -92,19 +92,22 @@ def check(label: str, ok: bool, detail: str = "") -> bool:
 def jsonb_roundtrip(
     base_url: str,
     anon: str,
-    service: str,
+    token: str,
     column: str,
     marker_key: str,
+    *,
+    label: str | None = None,
 ) -> bool:
+    tag = label or f"JSONB {column}"
     status, rows = rest(
         base_url,
         anon,
-        service,
+        token,
         "GET",
         f"kk_app_settings?select={column}&id=eq.true",
     )
     if status != 200 or not isinstance(rows, list) or not rows:
-        return check(f"JSONB {column} read", False, f"HTTP {status}")
+        return check(f"{tag} read", False, f"HTTP {status}")
     payload = rows[0].get(column) or {}
     if not isinstance(payload, dict):
         payload = {}
@@ -112,34 +115,89 @@ def jsonb_roundtrip(
     status, _ = rest(
         base_url,
         anon,
-        service,
+        token,
         "PATCH",
         "kk_app_settings?id=eq.true",
         {column: patched},
         prefer="return=minimal",
     )
     if status not in (200, 204):
-        return check(f"JSONB {column} write", False, f"HTTP {status}")
+        return check(f"{tag} write", False, f"HTTP {status}")
     status, rows = rest(
         base_url,
         anon,
-        service,
+        token,
         "GET",
         f"kk_app_settings?select={column}&id=eq.true",
     )
     got = (rows[0].get(column) or {}).get(marker_key) if isinstance(rows, list) and rows else None
     if got != MARKER:
-        return check(f"JSONB {column} round-trip", False, f"got {got!r}")
+        return check(f"{tag} round-trip", False, f"got {got!r}")
     rest(
         base_url,
         anon,
-        service,
+        token,
         "PATCH",
         "kk_app_settings?id=eq.true",
         {column: payload},
         prefer="return=minimal",
     )
-    return check(f"JSONB {column} round-trip", True)
+    return check(f"{tag} round-trip", True)
+
+
+def admin_upsert_jsonb_roundtrip(
+    base_url: str,
+    anon: str,
+    admin_token: str,
+    column: str,
+    marker_key: str,
+) -> bool:
+    """Mirrors client orderingRepo.upsert*PageContent (merge-duplicates on id=true)."""
+    tag = f"ADMIN upsert {column}"
+    status, rows = rest(
+        base_url,
+        anon,
+        admin_token,
+        "GET",
+        f"kk_app_settings?select={column}&id=eq.true",
+    )
+    if status != 200 or not isinstance(rows, list) or not rows:
+        return check(f"{tag} read", False, f"HTTP {status}")
+    payload = rows[0].get(column) or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    patched = {**payload, marker_key: MARKER}
+    status, _ = rest(
+        base_url,
+        anon,
+        admin_token,
+        "POST",
+        "kk_app_settings",
+        {"id": True, column: patched},
+        prefer="resolution=merge-duplicates,return=minimal",
+    )
+    if status not in (200, 201, 204):
+        return check(f"{tag} write", False, f"HTTP {status}")
+    status, rows = rest(
+        base_url,
+        anon,
+        admin_token,
+        "GET",
+        f"kk_app_settings?select={column}&id=eq.true",
+    )
+    got = (rows[0].get(column) or {}).get(marker_key) if isinstance(rows, list) and rows else None
+    if got != MARKER:
+        return check(f"{tag} round-trip", False, f"got {got!r}")
+    rest(
+        base_url,
+        anon,
+        admin_token,
+        "POST",
+        "kk_app_settings",
+        {"id": True, column: payload},
+        prefer="resolution=merge-duplicates,return=minimal",
+    )
+    return check(f"{tag} round-trip", True)
 
 
 def main() -> int:
@@ -199,8 +257,45 @@ def main() -> int:
 
     results.append(jsonb_roundtrip(base_url, anon, service, "careers_content", "probeMarker"))
     results.append(jsonb_roundtrip(base_url, anon, service, "booth_content", "probeMarker"))
+    results.append(jsonb_roundtrip(base_url, anon, service, "matcha_content", "probeMarker"))
     results.append(jsonb_roundtrip(base_url, anon, service, "landing_content", "probeMarker"))
     results.append(jsonb_roundtrip(base_url, anon, service, "pastries_content", "probeMarker"))
+
+    results.append(admin_upsert_jsonb_roundtrip(base_url, anon, admin_token, "booth_content", "probeAdminMarker"))
+    results.append(admin_upsert_jsonb_roundtrip(base_url, anon, admin_token, "matcha_content", "probeAdminMarker"))
+
+    status, rows_before = rest(
+        base_url,
+        anon,
+        service,
+        "GET",
+        "kk_app_settings?select=booth_content&id=eq.true",
+    )
+    booth_before = rows_before[0].get("booth_content") if isinstance(rows_before, list) and rows_before else None
+    status, _ = rest(
+        base_url,
+        anon,
+        staff_token,
+        "PATCH",
+        "kk_app_settings?id=eq.true",
+        {"booth_content": {"probeDenied": True}},
+        prefer="return=minimal",
+    )
+    status, rows_after = rest(
+        base_url,
+        anon,
+        service,
+        "GET",
+        "kk_app_settings?select=booth_content&id=eq.true",
+    )
+    booth_after = rows_after[0].get("booth_content") if isinstance(rows_after, list) and rows_after else None
+    results.append(
+        check(
+            "BOOTH staff write denied",
+            booth_after == booth_before,
+            f"HTTP {status}",
+        )
+    )
 
     passed = sum(1 for r in results if r)
     total = len(results)

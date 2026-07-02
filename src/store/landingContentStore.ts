@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { clampCmsTextField, cmsTextPlain, type CmsText } from '../lib/cmsTypography';
 import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
-import { SEO_CEREMONIAL_MATCHA_MARIKINA } from '../content/seo';
+import { SEO_PREMIUM_MATCHA_MARIKINA } from '../content/seo';
 import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
@@ -313,7 +313,7 @@ const SEED_MENU_SEO_PILLARS: [
 ] = [
   {
     title: 'Matcha & hojicha',
-    subtitle: 'Best matcha in Marikina',
+    subtitle: 'Matcha & hojicha in Marikina',
     imageUrl: '/social/matcha-series.png',
     imageAlt: 'Kado Coffee matcha and hojicha drinks in Marikina',
     drinkCategoryKey: 'matcha',
@@ -322,14 +322,14 @@ const SEED_MENU_SEO_PILLARS: [
     title: 'Signature lattes',
     subtitle: 'Torched muscovado & more',
     imageUrl: '/social/matcha-latte.png',
-    imageAlt: SEO_CEREMONIAL_MATCHA_MARIKINA,
+    imageAlt: SEO_PREMIUM_MATCHA_MARIKINA,
     drinkCategoryKey: 'signatures',
   },
   {
     title: 'Classics',
     subtitle: 'Hot, iced, or oat milk',
     imageUrl: '/social/matcha-series.png',
-    imageAlt: SEO_CEREMONIAL_MATCHA_MARIKINA,
+    imageAlt: SEO_PREMIUM_MATCHA_MARIKINA,
     drinkCategoryKey: 'classics',
   },
   {
@@ -344,7 +344,7 @@ const SEED_MENU_SEO_PILLARS: [
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
-    mainHeadline: 'Kado Coffee — Best Matcha in Marikina Near Me',
+    mainHeadline: 'Kado Coffee — Matcha & Specialty Coffee in Marikina',
     locationBadge: 'Kado Coffee · Marikina',
     imageCredit: 'Images: Kado Kohi Social + InsideMarikina',
     primaryCtaLabel: 'Explore Menu',
@@ -362,7 +362,7 @@ export const SEED_CONTENT: LandingContentState = {
       afterAccent2: ', shaped by skill, brewed by heart.',
     },
     intro:
-      'Kado Coffee (Kado Kohi) is one of the best specialty cafes in Marikina, right here in Sta. Elena. Our Coffee, Our Rules — honest craft for guests who want quality, not hype.',
+      'Kado Coffee (Kado Kohi) is a 4.9-star specialty cafe in Sta. Elena, Marikina. Our Coffee, Our Rules — honest craft for guests who want quality, not hype.',
     pillars: SEED_STORY_PILLARS.map((p) => ({ ...p })) as [HomepagePillarCopy, HomepagePillarCopy, HomepagePillarCopy],
     footerTagline1: 'We are Kado Kohi and we will',
     footerTagline2: 'brew it honest',
@@ -374,7 +374,7 @@ export const SEED_CONTENT: LandingContentState = {
     headline: {
       beforeAccent1: 'the cup ',
       accent1: 'behind every',
-      middle: ' corner — best matcha in Marikina, crafted ',
+      middle: ' corner — matcha & hojicha, crafted ',
       accent2: 'with care',
       afterAccent2: ', brewed by heart.',
     },
@@ -386,7 +386,7 @@ export const SEED_CONTENT: LandingContentState = {
       MenuSeoPillarCopy,
     ],
     bodyParagraphs: [
-      'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — best matcha in Marikina, hojicha oat lattes, and signature drinks in a neighborhood tambayan.',
+      'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — matcha, hojicha oat lattes, and signature drinks in a neighborhood tambayan rated 4.9 stars on Google.',
       'Dine-in, takeout, or order online. Join our events or book the mobile booth for gatherings across Metro Manila.',
     ],
     exploreHeading: 'Explore',

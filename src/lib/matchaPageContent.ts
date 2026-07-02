@@ -8,7 +8,7 @@ import {
 
 export const DEFAULT_MATCHA_PAGE_COPY: BoothPageCopy = {
   heroEyebrow: 'Matcha Bar Experiences',
-  heroTitleLine1: 'Ceremonial Matcha,',
+  heroTitleLine1: 'Premium Matcha,',
   heroTitleLine2: 'Your Event.',
   heroDescription:
     'Host a dedicated matcha bar at weddings, brand activations, and private celebrations. Submit a proposal — our events team will follow up on menu, setup, and pricing.',
@@ -41,7 +41,7 @@ export const DEFAULT_MATCHA_PAGE_COPY: BoothPageCopy = {
 export const SEED_MATCHA_SHOWCASE_GALLERY: BookingShowcaseMedia[] = [
   {
     id: 'matcha_media_1',
-    title: 'Ceremonial Matcha Bar',
+    title: 'Matcha Bar Setup',
     caption: 'Premium matcha service for weddings and brand activations.',
     image: '/social/matcha-series.png',
     tags: ['matcha', 'events'],

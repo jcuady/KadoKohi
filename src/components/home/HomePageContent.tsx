@@ -51,7 +51,7 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="flex flex-col w-full max-w-[100vw] min-w-0 overflow-x-hidden bg-kado-cream font-sans"
+      className="flex flex-col w-full min-w-0 overflow-x-hidden bg-kado-cream font-sans"
     >
       {previewBanner ? (
         <motion.div
@@ -65,16 +65,6 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       {showSection('hero', sectionOnly) ? (
         <HomeHeroSlider slides={landing.heroSlides} chrome={landing.heroChrome} cmsEditMode={cmsEditMode} />
       ) : null}
-      {showSection('story', sectionOnly) ? (
-        <div id="landing-story">
-          <HomeSeoIntro copy={landing.storySeo} cmsEditMode={cmsEditMode} />
-        </div>
-      ) : null}
-      {showSection('menu-seo', sectionOnly) ? (
-        <div id="landing-menu-seo">
-          <HomePageSeoSection copy={landing.menuSeo} cmsEditMode={cmsEditMode} />
-        </div>
-      ) : null}
       {showSection('featured', sectionOnly) ? (
         <div id="landing-featured">
           <FeaturedCoffeesSection copy={landing.featured} cmsEditMode={cmsEditMode} />
@@ -83,11 +73,6 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       {showSection('ordering', sectionOnly) ? (
         <div id="landing-ordering">
           <KadoOrderingCarousel copy={landing.ordering} cmsEditMode={cmsEditMode} />
-        </div>
-      ) : null}
-      {showSection('events', sectionOnly) ? (
-        <div id="landing-events">
-          <EventsSection copy={landing.events} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
       {showSection('testimonials', sectionOnly) ? (
@@ -102,6 +87,21 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
             googleListing={KADO_GOOGLE_LISTING}
             cmsEditMode={cmsEditMode}
           />
+        </div>
+      ) : null}
+      {showSection('story', sectionOnly) ? (
+        <div id="landing-story">
+          <HomeSeoIntro copy={landing.storySeo} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('menu-seo', sectionOnly) ? (
+        <div id="landing-menu-seo">
+          <HomePageSeoSection copy={landing.menuSeo} cmsEditMode={cmsEditMode} />
+        </div>
+      ) : null}
+      {showSection('events', sectionOnly) ? (
+        <div id="landing-events">
+          <EventsSection copy={landing.events} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
       {showSection('branches', sectionOnly) ? (
@@ -121,7 +121,7 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
   );
 }
 
-const FALLBACK_EVENT_IMG = 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1200&auto=format&fit=crop';
+const FALLBACK_EVENT_IMG = '/featuredmarikina/kadom2.jpg';
 
 function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: boolean }) {
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
@@ -212,7 +212,7 @@ function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: 
             viewport={{ once: true }}
             transition={{ duration: 0.55 }}
           >
-            <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group cursor-pointer border border-[#2A2626]/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:h-[750px] w-full">
+            <div className="relative rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden group border border-kado-dark/20 shadow-2xl shadow-black/40 min-h-[min(68svh,520px)] sm:min-h-[500px] lg:min-h-[750px] w-full">
               {cmsEditMode ? (
                 <CmsEditableImage
                   cmsField="events.cover"
@@ -305,13 +305,13 @@ function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: 
                     {ev.description}
                   </p>
                   {durationLabel && (
-                    <p className="text-xs sm:text-sm text-[#EFE6D5]/80 font-semibold mb-5">
+                    <p className="text-xs sm:text-sm text-kado-cream/80 font-semibold mb-5">
                       Event duration: {durationLabel}
                     </p>
                   )}
                   <Link
                     to={ctaHref}
-                    className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-kado-red/40 shadow-[0_0_30px_rgba(158,24,29,0.35)] transition-all"
+                    className="inline-flex items-center justify-center gap-2 sm:gap-3 min-h-[48px] w-full sm:w-auto text-kado-cream hover:text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-[0.15em] sm:tracking-[0.2em] bg-kado-red/90 hover:bg-kado-red px-6 sm:px-8 py-3.5 sm:py-4 rounded-full backdrop-blur-md border border-kado-red/40 shadow-[0_0_30px_rgba(158,24,29,0.35)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
                   >
                     {ctaLabel} <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" aria-hidden />
                   </Link>
@@ -390,7 +390,7 @@ function BranchesStrip({ copy, cmsEditMode }: { copy: BranchesStripCopy; cmsEdit
           </div>
           <Link
             to="/branches"
-            className="kado-label text-kado-cream/60 hover:text-white flex items-center gap-1 transition-colors"
+            className="kado-label inline-flex min-h-[44px] items-center gap-1 text-kado-cream/60 hover:text-white transition-colors"
           >
             <CmsStyledText
               value={copy.ctaLabel}

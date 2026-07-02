@@ -10,6 +10,7 @@ import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
+import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -21,6 +22,14 @@ const GUEST_TABLES = [
 ] as const;
 
 type GuestTable = (typeof GUEST_TABLES)[number];
+
+/** Paths where live menu/branch/table sync is worth a Realtime channel. */
+const GUEST_REALTIME_PATH_RE =
+  /^\/(menu|merch|order|events|book\/|blog|pastries)(\/|$)/;
+
+export function pathUsesGuestRealtime(pathname: string): boolean {
+  return GUEST_REALTIME_PATH_RE.test(pathname);
+}
 
 let channel: RealtimeChannel | null = null;
 let refCount = 0;
@@ -71,9 +80,17 @@ function onTableChange(table: GuestTable) {
   }
 }
 
-/** Live menu / branch / table sync for guest QR and takeout pages. */
+function teardownChannel(): void {
+  if (!channel || !supabase) return;
+  const ch = channel;
+  channel = null;
+  void supabase.removeChannel(ch);
+}
+
+/** Live menu / branch / table sync for guest ordering surfaces. */
 export function startGuestPageRealtime(): void {
   if (!supabase) return;
+  cancelDeferredRealtimeStop();
   refCount += 1;
   if (channel) return;
 
@@ -90,7 +107,6 @@ export function startGuestPageRealtime(): void {
 
 export function stopGuestPageRealtime(): void {
   refCount = Math.max(0, refCount - 1);
-  if (refCount > 0 || !channel || !supabase) return;
-  void supabase.removeChannel(channel);
-  channel = null;
+  if (refCount > 0) return;
+  deferRealtimeStop(teardownChannel);
 }

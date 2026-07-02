@@ -4,16 +4,20 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import { hydrateForPublicPath, hydratePublicShell } from '../lib/bootstrapHydration';
-import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
+import { pathUsesGuestRealtime, startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
 
   useEffect(() => {
     void hydratePublicShell();
+  }, []);
+
+  useEffect(() => {
+    if (!pathUsesGuestRealtime(pathname)) return;
     startGuestPageRealtime();
     return () => stopGuestPageRealtime();
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     hydrateForPublicPath(pathname);

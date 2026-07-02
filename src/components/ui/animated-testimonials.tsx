@@ -11,6 +11,7 @@ import type { GoogleReviewsListing } from "../../content/kadoGoogleReviews"
 import { motion, useAnimation, useInView } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "../../lib/utils"
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion"
 
 export interface Testimonial {
   id: number
@@ -56,6 +57,7 @@ export function AnimatedTestimonials({
   const updateTestimonialItem = useLandingContentStore((s) => s.updateTestimonialItem);
   const updateTrustedBrand = useLandingContentStore((s) => s.updateTrustedBrand);
   const [activeIndex, setActiveIndex] = useState(0)
+  const prefersReducedMotion = usePrefersReducedMotion()
 
   const sectionRef = useRef(null)
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 })
@@ -86,12 +88,12 @@ export function AnimatedTestimonials({
   }, [isInView, controls])
 
   useEffect(() => {
-    if (autoRotateInterval <= 0 || testimonials.length <= 1) return
+    if (autoRotateInterval <= 0 || testimonials.length <= 1 || prefersReducedMotion) return
     const interval = setInterval(() => {
       setActiveIndex((current) => (current + 1) % testimonials.length)
     }, autoRotateInterval)
     return () => clearInterval(interval)
-  }, [autoRotateInterval, testimonials.length])
+  }, [autoRotateInterval, testimonials.length, prefersReducedMotion])
 
   if (testimonials.length === 0) return null
 
@@ -160,7 +162,7 @@ export function AnimatedTestimonials({
                     href={googleListing.reviewsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-kado-red hover:underline"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-kado-red hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2 rounded-sm"
                   >
                     Read on Google
                     <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -176,7 +178,7 @@ export function AnimatedTestimonials({
                     type="button"
                     onClick={() => setActiveIndex(index)}
                     className={cn(
-                      "min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full transition-all duration-300 -m-2 p-2",
+                      "min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full transition-all duration-300 -m-2 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2",
                       activeIndex === index
                         ? "bg-kado-red/15"
                         : "hover:bg-kado-dark/5"
@@ -205,6 +207,7 @@ export function AnimatedTestimonials({
               <motion.div
                 key={testimonial.id}
                 className="absolute inset-0"
+                aria-hidden={index !== activeIndex}
                 initial={{ opacity: 0, x: 80 }}
                 animate={{
                   opacity: activeIndex === index ? 1 : 0,
@@ -225,7 +228,10 @@ export function AnimatedTestimonials({
                   </div>
 
                   {/* Quote body */}
-                  <div className="relative mb-6 flex-1">
+                  <div
+                    className="relative mb-6 flex-1"
+                    {...(index === activeIndex ? { 'aria-live': 'polite' as const, 'aria-atomic': true } : {})}
+                  >
                     <Quote className="absolute -top-1 -left-1 h-7 w-7 text-kado-red/15 rotate-180" />
                     <p className="relative z-10 text-kado-dark text-base leading-relaxed font-medium">
                       &ldquo;

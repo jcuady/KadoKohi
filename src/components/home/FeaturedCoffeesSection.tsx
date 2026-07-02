@@ -329,7 +329,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               {/* Phone + tablet: horizontal snap carousel with next-card peek */}
               <div className="relative lg:hidden">
                 <div
-                  className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-4 pb-2 scroll-pl-4 scroll-pr-10 touch-pan-x"
+                  className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-2 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x"
                   aria-label="Featured drinks carousel"
                 >
                   {showcaseDrinks.map((drink, i) => (

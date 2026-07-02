@@ -23,6 +23,7 @@ import { useCareersStore } from '../../store/careersStore';
 import { usePastriesContentStore } from '../../store/pastriesContentStore';
 import { useAuthStore } from '../../store/authStore';
 import { orderScopeForUser } from '../orderFetchScope';
+import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -201,6 +202,7 @@ export async function refreshOperationsData(): Promise<void> {
  */
 export function startOperationsRealtime(): void {
   if (!supabase || started) return;
+  cancelDeferredRealtimeStop();
   started = true;
 
   const user = useAuthStore.getState().user;
@@ -225,11 +227,15 @@ export function startOperationsRealtime(): void {
 }
 
 export function stopOperationsRealtime(): void {
-  if (channel && supabase) {
-    void supabase.removeChannel(channel);
-  }
-  channel = null;
+  if (!started) return;
   started = false;
+  deferRealtimeStop(() => {
+    if (channel && supabase) {
+      const ch = channel;
+      channel = null;
+      void supabase.removeChannel(ch);
+    }
+  });
 }
 
 export function isOperationsRealtimeActive(): boolean {

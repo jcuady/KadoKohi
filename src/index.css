@@ -263,6 +263,12 @@ body {
   line-height: 1.05;
 }
 
+@media (orientation: landscape) and (max-height: 32rem) {
+  .kado-h1-hero {
+    font-size: clamp(1.375rem, 4.5vw, 2rem);
+  }
+}
+
 .kado-h2 {
   font-family: var(--font-display);
   font-size: clamp(1.5rem, 3.5vw, 1.875rem);
@@ -429,6 +435,13 @@ body {
   transform: scale(0.98);
 }
 
+.public-nav-cta:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-kado-cream),
+    0 0 0 4px var(--color-kado-dark);
+}
+
 /* Ghost action on red bar (Sign in, cart hover) */
 .public-nav-ghost {
   display: inline-flex;
@@ -449,6 +462,13 @@ body {
   color: #fff;
 }
 
+.public-nav-ghost:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-kado-cream),
+    0 0 0 4px var(--color-kado-dark);
+}
+
 .public-nav-icon-btn {
   display: inline-flex;
   height: 2.5rem;
@@ -463,6 +483,13 @@ body {
 .public-nav-icon-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #fff;
+}
+
+.public-nav-icon-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-kado-cream),
+    0 0 0 4px var(--color-kado-dark);
 }
 
 /* Mobile drawer — one cream panel, flat rows */
@@ -569,6 +596,27 @@ html.customer-facing .public-nav-shell {
 }
 
 @media (orientation: landscape) and (max-height: 32rem) {
+  .landing-hero {
+    height: auto !important;
+    min-height: min(calc(100svh - 3.5rem), 28rem) !important;
+  }
+
+  .landing-hero-inner {
+    padding-top: 0.75rem !important;
+    padding-bottom: 1.25rem !important;
+  }
+
+  .landing-hero-cards {
+    display: none !important;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 64rem) and (max-height: 40rem) {
+  .landing-hero-inner {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: center !important;
+  }
+
   .landing-hero-cards {
     display: none !important;
   }
@@ -850,6 +898,15 @@ html {
   animation: marquee-vertical var(--duration, 30s) linear infinite;
   will-change: transform;
   transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-vertical {
+    animation: none;
+    transform: none;
+    will-change: auto;
+  }
 }
 
 .animate-fade-in-up {

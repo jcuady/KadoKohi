@@ -4,6 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { HomeHeroSlide } from '../../data/homeHeroMedia';
 import { useLandingContentStore, type HeroChrome } from '../../store/landingContentStore';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import CmsStyledText from '../cms/CmsStyledText';
 import CmsEditableImage from '../cms/CmsEditableImage';
 
@@ -19,14 +20,15 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
   const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
   const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    if (cmsEditMode || safeSlides.length < 2) return;
+    if (cmsEditMode || safeSlides.length < 2 || prefersReducedMotion) return;
     const id = window.setInterval(() => {
       setIndex((n) => (n + 1) % safeSlides.length);
     }, 5500);
     return () => window.clearInterval(id);
-  }, [safeSlides.length, cmsEditMode]);
+  }, [safeSlides.length, cmsEditMode, prefersReducedMotion]);
 
   useEffect(() => {
     setIndex(0);
@@ -54,9 +56,11 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
       : {};
 
   return (
+    // 92svh leaves an ~8vh peek of the next section (brand doc §3.4 client revision)
     <section
       id="landing-hero"
-      className="relative h-[calc(100svh-3.5rem)] min-h-[34rem] w-full overflow-hidden border-b border-kado-dark/10"
+      aria-labelledby="hero-main-headline"
+      className="landing-hero relative h-[calc(92svh-3.5rem)] min-h-[min(34rem,88svh)] w-full overflow-hidden border-b border-kado-dark/10"
     >
       <AnimatePresence mode="wait">
         {cms ? (
@@ -82,11 +86,11 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           />
         )}
       </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/88 via-[#141414]/60 to-[#141414]/38" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/18" />
+      <div className="absolute inset-0 bg-gradient-to-r from-kado-dark/88 via-kado-dark/60 to-kado-dark/38" />
+      <div className="absolute inset-0 bg-gradient-to-t from-kado-dark/50 via-transparent to-kado-dark/18" />
 
-      <div className="relative z-10 grid h-full grid-cols-1 items-end gap-6 md:gap-8 px-5 pb-28 pt-16 sm:px-8 sm:pb-32 md:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.8fr)] md:px-12 md:pb-12 lg:px-20">
-        <div className="max-w-3xl">
+      <div className="landing-hero-inner relative z-10 grid h-full min-h-0 grid-cols-1 items-end gap-6 px-5 pb-28 pt-14 sm:px-8 sm:pb-32 sm:pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(200px,0.75fr)] lg:items-end lg:gap-8 lg:px-12 lg:pb-12 lg:pt-16 xl:px-20">
+        <div className="min-w-0 max-w-3xl">
           <CmsStyledText
             value={c?.locationBadge ?? 'Kado Kohi · Marikina'}
             as="p"
@@ -96,43 +100,47 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               updateHeroChrome({ locationBadge: v }),
             )}
           />
-          <CmsStyledText
-            value={c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me'}
-            as="h1"
-            className="kado-h1 kado-h1-hero drop-shadow-lg"
-            defaultColorClass="text-white"
+          <div id="hero-main-headline">
+            <CmsStyledText
+              value={c?.mainHeadline ?? 'Kado Coffee — Matcha & Specialty Coffee in Marikina'}
+              as="h1"
+              className="kado-h1 kado-h1-hero drop-shadow-lg"
+            defaultColorClass="text-kado-offwhite"
             {...textProps(
               'hero.chrome.mainHeadline',
               'Main headline',
-              c?.mainHeadline ?? 'Kado Coffee — Best Matcha in Marikina Near Me',
+              c?.mainHeadline ?? 'Kado Coffee — Matcha & Specialty Coffee in Marikina',
               (v) => updateHeroChrome({ mainHeadline: v }),
             )}
           />
-          <CmsStyledText
-            value={current.title}
-            as="h2"
-            className="mt-3 drop-shadow-md"
-            defaultSizeClass="kado-h2"
-            defaultColorClass="text-kado-cream/95"
-            {...textProps(`hero.slide.${slideIndex}.title`, 'Slide title', current.title, (v) =>
-              updateHeroSlide(slideIndex, { title: v }),
-            )}
-          />
-          <CmsStyledText
-            value={current.subtitle}
-            as="p"
-            className="mt-4 sm:mt-5 max-w-2xl md:text-base leading-relaxed drop-shadow-md"
-            defaultSizeClass="kado-body"
-            defaultColorClass="text-kado-cream/90"
-            {...textProps(`hero.slide.${slideIndex}.subtitle`, 'Slide subtitle', current.subtitle, (v) =>
-              updateHeroSlide(slideIndex, { subtitle: v }),
-            )}
-          />
+          </div>
+          <div aria-live="polite" aria-atomic="true">
+            <CmsStyledText
+              value={current.title}
+              as="h2"
+              className="mt-3 drop-shadow-md"
+              defaultSizeClass="kado-h2"
+              defaultColorClass="text-kado-cream/95"
+              {...textProps(`hero.slide.${slideIndex}.title`, 'Slide title', current.title, (v) =>
+                updateHeroSlide(slideIndex, { title: v }),
+              )}
+            />
+            <CmsStyledText
+              value={current.subtitle}
+              as="p"
+              className="mt-4 sm:mt-5 max-w-2xl md:text-base leading-relaxed drop-shadow-md"
+              defaultSizeClass="kado-body"
+              defaultColorClass="text-kado-cream/90"
+              {...textProps(`hero.slide.${slideIndex}.subtitle`, 'Slide subtitle', current.subtitle, (v) =>
+                updateHeroSlide(slideIndex, { subtitle: v }),
+              )}
+            />
+          </div>
 
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Link
               to={c?.primaryCtaPath ?? '/menu'}
-              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-sm bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-kado-red-hover shadow-lg shadow-kado-red/30"
+              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-kado-red px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:bg-kado-red-hover shadow-lg shadow-kado-red/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
             >
               <CmsStyledText
                 value={c?.primaryCtaLabel ?? 'Explore Menu'}
@@ -145,7 +153,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
             </Link>
             <Link
               to={c?.secondaryCtaPath ?? '/merch'}
-              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:border-white/80 hover:bg-white/10"
+              className="inline-flex min-h-[48px] sm:min-h-[52px] w-full sm:w-auto items-center justify-center rounded-full border border-white/40 bg-black/20 backdrop-blur-sm px-8 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-white transition-all hover:border-white/80 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
             >
               <CmsStyledText
                 value={c?.secondaryCtaLabel ?? 'Shop Merch'}
@@ -160,7 +168,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
             </Link>
           </div>
 
-          <div className="mt-8 hidden md:block">
+          <div className="mt-8 hidden lg:block">
             <CmsStyledText
               value={c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
               as="p"
@@ -176,7 +184,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           </div>
         </div>
 
-        <div className="landing-hero-cards hidden md:grid grid-cols-2 gap-3 justify-self-end w-full max-w-[22rem] lg:max-w-sm self-end">
+        <div className="landing-hero-cards hidden lg:grid grid-cols-2 gap-2.5 xl:gap-3 justify-self-end w-full max-w-[18rem] xl:max-w-[22rem] self-end min-w-0">
           {current.cards.slice(0, 4).map((card, i) => (
             <motion.article
               key={card.id}
@@ -203,11 +211,11 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
                   />
                 )}
               </div>
-              <div className="flex items-center justify-between px-2.5 py-2 border-t border-white/10">
+              <div className="flex min-w-0 items-start justify-between gap-1.5 px-2 py-2 border-t border-white/10">
                 <CmsStyledText
                   value={card.title}
                   as="p"
-                  className="truncate text-[9px] font-bold uppercase tracking-[0.12em]"
+                  className="min-w-0 flex-1 line-clamp-2 text-[8px] font-bold uppercase leading-tight tracking-[0.1em] xl:text-[9px] xl:tracking-[0.12em]"
                   defaultColorClass="text-kado-cream/85"
                   {...textProps(`hero.slide.${slideIndex}.card.${i}.title`, `Card ${i + 1} title`, card.title, (v) =>
                     updateHeroCard(slideIndex, i, { title: v }),
@@ -245,7 +253,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         </div>
       ) : null}
 
-      <div className="absolute bottom-5 left-5 right-5 z-20 flex flex-row items-end justify-between md:hidden">
+      <div className="absolute bottom-5 left-5 right-5 z-20 flex flex-row items-end justify-between lg:hidden">
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             {current.cards.slice(0, 2).map((card) => (
@@ -258,7 +266,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               />
             ))}
           </div>
-          <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-kado-cream/70 max-w-[150px] leading-tight drop-shadow-md">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-kado-cream/70 max-w-[150px] leading-tight drop-shadow-md">
             {c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
           </p>
         </div>
@@ -267,7 +275,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           <button
             type="button"
             onClick={() => setIndex((n) => (n - 1 + safeSlides.length) % safeSlides.length)}
-            className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg"
+            className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
             aria-label="Previous slide"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -275,7 +283,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           <button
             type="button"
             onClick={() => setIndex((n) => (n + 1) % safeSlides.length)}
-            className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg"
+            className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
             aria-label="Next slide"
           >
             <ChevronRight className="h-4 w-4" />
@@ -283,11 +291,11 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         </div>
       </div>
 
-      <div className="hidden md:flex absolute bottom-6 right-6 z-20 items-center gap-2">
+      <div className="hidden lg:flex absolute bottom-6 right-6 z-20 items-center gap-2">
         <button
           type="button"
           onClick={() => setIndex((n) => (n - 1 + safeSlides.length) % safeSlides.length)}
-          className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg"
+          className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -295,7 +303,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         <button
           type="button"
           onClick={() => setIndex((n) => (n + 1) % safeSlides.length)}
-          className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg"
+          className="rounded-full border border-white/25 bg-black/40 backdrop-blur-sm p-2.5 text-white transition-colors hover:border-white/60 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark"
           aria-label="Next slide"
         >
           <ChevronRight className="h-4 w-4" />

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, User, Menu, X, LayoutDashboard, Coffee, Package, UserPlus, LogOut } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useCartToggle } from '../hooks/useCartToggle';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import BrandWordmark from './BrandWordmark';
 import { PublicSiteNavDesktop, PublicSiteNavMobile } from './nav/PublicSiteNavMenu';
 
@@ -19,6 +20,7 @@ function useAuthLink(): { label: string; path: string; icon: typeof User } {
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuTitleId = useId();
 
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -31,9 +33,20 @@ export default function Navbar() {
 
   const closeMobile = () => setMobileOpen(false);
 
+  useBodyScrollLock(mobileOpen);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobile();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
+
   return (
     <>
-      <nav className="sticky top-0 z-[100] w-full border-b border-black/10 bg-kado-red text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]">
+      <nav className="sticky top-0 z-[100] w-full border-b border-black/10 bg-kado-red text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] pt-safe-nav">
         <div className="mx-auto flex min-h-[3.25rem] max-w-7xl items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:min-h-14 lg:px-8">
           <Link
             to="/"
@@ -45,7 +58,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="public-nav-icon-btn xl:hidden"
+            className="public-nav-icon-btn hidden max-xl:inline-flex"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
             aria-expanded={mobileOpen}
@@ -128,12 +141,18 @@ export default function Navbar() {
             />
             <motion.aside
               key="mobile-sidebar"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={mobileMenuTitleId}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed top-0 right-0 z-[120] flex h-full w-[min(88vw,22rem)] flex-col bg-kado-red text-white shadow-2xl xl:hidden"
+              className="fixed top-0 right-0 z-[120] flex h-full w-[min(88vw,22rem)] flex-col bg-kado-red text-white shadow-2xl xl:hidden pt-safe-nav"
             >
+              <h2 id={mobileMenuTitleId} className="sr-only">
+                Main menu
+              </h2>
               <div className="flex h-14 items-center justify-between border-b border-white/15 px-4">
                 <Link to="/" onClick={closeMobile} className="shrink-0">
                   <BrandWordmark variant="sidebar" />
@@ -197,7 +216,7 @@ export default function Navbar() {
                 </div>
               </nav>
 
-              <p className="kado-subtext border-t border-white/15 px-5 py-4 text-white/55">
+              <p className="kado-subtext border-t border-white/15 px-5 py-4 text-white/55 pb-safe">
                 Japanese-inspired urban tambayan · Marikina
               </p>
             </motion.aside>

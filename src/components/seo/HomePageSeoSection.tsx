@@ -212,7 +212,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
               <li key={to}>
                 <Link
                   to={to}
-                  className="inline-flex min-h-[40px] max-w-full items-center rounded-full border border-kado-dark/10 bg-white px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-kado-dark transition-colors hover:border-kado-red/30 hover:text-kado-red sm:px-4"
+                  className="inline-flex min-h-[44px] max-w-full items-center rounded-full border border-kado-dark/10 bg-white px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-kado-dark transition-colors hover:border-kado-red/30 hover:text-kado-red sm:px-4"
                 >
                   <span className="truncate">{label}</span>
                 </Link>

@@ -20,7 +20,7 @@ export const BOOKING_SERVICE_TAGS: Record<BookingPageKind, string> = {
 /** Static copy for matcha bar — coffee cart uses CMS (booth showcase store). */
 export const MATCHA_BAR_PAGE_COPY: BoothPageCopy = {
   heroEyebrow: 'Matcha Bar Experiences',
-  heroTitleLine1: 'Ceremonial Matcha,',
+  heroTitleLine1: 'Premium Matcha,',
   heroTitleLine2: 'Your Event.',
   heroDescription:
     'Host a dedicated matcha bar at weddings, brand activations, and private celebrations. Submit a proposal — our events team will follow up on menu, setup, and pricing.',

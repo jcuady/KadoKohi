@@ -99,7 +99,7 @@ export const DEFAULT_CAREERS_PAGE_COPY: CareersPageCopy = {
   heroEyebrow: 'Careers at Kado Kohi',
   heroTitle: 'Build the tambayan with us',
   heroDescription:
-    'We hire people who care about craft coffee, ceremonial matcha, and warm hospitality. Grow your career in Marikina — on the bar, behind the brand, on the decks, or on the road.',
+    'We hire people who care about craft coffee, premium matcha, and warm hospitality. Grow your career in Marikina — on the bar, behind the brand, on the decks, or on the road.',
   heroBenefits: ['Hands-on training', 'Growth paths', 'Team-first culture', 'Flexible schedules'],
   whyJoinTitle: 'Why join our corner?',
   whyJoinBody:

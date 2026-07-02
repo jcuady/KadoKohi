@@ -138,10 +138,10 @@ export const SEO_HOME_TITLE = 'Kado Coffee | Best Matcha in Marikina | Near Me';
 export const SEO_DEFAULT_DESCRIPTION =
   'Kado Kohi in Sta. Elena, Marikina — matcha oat latte, hojicha and KADO Latte. 4.9 stars. Order online.';
 
-export const SEO_HOME_H1 = 'Kado Coffee — Best Matcha in Marikina Near Me';
+export const SEO_HOME_H1 = 'Kado Coffee — Matcha & Specialty Coffee in Marikina';
 
-/** Image alt / campaign line for ceremonial matcha hero & menu SEO pillars. */
-export const SEO_CEREMONIAL_MATCHA_MARIKINA = 'Kado Kohi - Ceremonial Matcha in Marikina';
+/** Image alt / campaign line for premium matcha hero & menu SEO pillars. */
+export const SEO_PREMIUM_MATCHA_MARIKINA = 'Kado Kohi — Premium Matcha in Marikina';
 
 /** Signature drinks for homepage copy & schema (aligned with live menu catalog). */
 export const SEO_SIGNATURE_DRINKS = [
@@ -177,7 +177,7 @@ export const SEO_INTERNAL_LINKS = [
 /** Full homepage copy for crawlers (index.html prerender + sr-only). */
 export const SEO_HOME_BODY_PARAGRAPHS = [
   'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe on J.P. Laurel corner Mt. Everest in Sta. Elena, Marikina City, where guests searching for the best matcha in Marikina, matcha near me, or coffee near me in Eastern Metro Manila discover a neighborhood favorite rated 4.9 stars on Google with warm barista service and a cozy tambayan atmosphere.',
-  'Our menu highlights premium matcha and hojicha drinks crafted with quality ingredients, including ceremonial-grade matcha service in Marikina — Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — each a popular choice for oat latte lovers across Marikina who want café-quality drinks without leaving the city.',
+  'Our menu highlights premium matcha and hojicha drinks crafted with quality ingredients — Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — each a popular choice for oat latte lovers across Marikina who want café-quality drinks without leaving the city.',
   'Signature espresso drinks include the KADO Latte with torched muscovado, Ube Shio Karamel Latte, and Yuzu AmeriKado, while classic lattes such as Spanish Latte, Moka Latte, and Karamel Latte are available hot or iced with regular milk or oat milk for every kind of coffee drinker.',
   'Refreshing yuzu sodas round out the menu for guests who want something bright and citrus-forward after coffee or matcha, and our team keeps the lineup updated with seasonal specials you can follow on social media throughout the year.',
   'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours, and join tambayan events or community nights listed on our events calendar in Marikina whenever you want a relaxed hangout with great drinks.',
@@ -186,7 +186,7 @@ export const SEO_HOME_BODY_PARAGRAPHS = [
 
 /** Concise copy shown in the UI — keywords live in headings, cards, links, and sr-only block. */
 export const SEO_HOME_BODY_VISIBLE = [
-  'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — best matcha in Marikina, hojicha oat lattes, and signature drinks in a neighborhood tambayan.',
+  'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — matcha, hojicha oat lattes, and signature drinks in a neighborhood tambayan rated 4.9 stars on Google.',
   'Dine-in, takeout, or order online. Join our events or book the mobile booth for gatherings across Metro Manila.',
 ] as const;
 
@@ -370,7 +370,7 @@ export const SEO_FAQ = [
   {
     question: 'Where can I get the best matcha in Marikina?',
     answer:
-      'Kado Coffee (Kado Kohi) in Sta. Elena, Marikina serves premium matcha drinks including Matcha Oat Latte, Dirty Matcha Oat Latte, and Matcha Strawberry Oat Latte — plus ceremonial matcha experiences for events. Popular for guests searching matcha near me in Marikina.',
+      'Kado Coffee (Kado Kohi) in Sta. Elena, Marikina serves premium matcha drinks including Matcha Oat Latte, Dirty Matcha Oat Latte, and Matcha Strawberry Oat Latte — plus event matcha bar experiences for weddings and activations. Popular for guests searching matcha near me in Marikina.',
   },
   {
     question: 'Does Kado Coffee serve hojicha and oat lattes?',
@@ -399,7 +399,7 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
   '/': {
     heading: 'Kado Coffee — specialty coffee & matcha in Marikina',
     paragraphs: [
-      'Kado Coffee (Kado Kohi) on J.P. Laurel, Sta. Elena is a specialty cafe for matcha oat latte, hojicha oat latte, KADO Latte, and oat lattes — one of the best coffee shops in Marikina for guests searching coffee near me or matcha near me.',
+      'Kado Coffee (Kado Kohi) on J.P. Laurel, Sta. Elena is a specialty cafe for matcha oat latte, hojicha oat latte, KADO Latte, and oat lattes — rated 4.9 stars on Google for guests searching coffee near me or matcha near me in Marikina.',
     ],
     links: [
       { label: 'Full menu', to: '/menu' },

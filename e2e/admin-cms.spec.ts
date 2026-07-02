@@ -40,6 +40,67 @@ test.describe('Admin CMS', () => {
     await expect(publish).toBeEnabled({ timeout: 20000 });
   });
 
+  test('booth coffee cart publish round-trip', async ({ page }) => {
+    await internalLogin(page, 'admin');
+    await page.goto('/admin/booth-content');
+    const publish = page.getByRole('button', { name: /publish coffee cart/i });
+    await expect(publish).toBeEnabled({ timeout: 20000 });
+
+    const titleField = page
+      .locator('label')
+      .filter({ hasText: /^Title line 1$/ })
+      .locator('..')
+      .locator('input[type="text"]')
+      .first();
+    await expect(titleField).toBeVisible();
+    const original = await titleField.inputValue();
+    const marker = `${original.replace(/\s+e2e$/i, '').trim()} e2e`;
+    await titleField.fill(marker);
+    await publish.click();
+    await expect(page.getByText(/coffee cart page published/i)).toBeVisible({ timeout: 20000 });
+
+    await page.goto('/book/coffee-cart');
+    await expect(page.locator('h1.font-display')).toContainText(marker, { timeout: 20000 });
+
+    await page.goto('/admin/booth-content');
+    await expect(publish).toBeEnabled({ timeout: 20000 });
+    await titleField.fill(original);
+    await publish.click();
+    await expect(page.getByText(/coffee cart page published/i)).toBeVisible({ timeout: 20000 });
+  });
+
+  test('booth matcha bar publish round-trip', async ({ page }) => {
+    await internalLogin(page, 'admin');
+    await page.goto('/admin/booth-content');
+    await page.getByRole('button', { name: /^matcha bar$/i }).click();
+
+    const publish = page.getByRole('button', { name: /publish matcha bar/i });
+    await expect(publish).toBeEnabled({ timeout: 20000 });
+
+    const titleField = page
+      .locator('label')
+      .filter({ hasText: /^Title line 1$/ })
+      .locator('..')
+      .locator('input[type="text"]')
+      .first();
+    await expect(titleField).toBeVisible();
+    const original = await titleField.inputValue();
+    const marker = `${original.replace(/\s+e2e$/i, '').trim()} e2e`;
+    await titleField.fill(marker);
+    await publish.click();
+    await expect(page.getByText(/matcha bar page published/i)).toBeVisible({ timeout: 20000 });
+
+    await page.goto('/book/matcha-bar');
+    await expect(page.locator('h1.font-display')).toContainText(marker, { timeout: 20000 });
+
+    await page.goto('/admin/booth-content');
+    await page.getByRole('button', { name: /^matcha bar$/i }).click();
+    await expect(publish).toBeEnabled({ timeout: 20000 });
+    await titleField.fill(original);
+    await publish.click();
+    await expect(page.getByText(/matcha bar page published/i)).toBeVisible({ timeout: 20000 });
+  });
+
   test('pastries publish waits for hydration', async ({ page }) => {
     await internalLogin(page, 'admin');
     await page.goto('/admin/pastries');

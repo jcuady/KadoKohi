@@ -1,7 +1,7 @@
 import type { CmsText } from '../lib/cmsTypography';
-import { SEO_CEREMONIAL_MATCHA_MARIKINA } from '../content/seo';
+import { SEO_PREMIUM_MATCHA_MARIKINA } from '../content/seo';
 
-const CEREMONIAL_MATCHA_ALT = SEO_CEREMONIAL_MATCHA_MARIKINA;
+const PREMIUM_MATCHA_ALT = SEO_PREMIUM_MATCHA_MARIKINA;
 
 export type HomeMediaSource = 'KadoKohi Social' | 'InsideMarikina';
 
@@ -47,16 +47,16 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       {
         id: 'social-5',
         src: '/social/matcha-latte.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
         id: 'social-4',
         src: '/social/matcha-series.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },
@@ -89,16 +89,16 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       {
         id: 'featured-2',
         src: '/social/matcha-latte.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
         id: 'social-6',
         src: '/social/matcha-series.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },
@@ -131,16 +131,16 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       {
         id: 'social-5b',
         src: '/social/matcha-latte.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },
       {
         id: 'social-2square',
         src: '/social/matcha-series.png',
-        alt: CEREMONIAL_MATCHA_ALT,
-        title: 'Ceremonial Matcha',
+        alt: PREMIUM_MATCHA_ALT,
+        title: 'Premium Matcha',
         tag: 'Marikina',
         source: 'KadoKohi Social',
       },

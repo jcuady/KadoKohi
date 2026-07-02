@@ -23,6 +23,7 @@ import { useOrderStore } from '../store/orderStore';
 import { useBranchStore } from '../store/branchStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineOrderHours } from '../hooks/useOnlineOrderHours';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import OnlineOrderHoursNotice from './OnlineOrderHoursNotice';
 import { formatPhp } from '../lib/money';
 import { computeVoucherDiscount, computeCartTotalsWithDiscount } from '../lib/voucherDiscount';
@@ -150,6 +151,17 @@ export default function CartDrawer() {
     closeCart();
   };
 
+  useBodyScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
   const placeOrder = async () => {
     if (!canOrder) return;
     if (hasMixedCart) {
@@ -238,17 +250,20 @@ export default function CartDrawer() {
           {/* Drawer panel */}
           <motion.aside
             key="cart-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-drawer-title"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 z-[201] w-full max-w-[420px] flex flex-col bg-[#FAF7F2] shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 z-[201] w-full max-w-[420px] flex flex-col bg-kado-offwhite shadow-2xl pt-safe-nav"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-kado-dark/10 shrink-0">
               <div className="flex items-center gap-2.5">
                 <ShoppingBag className="w-5 h-5 text-kado-red" />
-                <span className="font-display font-bold text-lg text-kado-dark">Your Cart</span>
+                <span id="cart-drawer-title" className="font-display font-bold text-lg text-kado-dark">Your Cart</span>
                 {count > 0 && (
                   <span className="text-[9px] font-bold uppercase tracking-widest bg-kado-red text-kado-cream px-2.5 py-1 rounded-full leading-none">
                     {count}
@@ -257,7 +272,7 @@ export default function CartDrawer() {
               </div>
               <button
                 onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-kado-dark/8 transition-colors text-kado-dark/60 hover:text-kado-dark"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-kado-dark/8 transition-colors text-kado-dark/60 hover:text-kado-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-red/40"
                 aria-label="Close cart"
               >
                 <X className="w-4.5 h-4.5" />
@@ -372,10 +387,10 @@ export default function CartDrawer() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
 
-                        <div className="flex items-center gap-2 bg-[#EFE6D5] rounded-full px-2.5 py-1.5">
+                        <div className="flex items-center gap-1 bg-kado-cream-deep rounded-full px-1.5 py-1">
                           <button
                             onClick={() => updateQty(line.key, line.qty - 1)}
-                            className="w-5 h-5 flex items-center justify-center hover:text-kado-red transition-colors"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
                             aria-label="Decrease"
                           >
                             <Minus className="w-2.5 h-2.5" />
@@ -385,7 +400,7 @@ export default function CartDrawer() {
                           </span>
                           <button
                             onClick={() => updateQty(line.key, line.qty + 1)}
-                            className="w-5 h-5 flex items-center justify-center hover:text-kado-red transition-colors"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
                             aria-label="Increase"
                           >
                             <Plus className="w-2.5 h-2.5" />
@@ -397,7 +412,7 @@ export default function CartDrawer() {
                 </div>
 
                 {/* Checkout footer */}
-                <div className="shrink-0 border-t border-kado-dark/10 px-5 py-5 space-y-4 bg-[#FAF7F2]">
+                <div className="shrink-0 border-t border-kado-dark/10 px-5 py-5 space-y-4 bg-kado-offwhite pb-safe">
                   <OnlineOrderHoursNotice status={orderHours} variant="compact" />
 
                   {hasMerch && (

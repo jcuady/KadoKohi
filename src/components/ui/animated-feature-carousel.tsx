@@ -22,6 +22,8 @@ import type { CmsText } from '../../lib/cmsTypography';
 import CmsStyledText from '../cms/CmsStyledText';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
+import { cmsTextPlain } from '../../lib/cmsTypography';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,13 +43,14 @@ interface Step {
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
-function useNumberCycler(total: number, interval = 6000) {
+function useNumberCycler(total: number, interval = 6000, paused = false) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
+    if (paused) return;
     const id = setTimeout(() => setCurrent((p) => (p + 1) % total), interval);
     return () => clearTimeout(id);
-  }, [current, total, interval]);
+  }, [current, total, interval, paused]);
 
   const setStep = useCallback((i: number) => setCurrent(i % total), [total]);
   return { current, setStep };
@@ -56,7 +59,7 @@ function useNumberCycler(total: number, interval = 6000) {
 function useIsMobile() {
   const [is, setIs] = useState(false);
   useEffect(() => {
-    const check = () => setIs(window.matchMedia("(max-width: 768px)").matches);
+    const check = () => setIs(window.matchMedia("(max-width: 767px)").matches);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -72,11 +75,11 @@ function VisualInStore() {
       {/* Counter mockup */}
       <div className="absolute right-0 top-[5%] w-[68%] rounded-2xl overflow-hidden shadow-2xl shadow-black/30 border border-kado-cream/10">
         <img
-          src="https://images.unsplash.com/photo-1453614512568-c4024d13c247?q=80&w=900&auto=format&fit=crop"
+          src="/images/hero-interior.png"
           alt="Barista at the counter"
           className="w-full h-48 object-cover"
         />
-        <div className="bg-[#FAF9F6] p-4">
+        <div className="bg-kado-offwhite p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-5 h-5 rounded bg-kado-red flex items-center justify-center">
               <span className="text-white text-[7px] font-black">角</span>
@@ -98,7 +101,7 @@ function VisualInStore() {
       </div>
 
       {/* POS receipt stub */}
-      <div className="absolute bottom-[8%] left-0 w-[42%] bg-[#FAF9F6] rounded-xl shadow-xl border border-kado-dark/10 p-4">
+      <div className="absolute bottom-[8%] left-0 w-[42%] bg-kado-offwhite rounded-xl shadow-xl border border-kado-dark/10 p-4">
         <p className="text-[9px] font-black uppercase tracking-widest text-kado-dark/40 mb-2">Order #042</p>
         <div className="space-y-1 mb-3">
           <div className="flex justify-between text-[10px] text-kado-dark">
@@ -132,19 +135,24 @@ function VisualOnlineOrder() {
             <span className="text-[8px] text-white/40 font-mono">kado-kohi.com/menu</span>
           </div>
         </div>
-        <div className="bg-[#FAF9F6] p-4">
+        <div className="bg-kado-offwhite p-4">
           <div className="flex gap-1.5 mb-3">
             {["All", "Hot", "Iced", "Matcha"].map((c, i) => (
-              <span key={c} className="px-2 py-0.5 rounded-full text-[8px] font-bold"
-                style={{ background: i === 0 ? "#9E181D" : "#F1DFBA", color: i === 0 ? "#fff" : "#191919" }}>
+              <span
+                key={c}
+                className={clsx(
+                  "px-2 py-0.5 rounded-full text-[8px] font-bold",
+                  i === 0 ? "bg-kado-red text-white" : "bg-kado-cream text-kado-dark",
+                )}
+              >
                 {c}
               </span>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { n: "Matcha Oat Latte", p: "₱185", img: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=200&auto=format&fit=crop" },
-              { n: "Iced Café Latte",  p: "₱165", img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=200&auto=format&fit=crop" },
+              { n: "Matcha Oat Latte", p: "₱185", img: "/social/matcha-latte.png" },
+              { n: "Iced Café Latte",  p: "₱165", img: "/social/cafe-latte.png" },
             ].map((p) => (
               <div key={p.n} className="rounded-xl overflow-hidden bg-white shadow-sm border border-kado-dark/5">
                 <img src={p.img} alt={p.n} className="w-full h-16 object-cover" />
@@ -152,7 +160,7 @@ function VisualOnlineOrder() {
                   <p className="text-[9px] font-bold text-kado-dark truncate">{p.n}</p>
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-[9px] text-kado-red font-bold">{p.p}</p>
-                    <button className="w-4 h-4 rounded-full bg-kado-red flex items-center justify-center text-white text-[10px] font-bold leading-none">+</button>
+                    <span className="w-4 h-4 rounded-full bg-kado-red flex items-center justify-center text-white text-[10px] font-bold leading-none" aria-hidden="true">+</span>
                   </div>
                 </div>
               </div>
@@ -180,7 +188,7 @@ function VisualQROrder() {
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Table card with QR */}
-      <div className="absolute right-[5%] top-[4%] w-[56%] bg-[#FAF9F6] rounded-2xl shadow-2xl border border-kado-dark/10 overflow-hidden">
+      <div className="absolute right-[5%] top-[4%] w-[56%] bg-kado-offwhite rounded-2xl shadow-2xl border border-kado-dark/10 overflow-hidden">
         <div className="bg-kado-dark p-4 flex items-center gap-2">
           <div className="w-6 h-6 rounded bg-kado-red flex items-center justify-center">
             <span className="text-white text-[8px] font-black">角</span>
@@ -208,7 +216,7 @@ function VisualQROrder() {
 
       {/* Mobile scan result */}
       <div className="absolute bottom-[6%] left-0 w-[50%] bg-kado-dark rounded-2xl overflow-hidden shadow-xl">
-        <img src="https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=400&auto=format&fit=crop"
+        <img src="/images/hero-coffee.png"
           alt="Coffee shop table" className="w-full h-16 object-cover opacity-60" />
         <div className="p-3">
           <p className="text-kado-red text-[8px] font-bold uppercase tracking-widest mb-0.5">Table 5 · Dine In</p>
@@ -372,7 +380,7 @@ function FeatureCard({
         }}
       />
 
-      <div className="relative w-full overflow-hidden rounded-3xl border border-kado-dark/10 bg-[#FAF9F6] shadow-sm">
+      <div className="relative w-full overflow-hidden rounded-3xl border border-kado-dark/10 bg-kado-offwhite shadow-sm">
         <div className="flex flex-col md:flex-row min-h-0 md:min-h-[380px]">
 
           {/* Left: text */}
@@ -488,6 +496,8 @@ function StepNav({
             key={s.id}
             type="button"
             onClick={() => onChange(i)}
+            aria-label={cmsTextPlain(s.eyebrow)}
+            aria-current={active ? 'step' : undefined}
             animate={active ? { scale: 1, opacity: 1 } : { scale: 0.93, opacity: 0.7 }}
             transition={{ duration: 0.25 }}
             className={clsx(
@@ -560,9 +570,10 @@ export function KadoOrderingCarousel({
 }) {
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
   const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const INTERVAL = 6000;
   const steps = buildSteps(copy?.steps);
-  const { current, setStep } = useNumberCycler(steps.length, INTERVAL);
+  const { current, setStep } = useNumberCycler(steps.length, INTERVAL, prefersReducedMotion);
 
   return (
     <section
