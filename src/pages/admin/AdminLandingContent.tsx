@@ -558,7 +558,6 @@ export default function AdminLandingContent() {
                     value={step.eyebrow}
                     onChange={(v) => updateOrderingStep(si, { eyebrow: v })}
                   />
-                  <PlainField label="Icon (emoji)" value={step.icon} onChange={(v) => updateOrderingStep(si, { icon: v })} />
                   <CmsField label="Title" value={step.title} onChange={(v) => updateOrderingStep(si, { title: v })} />
                 </div>
                 <CmsField

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { CalendarHeart, Users, Clock3, BadgeCheck, ArrowDown, Leaf } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import BookingSteps from '../components/booking/BookingSteps';
 import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
@@ -10,9 +10,6 @@ import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import CmsStyledText from '../components/cms/CmsStyledText';
 import { boothChipKey } from '../lib/boothPageContent';
 import { BOOKING_PAGE_LABELS, type BookingPageKind } from '../lib/bookingPageKinds';
-
-const COFFEE_CART_CHIP_ICONS = [CalendarHeart, Users, Clock3, BadgeCheck] as const;
-const MATCHA_BAR_CHIP_ICONS = [Leaf, Users, Clock3, BadgeCheck] as const;
 
 const BOOTH_HERO_IMAGES = [
   { src: '/booth-photos/booth-1.jpg', alt: 'Kado Kohi coffee cart event' },
@@ -44,7 +41,6 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
 
   const pageCopy = isMatcha ? matchaPageCopy : coffeePageCopy;
   const showcaseMediaRaw = isMatcha ? matchaMedia : coffeeMedia;
-  const chipIcons = isMatcha ? MATCHA_BAR_CHIP_ICONS : COFFEE_CART_CHIP_ICONS;
   const heroImages = isMatcha ? MATCHA_HERO_IMAGES : BOOTH_HERO_IMAGES;
 
   useEffect(() => {
@@ -128,18 +124,14 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
             />
 
             <div className="flex flex-wrap gap-3 mb-8">
-              {pageCopy.chips.map((label, i) => {
-                const Icon = chipIcons[i] ?? CalendarHeart;
-                return (
-                  <span
-                    key={boothChipKey(label, i)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90"
-                  >
-                    <Icon className="w-3 h-3 text-kado-red shrink-0" />
-                    <CmsStyledText value={label} as="span" />
-                  </span>
-                );
-              })}
+              {pageCopy.chips.map((label, i) => (
+                <span
+                  key={boothChipKey(label, i)}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90"
+                >
+                  <CmsStyledText value={label} as="span" />
+                </span>
+              ))}
             </div>
 
             <a

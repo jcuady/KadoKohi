@@ -21,9 +21,6 @@ import CmsStyledText from '../cms/CmsStyledText';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 
-const sectionPad =
-  'px-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-8';
-
 const pillarCard =
   'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[240px] lg:min-h-[280px] xl:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
 
@@ -49,7 +46,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
   return (
     <section
       aria-labelledby="home-menu-seo-heading"
-      className={`customer-menu-page border-t border-kado-dark/6 bg-kado-offwhite ${sectionPad}`}
+      className="landing-section customer-menu-page bg-kado-offwhite"
     >
       <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
         <CmsStyledText

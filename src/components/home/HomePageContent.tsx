@@ -51,7 +51,7 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="flex flex-col w-full min-w-0 overflow-x-hidden bg-kado-cream font-sans"
+      className="flex flex-col gap-0 w-full min-w-0 overflow-x-hidden bg-kado-cream font-sans"
     >
       {previewBanner ? (
         <motion.div
@@ -164,7 +164,7 @@ function EventsSection({ copy, cmsEditMode }: { copy: EventsCopy; cmsEditMode?: 
   };
 
   return (
-    <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-cream">
+    <section className="landing-section w-full bg-kado-cream">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -358,7 +358,7 @@ function BranchesStrip({ copy, cmsEditMode }: { copy: BranchesStripCopy; cmsEdit
   };
 
   return (
-    <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-12 lg:px-24 w-full bg-kado-dark border-t border-white/5 relative overflow-hidden">
+    <section className="landing-section w-full bg-kado-dark border-t border-white/5 relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

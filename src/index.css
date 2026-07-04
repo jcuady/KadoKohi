@@ -263,6 +263,18 @@ body {
   line-height: 1.05;
 }
 
+@media (max-width: 39.99rem) {
+  .landing-hero-copy .kado-h1-hero {
+    font-size: clamp(1.5rem, 6.5vw, 1.875rem);
+    line-height: 1.08;
+  }
+
+  .landing-hero-copy .kado-h2 {
+    font-size: clamp(1.125rem, 4.25vw, 1.5rem);
+    line-height: 1.12;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 32rem) {
   .kado-h1-hero {
     font-size: clamp(1.375rem, 4.5vw, 2rem);
@@ -595,19 +607,79 @@ html.customer-facing .public-nav-shell {
   flex-wrap: nowrap;
 }
 
+/* Public nav height — keep hero + first paint aligned across orientations */
+html.customer-facing {
+  --public-nav-height: calc(max(0.5rem, env(safe-area-inset-top, 0px)) + 3.25rem + 1px);
+}
+
+@media (min-width: 64rem) {
+  html.customer-facing {
+    --public-nav-height: calc(max(0.5rem, env(safe-area-inset-top, 0px)) + 3.5rem + 1px);
+  }
+}
+
+/* Homepage hero — flush below sticky nav, no intentional viewport peek */
+.landing-hero {
+  min-height: calc(100svh - var(--public-nav-height));
+  min-height: calc(100dvh - var(--public-nav-height));
+}
+
+/* Shared homepage section rhythm (portrait + landscape) */
+.landing-section {
+  padding-block: clamp(2.75rem, 4vw + 1.25rem, 6rem);
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 40rem) {
+  .landing-section {
+    padding-inline: max(1.5rem, env(safe-area-inset-left, 0px)) max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 48rem) {
+  .landing-section {
+    padding-inline: max(3rem, env(safe-area-inset-left, 0px)) max(3rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 64rem) {
+  .landing-section {
+    padding-inline: max(6rem, env(safe-area-inset-left, 0px)) max(6rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .landing-hero-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: calc(100svh - var(--public-nav-height));
+    min-height: calc(100dvh - var(--public-nav-height));
+  }
+
+  .landing-hero-copy-spacer {
+    flex: 1 1 auto;
+    min-height: 0.75rem;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 32rem) {
   .landing-hero {
     height: auto !important;
-    min-height: min(calc(100svh - 3.5rem), 28rem) !important;
+    min-height: min(calc(100svh - var(--public-nav-height)), 28rem) !important;
   }
 
   .landing-hero-inner {
     padding-top: 0.75rem !important;
-    padding-bottom: 1.25rem !important;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .landing-hero-cards {
     display: none !important;
+  }
+
+  .landing-section {
+    padding-block: clamp(1.75rem, 3vw + 0.75rem, 2.75rem);
   }
 }
 

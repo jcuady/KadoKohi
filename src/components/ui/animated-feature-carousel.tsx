@@ -37,7 +37,6 @@ interface Step {
   eyebrow: CmsText;
   title: CmsText;
   description: CmsText;
-  icon: string;
   visual: ReactNode;
 }
 
@@ -263,7 +262,7 @@ function VisualLoyalty() {
       {/* Push notification */}
       <div className="absolute bottom-[8%] left-0 bg-white rounded-2xl p-3 shadow-2xl border border-kado-dark/8 flex items-center gap-3 w-[52%]">
         <div className="w-9 h-9 rounded-xl bg-kado-red flex items-center justify-center flex-shrink-0">
-          <span className="text-kado-cream text-base">🎉</span>
+          <span className="text-kado-cream text-[8px] font-black uppercase tracking-wide">+1</span>
         </div>
         <div>
           <p className="text-kado-dark text-[9px] font-black">Congrats! Free drink earned</p>
@@ -290,7 +289,6 @@ const DEFAULT_STEP_COPY = [
     title: "Order at the counter.",
     description:
       "Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.",
-    icon: "☕",
   },
   {
     id: "online-gcash",
@@ -298,7 +296,6 @@ const DEFAULT_STEP_COPY = [
     title: "Menu, cart & GCash QR.",
     description:
       "Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order.",
-    icon: "🌐",
   },
   {
     id: "table-qr",
@@ -306,7 +303,6 @@ const DEFAULT_STEP_COPY = [
     title: "Scan, order, pay with GCash.",
     description:
       "Scan the QR on your table to open the menu for your seat. Pay via GCash QR and upload proof — no app download required.",
-    icon: "📷",
   },
   {
     id: "loyalty",
@@ -314,7 +310,6 @@ const DEFAULT_STEP_COPY = [
     title: "Earn stamps & vouchers.",
     description:
       "Completed drink orders earn stamps. Claim voucher rewards in your account and apply them at checkout.",
-    icon: "🏆",
   },
 ] as const;
 
@@ -326,7 +321,6 @@ function buildSteps(copySteps?: KadoOrderingCarouselCopy['steps']): Step[] {
       eyebrow: cms?.eyebrow ?? fallback.eyebrow,
       title: cms?.title ?? fallback.title,
       description: cms?.description ?? fallback.description,
-      icon: cms?.icon ?? fallback.icon,
       visual: STEP_VISUALS[i] ?? STEP_VISUALS[0],
     };
   });
@@ -400,7 +394,9 @@ function FeatureCard({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.06, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <span className="text-xl">{steps[step].icon}</span>
+                  <span className="text-[10px] font-black tabular-nums tracking-[0.2em] text-kado-dark/35">
+                    {String(step + 1).padStart(2, '0')}
+                  </span>
                   <CmsStyledText
                     value={steps[step].eyebrow}
                     as="span"
@@ -578,7 +574,7 @@ export function KadoOrderingCarousel({
   return (
     <section
       className={clsx(
-        "py-14 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 lg:px-24 w-full min-w-0 bg-kado-offwhite border-t border-kado-dark/8",
+        "landing-section w-full min-w-0 bg-kado-offwhite",
         className
       )}
     >

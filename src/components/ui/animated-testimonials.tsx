@@ -101,7 +101,7 @@ export function AnimatedTestimonials({
     <section
       ref={sectionRef}
       id="testimonials"
-      className={cn("py-14 sm:py-20 md:py-24 overflow-hidden bg-kado-offwhite", className)}
+      className={cn("landing-section overflow-hidden bg-kado-offwhite", className)}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 min-w-0">
         <motion.div

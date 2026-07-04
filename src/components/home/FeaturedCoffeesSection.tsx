@@ -202,7 +202,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
     <section
       ref={sectionRef}
       aria-labelledby="featured-coffees-heading"
-      className="relative w-full overflow-x-clip border-t border-kado-dark/10 bg-kado-cream px-[max(1rem,env(safe-area-inset-left))] py-12 sm:px-6 sm:py-16 md:px-8 md:py-20 lg:px-16 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-10"
+      className="landing-section relative w-full overflow-x-clip bg-kado-cream"
     >
       <div
         aria-hidden
@@ -210,10 +210,6 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
       >
         角
       </div>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-kado-red to-transparent opacity-80"
-      />
 
       <div className="relative mx-auto max-w-[1400px] min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-14">

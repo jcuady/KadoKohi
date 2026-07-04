@@ -253,7 +253,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Order at the counter.',
     description:
       'Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.',
-    icon: '☕',
+    icon: '',
   },
   {
     id: 'online-gcash',
@@ -261,7 +261,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Menu, cart & GCash QR.',
     description:
       'Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order for pickup or delivery.',
-    icon: '🌐',
+    icon: '',
   },
   {
     id: 'table-qr',
@@ -269,7 +269,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Scan, order, pay with GCash.',
     description:
       'Scan the QR on your table to open the menu for your seat. Add drinks, pay via GCash QR, and upload proof — no app download, no waiting to flag staff.',
-    icon: '📷',
+    icon: '',
   },
   {
     id: 'loyalty',
@@ -277,7 +277,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Earn stamps & vouchers.',
     description:
       'Completed drink orders earn stamps on your card. Claim rewards in your account, then apply vouchers at checkout for free drinks and merch perks.',
-    icon: '🏆',
+    icon: '',
   },
 ];
 
@@ -632,7 +632,7 @@ function clampOrderingSteps(saved: OrderingStepCopy[] | undefined): OrderingStep
       eyebrow: clampCmsTextField(s.eyebrow, fallback.eyebrow),
       title: clampCmsTextField(s.title, fallback.title),
       description: clampCmsTextField(s.description, fallback.description),
-      icon: typeof s.icon === 'string' ? s.icon : fallback.icon,
+      icon: '',
     };
   });
 }

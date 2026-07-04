@@ -284,7 +284,7 @@ export default function OrderTrackingPanel({
 
             {isCompleted && (
               <div className="mt-1 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-center text-xs font-bold text-emerald-800">
-                Enjoy your coffee! ☕
+                Enjoy your coffee!
               </div>
             )}
             {loadFailed && !tracked && (

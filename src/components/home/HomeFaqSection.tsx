@@ -173,7 +173,7 @@ export default function HomeFaqSection({ copy, cmsEditMode }: Props) {
     <section
       id="landing-faq"
       aria-labelledby="faq-section-title"
-      className="relative w-full overflow-hidden bg-kado-red px-4 py-16 text-white sm:px-6 md:px-12 md:py-20 lg:px-24 lg:py-24"
+      className="landing-section relative w-full overflow-hidden bg-kado-red text-white"
     >
       <div
         aria-hidden

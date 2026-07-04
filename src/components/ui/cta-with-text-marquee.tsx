@@ -120,7 +120,7 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
     <section
       id="kado-circle"
       className={cn(
-        'relative w-full min-w-0 overflow-hidden bg-kado-dark border-t border-white/5 py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 lg:px-24',
+        'landing-section relative w-full min-w-0 overflow-hidden bg-kado-dark border-t border-white/5',
         className,
       )}
     >

@@ -77,7 +77,7 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
   return (
     <section
       aria-labelledby="home-brand-story-heading"
-      className="customer-menu-page border-t border-kado-dark/6 bg-kado-cream px-[max(1rem,env(safe-area-inset-left))] py-12 sm:px-6 sm:py-16 md:px-12 md:py-20 lg:px-24 lg:py-24 [@media(orientation:landscape)_and_(max-height:30rem)]:py-8"
+      className="landing-section customer-menu-page bg-kado-cream"
     >
       <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]" ref={heroRef}>
         <TimelineContent

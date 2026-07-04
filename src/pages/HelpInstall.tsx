@@ -324,10 +324,10 @@ export default function HelpInstall() {
 
             <div className="space-y-2.5 mb-5">
               {[
-                "✅ Order received — we've got it",
-                '☕ Now brewing — barista is on it',
-                '🎉 Ready for pickup — come collect your drink',
-                '⭐ Order complete — stamp added to your account',
+                "Order received — we've got it",
+                'Now brewing — barista is on it',
+                'Ready for pickup — come collect your drink',
+                'Order complete — stamp added to your account',
               ].map((item) => (
                 <p key={item} className="text-sm text-kado-dark/70 font-medium">{item}</p>
               ))}

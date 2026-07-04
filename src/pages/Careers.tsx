@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import {
-  Briefcase,
-  Camera,
-  Handshake,
-  Heart,
-  Sparkles,
-  Users,
-} from 'lucide-react';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import CareerApplyModal from '../components/careers/CareerApplyModal';
 import CareerRoleCard from '../components/careers/CareerRoleCard';
@@ -21,16 +13,13 @@ import { LOGO } from '../lib/brandTokens';
 
 const SECTIONS: Array<{
   id: CareerListingCategory;
-  icon: typeof Briefcase;
   titleKey: 'careersSectionTitle' | 'creatorsSectionTitle' | 'collabsSectionTitle';
   introKey: 'careersSectionIntro' | 'creatorsSectionIntro' | 'collabsSectionIntro';
 }> = [
-  { id: 'careers', icon: Briefcase, titleKey: 'careersSectionTitle', introKey: 'careersSectionIntro' },
-  { id: 'content-creators', icon: Camera, titleKey: 'creatorsSectionTitle', introKey: 'creatorsSectionIntro' },
-  { id: 'collaborations', icon: Handshake, titleKey: 'collabsSectionTitle', introKey: 'collabsSectionIntro' },
+  { id: 'careers', titleKey: 'careersSectionTitle', introKey: 'careersSectionIntro' },
+  { id: 'content-creators', titleKey: 'creatorsSectionTitle', introKey: 'creatorsSectionIntro' },
+  { id: 'collaborations', titleKey: 'collabsSectionTitle', introKey: 'collabsSectionIntro' },
 ];
-
-const BENEFIT_ICONS = [Sparkles, Users, Heart, Briefcase];
 
 export default function Careers() {
   const hydrateFromRemote = useCareersStore((s) => s.hydrateFromRemote);
@@ -121,18 +110,14 @@ export default function Careers() {
               transition={{ delay: 0.18 }}
               className="grid grid-cols-2 gap-3"
             >
-              {pageCopy.heroBenefits.map((benefit, i) => {
-                const Icon = BENEFIT_ICONS[i % BENEFIT_ICONS.length];
-                return (
-                  <li
-                    key={benefit}
-                    className="rounded-[1rem] border border-white/15 bg-white/10 px-4 py-4 backdrop-blur-sm"
-                  >
-                    <Icon className="mb-2 h-5 w-5 text-kado-cream/90" aria-hidden />
-                    <p className="text-sm font-semibold text-kado-cream">{benefit}</p>
-                  </li>
-                );
-              })}
+              {pageCopy.heroBenefits.map((benefit) => (
+                <li
+                  key={benefit}
+                  className="rounded-[1rem] border border-white/15 bg-white/10 px-4 py-4 backdrop-blur-sm"
+                >
+                  <p className="text-sm font-semibold text-kado-cream">{benefit}</p>
+                </li>
+              ))}
             </motion.ul>
           </div>
         </div>
@@ -144,7 +129,6 @@ export default function Careers() {
       >
         <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-6 py-3">
           {SECTIONS.map((section) => {
-            const Icon = section.icon;
             const count = visibleByCategory[section.id].length;
             const active = activeSection === section.id;
             return (
@@ -152,11 +136,10 @@ export default function Careers() {
                 key={section.id}
                 type="button"
                 onClick={() => scrollToSection(section.id)}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                className={`inline-flex shrink-0 items-center rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
                   active ? 'bg-kado-red text-white' : 'bg-white text-kado-dark/70 hover:text-kado-red'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
                 {CAREER_CATEGORY_LABELS[section.id]}
                 {count > 0 ? <span className="opacity-70">({count})</span> : null}
               </button>
@@ -173,7 +156,6 @@ export default function Careers() {
       </section>
 
       {SECTIONS.map((section, sectionIndex) => {
-        const Icon = section.icon;
         const items = visibleByCategory[section.id];
         return (
           <section
@@ -184,10 +166,7 @@ export default function Careers() {
             <div className="mx-auto max-w-6xl">
               <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div className="max-w-2xl">
-                  <p className="kado-label mb-3 inline-flex items-center gap-2 text-kado-red">
-                    <Icon className="h-4 w-4" aria-hidden />
-                    {CAREER_CATEGORY_LABELS[section.id]}
-                  </p>
+                  <p className="kado-label mb-3 text-kado-red">{CAREER_CATEGORY_LABELS[section.id]}</p>
                   <h2 className="kado-h2 uppercase tracking-tight text-kado-dark">{pageCopy[section.titleKey]}</h2>
                   <p className="mt-4 kado-body text-kado-dark/65">{pageCopy[section.introKey]}</p>
                 </div>

@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { motion } from 'motion/react';
-import { Coffee, Heart, Sparkles, Users } from 'lucide-react';
 import ResilientImage from '@/components/ui/ResilientImage';
 import { ABOUT_VALUES, ABOUT_SPACE } from '@/content/aboutPage';
 import { ABOUT_EDITORIAL } from '@/content/aboutPage';
@@ -12,8 +11,6 @@ import {
 } from './AboutEditorial';
 import { useStaggerReveal } from './useAboutMotion';
 import { cn } from '@/lib/utils';
-
-const icons = [Coffee, Heart, Users, Sparkles] as const;
 
 export default function AboutValues() {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -62,9 +59,7 @@ export default function AboutValues() {
           </div>
 
           <div ref={gridRef} className="grid grid-cols-1 gap-px border border-kado-dark/10 bg-kado-dark/10 sm:grid-cols-2">
-            {ABOUT_VALUES.items.map((item, i) => {
-              const Icon = icons[i] ?? Coffee;
-              return (
+            {ABOUT_VALUES.items.map((item, i) => (
                 <motion.article
                   key={item.title}
                   whileHover={{ backgroundColor: 'var(--color-kado-cream)' }}
@@ -73,14 +68,12 @@ export default function AboutValues() {
                     i === 0 && 'sm:col-span-2 lg:col-span-1',
                   )}
                 >
-                  <Icon className="mb-5 h-5 w-5 text-kado-red" aria-hidden />
                   <h3 className="font-display text-lg font-bold uppercase tracking-tight text-kado-dark sm:text-xl">
                     {item.title}
                   </h3>
                   <p className="kado-body-sm mt-3 text-kado-dark/70">{item.body}</p>
                 </motion.article>
-              );
-            })}
+              ))}
           </div>
 
           <motion.div
