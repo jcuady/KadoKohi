@@ -18,6 +18,7 @@ import {
 import { buildQrCartTotals, qrLinesMatch, type QrCartLine } from '../lib/qrOrderCart';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import { guestOrderCustomerId, guestOrderUsesAnonSession } from '../lib/guestOrderAuth';
+import { buildTrackedOrderSnapshot } from '../lib/guestOrderSnapshot';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import QrStickyCart from '../components/qr/QrStickyCart';
 import QrGuestMenuCatalog from '../components/qr/QrGuestMenuCatalog';
@@ -188,6 +189,7 @@ export default function OrderQR() {
         shortCode: order.shortCode,
         label: refreshedTable.label,
         placedAt: order.createdAt,
+        snapshot: buildTrackedOrderSnapshot(order, useMenuStore.getState().products),
       });
       setTrackedOrderId(order.id);
       setCart([]);
@@ -235,6 +237,7 @@ export default function OrderQR() {
     return (
       <OrderTrackingPanel
         orderId={trackedOrderId}
+        sessionKey={sessionKey}
         channel="dine-in"
         contextLabel={table.label}
         isLoggedIn={Boolean(user)}

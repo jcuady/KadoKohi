@@ -1,3 +1,5 @@
+import type { TrackedOrderSnapshot } from './guestOrderSnapshot';
+
 /**
  * Per-browser ("session") tracking of a placed order for the QR dine-in and
  * takeout pages. A guest has no account, so the browser's localStorage is the
@@ -15,6 +17,8 @@ export type TrackedOrderRef = {
   shortCode: string;
   label: string;
   placedAt: string;
+  /** Local snapshot for instant summary; server RPC is source of truth after load. */
+  snapshot?: TrackedOrderSnapshot;
 };
 
 function keyFor(context: string): string {

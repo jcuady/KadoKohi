@@ -20,6 +20,22 @@ import type {
 import type { AppSettings } from '../../../store/settingsStore';
 import type { FetchOrdersScope } from '../../orderFetchScope';
 import { normalizeBookingEstimate, resolveBookingKind } from '../../boothBookingEstimate';
+import { mapTrackedOrderLineFromRpc, type TrackedOrderLine } from '../../guestOrderSnapshot';
+import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
+import { prepareGuestPaymentProof } from '../../compressPaymentProof';
+import {
+  MENU_PRODUCT_IMAGE_MAX_BYTES,
+  menuImageUploadSizeError,
+  prepareMenuProductImage,
+} from '../../menuProductImage';
+import {
+  PAYMENT_PROOF_BUCKET,
+  dataUrlToBlob,
+  formatProofStorageRef,
+  guestProofObjectPath,
+} from '../../paymentProofStorage';
+import { supabase, guestSupabase } from '../client';
+import { profileBranchId } from '../../roles';
 
 function pgErrorFields(err: unknown): { message: string; code: string; details: string } {
   if (err && typeof err === 'object') {
@@ -108,26 +124,15 @@ export type TrackedOrderStatus = {
   paymentStatus: PaymentStatus;
   paymentMethod?: Order['paymentMethod'];
   guestName?: string;
+  subtotal: number;
+  modifiersTotal: number;
+  tax: number;
   total: number;
+  items: TrackedOrderLine[];
   hasPaymentProof?: boolean;
   createdAt: string;
   updatedAt: string;
 };
-import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
-import { prepareGuestPaymentProof } from '../../compressPaymentProof';
-import {
-  MENU_PRODUCT_IMAGE_MAX_BYTES,
-  menuImageUploadSizeError,
-  prepareMenuProductImage,
-} from '../../menuProductImage';
-import {
-  PAYMENT_PROOF_BUCKET,
-  dataUrlToBlob,
-  formatProofStorageRef,
-  guestProofObjectPath,
-} from '../../paymentProofStorage';
-import { supabase, guestSupabase } from '../client';
-import { profileBranchId } from '../../roles';
 
 function mapBranch(row: any): Branch {
   return {
@@ -998,6 +1003,10 @@ export const orderingRepo = {
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;
+    const rawItems = row.items;
+    const items = Array.isArray(rawItems)
+      ? rawItems.map((it) => mapTrackedOrderLineFromRpc(it as Record<string, unknown>))
+      : [];
     return {
       id: row.id,
       shortCode: row.short_code,
@@ -1006,7 +1015,11 @@ export const orderingRepo = {
       paymentStatus: row.payment_status,
       paymentMethod: row.payment_method ?? undefined,
       guestName: row.guest_name ?? undefined,
+      subtotal: Number(row.subtotal ?? 0),
+      modifiersTotal: Number(row.modifiers_total ?? 0),
+      tax: Number(row.tax ?? 0),
       total: Number(row.total ?? 0),
+      items,
       hasPaymentProof: Boolean(row.has_payment_proof),
       createdAt: row.created_at,
       updatedAt: row.updated_at,

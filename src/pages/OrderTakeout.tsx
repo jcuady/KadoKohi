@@ -16,6 +16,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { newId } from '../lib/id';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
 import { guestOrderCustomerId, guestOrderUsesAnonSession } from '../lib/guestOrderAuth';
+import { buildTrackedOrderSnapshot } from '../lib/guestOrderSnapshot';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import QrStickyCart from '../components/qr/QrStickyCart';
 import QrGuestMenuCatalog from '../components/qr/QrGuestMenuCatalog';
@@ -190,6 +191,7 @@ export default function OrderTakeout() {
         shortCode: order.shortCode,
         label: pickupName.trim(),
         placedAt: order.createdAt,
+        snapshot: buildTrackedOrderSnapshot(order, useMenuStore.getState().products),
       });
       setTrackedOrderId(order.id);
       setTrackedLabel(pickupName.trim());
@@ -243,6 +245,7 @@ export default function OrderTakeout() {
     return (
       <OrderTrackingPanel
         orderId={trackedOrderId}
+        sessionKey={sessionKey}
         channel="takeout"
         contextLabel={trackedLabel || pickupName || 'your order'}
         isLoggedIn={Boolean(user)}

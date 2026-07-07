@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle, Wallet } from 'lucide-react';
@@ -7,8 +7,10 @@ import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
 import { canGuestCancelOrder, canGuestSwitchToCash } from '../../lib/orderStatus';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
+import { getTrackedOrder } from '../../lib/guestOrders';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
 import GcashQrModal from '../GcashQrModal';
+import OrderTrackingSummary from './OrderTrackingSummary';
 import { useSettingsStore } from '../../store/settingsStore';
 
 type Channel = 'dine-in' | 'takeout';
@@ -16,6 +18,8 @@ type Channel = 'dine-in' | 'takeout';
 type Props = {
   orderId: string;
   channel: Channel;
+  /** Session key for local order snapshot (table QR or takeout branch). */
+  sessionKey: string;
   /** Table label (dine-in) or pickup name (takeout). */
   contextLabel: string;
   /** Hide the sign-in CTA when the customer is already logged in. */
@@ -68,11 +72,17 @@ const ORDER_RANK: Record<OrderStatus, number> = {
 export default function OrderTrackingPanel({
   orderId,
   channel,
+  sessionKey,
   contextLabel,
   isLoggedIn,
   onOrderAgain,
 }: Props) {
+  const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const gcashQrImage = useSettingsStore((s) => s.settings.gcashQrImage);
+  const localSnapshot = useMemo(
+    () => getTrackedOrder(sessionKey)?.snapshot ?? null,
+    [sessionKey, orderId],
+  );
   const { tracked, loadFailed, isLive, refresh } = useGuestOrderTracking(orderId);
   const [gcashModalOpen, setGcashModalOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -166,38 +176,49 @@ export default function OrderTrackingPanel({
         : <>Your dine-in order for <strong>{contextLabel}</strong> is with the barista.</>;
 
   return (
-    <div className="guest-order-page min-h-[100svh] bg-[#FAF7F2] flex flex-col items-center px-[max(1rem,env(safe-area-inset-left))] py-8 sm:py-14 pb-safe [@media(orientation:landscape)_and_(max-height:30rem)]:py-5">
+    <div className="qr-root customer-surface guest-order-page min-h-[100svh] bg-[var(--qr-bg)] text-[var(--qr-text)] flex flex-col items-center px-[max(1rem,env(safe-area-inset-left))] py-6 sm:py-10 pb-safe [@media(orientation:landscape)_and_(max-height:30rem)]:py-4">
       <div className="w-full max-w-md">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-base shrink-0">
+            角
+          </div>
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
+            {flowChannel === 'takeout' ? 'Takeout' : 'Dine-in'} · Order tracking
+          </p>
+        </div>
+
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', damping: 18, stiffness: 260 }}
-          className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 mx-auto ${
-            isCancelled ? 'bg-red-100' : awaitingGcash ? 'bg-amber-100' : 'bg-emerald-100'
+          className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 mx-auto ${
+            isCancelled ? 'bg-red-100' : awaitingGcash ? 'bg-kado-cream' : 'bg-kado-red/10'
           }`}
         >
           {isCancelled ? (
-            <XCircle className="w-8 h-8 text-red-600" />
+            <XCircle className="w-7 h-7 text-red-600" />
           ) : awaitingGcash ? (
-            <Wallet className="w-8 h-8 text-amber-700" />
+            <Wallet className="w-7 h-7 text-kado-red" />
           ) : (
-            <Check className="w-8 h-8 text-emerald-600" />
+            <Check className="w-7 h-7 text-kado-red stroke-[3]" />
           )}
         </motion.div>
 
-        <h1 className="font-display text-2xl sm:text-3xl font-black text-kado-dark text-center mb-2">
+        <h1 className="font-display text-2xl sm:text-[1.65rem] font-black text-kado-dark text-center mb-2 leading-tight">
           {headline}
         </h1>
-        <p className="text-kado-dark/60 text-sm text-center mb-5 leading-relaxed">{sub}</p>
+        <p className="text-[var(--qr-text-muted)] text-sm text-center mb-4 leading-relaxed">{sub}</p>
 
         {tracked?.shortCode && (
-          <div className="flex justify-center mb-7">
+          <div className="flex justify-center mb-5">
             <span className="inline-flex items-center gap-2 rounded-full bg-kado-dark text-kado-cream px-4 py-2 text-sm font-black tracking-wider">
-              <Coffee className="w-4 h-4" />
+              <Coffee className="w-4 h-4 text-kado-cream/90" />
               {tracked.shortCode}
             </span>
           </div>
         )}
+
+        <OrderTrackingSummary tracked={tracked} snapshot={localSnapshot} taxRate={taxRate} />
 
         {gcash && tracked && !isCancelled && (
           <GuestOrderPaymentBlock
@@ -241,7 +262,7 @@ export default function OrderTrackingPanel({
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                           done
-                            ? 'bg-emerald-500 text-white'
+                            ? 'bg-kado-dark text-kado-cream'
                             : active
                               ? 'bg-kado-red text-white shadow-[0_0_0_4px_rgba(158,24,29,0.12)]'
                               : 'bg-kado-dark/8 text-kado-dark/35'
@@ -256,7 +277,7 @@ export default function OrderTrackingPanel({
                       {!last && (
                         <div
                           className={`w-0.5 flex-1 min-h-[1.25rem] my-0.5 ${
-                            done ? 'bg-emerald-500/50' : 'bg-kado-dark/10'
+                            done ? 'bg-kado-dark/35' : 'bg-kado-dark/10'
                           }`}
                         />
                       )}
@@ -283,7 +304,7 @@ export default function OrderTrackingPanel({
             </ol>
 
             {isCompleted && (
-              <div className="mt-1 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-center text-xs font-bold text-emerald-800">
+              <div className="mt-1 rounded-xl bg-kado-cream/60 border border-kado-red/15 px-4 py-3 text-center text-xs font-bold text-kado-dark">
                 Enjoy your coffee!
               </div>
             )}
