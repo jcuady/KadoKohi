@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Facebook, Instagram } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, Facebook, Instagram } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { TimelineContent } from '@/components/ui/timeline-animation';
 import AccentHeadline from '@/components/ui/AccentHeadline';
@@ -75,7 +75,7 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
   return (
     <section
       aria-labelledby="home-brand-story-heading"
-      className="landing-section relative overflow-hidden customer-menu-page bg-kado-cream"
+      className="landing-section relative overflow-hidden bg-kado-cream"
     >
       <div
         aria-hidden
@@ -89,7 +89,7 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
           animationNum={0}
           timelineRef={heroRef}
           customVariants={textVariants}
-          className="mb-5 kado-label text-kado-red sm:mb-6"
+          className="mb-5 inline-flex rounded-full border border-kado-red/20 bg-kado-red/10 px-3 py-1.5 kado-label text-kado-red sm:mb-6"
         >
           <CmsStyledText
             value={copy.badge}
@@ -134,16 +134,20 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
           />
         </TimelineContent>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-rows-2 lg:gap-5">
-          {copy.pillars.map((pillar, i) => (
-            <TimelineContent
-              key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
-              as="article"
-              animationNum={3 + i}
-              timelineRef={heroRef}
-              customVariants={revealVariants}
-              className={`${pillarCard} ${i === 0 ? 'lg:row-span-2 lg:min-h-[520px]' : 'lg:min-h-[240px]'}`}
-            >
+        <div className="relative mt-8 sm:mt-10">
+          <div
+            className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-1 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x lg:mx-0 lg:grid lg:grid-cols-2 lg:grid-rows-2 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0"
+            aria-label="Brand story highlights"
+          >
+            {copy.pillars.map((pillar, i) => (
+              <TimelineContent
+                key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
+                as="article"
+                animationNum={3 + i}
+                timelineRef={heroRef}
+                customVariants={revealVariants}
+                className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink ${i === 0 ? 'lg:row-span-2 lg:min-h-[520px]' : 'lg:min-h-[240px]'}`}
+              >
               {cmsEditMode ? (
                 <CmsEditableImage
                   cmsField={`story.pillar.${i}.image`}
@@ -195,6 +199,15 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
               </div>
             </TimelineContent>
           ))}
+          </div>
+          {copy.pillars.length > 1 ? (
+            <div className="mt-3 flex items-center justify-center gap-1.5 lg:hidden">
+              <ChevronRight className="h-3 w-3 text-kado-dark/30" aria-hidden />
+              <p className="kado-subtext text-[10px] font-semibold uppercase tracking-[0.16em] text-kado-dark/40">
+                Swipe for more
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <TimelineContent

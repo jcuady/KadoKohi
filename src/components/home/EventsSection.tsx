@@ -83,7 +83,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="mb-12 text-center sm:mb-16 md:mb-20"
+          className="mb-8 text-center sm:mb-16 md:mb-20"
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-kado-red/20 bg-kado-red/10 px-3 py-2 kado-label text-kado-red shadow-sm sm:px-4">
             <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />{' '}
@@ -103,7 +103,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
           <CmsStyledText
             value={copy.subtitle}
             as="p"
-            className="mx-auto mt-5 max-w-3xl px-1 font-medium sm:mt-6 sm:px-4 md:px-0 md:text-base"
+            className="mx-auto mt-4 max-w-3xl px-1 sm:mt-6 sm:px-4 md:px-0"
             defaultSizeClass="kado-body"
             defaultColorClass="text-kado-dark/80"
             {...cmsTextProps(cmsEditMode, 'events.subtitle', 'Subtitle', (v) => updateEvents({ subtitle: v }))}
@@ -118,7 +118,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
             viewport={{ once: true }}
             transition={{ duration: 0.55 }}
           >
-            <div className="group relative min-h-[min(68svh,520px)] w-full overflow-hidden rounded-2xl border border-kado-dark/20 shadow-2xl shadow-black/40 sm:min-h-[500px] sm:rounded-[2.5rem] md:rounded-[3rem] lg:min-h-[750px]">
+            <div className="group relative min-h-[min(52svh,420px)] w-full overflow-hidden rounded-2xl border border-kado-dark/20 shadow-2xl shadow-black/40 sm:min-h-[500px] sm:rounded-[2.5rem] md:rounded-[3rem] lg:min-h-[750px]">
               {cmsEditMode ? (
                 <CmsEditableImage
                   cmsField="events.cover"
@@ -137,7 +137,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                   transition={{ duration: 2, ease: 'easeOut' }}
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/95 opacity-90" />
+              <div className="absolute inset-0 bg-gradient-to-b from-kado-dark/50 via-kado-dark/30 to-kado-dark/95 opacity-90" />
               <div className="absolute inset-0 flex flex-col justify-between gap-8 p-5 sm:p-8 lg:p-16">
                 <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   {(() => {
@@ -172,10 +172,10 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                           transition={{ delay: i * 0.05 }}
                         >
                           {i > 0 && (
-                            <span className="mt-1 hidden self-start font-bold text-white/30 sm:inline">:</span>
+                            <span className="mt-1 hidden self-start font-bold text-kado-cream/30 sm:inline">:</span>
                           )}
                           <div className="min-w-[2.25rem] text-center">
-                            <span className={`block kado-h3 leading-none ${red ? 'text-kado-red' : 'text-white'}`}>
+                            <span className={`block kado-h3 leading-none ${red ? 'text-kado-red' : 'text-kado-offwhite'}`}>
                               {String(v).padStart(2, '0')}
                             </span>
                             <span className="kado-subtext mt-0.5 block font-semibold uppercase tracking-widest text-kado-cream/70 sm:mt-1">
@@ -198,7 +198,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                   viewport={{ once: true }}
                   transition={{ delay: 0.1 }}
                 >
-                  <h3 className="mb-3 kado-h2 leading-[1.1] text-white sm:mb-4 lg:mb-6">{ev.title}</h3>
+                  <h3 className="mb-3 kado-h3 leading-[1.12] text-kado-offwhite sm:mb-4 lg:mb-6">{ev.title}</h3>
                   <p className="kado-body mb-6 line-clamp-6 leading-relaxed text-kado-cream/90 sm:mb-8 sm:line-clamp-none md:text-base">
                     {ev.description}
                   </p>
@@ -209,7 +209,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                   )}
                   <Link
                     to={ctaHref}
-                    className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-kado-red/40 bg-kado-red/90 px-6 py-3.5 text-xs font-bold uppercase tracking-[0.15em] text-kado-cream shadow-[0_0_30px_rgba(158,24,29,0.35)] backdrop-blur-md transition-all hover:bg-kado-red hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:w-auto sm:gap-3 sm:px-8 sm:text-sm sm:tracking-[0.2em] lg:text-base"
+                    className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-kado-red/40 bg-kado-red/90 px-6 py-3.5 kado-label text-kado-cream shadow-[0_0_30px_rgba(158,24,29,0.35)] backdrop-blur-md transition-all hover:bg-kado-red hover:text-kado-offwhite focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:w-auto sm:gap-3 sm:px-8 sm:tracking-[0.2em] lg:text-base"
                   >
                     {ctaLabel} <ArrowUpRight className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                   </Link>

@@ -206,7 +206,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-4 top-6 select-none font-display text-[7rem] font-black leading-none text-kado-red/[0.05] sm:-right-6 sm:top-8 sm:text-[10rem] md:right-8 md:top-4 md:text-[18rem]"
+        className="kado-kanji-watermark -right-4 top-6 text-[clamp(7rem,20vw,18rem)] text-kado-red/[0.05] sm:-right-6 sm:top-8 md:right-8 md:top-4"
       >
         角
       </div>

@@ -32,11 +32,11 @@ function useStepIndex(total: number, interval = 7000, paused = false) {
 
 function VisualInStore() {
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute right-0 top-[5%] w-[68%] overflow-hidden rounded-2xl border border-kado-cream/10 shadow-2xl shadow-black/30">
-        <img src="/images/hero-interior.png" alt="Barista at the counter" className="h-48 w-full object-cover" />
-        <div className="bg-kado-offwhite p-4">
-          <div className="mb-3 flex items-center gap-2">
+    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
+      <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-[2%] lg:w-[70%]">
+        <img src="/images/hero-interior.png" alt="Barista at the counter" className="h-36 w-full object-cover sm:h-44 lg:h-52" />
+        <div className="bg-kado-offwhite p-3 sm:p-4">
+          <div className="mb-2 flex items-center gap-2 sm:mb-3">
             <div className="flex h-5 w-5 items-center justify-center rounded bg-kado-red">
               <span className="text-[7px] font-black text-white">角</span>
             </div>
@@ -58,7 +58,7 @@ function VisualInStore() {
           </div>
         </div>
       </div>
-      <div className="absolute bottom-[8%] left-0 w-[42%] rounded-xl border border-kado-dark/10 bg-kado-offwhite p-4 shadow-xl">
+      <div className="rounded-xl border border-kado-cream/20 bg-kado-offwhite p-3 shadow-[0_16px_40px_rgba(0,0,0,0.35)] sm:p-4 lg:absolute lg:bottom-[6%] lg:left-0 lg:w-[44%]">
         <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-kado-dark/40">Order #042</p>
         <div className="mb-3 space-y-1">
           <div className="flex justify-between text-[10px] text-kado-dark">
@@ -81,16 +81,16 @@ function VisualInStore() {
 
 function VisualOnlineOrder() {
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute right-0 top-[2%] w-[72%] overflow-hidden rounded-2xl border border-kado-dark/10 shadow-2xl">
-        <div className="flex items-center gap-2 bg-kado-dark/90 px-3 py-2">
+    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
+      <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-0 lg:w-[74%]">
+        <div className="flex items-center gap-2 bg-kado-dark/95 px-3 py-2">
           <div className="flex gap-1">
             <div className="h-2 w-2 rounded-full bg-kado-red/80" />
             <div className="h-2 w-2 rounded-full bg-yellow-500/80" />
             <div className="h-2 w-2 rounded-full bg-green-500/80" />
           </div>
-          <div className="flex-1 rounded-full bg-kado-dark/60 px-3 py-0.5">
-            <span className="font-mono text-[8px] text-white/40">kado-kohi.com/menu</span>
+          <div className="flex-1 rounded-full bg-white/10 px-3 py-0.5">
+            <span className="font-mono text-[8px] text-white/45">kado-kohi.com/menu</span>
           </div>
         </div>
         <div className="bg-kado-offwhite p-4">
@@ -128,7 +128,7 @@ function VisualOnlineOrder() {
           </div>
         </div>
       </div>
-      <div className="absolute bottom-[10%] left-0 flex max-w-[88%] items-center gap-3 rounded-2xl bg-kado-dark px-4 py-3 text-kado-cream shadow-xl">
+      <div className="flex items-center gap-3 rounded-2xl border border-kado-cream/10 bg-kado-dark px-3 py-2.5 text-kado-cream shadow-[0_16px_40px_rgba(0,0,0,0.4)] sm:px-4 sm:py-3 lg:absolute lg:bottom-[8%] lg:left-0 lg:max-w-[90%]">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#007dfe] text-[8px] font-black">
           GC
         </div>
@@ -146,8 +146,8 @@ function VisualOnlineOrder() {
 
 function VisualQROrder() {
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute right-[5%] top-[4%] w-[56%] overflow-hidden rounded-2xl border border-kado-dark/10 bg-kado-offwhite shadow-2xl">
+    <div className="flex h-full flex-col gap-3 sm:flex-row lg:relative lg:block lg:overflow-visible">
+      <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/15 bg-kado-offwhite shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-[2%] lg:top-[2%] lg:w-[58%]">
         <div className="flex items-center gap-2 bg-kado-dark p-4">
           <div className="flex h-6 w-6 items-center justify-center rounded bg-kado-red">
             <span className="text-[8px] font-black text-white">角</span>
@@ -173,8 +173,8 @@ function VisualQROrder() {
           <p className="text-center text-[8px] font-medium text-kado-dark/40">Scan → menu → GCash QR</p>
         </div>
       </div>
-      <div className="absolute bottom-[6%] left-0 w-[50%] overflow-hidden rounded-2xl bg-kado-dark shadow-xl">
-        <img src="/images/hero-coffee.png" alt="Coffee shop table" className="h-16 w-full object-cover opacity-60" />
+      <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/10 bg-kado-dark shadow-[0_16px_40px_rgba(0,0,0,0.4)] lg:absolute lg:bottom-[4%] lg:left-0 lg:w-[52%]">
+        <img src="/images/hero-coffee.png" alt="Coffee shop table" className="h-16 w-full object-cover opacity-70" />
         <div className="p-3">
           <p className="mb-0.5 text-[8px] font-bold uppercase tracking-widest text-kado-red">Table 5 · Dine In</p>
           <p className="text-[10px] font-bold text-kado-cream">Menu loaded!</p>
@@ -186,46 +186,52 @@ function VisualQROrder() {
 
 function VisualLoyalty() {
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
       <div
-        className="absolute right-0 top-[4%] w-[68%] overflow-hidden rounded-2xl shadow-2xl"
-        style={{ background: 'linear-gradient(135deg,#9E181D 0%,#4a0d10 100%)' }}
+        className="relative overflow-hidden rounded-2xl border border-kado-cream/10 shadow-[0_24px_56px_rgba(0,0,0,0.5)] lg:absolute lg:right-0 lg:top-[0%] lg:w-[72%]"
+        style={{ background: 'linear-gradient(145deg,#9E181D 0%,#5c1014 48%,#2a0809 100%)' }}
       >
-        <div className="p-5">
-          <div className="mb-4 flex items-start justify-between">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-kado-cream/10 blur-2xl"
+        />
+        <div className="relative p-5 sm:p-6">
+          <div className="mb-5 flex items-start justify-between">
             <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-kado-cream/50">Kado Circle</p>
-              <p className="text-base font-black tracking-tight text-kado-cream">Juan Cruz</p>
+              <p className="text-[8px] font-bold uppercase tracking-[0.28em] text-kado-cream/55">Kado Circle</p>
+              <p className="font-display text-lg font-black tracking-tight text-kado-cream sm:text-xl">Juan Cruz</p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-kado-cream/20 bg-kado-cream/10">
-              <span className="text-sm font-black text-kado-cream">角</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-kado-cream/25 bg-kado-cream/10 backdrop-blur-sm">
+              <span className="text-base font-black text-kado-cream">角</span>
             </div>
           </div>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-2">
             {Array(10)
               .fill(0)
               .map((_, i) => (
                 <div
                   key={i}
-                  className="flex aspect-square w-full items-center justify-center rounded-full"
-                  style={{
-                    background: i < 8 ? 'rgba(241,223,186,0.9)' : 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(241,223,186,0.2)',
-                  }}
+                  className={clsx(
+                    'flex aspect-square w-full items-center justify-center rounded-full border transition-transform',
+                    i < 8
+                      ? 'border-kado-cream/30 bg-kado-cream/95 shadow-sm'
+                      : 'border-kado-cream/15 bg-white/5',
+                  )}
                 >
-                  {i < 8 && <span className="text-[8px] font-black text-kado-red">角</span>}
+                  {i < 8 && <span className="text-[9px] font-black text-kado-red">角</span>}
                 </div>
               ))}
           </div>
+          <p className="mt-4 text-[9px] font-bold uppercase tracking-widest text-kado-cream/45">8 / 10 stamps</p>
         </div>
       </div>
-      <div className="absolute bottom-[8%] left-0 flex w-[52%] items-center gap-3 rounded-2xl border border-kado-dark/8 bg-white p-3 shadow-2xl">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kado-red">
-          <span className="text-[8px] font-black uppercase tracking-wide text-kado-cream">+1</span>
+      <div className="flex items-center gap-3 rounded-2xl border border-kado-cream/15 bg-kado-offwhite p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] sm:p-4 lg:absolute lg:bottom-[6%] lg:left-0 lg:w-[54%]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kado-red shadow-md shadow-kado-red/30">
+          <span className="text-[9px] font-black uppercase tracking-wide text-kado-cream">+1</span>
         </div>
         <div>
-          <p className="text-[9px] font-black text-kado-dark">Congrats! Free drink earned</p>
-          <p className="text-[8px] text-kado-dark/40">Redeem at any Kado branch</p>
+          <p className="text-[10px] font-black text-kado-dark">Congrats! Free drink earned</p>
+          <p className="text-[8px] text-kado-dark/45">Redeem at any Kado branch</p>
         </div>
       </div>
     </div>
@@ -299,6 +305,7 @@ export function KadoOrderingCarousel({
   const prefersReducedMotion = usePrefersReducedMotion();
   const steps = buildSteps(copy?.steps);
   const { current, setStep } = useStepIndex(steps.length, 7000, prefersReducedMotion || !!cmsEditMode);
+  const layoutId = prefersReducedMotion || cmsEditMode ? undefined : 'ordering-step-highlight';
 
   return (
     <section className={clsx('landing-section relative w-full min-w-0 overflow-hidden bg-kado-offwhite', className)}>
@@ -309,13 +316,13 @@ export function KadoOrderingCarousel({
         角
       </div>
 
-      <div className="relative mx-auto flex max-w-[1200px] flex-col gap-8 lg:gap-10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
-          <div>
+      <div className="relative mx-auto flex max-w-[1200px] flex-col gap-6 sm:gap-8 lg:gap-10">
+        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between md:gap-8">
+          <div className="min-w-0">
             <CmsStyledText
               value={copy?.badge ?? 'How it works'}
               as="span"
-              className="kado-label mb-3 block text-kado-red"
+              className="kado-label mb-2 inline-flex rounded-full border border-kado-red/20 bg-kado-red/10 px-3 py-1.5 text-kado-red sm:mb-3"
               {...cmsTextProps(cmsEditMode, 'ordering.badge', 'Badge', (v) => updateOrdering({ badge: v }))}
             />
             <CmsStyledText
@@ -328,10 +335,10 @@ export function KadoOrderingCarousel({
           <CmsStyledText
             value={
               copy?.subtitleDesktop ??
-              'Walk in, order online, or scan a table QR — then collect stamps every time.'
+              'Walk in, order online with GCash QR, or scan your table — drink stamps unlock when your order is complete.'
             }
             as="p"
-            className="hidden max-w-sm md:block"
+            className="hidden max-w-md md:block md:text-right"
             defaultSizeClass="kado-body"
             defaultColorClass="text-kado-dark/55"
             {...cmsTextProps(cmsEditMode, 'ordering.subtitleDesktop', 'Subtitle (desktop)', (v) =>
@@ -342,18 +349,61 @@ export function KadoOrderingCarousel({
         <CmsStyledText
           value={copy?.subtitleMobile ?? 'In-store, online, QR at your table — earn stamps every visit.'}
           as="p"
-          className="-mt-2 md:hidden"
-          defaultSizeClass="kado-body"
+          className="-mt-1 md:hidden"
+          defaultSizeClass="kado-body-sm"
           defaultColorClass="text-kado-dark/55"
           {...cmsTextProps(cmsEditMode, 'ordering.subtitleMobile', 'Subtitle (mobile)', (v) =>
             updateOrdering({ subtitleMobile: v }),
           )}
         />
 
-        <div className="overflow-hidden rounded-3xl border border-kado-dark/10 bg-kado-cream shadow-[0_24px_64px_rgba(25,25,25,0.08)]">
-          <div className="grid min-h-[420px] lg:grid-cols-[minmax(0,13rem)_1fr]">
+        <div className="relative overflow-hidden rounded-2xl border border-kado-dark/10 bg-kado-cream shadow-[0_28px_72px_rgba(25,25,25,0.1)] sm:rounded-[1.75rem]">
+          <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-kado-red" />
+
+          <div className="grid lg:min-h-[440px] lg:grid-cols-[minmax(0,15.5rem)_1fr]">
+            {/* Mobile: equal-width step tabs + progress */}
+            <div className="border-b border-kado-dark/10 bg-kado-dark lg:hidden">
+              <nav className="grid grid-cols-4" aria-label="Ordering steps">
+                {steps.map((step, i) => {
+                  const active = current === i;
+                  return (
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => setStep(i)}
+                      aria-label={cmsTextPlain(step.eyebrow)}
+                      aria-current={active ? 'step' : undefined}
+                      className={clsx(
+                        'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 px-1 py-2.5 transition-colors',
+                        active ? 'bg-kado-red text-kado-cream' : 'text-kado-cream/50',
+                      )}
+                    >
+                      <span className="font-display text-xl font-black leading-none tabular-nums sm:text-2xl">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="line-clamp-1 text-[8px] font-bold uppercase tracking-[0.12em] sm:text-[9px]">
+                        <CmsStyledText value={step.eyebrow} as="span" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </nav>
+              <div className="flex gap-1 px-3 pb-3 pt-1" aria-hidden>
+                {steps.map((_, i) => (
+                  <div key={i} className="h-0.5 flex-1 overflow-hidden rounded-full bg-kado-cream/15">
+                    <motion.div
+                      className="h-full rounded-full bg-kado-red"
+                      initial={false}
+                      animate={{ width: i <= current ? '100%' : '0%' }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <nav
-              className="flex flex-row gap-1 overflow-x-auto border-b border-kado-dark/10 bg-kado-dark p-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-b-0 lg:border-r lg:p-0"
+              className="hidden border-r border-kado-dark/10 bg-kado-dark lg:flex lg:flex-col"
               aria-label="Ordering steps"
             >
               {steps.map((step, i) => {
@@ -365,19 +415,27 @@ export function KadoOrderingCarousel({
                     onClick={() => setStep(i)}
                     aria-current={active ? 'step' : undefined}
                     className={clsx(
-                      'flex min-h-[44px] min-w-[9rem] shrink-0 items-center gap-3 px-4 py-3 text-left transition-colors lg:min-w-0 lg:w-full lg:px-5 lg:py-5',
-                      active ? 'bg-kado-red text-kado-cream' : 'text-kado-cream/65 hover:bg-white/5 hover:text-kado-cream',
+                      'group relative flex w-full items-center gap-3 overflow-hidden px-6 py-0 text-left transition-colors lg:flex-1',
+                      active ? 'text-kado-cream' : 'text-kado-cream/55 hover:bg-white/[0.04] hover:text-kado-cream/85',
                     )}
                   >
+                    {layoutId && active && (
+                      <motion.div
+                        layoutId={layoutId}
+                        className="absolute inset-0 bg-kado-red"
+                        transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+                      />
+                    )}
+                    {!layoutId && active && <span className="absolute inset-0 bg-kado-red" />}
                     <span
                       className={clsx(
-                        'font-display text-2xl font-black leading-none tabular-nums lg:text-3xl',
-                        active ? 'text-kado-cream' : 'text-kado-cream/35',
+                        'relative z-[1] font-display text-[2rem] font-black leading-none tabular-nums',
+                        active ? 'text-kado-cream' : 'text-kado-cream/30 group-hover:text-kado-cream/50',
                       )}
                     >
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="hidden text-[10px] font-bold uppercase tracking-[0.18em] sm:inline">
+                    <span className="relative z-[1] text-[10px] font-bold uppercase tracking-[0.18em]">
                       <CmsStyledText value={step.eyebrow} as="span" />
                     </span>
                   </button>
@@ -385,8 +443,15 @@ export function KadoOrderingCarousel({
               })}
             </nav>
 
-            <div className="grid min-h-[380px] lg:grid-cols-[minmax(0,1fr)_minmax(0,44%)]">
-              <div className="flex flex-col justify-center gap-4 p-6 sm:p-8 lg:p-10">
+            <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+              <div className="relative flex flex-col justify-center gap-3 p-4 sm:gap-4 sm:p-6 lg:p-10 xl:p-12">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute right-4 top-2 font-display text-[clamp(3.5rem,8vw,5.5rem)] font-black leading-none tabular-nums text-kado-dark/[0.045] lg:right-8 lg:top-4"
+                >
+                  {String(current + 1).padStart(2, '0')}
+                </span>
+
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={current}
@@ -394,12 +459,12 @@ export function KadoOrderingCarousel({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex flex-col gap-4"
+                    className="relative z-[1] flex flex-col gap-3 sm:gap-4"
                   >
                     <CmsStyledText
                       value={steps[current].eyebrow}
                       as="p"
-                      className="kado-label text-kado-red"
+                      className="kado-label hidden text-kado-red lg:block"
                       {...cmsTextProps(cmsEditMode, `ordering.step.${current}.eyebrow`, `Step ${current + 1} eyebrow`, (v) =>
                         updateOrderingStep(current, { eyebrow: v }),
                       )}
@@ -407,7 +472,7 @@ export function KadoOrderingCarousel({
                     <CmsStyledText
                       value={steps[current].title}
                       as="h3"
-                      className="kado-h2 leading-tight text-kado-dark"
+                      className="kado-h3 max-w-md leading-[1.08] text-kado-dark sm:kado-h2"
                       {...cmsTextProps(cmsEditMode, `ordering.step.${current}.title`, `Step ${current + 1} title`, (v) =>
                         updateOrderingStep(current, { title: v }),
                       )}
@@ -415,9 +480,9 @@ export function KadoOrderingCarousel({
                     <CmsStyledText
                       value={steps[current].description}
                       as="p"
-                      className="max-w-lg"
+                      className="max-w-md text-sm leading-relaxed sm:text-base"
                       defaultSizeClass="kado-body"
-                      defaultColorClass="text-kado-dark/65"
+                      defaultColorClass="text-kado-dark/60"
                       {...cmsTextProps(
                         cmsEditMode,
                         `ordering.step.${current}.description`,
@@ -429,15 +494,21 @@ export function KadoOrderingCarousel({
                 </AnimatePresence>
               </div>
 
-              <div className="relative min-h-[240px] border-t border-kado-dark/8 bg-kado-dark/[0.03] lg:min-h-0 lg:border-l lg:border-t-0">
+              <div className="ordering-visual-stage relative min-h-[240px] border-t border-kado-cream/10 sm:min-h-[280px] lg:min-h-0 lg:border-l lg:border-t-0">
+                <div
+                  aria-hidden
+                  className="kado-kanji-watermark right-2 top-2 text-[clamp(4rem,10vw,7rem)] text-kado-cream/[0.05] sm:right-4 sm:top-4"
+                >
+                  角
+                </div>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={steps[current].id}
-                    className="absolute inset-0 p-5 sm:p-6"
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.35 }}
+                    className="relative z-[1] p-4 sm:p-5 lg:absolute lg:inset-0 lg:p-7"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   >
                     {steps[current].visual}
                   </motion.div>
@@ -447,9 +518,25 @@ export function KadoOrderingCarousel({
           </div>
         </div>
 
-        <p className="text-center kado-subtext text-kado-dark/40">
-          {cmsTextPlain(steps[current].eyebrow)} — step {current + 1} of {steps.length}
-        </p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2" aria-hidden>
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setStep(i)}
+                aria-label={`Go to step ${i + 1}`}
+                className={clsx(
+                  'h-1.5 rounded-full transition-all duration-300',
+                  i === current ? 'w-8 bg-kado-red' : 'w-1.5 bg-kado-dark/15 hover:bg-kado-dark/25',
+                )}
+              />
+            ))}
+          </div>
+          <p className="kado-subtext text-center text-kado-dark/40">
+            {cmsTextPlain(steps[current].eyebrow)} — step {current + 1} of {steps.length}
+          </p>
+        </div>
       </div>
     </section>
   );

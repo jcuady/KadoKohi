@@ -174,7 +174,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           >
             <Link
               to={c?.primaryCtaPath ?? '/menu'}
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-6 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-kado-red/30 transition-all hover:scale-[1.03] hover:bg-kado-red-hover hover:shadow-xl hover:shadow-kado-red/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:min-h-[52px] sm:w-auto sm:px-8 sm:text-xs sm:tracking-[0.15em]"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-6 py-3 kado-label text-kado-cream shadow-lg shadow-kado-red/30 transition-all hover:scale-[1.03] hover:bg-kado-red-hover hover:shadow-xl hover:shadow-kado-red/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:min-h-[52px] sm:w-auto sm:px-8 sm:tracking-[0.15em]"
             >
               <CmsStyledText
                 value={c?.primaryCtaLabel ?? 'Explore Menu'}
@@ -187,7 +187,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
             </Link>
             <Link
               to={c?.secondaryCtaPath ?? '/merch'}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/40 bg-black/20 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-sm transition-all hover:border-white/80 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:min-h-[52px] sm:w-auto sm:px-8 sm:text-xs sm:tracking-[0.15em]"
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-kado-cream/40 bg-kado-dark/20 px-6 py-3 kado-label text-kado-cream backdrop-blur-sm transition-all hover:border-kado-cream/80 hover:bg-kado-cream/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-cream focus-visible:ring-offset-2 focus-visible:ring-offset-kado-dark sm:min-h-[52px] sm:w-auto sm:px-8 sm:tracking-[0.15em]"
             >
               <CmsStyledText
                 value={c?.secondaryCtaLabel ?? 'Shop Merch'}
@@ -216,8 +216,8 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
                 <Star key={i} className="h-3.5 w-3.5 fill-kado-cream text-kado-cream" />
               ))}
             </span>
-            <span className="font-display text-sm font-black text-kado-cream">{KADO_GOOGLE_LISTING.rating}</span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-kado-cream/70">
+            <span className="kado-h3 text-kado-cream">{KADO_GOOGLE_LISTING.rating}</span>
+            <span className="kado-label text-kado-cream/70">
               {KADO_GOOGLE_LISTING.reviewCount} Google reviews
             </span>
           </motion.a>

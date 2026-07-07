@@ -79,7 +79,7 @@ function FaqItem({
           <CmsStyledText
             value={question}
             as="span"
-            className="min-w-0 flex-1 font-display text-[0.9375rem] font-bold leading-snug text-kado-dark sm:text-base"
+            className="min-w-0 flex-1 kado-body font-semibold text-kado-dark sm:kado-h3 sm:font-semibold"
             {...cmsTextProps(cmsEditMode, `faq.item.${index}.question`, `Question ${index + 1}`, (v) =>
               updateFaqItem(index, { question: v }),
             )}

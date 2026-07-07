@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, MapPin } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
   SEO_HOME_BODY_PARAGRAPHS,
@@ -45,7 +45,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
   return (
     <section
       aria-labelledby="home-menu-seo-heading"
-      className="landing-section relative overflow-hidden customer-menu-page bg-kado-dark"
+      className="landing-section relative overflow-hidden bg-kado-dark"
     >
       <div
         aria-hidden
@@ -57,7 +57,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
         <CmsStyledText
           value={copy.locationBadge}
           as="p"
-          className="mb-4 sm:mb-5"
+          className="mb-4 inline-flex rounded-full border border-kado-red/25 bg-kado-red/10 px-3 py-1.5 sm:mb-5"
           defaultSizeClass="kado-label"
           defaultColorClass="text-kado-red"
           {...cmsTextProps(cmsEditMode, 'menu-seo.locationBadge', 'Location badge', (v) =>
@@ -90,9 +90,16 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-2 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
+        <div className="relative mt-8 sm:mt-10">
+          <div
+            className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-1 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x lg:mx-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0 xl:grid-cols-4"
+            aria-label="Menu category highlights"
+          >
           {copy.pillars.map((pillar, pi) => (
-            <article key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`} className={pillarCard}>
+            <article
+              key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
+              className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink`}
+            >
               {cmsEditMode ? (
                 <CmsEditableImage
                   cmsField={`menu-seo.pillar.${pi}.image`}
@@ -151,6 +158,15 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
               </div>
             </article>
           ))}
+          </div>
+          {copy.pillars.length > 1 ? (
+            <div className="mt-3 flex items-center justify-center gap-1.5 lg:hidden">
+              <ChevronRight className="h-3 w-3 text-kado-cream/30" aria-hidden />
+              <p className="kado-subtext text-[10px] font-semibold uppercase tracking-[0.16em] text-kado-cream/40">
+                Swipe for more
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-8 max-w-3xl space-y-4 sm:mt-10">
