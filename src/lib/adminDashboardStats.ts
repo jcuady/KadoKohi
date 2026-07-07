@@ -1,14 +1,17 @@
 import type {
   BoothBooking,
   Event,
+  MenuCategory,
   Order,
   OrderChannel,
+  OrderItem,
   Product,
   PromoCode,
   User,
 } from '../types/domain';
 import { computeAdminOrderInsights, formatChannelLabel } from './adminOrderStats';
 import { guestActionReasonLabel } from './guestOrderActions';
+import { findPastriesCategory } from './pastriesCategory';
 import {
   KANBAN_COLUMNS,
   kanbanColumnForOrder,
@@ -27,11 +30,55 @@ export type ChannelPoint = {
 
 export type PipelinePoint = { id: KanbanColumnId; label: string; count: number };
 
-export type ProductPoint = { name: string; qty: number; revenue: number };
+export type SalesCategory = 'coffee' | 'merch' | 'pastries' | 'mix-match';
 
-export type GuestReasonPoint = { reason: string; label: string; count: number };
+export type ProductPoint = {
+  name: string;
+  qty: number;
+  revenue: number;
+  category: SalesCategory;
+};
 
-export type BranchPoint = { branchId: string; name: string; revenue: number; orders: number };
+export type CategorySalesPoint = {
+  key: SalesCategory;
+  label: string;
+  revenue: number;
+  qty: number;
+};
+
+export type GuestReasonPoint = {
+  reason: string;
+  label: string;
+  count: number;
+  action: 'cancel' | 'change_order';
+};
+
+export type GuestActionStats = {
+  cancelCount: number;
+  changeCount: number;
+  totalCancelled: number;
+  cancelRatePct: number;
+  guestFrictionPct: number;
+  cancelReasons: GuestReasonPoint[];
+  changeReasons: GuestReasonPoint[];
+  allReasons: GuestReasonPoint[];
+};
+
+export type BranchPoint = {
+  branchId: string;
+  name: string;
+  revenue: number;
+  orders: number;
+  avgTicket: number;
+  sharePct: number;
+};
+
+export type PaymentMethodPoint = {
+  method: string;
+  label: string;
+  count: number;
+  revenue: number;
+};
 
 export type CatalogHealth = {
   total: number;
@@ -65,6 +112,59 @@ export type EventSnapshot = {
 };
 
 export { computeAdminOrderInsights };
+
+export const SALES_CATEGORY_LABELS: Record<SalesCategory, string> = {
+  coffee: 'Coffee & drinks',
+  merch: 'Merch',
+  pastries: 'Pastries',
+  'mix-match': 'Mix & Match',
+};
+
+const CATEGORY_ORDER: SalesCategory[] = ['coffee', 'pastries', 'merch', 'mix-match'];
+
+export function pastryProductIds(categories: MenuCategory[], products: Product[]): Set<string> {
+  const cat = findPastriesCategory(categories);
+  if (!cat) return new Set();
+  return new Set(products.filter((p) => p.categoryId === cat.id).map((p) => p.id));
+}
+
+export function classifyOrderItem(
+  item: OrderItem,
+  order: Order,
+  pastriesIds: Set<string>,
+): SalesCategory {
+  if (item.itemType === 'mix-match') return 'mix-match';
+  if (item.itemType === 'merch' || order.channel === 'merch') return 'merch';
+  if (pastriesIds.has(item.productId)) return 'pastries';
+  return 'coffee';
+}
+
+export function computeCategorySales(
+  orders: Order[],
+  categories: MenuCategory[],
+  products: Product[],
+): CategorySalesPoint[] {
+  const valid = orders.filter((o) => o.status !== 'cancelled');
+  const pastriesIds = pastryProductIds(categories, products);
+  const map = new Map<SalesCategory, { revenue: number; qty: number }>();
+  for (const key of CATEGORY_ORDER) map.set(key, { revenue: 0, qty: 0 });
+
+  for (const o of valid) {
+    for (const item of o.items) {
+      const cat = classifyOrderItem(item, o, pastriesIds);
+      const cur = map.get(cat)!;
+      cur.qty += item.qty;
+      cur.revenue += item.lineTotal;
+    }
+  }
+
+  return CATEGORY_ORDER.map((key) => ({
+    key,
+    label: SALES_CATEGORY_LABELS[key],
+    revenue: map.get(key)?.revenue ?? 0,
+    qty: map.get(key)?.qty ?? 0,
+  }));
+}
 
 export function computeRevenueSeries(orders: Order[], period: OrderPeriod): RevenuePoint[] {
   const valid = orders.filter((o) => o.status !== 'cancelled');
@@ -162,37 +262,76 @@ export function computeOpsPipeline(orders: Order[]): PipelinePoint[] {
   }));
 }
 
-export function computeTopProducts(orders: Order[], limit = 6): ProductPoint[] {
+export function computeTopProducts(
+  orders: Order[],
+  categories: MenuCategory[],
+  products: Product[],
+  options?: { limit?: number; category?: SalesCategory | 'all' },
+): ProductPoint[] {
+  const limit = options?.limit ?? 8;
+  const filter = options?.category ?? 'all';
   const valid = orders.filter((o) => o.status !== 'cancelled');
-  const map = new Map<string, { qty: number; revenue: number }>();
+  const pastriesIds = pastryProductIds(categories, products);
+  const map = new Map<string, ProductPoint>();
+
   for (const o of valid) {
     for (const item of o.items) {
+      const category = classifyOrderItem(item, o, pastriesIds);
+      if (filter !== 'all' && category !== filter) continue;
       const name = item.productNameSnapshot;
-      const cur = map.get(name) ?? { qty: 0, revenue: 0 };
+      const cur = map.get(name) ?? { name, qty: 0, revenue: 0, category };
       cur.qty += item.qty;
       cur.revenue += item.lineTotal;
       map.set(name, cur);
     }
   }
-  return [...map.entries()]
-    .map(([name, { qty, revenue }]) => ({ name, qty, revenue }))
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, limit);
+
+  return [...map.values()].sort((a, b) => b.qty - a.qty || b.revenue - a.revenue).slice(0, limit);
 }
 
-export function computeGuestReasonBreakdown(orders: Order[]): GuestReasonPoint[] {
-  const map = new Map<string, number>();
+export function computeGuestReasonBreakdown(
+  orders: Order[],
+  action?: 'cancel' | 'change_order',
+): GuestReasonPoint[] {
+  const map = new Map<string, GuestReasonPoint>();
   for (const o of orders) {
-    if (!o.guestActionReason) continue;
-    map.set(o.guestActionReason, (map.get(o.guestActionReason) ?? 0) + 1);
+    if (!o.guestActionReason || !o.guestAction) continue;
+    if (action && o.guestAction !== action) continue;
+    const key = `${o.guestAction}:${o.guestActionReason}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      map.set(key, {
+        reason: o.guestActionReason,
+        label: guestActionReasonLabel(o.guestActionReason),
+        count: 1,
+        action: o.guestAction,
+      });
+    }
   }
-  return [...map.entries()]
-    .map(([reason, count]) => ({
-      reason,
-      label: guestActionReasonLabel(reason),
-      count,
-    }))
-    .sort((a, b) => b.count - a.count);
+  return [...map.values()].sort((a, b) => b.count - a.count);
+}
+
+export function computeGuestActionStats(orders: Order[]): GuestActionStats {
+  const cancelCount = orders.filter((o) => o.guestAction === 'cancel').length;
+  const changeCount = orders.filter((o) => o.guestAction === 'change_order').length;
+  const totalCancelled = orders.filter((o) => o.status === 'cancelled').length;
+  const cancelRatePct = orders.length ? Math.round((totalCancelled / orders.length) * 100) : 0;
+  const guestFrictionPct = orders.length
+    ? Math.round(((cancelCount + changeCount) / orders.length) * 100)
+    : 0;
+
+  return {
+    cancelCount,
+    changeCount,
+    totalCancelled,
+    cancelRatePct,
+    guestFrictionPct,
+    cancelReasons: computeGuestReasonBreakdown(orders, 'cancel'),
+    changeReasons: computeGuestReasonBreakdown(orders, 'change_order'),
+    allReasons: computeGuestReasonBreakdown(orders),
+  };
 }
 
 export function computeBranchBreakdown(
@@ -200,6 +339,7 @@ export function computeBranchBreakdown(
   branchName: (id: string) => string,
 ): BranchPoint[] {
   const valid = orders.filter((o) => o.status !== 'cancelled');
+  const netSales = valid.reduce((s, o) => s + o.total, 0);
   const map = new Map<string, { revenue: number; orders: number }>();
   for (const o of valid) {
     const cur = map.get(o.branchId) ?? { revenue: 0, orders: 0 };
@@ -213,6 +353,33 @@ export function computeBranchBreakdown(
       name: branchName(branchId),
       revenue,
       orders: count,
+      avgTicket: count ? revenue / count : 0,
+      sharePct: netSales > 0 ? Math.round((revenue / netSales) * 100) : 0,
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+}
+
+export function computePaymentMethodBreakdown(orders: Order[]): PaymentMethodPoint[] {
+  const valid = orders.filter((o) => o.status !== 'cancelled');
+  const labels: Record<string, string> = {
+    'gcash-qr': 'GCash QR',
+    paymongo: 'PayMongo',
+    'pay-at-store': 'Pay at store',
+  };
+  const map = new Map<string, { count: number; revenue: number }>();
+  for (const o of valid) {
+    const method = o.paymentMethod ?? 'unknown';
+    const cur = map.get(method) ?? { count: 0, revenue: 0 };
+    cur.count += 1;
+    cur.revenue += o.total;
+    map.set(method, cur);
+  }
+  return [...map.entries()]
+    .map(([method, { count, revenue }]) => ({
+      method,
+      label: labels[method] ?? (method === 'unknown' ? 'Unspecified' : method),
+      count,
+      revenue,
     }))
     .sort((a, b) => b.revenue - a.revenue);
 }

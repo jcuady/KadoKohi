@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { BRAND } from '../../../lib/brandTokens';
 import { formatPhp } from '../../../lib/money';
-import type { ChannelPoint, PipelinePoint, RevenuePoint } from '../../../lib/adminDashboardStats';
+import type { BranchPoint, CategorySalesPoint, ChannelPoint, PipelinePoint, RevenuePoint } from '../../../lib/adminDashboardStats';
 
 const CHART_COLORS = [BRAND.red, BRAND.dark, '#7A6B5A', '#C4A882', '#D9C9A8'];
 
@@ -164,5 +164,108 @@ export function DashboardPipelineChart({ data }: { data: PipelinePoint[] }) {
         );
       })}
     </div>
+  );
+}
+
+type CategoryTooltipProps = {
+  active?: boolean;
+  payload?: { value: number; payload: CategorySalesPoint }[];
+};
+
+function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  return (
+    <div className="rounded-lg border border-kado-dark/10 bg-white px-3 py-2 text-xs shadow-sm dark:bg-kado-dark dark:border-white/10">
+      <p className="font-semibold dash-heading">{row?.label}</p>
+      <p className="text-kado-red font-display font-bold tabular-nums">{formatPhp(row?.revenue ?? 0)}</p>
+      <p className="dash-muted">{row?.qty ?? 0} units</p>
+    </div>
+  );
+}
+
+export function DashboardCategorySalesChart({ data }: { data: CategorySalesPoint[] }) {
+  const active = data.filter((d) => d.revenue > 0 || d.qty > 0);
+  if (!active.length) {
+    return (
+      <div className="flex h-[200px] items-center justify-center text-sm dash-muted">
+        No category sales in this period.
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
+        <CartesianGrid stroke="rgba(25,25,25,0.06)" horizontal={false} />
+        <XAxis type="number" hide />
+        <YAxis
+          type="category"
+          dataKey="label"
+          width={96}
+          tick={{ fontSize: 10, fill: BRAND.muted }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip content={<CategoryTooltip />} cursor={{ fill: 'rgba(158,24,29,0.06)' }} />
+        <Bar dataKey="revenue" radius={[0, 6, 6, 0]} isAnimationActive={false}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+type BranchTooltipProps = {
+  active?: boolean;
+  payload?: { value: number; payload: BranchPoint }[];
+};
+
+function BranchTooltip({ active, payload }: BranchTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  return (
+    <div className="rounded-lg border border-kado-dark/10 bg-white px-3 py-2 text-xs shadow-sm dark:bg-kado-dark dark:border-white/10">
+      <p className="font-semibold dash-heading">{row?.name}</p>
+      <p className="text-kado-red font-display font-bold tabular-nums">{formatPhp(row?.revenue ?? 0)}</p>
+      <p className="dash-muted">
+        {row?.orders ?? 0} orders · {row?.sharePct ?? 0}% share
+      </p>
+    </div>
+  );
+}
+
+export function DashboardBranchChart({ data }: { data: BranchPoint[] }) {
+  if (data.length < 2) {
+    return (
+      <div className="flex h-[200px] items-center justify-center text-sm dash-muted">
+        Compare branches by selecting all locations.
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
+        <CartesianGrid stroke="rgba(25,25,25,0.06)" horizontal={false} />
+        <XAxis type="number" hide />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={88}
+          tick={{ fontSize: 11, fill: BRAND.muted }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip content={<BranchTooltip />} cursor={{ fill: 'rgba(158,24,29,0.06)' }} />
+        <Bar dataKey="revenue" radius={[0, 6, 6, 0]} isAnimationActive={false}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   );
 }

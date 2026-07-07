@@ -23,6 +23,12 @@ import {
   CalendarHeart,
   Package,
   ArrowRight,
+  Trophy,
+  Croissant,
+  Shirt,
+  Shuffle,
+  XCircle,
+  RotateCcw,
   RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -45,18 +51,25 @@ import {
   computeCatalogHealth,
   computeChannelBreakdown,
   computeEventSnapshot,
-  computeGuestReasonBreakdown,
+  computeGuestActionStats,
+  computeCategorySales,
+  computePaymentMethodBreakdown,
   computeLoyaltySnapshot,
   computeOpsPipeline,
   computePromoSnapshot,
   computeRevenueSeries,
   computeTopProducts,
+  SALES_CATEGORY_LABELS,
+  type SalesCategory,
 } from '../../lib/adminDashboardStats';
 import {
+  DashboardBranchChart,
+  DashboardCategorySalesChart,
   DashboardChannelChart,
   DashboardPipelineChart,
   DashboardRevenueChart,
 } from '../../components/admin/dashboard/DashboardCharts';
+import DashboardBestSellers from '../../components/admin/dashboard/DashboardBestSellers';
 import GuestOrderActionNote from '../../components/order/GuestOrderActionNote';
 import {
   ORDER_STATUS_LABELS,
@@ -82,6 +95,7 @@ export default function AdminDashboard() {
   const setAdminFetchScope = useOrderStore((s) => s.setAdminFetchScope);
   const hydrateError = useOrderStore((s) => s.hydrateError);
   const products = useMenuStore((s) => s.products);
+  const categories = useMenuStore((s) => s.categories);
   const events = useEventStore((s) => s.events);
   const bookings = useBoothBookingStore((s) => s.bookings);
   const promoCodes = usePromoStore((s) => s.codes);
@@ -122,13 +136,28 @@ export default function AdminDashboard() {
   const insights = useMemo(() => computeAdminOrderInsights(orders), [orders]);
   const revenueSeries = useMemo(() => computeRevenueSeries(orders, periodFilter), [orders, periodFilter]);
   const channelBreakdown = useMemo(() => computeChannelBreakdown(orders), [orders]);
-  const opsPipeline = useMemo(() => computeOpsPipeline(orders), [orders]);
-  const topProducts = useMemo(() => computeTopProducts(orders), [orders]);
-  const guestReasons = useMemo(() => computeGuestReasonBreakdown(orders), [orders]);
-  const branchBreakdown = useMemo(
-    () => (branchFilter === 'all' ? computeBranchBreakdown(orders, branchName) : []),
-    [orders, branchFilter, branchName],
+  const categorySales = useMemo(
+    () => computeCategorySales(orders, categories, products),
+    [orders, categories, products],
   );
+  const opsPipeline = useMemo(() => computeOpsPipeline(orders), [orders]);
+  const guestStats = useMemo(() => computeGuestActionStats(orders), [orders]);
+  const paymentMethods = useMemo(() => computePaymentMethodBreakdown(orders), [orders]);
+  const branchBreakdown = useMemo(
+    () => computeBranchBreakdown(orders, branchName),
+    [orders, branchName],
+  );
+  const bestBranch = branchBreakdown[0] ?? null;
+  const bestSellersByCategory = useMemo(() => {
+    const tabs: Record<'all' | SalesCategory, ReturnType<typeof computeTopProducts>> = {
+      all: computeTopProducts(orders, categories, products, { limit: 8 }),
+      coffee: computeTopProducts(orders, categories, products, { limit: 6, category: 'coffee' }),
+      pastries: computeTopProducts(orders, categories, products, { limit: 6, category: 'pastries' }),
+      merch: computeTopProducts(orders, categories, products, { limit: 6, category: 'merch' }),
+      'mix-match': computeTopProducts(orders, categories, products, { limit: 6, category: 'mix-match' }),
+    };
+    return tabs;
+  }, [orders, categories, products]);
   const attention = useMemo(() => attentionOrders(orders), [orders]);
   const catalog = useMemo(() => computeCatalogHealth(products), [products]);
   const booth = useMemo(() => computeBoothSnapshot(bookings), [bookings]);
@@ -213,8 +242,19 @@ export default function AdminDashboard() {
             <p className="mt-2 text-sm dash-muted">
               {insights.orderCount} orders · {insights.completedCount} completed · excl. cancelled
             </p>
+            {bestBranch && branchFilter === 'all' ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-kado-red/15 bg-kado-red/[0.04] px-3 py-2">
+                <Trophy className="h-4 w-4 text-kado-red" />
+                <span className="text-xs font-semibold dash-heading">
+                  Top branch: <span className="text-kado-red">{bestBranch.name}</span>
+                </span>
+                <span className="text-[10px] dash-muted">
+                  {formatPhp(bestBranch.revenue)} · {bestBranch.sharePct}% share · {bestBranch.orders} orders
+                </span>
+              </div>
+            ) : null}
             {branchFilter === 'all' && branchBreakdown.length > 1 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {branchBreakdown.map((b) => (
                   <Badge key={b.branchId} variant="muted">
                     {b.name} {formatPhp(b.revenue)}
@@ -292,7 +332,75 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Channel + products + guest friction */}
+      {/* Sales by category + branch comparison */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Coffee className="h-5 w-5 text-kado-red" />
+              Sales by category
+            </CardTitle>
+            <CardDescription>Coffee, pastries, merch, and mix & match line revenue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DashboardCategorySalesChart data={categorySales} />
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {categorySales.map((row) => (
+                <div key={row.key} className="rounded-lg border dash-border px-2.5 py-2">
+                  <p className="text-[9px] font-bold uppercase tracking-wider dash-muted">{row.label}</p>
+                  <p className="font-display text-sm font-bold tabular-nums text-kado-red">{formatPhp(row.revenue)}</p>
+                  <p className="text-[10px] dash-muted">{row.qty} units</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-kado-red" />
+              Branch performance
+            </CardTitle>
+            <CardDescription>
+              {bestBranch
+                ? `${bestBranch.name} leads with ${bestBranch.sharePct}% of net sales`
+                : 'Net sales by branch'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DashboardBranchChart data={branchBreakdown} />
+            {branchBreakdown.length > 0 ? (
+              <ul className="mt-4 space-y-2">
+                {branchBreakdown.map((b, i) => (
+                  <li key={b.branchId} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex items-center gap-2 dash-heading">
+                      {i === 0 ? <Trophy className="h-3.5 w-3.5 text-kado-red" /> : null}
+                      <span className="font-semibold">{b.name}</span>
+                    </span>
+                    <span className="dash-muted tabular-nums">
+                      {formatPhp(b.revenue)} · {b.orders} orders · avg {formatPhp(b.avgTicket)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Best sellers */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Best sellers</CardTitle>
+          <CardDescription>Top items by quantity — filter by coffee, pastries, merch, or mix & match</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DashboardBestSellers byCategory={bestSellersByCategory} />
+        </CardContent>
+      </Card>
+
+      {/* Channel + guest friction + payments */}
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
@@ -310,58 +418,118 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Top drinks</CardTitle>
-            <CardDescription>By quantity sold</CardDescription>
+            <CardTitle className="text-lg">Guest cancels & changes</CardTitle>
+            <CardDescription>
+              {guestStats.cancelCount + guestStats.changeCount > 0
+                ? `${guestStats.cancelCount} cancels · ${guestStats.changeCount} changes · ${guestStats.guestFrictionPct}% of orders`
+                : 'Reason breakdown for guest-initiated actions'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {topProducts.length === 0 ? (
-              <p className="text-sm dash-muted">No product sales in this period.</p>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border dash-border px-2 py-2 text-center">
+                <p className="text-[9px] font-bold uppercase tracking-wider dash-muted">Cancelled</p>
+                <p className="font-display text-lg font-bold tabular-nums dash-heading">{guestStats.totalCancelled}</p>
+                <p className="text-[10px] dash-muted">{guestStats.cancelRatePct}% of orders</p>
+              </div>
+              <div className="rounded-lg border dash-border px-2 py-2 text-center">
+                <p className="text-[9px] font-bold uppercase tracking-wider dash-muted flex items-center justify-center gap-1">
+                  <XCircle className="h-3 w-3" /> Guest cancel
+                </p>
+                <p className="font-display text-lg font-bold tabular-nums dash-heading">{guestStats.cancelCount}</p>
+              </div>
+              <div className="rounded-lg border dash-border px-2 py-2 text-center">
+                <p className="text-[9px] font-bold uppercase tracking-wider dash-muted flex items-center justify-center gap-1">
+                  <RotateCcw className="h-3 w-3" /> Change order
+                </p>
+                <p className="font-display text-lg font-bold tabular-nums dash-heading">{guestStats.changeCount}</p>
+              </div>
+            </div>
+
+            {guestStats.allReasons.length === 0 ? (
+              <p className="text-sm dash-muted">No guest-initiated cancels or changes in this period.</p>
             ) : (
-              <ul className="space-y-3">
-                {topProducts.map((p, i) => (
-                  <li key={p.name} className="flex items-center gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-kado-red/10 text-[10px] font-bold text-kado-red">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold dash-heading">{p.name}</p>
-                      <p className="text-[10px] dash-muted">{p.qty} sold</p>
-                    </div>
-                    <span className="font-display text-sm font-bold tabular-nums text-kado-red">{formatPhp(p.revenue)}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider dash-muted">Cancel reasons</p>
+                  {guestStats.cancelReasons.length === 0 ? (
+                    <p className="text-xs dash-muted">None recorded</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {guestStats.cancelReasons.map((r) => (
+                        <li key={r.reason} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="dash-heading">{r.label}</span>
+                          <Badge variant="muted">{r.count}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider dash-muted">Change reasons</p>
+                  {guestStats.changeReasons.length === 0 ? (
+                    <p className="text-xs dash-muted">None recorded</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {guestStats.changeReasons.map((r) => (
+                        <li key={r.reason} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="dash-heading">{r.label}</span>
+                          <Badge variant="muted">{r.count}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Guest feedback</CardTitle>
-            <CardDescription>
-              {insights.guestCancelCount + insights.guestChangeCount > 0
-                ? `${insights.guestCancelCount} cancels · ${insights.guestChangeCount} changes`
-                : 'Cancel & change reasons'}
-            </CardDescription>
+            <CardTitle className="text-lg">Payment methods</CardTitle>
+            <CardDescription>Revenue by how customers paid</CardDescription>
           </CardHeader>
           <CardContent>
-            {guestReasons.length === 0 ? (
-              <p className="text-sm dash-muted">No guest-initiated cancels or changes in this period.</p>
+            {paymentMethods.length === 0 ? (
+              <p className="text-sm dash-muted">No payment data in this period.</p>
             ) : (
               <ul className="space-y-2">
-                {guestReasons.map((r) => (
-                  <li key={r.reason} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="dash-heading">{r.label}</span>
-                    <Badge variant="muted">{r.count}</Badge>
+                {paymentMethods.map((pm) => (
+                  <li key={pm.method} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="font-medium dash-heading">{pm.label}</span>
+                    <span className="text-right">
+                      <span className="font-display font-bold tabular-nums text-kado-red">{formatPhp(pm.revenue)}</span>
+                      <span className="ml-2 text-[10px] dash-muted">{pm.count} orders</span>
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
-            {insights.cancelledCount > 0 ? (
-              <p className="mt-3 text-[10px] dash-muted">{insights.cancelledCount} total cancelled orders</p>
-            ) : null}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Category revenue tiles */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {(
+          [
+            { key: 'coffee' as const, icon: Coffee, label: SALES_CATEGORY_LABELS.coffee },
+            { key: 'pastries' as const, icon: Croissant, label: SALES_CATEGORY_LABELS.pastries },
+            { key: 'merch' as const, icon: Shirt, label: SALES_CATEGORY_LABELS.merch },
+            { key: 'mix-match' as const, icon: Shuffle, label: SALES_CATEGORY_LABELS['mix-match'] },
+          ] as const
+        ).map(({ key, icon: Icon, label }) => {
+          const row = categorySales.find((c) => c.key === key);
+          return (
+            <Card key={key} className="p-4">
+              <Icon className="mb-2 h-4 w-4 text-kado-red" />
+              <p className="text-[10px] font-bold uppercase tracking-widest dash-muted">{label}</p>
+              <p className="font-display text-xl font-bold tabular-nums text-kado-red">{formatPhp(row?.revenue ?? 0)}</p>
+              <p className="mt-1 text-[10px] dash-muted">{row?.qty ?? 0} units sold</p>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Business units */}
