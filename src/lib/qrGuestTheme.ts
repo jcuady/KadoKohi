@@ -13,7 +13,7 @@ export function qrChipClass(active: boolean, tone: 'default' | 'hot' | 'iced' = 
 
 /** Category / filter pills on the menu header. */
 export const QR_PILL_BASE =
-  'shrink-0 min-h-[40px] px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border-2 touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qr-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--qr-bg)]';
+  'shrink-0 min-h-[34px] px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border-2 touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qr-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--qr-bg)]';
 
 export function qrPillClass(active: boolean): string {
   return active ? `${QR_PILL_BASE} qr-pill-active` : `${QR_PILL_BASE} qr-pill-idle`;

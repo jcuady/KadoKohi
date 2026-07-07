@@ -39,6 +39,17 @@ export const supabase = isSupabaseConfigured
     })
   : null;
 
+/** Ephemeral client for guest QR checkout while a staff session is still active in the main client. */
+export const guestSupabase = isSupabaseConfigured
+  ? createClient(supabaseUrl!, supabaseKey!, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;
+
 if (supabase && typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {

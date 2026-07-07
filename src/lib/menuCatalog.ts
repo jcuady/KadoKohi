@@ -1,22 +1,17 @@
 import type { MenuCategory, Product } from '../types/domain';
 import { normalizeExternalMenuImageUrl } from './menuProductImage';
 
+/** Bundled fallbacks — avoid external URLs that 404 in production. */
 const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
-  cat_classics:
-    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=700&auto=format&fit=crop',
-  cat_signatures:
-    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=700&auto=format&fit=crop',
-  cat_matcha:
-    'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=700&auto=format&fit=crop',
-  cat_yuzu:
-    'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=700&auto=format&fit=crop',
+  cat_classics: '/social/cafe-latte.png',
+  cat_signatures: '/social/coffee-series.png',
+  cat_matcha: '/social/matcha-series.png',
+  cat_yuzu: '/social/matcha-latte.png',
 };
 
-const PASTRY_FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=700&auto=format&fit=crop';
+const PASTRY_FALLBACK_IMAGE = '/social/cafe-latte.png';
 
-export const DEFAULT_MENU_PRODUCT_IMAGE =
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=700&auto=format&fit=crop';
+export const DEFAULT_MENU_PRODUCT_IMAGE = '/social/cafe-latte.png';
 
 export function isMerchCategoryName(name: string | undefined): boolean {
   return Boolean(name?.toLowerCase().includes('merch'));

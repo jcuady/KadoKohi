@@ -44,7 +44,12 @@ export interface OrderStore {
   refreshScopedForSession: (scope: FetchOrdersScope) => Promise<void>;
   createOrder: (
     order: Omit<Order, 'id' | 'shortCode' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'> &
-      Partial<Pick<Order, 'status' | 'paymentStatus'>> & { shortCode?: string; promoCode?: string },
+      Partial<Pick<Order, 'status' | 'paymentStatus'>> & {
+        shortCode?: string;
+        promoCode?: string;
+        /** Use anon Supabase session (staff testing QR while logged into portal). */
+        guestSession?: boolean;
+      },
   ) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<string | null>;
   updatePaymentStatus: (id: string, paymentStatus: PaymentStatus) => Promise<string | null>;
@@ -140,7 +145,10 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
               line.mixMatchCookieId ? [line.mixMatchCookieId] : [],
             ),
           );
-          return orderingRepo.placeOrder(o, { promoCode: input.promoCode });
+          return orderingRepo.placeOrder(o, {
+            promoCode: input.promoCode,
+            guestSession: input.guestSession,
+          });
         };
         try {
           persisted = normalizeOrder(await place());

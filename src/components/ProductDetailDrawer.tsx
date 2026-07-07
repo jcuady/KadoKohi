@@ -16,19 +16,10 @@ import { productFallbackDescription, resolveOrderTemperature } from '../lib/menu
 import ProductVariantSections from './menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../lib/posPricing';
 
-const FALLBACK_BY_CATEGORY: Record<string, string> = {
-  cat_classics:
-    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=700&auto=format&fit=crop',
-  cat_signatures:
-    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?q=80&w=700&auto=format&fit=crop',
-  cat_matcha:
-    'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=700&auto=format&fit=crop',
-  cat_yuzu:
-    'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=700&auto=format&fit=crop',
-};
-
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=700&auto=format&fit=crop';
+import {
+  DEFAULT_MENU_PRODUCT_IMAGE,
+  getMenuProductImageUrl,
+} from '../lib/menuCatalog';
 
 function isMerchProduct(p: Product | MerchProduct): p is MerchProduct {
   return !('temperature' in p);
@@ -210,7 +201,9 @@ export default function ProductDetailDrawer({
   const pastriesCategoryId = findPastriesCategory(categories)?.id;
   const productImageSrc =
     merchProduct?.image?.trim() ||
-    (coffeeProduct ? (FALLBACK_BY_CATEGORY[coffeeProduct.categoryId] ?? DEFAULT_IMAGE) : DEFAULT_IMAGE);
+    (coffeeProduct
+      ? getMenuProductImageUrl(coffeeProduct, { pastriesCategoryId })
+      : DEFAULT_MENU_PRODUCT_IMAGE);
 
   const patchLineConfig = (patch: Partial<PosLineConfig>) => {
     setLineConfig((prev) => (prev ? { ...prev, ...patch } : prev));

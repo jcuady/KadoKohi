@@ -69,6 +69,9 @@ export function formatOrderError(err: unknown): string {
   if (/payment already verified/i.test(msg)) return 'Payment was already verified for this order.';
   if (/could not process this photo/i.test(msg)) return msg;
   if (/promo/i.test(msg)) return msg;
+  if (/staff may only place pos/i.test(msg)) {
+    return 'You are signed in as staff. Orders from this QR menu are placed as a guest — try again, or sign out of the staff portal first.';
+  }
   if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
   return msg.length < 120 ? msg : 'Could not place your order. Please try again.';
 }

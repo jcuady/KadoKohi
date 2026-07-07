@@ -3,6 +3,12 @@ import { findPastriesCategory, isPastriesCategory, isPastriesCategoryId, pastryH
 
 export type QrGuestCategoryTab = { id: string; name: string };
 
+export type QrGuestMenuSection = {
+  id: string;
+  name: string;
+  products: Product[];
+};
+
 /** Category pills for guest QR menus. */
 export function qrGuestCategoryTabs(
   categories: MenuCategory[],
@@ -34,4 +40,19 @@ export function qrGuestProductsInCategory(
     return list.filter((p) => pastryHasPrice(p));
   }
   return list;
+}
+
+/** All visible guest menu sections (every category on one scroll). */
+export function qrGuestMenuSections(
+  categories: MenuCategory[],
+  products: Product[],
+  productsByCategory: (id: string) => Product[],
+): QrGuestMenuSection[] {
+  return qrGuestCategoryTabs(categories, products)
+    .map((tab) => ({
+      id: tab.id,
+      name: tab.name,
+      products: qrGuestProductsInCategory(tab.id, categories, productsByCategory),
+    }))
+    .filter((section) => section.products.length > 0);
 }

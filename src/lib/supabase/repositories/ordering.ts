@@ -126,7 +126,7 @@ import {
   formatProofStorageRef,
   guestProofObjectPath,
 } from '../../paymentProofStorage';
-import { supabase } from '../client';
+import { supabase, guestSupabase } from '../client';
 import { profileBranchId } from '../../roles';
 
 function mapBranch(row: any): Branch {
@@ -958,9 +958,14 @@ export const orderingRepo = {
   },
 
   /** Server-validated order insert (replaces direct table INSERT). */
-  async placeOrder(o: Order, opts?: { promoCode?: string }): Promise<Order> {
-    if (!supabase) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase.rpc('kk_place_order', {
+  async placeOrder(
+    o: Order,
+    opts?: { promoCode?: string; guestSession?: boolean },
+  ): Promise<Order> {
+    const client =
+      opts?.guestSession && guestSupabase ? guestSupabase : supabase;
+    if (!client) throw new Error('Supabase is not configured.');
+    const { data, error } = await client.rpc('kk_place_order', {
       payload: orderingRepo.buildPlaceOrderPayload(o, opts?.promoCode),
     });
     if (error) throw error;

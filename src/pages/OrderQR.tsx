@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
 import type { Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
 import { useOrderStore } from '../store/orderStore';
 import { useTableStore } from '../store/tableStore';
 import { useBranchStore } from '../store/branchStore';
-import { formatPhp } from '../lib/money';
 import { useSettingsStore } from '../store/settingsStore';
-import { getProductDescription } from '../lib/productImage';
-import MenuProductImage from '../components/catalog/MenuProductImage';
-import { isProductInStock } from '../lib/productStock';
 import { newId } from '../lib/id';
 import { clampText, formatOrderError } from '../lib/validation';
 import {
@@ -22,17 +17,16 @@ import {
 } from '../lib/orderReadiness';
 import { buildQrCartTotals, qrLinesMatch, type QrCartLine } from '../lib/qrOrderCart';
 import { clearTrackedOrder, getTrackedOrder, setTrackedOrder } from '../lib/guestOrders';
+import { guestOrderCustomerId, guestOrderUsesAnonSession } from '../lib/guestOrderAuth';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import QrStickyCart from '../components/qr/QrStickyCart';
+import QrGuestMenuCatalog from '../components/qr/QrGuestMenuCatalog';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import { QrCode } from 'lucide-react';
 import { qrPillClass } from '../lib/qrGuestTheme';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
-import {
-  qrGuestCategoryTabs,
-  qrGuestProductsInCategory,
-} from '../lib/qrGuestMenu';
+import { qrGuestCategoryTabs, qrGuestMenuSections } from '../lib/qrGuestMenu';
 
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
@@ -108,10 +102,10 @@ export default function OrderQR() {
     }
   }, [categoryTabs, activeCat]);
 
-  const list = useMemo(() => {
-    if (!activeCat) return [];
-    return qrGuestProductsInCategory(activeCat, categories, productsByCategory);
-  }, [activeCat, categories, productsByCategory]);
+  const menuSections = useMemo(
+    () => qrGuestMenuSections(categories, products, productsByCategory),
+    [categories, products, productsByCategory],
+  );
 
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
   const cartTotals = useMemo(
@@ -130,7 +124,6 @@ export default function OrderQR() {
       }
       return [...prev, { ...payload, key: newId() }];
     });
-    setCartExpanded(true);
   };
 
   const updateLineQty = (key: string, qty: number) => {
@@ -180,7 +173,7 @@ export default function OrderQR() {
         channel: 'dine-in',
         branchId: refreshedTable.branchId,
         tableId: refreshedTable.id,
-        customerId: user?.id,
+        customerId: guestOrderCustomerId(user),
         guestName: user?.name ? clampText(user.name, 80) : refreshedTable.label,
         paymentMethod,
         items: freshTotals.lines,
@@ -188,6 +181,7 @@ export default function OrderQR() {
         modifiersTotal: freshTotals.modifiers,
         tax: freshTotals.tax,
         total: freshTotals.total,
+        guestSession: guestOrderUsesAnonSession(user),
       });
       setTrackedOrder(sessionKey, {
         orderId: order.id,
@@ -318,13 +312,19 @@ export default function OrderQR() {
           </div>
         )}
 
-        <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 pb-3">
+        <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 pb-2">
           <div className="guest-order-category-rail w-full pb-0.5 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
             {categoryTabs.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                onClick={() => setActiveCat(c.id)}
+                onClick={() => {
+                  setActiveCat(c.id);
+                  document.getElementById(`qr-cat-${c.id}`)?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                }}
                 className={qrPillClass(activeCat === c.id)}
               >
                 {c.name}
@@ -334,68 +334,13 @@ export default function OrderQR() {
         </div>
       </header>
 
-      <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-6 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2 ${mainPaddingBottom}`}>
-        {list.length === 0 ? (
-          <p className="text-center text-sm text-kado-dark/50 py-16">
-            No items in this category right now. Check another tab or ask staff.
-          </p>
-        ) : (
-          <div className="guest-order-product-grid">
-            {list.map((p, i) => {
-              const tag = p.tags?.[0];
-              const inStock = isProductInStock(p);
-              return (
-                <motion.button
-                  key={p.id}
-                  type="button"
-                  disabled={!inStock}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.2) }}
-                  onClick={() => inStock && setSelectedProduct(p)}
-                  className={`text-left bg-white border border-kado-dark/8 rounded-2xl overflow-hidden transition-all touch-manipulation flex flex-col h-full ${
-                    inStock
-                      ? 'hover:border-kado-red/25 hover:shadow-md'
-                      : 'opacity-55 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="relative aspect-[4/3] bg-kado-dark/5 shrink-0">
-                    <MenuProductImage
-                      product={p}
-                      alt={p.name}
-                      loading={i < 6 ? 'eager' : 'lazy'}
-                      className="w-full h-full object-cover"
-                    />
-                    {!inStock ? (
-                      <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-amber-600 text-white px-1.5 py-0.5 rounded-full">
-                        Out of stock
-                      </span>
-                    ) : (
-                      tag && (
-                        <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase tracking-widest bg-kado-dark/85 text-white px-1.5 py-0.5 rounded-full">
-                          {tag}
-                        </span>
-                      )
-                    )}
-                  </div>
-                  <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1 mb-0.5">
-                      <h3 className="font-display font-bold text-xs sm:text-sm text-kado-dark line-clamp-2 leading-snug">
-                        {p.name}
-                      </h3>
-                      <span className="font-black text-xs sm:text-sm text-kado-red shrink-0">
-                        {formatPhp(p.basePrice)}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-kado-dark/45 line-clamp-2 leading-snug mt-auto">
-                      {getProductDescription(p)}
-                    </p>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
+      <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-2 sm:py-4 [@media(orientation:landscape)_and_(max-height:30rem)]:py-1.5 ${mainPaddingBottom}`}>
+        <QrGuestMenuCatalog
+          sections={menuSections}
+          activeCategoryId={activeCat}
+          onActiveCategoryChange={setActiveCat}
+          onSelectProduct={setSelectedProduct}
+        />
       </main>
 
       <QrStickyCart
