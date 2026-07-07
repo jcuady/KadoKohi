@@ -1,16 +1,23 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Check, Clock, Coffee, CookingPot, PackageCheck, RotateCcw, Sparkles, XCircle, Wallet } from 'lucide-react';
+import { Check, Clock, Coffee, CookingPot, PackageCheck, Pencil, RotateCcw, Sparkles, Wallet, XCircle } from 'lucide-react';
 import type { OrderStatus } from '../../types/domain';
 import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
-import { canGuestCancelOrder, canGuestSwitchToCash } from '../../lib/orderStatus';
+import {
+  canGuestModifyOrder,
+  canGuestSwitchToCash,
+  guestModifyBlockedMessage,
+} from '../../lib/orderStatus';
+import type { GuestOrderAction, GuestOrderActionReason } from '../../lib/guestOrderActions';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 import { getTrackedOrder } from '../../lib/guestOrders';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
 import GcashQrModal from '../GcashQrModal';
 import OrderTrackingSummary from './OrderTrackingSummary';
+import GuestOrderActionSheet from './GuestOrderActionSheet';
+import { formatOrderError } from '../../lib/validation';
 import { useSettingsStore } from '../../store/settingsStore';
 
 type Channel = 'dine-in' | 'takeout';
@@ -85,12 +92,19 @@ export default function OrderTrackingPanel({
   );
   const { tracked, loadFailed, isLive, refresh } = useGuestOrderTracking(orderId);
   const [gcashModalOpen, setGcashModalOpen] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelBusy, setCancelBusy] = useState(false);
-  const [cancelError, setCancelError] = useState('');
-  const openCancelConfirm = () => {
-    setCancelError('');
-    setCancelOpen(true);
+  const [actionPanel, setActionPanel] = useState<GuestOrderAction | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  const openAction = (action: GuestOrderAction) => {
+    setActionError('');
+    setActionPanel(action);
+  };
+
+  const closeAction = () => {
+    if (actionBusy) return;
+    setActionPanel(null);
+    setActionError('');
   };
 
   const gcash = tracked?.paymentMethod === 'gcash-qr';
@@ -110,11 +124,19 @@ export default function OrderTrackingPanel({
   const isCompleted = status === 'completed';
   const currentRank = ORDER_RANK[status];
   const awaitingGcash = gcash && paymentStatus === 'unpaid';
-  const canCancel =
-    tracked != null &&
-    canGuestCancelOrder({ status: tracked.status, channel: tracked.channel }) &&
-    !isCancelled &&
-    !isCompleted;
+  const modifyCtx =
+    tracked != null
+      ? {
+          status: tracked.status,
+          channel: tracked.channel,
+          paymentMethod: tracked.paymentMethod,
+          paymentStatus,
+          hasPaymentProof: tracked.hasPaymentProof,
+        }
+      : null;
+  const canModify =
+    modifyCtx != null && canGuestModifyOrder(modifyCtx) && !isCancelled && !isCompleted;
+  const modifyBlocked = modifyCtx ? guestModifyBlockedMessage(modifyCtx) : null;
   const canSwitchToCash =
     tracked != null &&
     canGuestSwitchToCash({
@@ -137,23 +159,32 @@ export default function OrderTrackingPanel({
     await refresh();
   };
 
-  const handleCancel = async () => {
-    setCancelBusy(true);
-    setCancelError('');
+  const handleGuestAction = async (
+    action: GuestOrderAction,
+    reason: GuestOrderActionReason,
+    note?: string,
+  ) => {
+    setActionBusy(true);
+    setActionError('');
     try {
-      await orderingRepo.cancelGuestOrder(orderId);
+      await orderingRepo.cancelGuestOrder(orderId, { action, reason, note });
       void broadcastGuestOrderUpdate(orderId, {
         status: 'cancelled',
         paymentStatus: tracked?.paymentStatus ?? 'unpaid',
         updatedAt: new Date().toISOString(),
         shortCode: tracked?.shortCode,
       });
+      if (action === 'change_order') {
+        setActionPanel(null);
+        onOrderAgain();
+        return;
+      }
       await refresh();
-      setCancelOpen(false);
+      setActionPanel(null);
     } catch (err) {
-      setCancelError(err instanceof Error ? err.message : 'Could not cancel order. Please ask staff.');
+      setActionError(formatOrderError(err));
     } finally {
-      setCancelBusy(false);
+      setActionBusy(false);
     }
   };
 
@@ -221,19 +252,31 @@ export default function OrderTrackingPanel({
         <OrderTrackingSummary tracked={tracked} snapshot={localSnapshot} taxRate={taxRate} />
 
         {gcash && tracked && !isCancelled && (
-          <GuestOrderPaymentBlock
-            orderId={orderId}
-            shortCode={tracked.shortCode}
-            total={tracked.total}
-            channel={flowChannel}
-            paymentMethod={tracked.paymentMethod}
-            paymentStatus={paymentStatus}
-            onViewQr={() => setGcashModalOpen(true)}
-            onProofSubmitted={() => void refresh()}
-            canSwitchToCash={canSwitchToCash}
-            onSwitchToCash={handleSwitchToCash}
-            onRequestCancel={canCancel ? openCancelConfirm : undefined}
-          />
+          <>
+            <GuestOrderPaymentBlock
+              orderId={orderId}
+              shortCode={tracked.shortCode}
+              total={tracked.total}
+              channel={flowChannel}
+              paymentMethod={tracked.paymentMethod}
+              paymentStatus={paymentStatus}
+              onViewQr={() => setGcashModalOpen(true)}
+              onProofSubmitted={() => void refresh()}
+              canSwitchToCash={canSwitchToCash}
+              onSwitchToCash={handleSwitchToCash}
+              onRequestChange={canModify && !actionPanel ? () => openAction('change_order') : undefined}
+              onRequestCancel={canModify && !actionPanel ? () => openAction('cancel') : undefined}
+            />
+            {actionPanel && canModify ? (
+              <GuestOrderActionSheet
+                action={actionPanel}
+                busy={actionBusy}
+                error={actionError}
+                onClose={closeAction}
+                onConfirm={(reason, note) => void handleGuestAction(actionPanel, reason, note)}
+              />
+            ) : null}
+          </>
         )}
 
         {!isCancelled && (
@@ -342,51 +385,49 @@ export default function OrderTrackingPanel({
           </div>
         )}
 
-        {canCancel && (
+        {(canModify || modifyBlocked) && !isCancelled && !isCompleted && !gcash && (
           <div className="mb-3">
-            {!cancelOpen ? (
-              !gcash ? (
-                <button
-                  type="button"
-                  onClick={openCancelConfirm}
-                  className="w-full min-h-[44px] rounded-2xl border border-red-200 bg-white text-red-700 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors touch-manipulation"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Cancel order
-                </button>
-              ) : null
-            ) : (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-bold text-red-900 mb-1">Cancel this order?</p>
-                <p className="text-xs text-red-800/80 mb-3 leading-relaxed">
-                  You can cancel while your order is still at &ldquo;Order received.&rdquo; This cannot be undone.
+            {actionPanel ? (
+              <GuestOrderActionSheet
+                action={actionPanel}
+                busy={actionBusy}
+                error={actionError}
+                onClose={closeAction}
+                onConfirm={(reason, note) => void handleGuestAction(actionPanel, reason, note)}
+              />
+            ) : canModify ? (
+              <div className="rounded-2xl border border-kado-dark/10 bg-white p-4 space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-kado-dark/45">
+                  Need to change something?
                 </p>
-                {cancelError ? (
-                  <p className="text-xs font-semibold text-red-700 mb-3">{cancelError}</p>
-                ) : null}
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    disabled={cancelBusy}
-                    onClick={() => {
-                      setCancelOpen(false);
-                      setCancelError('');
-                    }}
-                    className="min-h-[44px] rounded-xl border border-red-200 bg-white text-red-800 text-[11px] font-bold uppercase tracking-wider touch-manipulation disabled:opacity-60"
+                    onClick={() => openAction('change_order')}
+                    className="min-h-[44px] rounded-xl border border-kado-dark/12 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:border-kado-red/30 touch-manipulation"
                   >
-                    Keep order
+                    <Pencil className="w-4 h-4 text-kado-red shrink-0" />
+                    Change order
                   </button>
                   <button
                     type="button"
-                    disabled={cancelBusy}
-                    onClick={() => void handleCancel()}
-                    className="min-h-[44px] rounded-xl bg-red-600 text-white text-[11px] font-bold uppercase tracking-wider touch-manipulation disabled:opacity-60"
+                    onClick={() => openAction('cancel')}
+                    className="min-h-[44px] rounded-xl border border-red-200 bg-white text-red-700 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation"
                   >
-                    {cancelBusy ? 'Cancelling…' : 'Yes, cancel'}
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    Cancel order
                   </button>
                 </div>
+                <p className="text-[10px] text-kado-dark/40 leading-relaxed">
+                  Available only before payment is submitted. GCash orders cannot be changed after you
+                  upload proof.
+                </p>
               </div>
-            )}
+            ) : modifyBlocked ? (
+              <p className="text-[11px] text-kado-dark/50 text-center leading-relaxed px-2">
+                {modifyBlocked}
+              </p>
+            ) : null}
           </div>
         )}
 

@@ -20,6 +20,7 @@ import type {
 import type { AppSettings } from '../../../store/settingsStore';
 import type { FetchOrdersScope } from '../../orderFetchScope';
 import { normalizeBookingEstimate, resolveBookingKind } from '../../boothBookingEstimate';
+import type { GuestOrderAction, GuestOrderActionReason } from '../../guestOrderActions';
 import { mapTrackedOrderLineFromRpc, type TrackedOrderLine } from '../../guestOrderSnapshot';
 import { settingsFromDbRow, siteConfigFromSettings, type SiteConfigJson } from '../../settingsSync';
 import { prepareGuestPaymentProof } from '../../compressPaymentProof';
@@ -1033,9 +1034,21 @@ export const orderingRepo = {
     });
     if (error) throw error;
   },
-  async cancelGuestOrder(orderId: string): Promise<void> {
+  async cancelGuestOrder(
+    orderId: string,
+    opts?: {
+      action?: GuestOrderAction;
+      reason: GuestOrderActionReason | string;
+      note?: string;
+    },
+  ): Promise<void> {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.rpc('kk_guest_cancel_order', { p_order_id: orderId });
+    const { error } = await supabase.rpc('kk_guest_cancel_order', {
+      p_order_id: orderId,
+      p_action: opts?.action ?? 'cancel',
+      p_reason: opts?.reason ?? 'unspecified',
+      p_note: opts?.note ?? null,
+    });
     if (error) {
       const code = (error as { code?: string }).code;
       if (code === 'PGRST202') {

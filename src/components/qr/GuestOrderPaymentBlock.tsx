@@ -24,6 +24,7 @@ type Props = {
   canSwitchToCash?: boolean;
   onSwitchToCash?: () => Promise<void>;
   onRequestCancel?: () => void;
+  onRequestChange?: () => void;
 };
 
 const actionBtn =
@@ -45,6 +46,7 @@ export default function GuestOrderPaymentBlock({
   canSwitchToCash = false,
   onSwitchToCash,
   onRequestCancel,
+  onRequestChange,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +195,7 @@ export default function GuestOrderPaymentBlock({
 
       {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-      {(canSwitchToCash || onRequestCancel) && paymentStatus !== 'paid' && (
+      {(canSwitchToCash || onRequestCancel || onRequestChange) && paymentStatus !== 'paid' && (
         <div className="border-t border-kado-dark/8 pt-3 space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-wider text-kado-dark/45">
             Changed your mind?
@@ -215,6 +217,16 @@ export default function GuestOrderPaymentBlock({
             >
               <Banknote className="w-4 h-4 shrink-0" />
               {switching ? 'Switching…' : 'Pay with cash at counter'}
+            </button>
+          ) : null}
+          {onRequestChange ? (
+            <button
+              type="button"
+              disabled={switching || uploading}
+              onClick={onRequestChange}
+              className="w-full min-h-[40px] rounded-xl border border-kado-dark/12 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
+            >
+              Change order
             </button>
           ) : null}
           {onRequestCancel ? (

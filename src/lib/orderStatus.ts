@@ -215,9 +215,46 @@ export function defaultFieldsForPosOrder(): {
   return { status: 'pending', paymentStatus: 'paid' };
 }
 
-/** Guest QR / takeout may cancel until staff moves the order past pending. */
-export function canGuestCancelOrder(order: Pick<Order, 'status' | 'channel'>): boolean {
-  return (order.channel === 'dine-in' || order.channel === 'takeout') && order.status === 'pending';
+/** Guest QR / takeout may cancel or change order while still pending and unpaid (GCash). */
+export function canGuestModifyOrder(
+  order: Pick<Order, 'status' | 'channel' | 'paymentMethod' | 'paymentStatus'> & {
+    hasPaymentProof?: boolean;
+  },
+): boolean {
+  if (order.channel !== 'dine-in' && order.channel !== 'takeout') return false;
+  if (order.status !== 'pending') return false;
+  if (order.paymentMethod === 'gcash-qr') {
+    if (order.paymentStatus !== 'unpaid') return false;
+    if (order.hasPaymentProof) return false;
+  }
+  return true;
+}
+
+export function guestModifyBlockedMessage(
+  order: Pick<Order, 'status' | 'channel' | 'paymentMethod' | 'paymentStatus'> & {
+    hasPaymentProof?: boolean;
+  },
+): string | null {
+  if (canGuestModifyOrder(order)) return null;
+  if (order.status !== 'pending') {
+    return 'Your order is already being prepared and can no longer be changed online.';
+  }
+  if (
+    order.paymentMethod === 'gcash-qr' &&
+    (order.paymentStatus !== 'unpaid' || order.hasPaymentProof)
+  ) {
+    return 'GCash payment has been submitted or confirmed — ask staff at the counter if you need help.';
+  }
+  return 'This order can no longer be changed online.';
+}
+
+/** Guest QR / takeout may cancel until staff moves the order past pending (use canGuestModifyOrder when payment fields are known). */
+export function canGuestCancelOrder(
+  order: Pick<Order, 'status' | 'channel' | 'paymentMethod' | 'paymentStatus'> & {
+    hasPaymentProof?: boolean;
+  },
+): boolean {
+  return canGuestModifyOrder(order);
 }
 
 /** Switch GCash → pay at counter while the order is still pending (order received only). */

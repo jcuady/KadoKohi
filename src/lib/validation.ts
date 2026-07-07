@@ -72,6 +72,10 @@ export function formatOrderError(err: unknown): string {
   if (/staff may only place pos/i.test(msg)) {
     return 'You are signed in as staff. Orders from this QR menu are placed as a guest — try again, or sign out of the staff portal first.';
   }
+  if (/cannot cancel or change order after gcash/i.test(msg)) {
+    return 'GCash payment has been submitted — ask staff at the counter if you need to change or cancel.';
+  }
+  if (/please select a reason/i.test(msg)) return 'Please tell us why you want to change or cancel.';
   if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
   return msg.length < 120 ? msg : 'Could not place your order. Please try again.';
 }
