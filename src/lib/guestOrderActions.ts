@@ -1,4 +1,6 @@
 /** Guest-initiated cancel / change-order reason codes (stored on kk_orders + audit). */
+import type { Order } from '../types/domain';
+
 export type GuestOrderAction = 'cancel' | 'change_order';
 
 export type GuestOrderActionReason =
@@ -23,6 +25,15 @@ export const GUEST_ORDER_ACTION_REASONS: {
 
 export function guestActionReasonLabel(reason: string | undefined): string {
   return GUEST_ORDER_ACTION_REASONS.find((r) => r.id === reason)?.label ?? reason ?? '—';
+}
+
+export function formatGuestOrderActionSummary(
+  order: Pick<Order, 'guestAction' | 'guestActionReason' | 'guestActionNote'>,
+): string | null {
+  if (!order.guestAction || !order.guestActionReason) return null;
+  const verb = order.guestAction === 'change_order' ? 'Guest changed order' : 'Guest cancelled';
+  const reason = guestActionReasonLabel(order.guestActionReason);
+  return order.guestActionNote ? `${verb}: ${reason} — ${order.guestActionNote}` : `${verb}: ${reason}`;
 }
 
 export function reasonsForGuestAction(action: GuestOrderAction) {

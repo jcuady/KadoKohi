@@ -145,6 +145,10 @@ export interface Order {
   loyaltyVoucherId?: string;
   loyaltyVoucherCode?: string;
   loyaltyDiscountTotal?: number;
+  /** Guest QR cancel or change-order (see guestOrderActions). */
+  guestAction?: 'cancel' | 'change_order';
+  guestActionReason?: string;
+  guestActionNote?: string;
   createdAt: string;
   updatedAt: string;
 }

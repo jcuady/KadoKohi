@@ -13,6 +13,7 @@ import {
 } from '../../lib/orderStatus';
 import OrderPaymentProofPreview from '../admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../OrderTableBadge';
+import GuestOrderActionNote from '../order/GuestOrderActionNote';
 import { formatOrderDbLabel } from '../../lib/orderTime';
 
 type Props = {
@@ -86,6 +87,8 @@ export default function OrderStatusModal({
             <p className="text-kado-dark/60 mt-1">Total: {formatPhp(order.total)}</p>
             <OrderPaymentProofPreview order={order} />
           </div>
+
+          <GuestOrderActionNote order={order} variant="modal" />
 
           {showPaymentField && (
             <div>

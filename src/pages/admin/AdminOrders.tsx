@@ -25,6 +25,7 @@ import {
 import OrderStatusModal from '../../components/barista/OrderStatusModal';
 import OrderPaymentProofPreview from '../../components/admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../../components/OrderTableBadge';
+import GuestOrderActionNote from '../../components/order/GuestOrderActionNote';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -257,6 +258,12 @@ export default function AdminOrders() {
       {/* Secondary metrics */}
       <div className="flex flex-wrap gap-2 text-xs font-semibold dash-muted">
         <Badge variant="muted">Avg ticket {formatPhp(insights.avgTicket)}</Badge>
+        {insights.guestCancelCount > 0 ? (
+          <Badge variant="muted">Guest cancels {insights.guestCancelCount}</Badge>
+        ) : null}
+        {insights.guestChangeCount > 0 ? (
+          <Badge variant="muted">Guest changes {insights.guestChangeCount}</Badge>
+        ) : null}
         <Badge variant="muted">{insights.itemCount} items sold</Badge>
         {insights.topChannel ? (
           <Badge variant="outline">
@@ -351,6 +358,7 @@ export default function AdminOrders() {
                       <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${ORDER_STATUS_BADGE[o.status]}`}>
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
+                      <GuestOrderActionNote order={o} />
                     </TableCell>
                     <TableCell className="text-right">
                       <p className="font-display font-bold text-kado-red">{formatPhp(o.total)}</p>
@@ -437,6 +445,7 @@ export default function AdminOrders() {
                             ))}
                           </ul>
                           <OrderPlacedAt createdAt={o.createdAt} showDb />
+                          <GuestOrderActionNote order={o} />
                         </button>
                       ))
                     )}

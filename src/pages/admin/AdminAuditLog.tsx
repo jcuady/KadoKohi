@@ -3,6 +3,7 @@ import { useAuditStore } from '../../store/auditStore';
 import { isInternalRole } from '../../lib/roles';
 import { ScrollText, RefreshCw, Filter, Search } from 'lucide-react';
 import type { AuditLogRow } from '../../lib/supabase/repositories/audit';
+import { guestActionReasonLabel } from '../../lib/guestOrderActions';
 
 const ROLE_BADGE: Record<string, string> = {
   admin: 'bg-kado-red/10 text-kado-red border-kado-red/20',
@@ -18,6 +19,7 @@ const ACTION_LABEL: Record<string, string> = {
   'order.payment_status_changed': 'Payment status',
   'order.proof_submitted': 'Payment proof',
   'order.cancelled_by_guest': 'Guest cancellation',
+  'order.change_requested_by_guest': 'Guest change request',
   'order.payment_switched_to_cash': 'Switched to cash',
   'order.deleted': 'Order deleted',
   'loyalty.stamps_adjusted': 'Stamp adjustment',
@@ -68,6 +70,17 @@ function channelBadge(metadata: Record<string, unknown> | undefined): string | n
   return channel;
 }
 
+function guestActionDetail(metadata: Record<string, unknown> | undefined): string | null {
+  if (!metadata) return null;
+  const reason = metadata.guest_action_reason;
+  if (typeof reason !== 'string') return null;
+  const action = metadata.guest_action;
+  const verb = action === 'change_order' ? 'Change requested' : 'Cancelled';
+  const label = guestActionReasonLabel(reason);
+  const note = typeof metadata.guest_action_note === 'string' ? metadata.guest_action_note : undefined;
+  return note ? `${verb}: ${label} — ${note}` : `${verb}: ${label}`;
+}
+
 function matchesAuditSearch(log: AuditLogRow, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -77,6 +90,7 @@ function matchesAuditSearch(log: AuditLogRow, query: string): boolean {
     log.action,
     log.entityType,
     log.entityId,
+    guestActionDetail(log.metadata),
   ]
     .filter(Boolean)
     .join(' ')
@@ -181,7 +195,9 @@ export default function AdminAuditLog() {
         </div>
       ) : (
         <ul className="space-y-2">
-          {filtered.map((log) => (
+          {filtered.map((log) => {
+            const guestDetail = guestActionDetail(log.metadata);
+            return (
             <li key={log.id} className="rounded-xl dash-card border px-5 py-3.5 flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -200,6 +216,9 @@ export default function AdminAuditLog() {
                   </span>
                 </div>
                 <p className="text-xs dash-heading mt-1">{log.summary ?? '—'}</p>
+                {guestDetail ? (
+                  <p className="text-[11px] font-semibold text-amber-800 mt-1">{guestDetail}</p>
+                ) : null}
                 <p className="text-[10px] dash-muted mt-0.5">
                   {log.actorEmail ?? 'unknown'} · {timeAgo(log.createdAt)}
                 </p>
@@ -219,7 +238,8 @@ export default function AdminAuditLog() {
                 )}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

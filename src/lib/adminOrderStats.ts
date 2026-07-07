@@ -3,6 +3,10 @@ import type { Order, OrderChannel } from '../types/domain';
 export type AdminOrderInsights = {
   orderCount: number;
   cancelledCount: number;
+  /** Cancelled by guest (with reason captured). */
+  guestCancelCount: number;
+  /** Guest change-order requests (order cancelled so they can reorder). */
+  guestChangeCount: number;
   /** Sum of totals excluding cancelled orders. */
   netSales: number;
   /** Sum where payment is settled (paid) and not cancelled. */
@@ -31,6 +35,8 @@ export function computeAdminOrderInsights(orders: Order[]): AdminOrderInsights {
   const activeCount = orders.filter((o) => !TERMINAL.has(o.status)).length;
   const completedCount = orders.filter((o) => o.status === 'completed').length;
   const cancelledCount = orders.filter((o) => o.status === 'cancelled').length;
+  const guestCancelCount = orders.filter((o) => o.guestAction === 'cancel').length;
+  const guestChangeCount = orders.filter((o) => o.guestAction === 'change_order').length;
   const itemCount = orders.reduce((s, o) => s + o.items.reduce((n, i) => n + i.qty, 0), 0);
 
   const channelCounts = new Map<OrderChannel, number>();
@@ -45,6 +51,8 @@ export function computeAdminOrderInsights(orders: Order[]): AdminOrderInsights {
   return {
     orderCount: orders.length,
     cancelledCount,
+    guestCancelCount,
+    guestChangeCount,
     netSales,
     collectedRevenue,
     awaitingPaymentCount,

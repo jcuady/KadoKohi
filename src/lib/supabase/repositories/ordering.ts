@@ -368,6 +368,9 @@ function mapOrder(row: any): Order {
     loyaltyVoucherId: row.loyalty_voucher_id ?? undefined,
     loyaltyVoucherCode: row.loyalty_voucher_code ?? undefined,
     loyaltyDiscountTotal: row.loyalty_discount_total ?? undefined,
+    guestAction: row.guest_action ?? undefined,
+    guestActionReason: row.guest_action_reason ?? undefined,
+    guestActionNote: row.guest_action_note ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
