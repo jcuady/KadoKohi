@@ -125,6 +125,12 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
       )}
     >
       <div className="pointer-events-none absolute right-0 top-1/2 w-[min(50vw,28rem)] aspect-square bg-kado-red/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
+      <div
+        aria-hidden
+        className="kado-kanji-watermark -left-8 bottom-0 text-[clamp(10rem,30vw,22rem)] text-white/[0.04] sm:-left-4"
+      >
+        角
+      </div>
 
       <div className="max-w-[1400px] mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 lg:items-end animate-fade-in-up">
@@ -138,7 +144,7 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
                 {...cmsTextProps(cmsEditMode, 'kado-circle.badge', 'Badge', (v) => updateKadoCircle({ badge: v }))}
               />
             </p>
-            <h2 className="kado-h2 mb-4 sm:mb-5 text-white">
+            <h2 className="kado-h1 mb-4 sm:mb-5 text-white">
               <CmsStyledText
                 value={copy?.titleBefore ?? 'Join the'}
                 as="span"
@@ -187,7 +193,7 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full min-h-[48px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl hover:bg-kado-red-hover transition-colors flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
+                className="w-full min-h-[52px] bg-kado-red text-kado-cream font-bold uppercase tracking-[0.12em] text-xs px-6 py-3.5 rounded-xl sm:rounded-2xl shadow-lg shadow-kado-red/25 hover:bg-kado-red-hover hover:shadow-xl hover:shadow-kado-red/35 hover:scale-[1.01] transition-all flex items-center justify-center gap-2 active:opacity-95 disabled:opacity-60"
               >
                 {submitting ? 'Sending…' : (
                   <CmsStyledText

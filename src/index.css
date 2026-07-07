@@ -618,10 +618,22 @@ html.customer-facing {
   }
 }
 
-/* Homepage hero — flush below sticky nav, no intentional viewport peek */
+/* Homepage hero — 92svh leaves an ~8vh peek of the next section
+   (client revision, BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md §3.4) */
 .landing-hero {
-  min-height: calc(100svh - var(--public-nav-height));
-  min-height: calc(100dvh - var(--public-nav-height));
+  min-height: calc(92svh - var(--public-nav-height));
+  min-height: calc(92dvh - var(--public-nav-height));
+}
+
+/* Kanji overlay — brand watermark layer (BRANDING §1 visual language) */
+.kado-kanji-watermark {
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1;
+  z-index: 1;
 }
 
 /* Shared homepage section rhythm (portrait + landscape) */
@@ -653,8 +665,8 @@ html.customer-facing {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    min-height: calc(100svh - var(--public-nav-height));
-    min-height: calc(100dvh - var(--public-nav-height));
+    min-height: calc(92svh - var(--public-nav-height));
+    min-height: calc(92dvh - var(--public-nav-height));
   }
 
   .landing-hero-copy-spacer {
