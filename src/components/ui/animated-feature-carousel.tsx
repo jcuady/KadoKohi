@@ -1,22 +1,6 @@
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
-import clsx from "clsx";
-import {
-  AnimatePresence,
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  type MotionStyle,
-  type MotionValue,
-} from "motion/react";
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import clsx from 'clsx';
+import { AnimatePresence, motion } from 'motion/react';
 import type { OrderingCopy } from '../../store/landingContentStore';
 import type { CmsText } from '../../lib/cmsTypography';
 import CmsStyledText from '../cms/CmsStyledText';
@@ -24,13 +8,6 @@ import { useLandingContentStore } from '../../store/landingContentStore';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type WrapperStyle = MotionStyle & {
-  "--x": MotionValue<string>;
-  "--y": MotionValue<string>;
-};
 
 interface Step {
   id: string;
@@ -40,77 +17,60 @@ interface Step {
   visual: ReactNode;
 }
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
-
-function useNumberCycler(total: number, interval = 6000, paused = false) {
+function useStepIndex(total: number, interval = 7000, paused = false) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    if (paused) return;
-    const id = setTimeout(() => setCurrent((p) => (p + 1) % total), interval);
-    return () => clearTimeout(id);
+    if (paused || total < 2) return;
+    const id = window.setTimeout(() => setCurrent((p) => (p + 1) % total), interval);
+    return () => window.clearTimeout(id);
   }, [current, total, interval, paused]);
 
   const setStep = useCallback((i: number) => setCurrent(i % total), [total]);
   return { current, setStep };
 }
 
-function useIsMobile() {
-  const [is, setIs] = useState(false);
-  useEffect(() => {
-    const check = () => setIs(window.matchMedia("(max-width: 767px)").matches);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-  return is;
-}
-
-// ─── Step visuals (Kado Kohi ordering flows) ─────────────────────────────────
-
 function VisualInStore() {
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Counter mockup */}
-      <div className="absolute right-0 top-[5%] w-[68%] rounded-2xl overflow-hidden shadow-2xl shadow-black/30 border border-kado-cream/10">
-        <img
-          src="/images/hero-interior.png"
-          alt="Barista at the counter"
-          className="w-full h-48 object-cover"
-        />
+    <div className="relative h-full w-full overflow-hidden">
+      <div className="absolute right-0 top-[5%] w-[68%] overflow-hidden rounded-2xl border border-kado-cream/10 shadow-2xl shadow-black/30">
+        <img src="/images/hero-interior.png" alt="Barista at the counter" className="h-48 w-full object-cover" />
         <div className="bg-kado-offwhite p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-5 h-5 rounded bg-kado-red flex items-center justify-center">
-              <span className="text-white text-[7px] font-black">角</span>
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-kado-red">
+              <span className="text-[7px] font-black text-white">角</span>
             </div>
-            <span className="text-[11px] font-bold text-kado-dark tracking-tight">Kado Counter</span>
+            <span className="text-[11px] font-bold tracking-tight text-kado-dark">Kado Counter</span>
           </div>
           <div className="space-y-2">
             {[
-              { name: "Matcha Oat Latte", price: "₱185" },
-              { name: "Iced Café Latte",  price: "₱165" },
+              { name: 'Matcha Oat Latte', price: '₱185' },
+              { name: 'Iced Café Latte', price: '₱165' },
             ].map((i) => (
-              <div key={i.name} className="flex justify-between items-center py-1.5 border-b border-kado-dark/8 last:border-0">
-                <span className="text-[10px] text-kado-dark font-medium">{i.name}</span>
-                <span className="text-[10px] text-kado-red font-bold">{i.price}</span>
+              <div
+                key={i.name}
+                className="flex items-center justify-between border-b border-kado-dark/8 py-1.5 last:border-0"
+              >
+                <span className="text-[10px] font-medium text-kado-dark">{i.name}</span>
+                <span className="text-[10px] font-bold text-kado-red">{i.price}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* POS receipt stub */}
-      <div className="absolute bottom-[8%] left-0 w-[42%] bg-kado-offwhite rounded-xl shadow-xl border border-kado-dark/10 p-4">
-        <p className="text-[9px] font-black uppercase tracking-widest text-kado-dark/40 mb-2">Order #042</p>
-        <div className="space-y-1 mb-3">
+      <div className="absolute bottom-[8%] left-0 w-[42%] rounded-xl border border-kado-dark/10 bg-kado-offwhite p-4 shadow-xl">
+        <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-kado-dark/40">Order #042</p>
+        <div className="mb-3 space-y-1">
           <div className="flex justify-between text-[10px] text-kado-dark">
-            <span>Matcha Latte</span><span className="font-bold">₱185</span>
+            <span>Matcha Latte</span>
+            <span className="font-bold">₱185</span>
           </div>
           <div className="flex justify-between text-[10px] text-kado-dark">
-            <span>Ube Shio</span><span className="font-bold">₱195</span>
+            <span>Ube Shio</span>
+            <span className="font-bold">₱195</span>
           </div>
         </div>
-        <div className="border-t border-dashed border-kado-dark/20 pt-2 flex justify-between">
+        <div className="flex justify-between border-t border-dashed border-kado-dark/20 pt-2">
           <span className="text-[9px] font-bold text-kado-dark/50">TOTAL</span>
           <span className="text-[11px] font-black text-kado-red">₱380</span>
         </div>
@@ -121,27 +81,26 @@ function VisualInStore() {
 
 function VisualOnlineOrder() {
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Browser chrome */}
-      <div className="absolute right-0 top-[2%] w-[72%] rounded-2xl overflow-hidden shadow-2xl border border-kado-dark/10">
-        <div className="bg-kado-dark/90 px-3 py-2 flex items-center gap-2">
+    <div className="relative h-full w-full overflow-hidden">
+      <div className="absolute right-0 top-[2%] w-[72%] overflow-hidden rounded-2xl border border-kado-dark/10 shadow-2xl">
+        <div className="flex items-center gap-2 bg-kado-dark/90 px-3 py-2">
           <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-full bg-kado-red/80" />
-            <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
-            <div className="w-2 h-2 rounded-full bg-green-500/80" />
+            <div className="h-2 w-2 rounded-full bg-kado-red/80" />
+            <div className="h-2 w-2 rounded-full bg-yellow-500/80" />
+            <div className="h-2 w-2 rounded-full bg-green-500/80" />
           </div>
-          <div className="flex-1 bg-kado-dark/60 rounded-full px-3 py-0.5">
-            <span className="text-[8px] text-white/40 font-mono">kado-kohi.com/menu</span>
+          <div className="flex-1 rounded-full bg-kado-dark/60 px-3 py-0.5">
+            <span className="font-mono text-[8px] text-white/40">kado-kohi.com/menu</span>
           </div>
         </div>
         <div className="bg-kado-offwhite p-4">
-          <div className="flex gap-1.5 mb-3">
-            {["All", "Hot", "Iced", "Matcha"].map((c, i) => (
+          <div className="mb-3 flex gap-1.5">
+            {['All', 'Hot', 'Iced', 'Matcha'].map((c, i) => (
               <span
                 key={c}
                 className={clsx(
-                  "px-2 py-0.5 rounded-full text-[8px] font-bold",
-                  i === 0 ? "bg-kado-red text-white" : "bg-kado-cream text-kado-dark",
+                  'rounded-full px-2 py-0.5 text-[8px] font-bold',
+                  i === 0 ? 'bg-kado-red text-white' : 'bg-kado-cream text-kado-dark',
                 )}
               >
                 {c}
@@ -150,16 +109,18 @@ function VisualOnlineOrder() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { n: "Matcha Oat Latte", p: "₱185", img: "/social/matcha-latte.png" },
-              { n: "Iced Café Latte",  p: "₱165", img: "/social/cafe-latte.png" },
+              { n: 'Matcha Oat Latte', p: '₱185', img: '/social/matcha-latte.png' },
+              { n: 'Iced Café Latte', p: '₱165', img: '/social/cafe-latte.png' },
             ].map((p) => (
-              <div key={p.n} className="rounded-xl overflow-hidden bg-white shadow-sm border border-kado-dark/5">
-                <img src={p.img} alt={p.n} className="w-full h-16 object-cover" />
+              <div key={p.n} className="overflow-hidden rounded-xl border border-kado-dark/5 bg-white shadow-sm">
+                <img src={p.img} alt={p.n} className="h-16 w-full object-cover" />
                 <div className="p-2">
-                  <p className="text-[9px] font-bold text-kado-dark truncate">{p.n}</p>
-                  <div className="flex justify-between items-center mt-1">
-                    <p className="text-[9px] text-kado-red font-bold">{p.p}</p>
-                    <span className="w-4 h-4 rounded-full bg-kado-red flex items-center justify-center text-white text-[10px] font-bold leading-none" aria-hidden="true">+</span>
+                  <p className="truncate text-[9px] font-bold text-kado-dark">{p.n}</p>
+                  <div className="mt-1 flex items-center justify-between">
+                    <p className="text-[9px] font-bold text-kado-red">{p.p}</p>
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-kado-red text-[10px] font-bold leading-none text-white">
+                      +
+                    </span>
                   </div>
                 </div>
               </div>
@@ -167,15 +128,15 @@ function VisualOnlineOrder() {
           </div>
         </div>
       </div>
-
-      {/* GCash checkout pill */}
-      <div className="absolute bottom-[10%] left-0 bg-kado-dark text-kado-cream rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 max-w-[88%]">
-        <div className="w-8 h-8 bg-[#007dfe] rounded-xl flex items-center justify-center text-[8px] font-black shrink-0">GC</div>
-        <div className="min-w-0">
-          <p className="text-[9px] font-bold text-kado-cream/50 uppercase tracking-wider">GCash QR</p>
-          <p className="text-[10px] font-black text-kado-cream truncate">Pay · upload proof</p>
+      <div className="absolute bottom-[10%] left-0 flex max-w-[88%] items-center gap-3 rounded-2xl bg-kado-dark px-4 py-3 text-kado-cream shadow-xl">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#007dfe] text-[8px] font-black">
+          GC
         </div>
-        <div className="ml-auto bg-kado-red text-white text-[8px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg shrink-0">
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-kado-cream/50">GCash QR</p>
+          <p className="truncate text-[10px] font-black text-kado-cream">Pay · upload proof</p>
+        </div>
+        <div className="ml-auto shrink-0 rounded-lg bg-kado-red px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-white">
           Checkout
         </div>
       </div>
@@ -185,42 +146,38 @@ function VisualOnlineOrder() {
 
 function VisualQROrder() {
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Table card with QR */}
-      <div className="absolute right-[5%] top-[4%] w-[56%] bg-kado-offwhite rounded-2xl shadow-2xl border border-kado-dark/10 overflow-hidden">
-        <div className="bg-kado-dark p-4 flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-kado-red flex items-center justify-center">
-            <span className="text-white text-[8px] font-black">角</span>
+    <div className="relative h-full w-full overflow-hidden">
+      <div className="absolute right-[5%] top-[4%] w-[56%] overflow-hidden rounded-2xl border border-kado-dark/10 bg-kado-offwhite shadow-2xl">
+        <div className="flex items-center gap-2 bg-kado-dark p-4">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-kado-red">
+            <span className="text-[8px] font-black text-white">角</span>
           </div>
           <div>
-            <p className="text-kado-cream text-[10px] font-black tracking-tight">TABLE 5</p>
-            <p className="text-kado-cream/40 text-[8px]">Scan to order</p>
+            <p className="text-[10px] font-black tracking-tight text-kado-cream">TABLE 5</p>
+            <p className="text-[8px] text-kado-cream/40">Scan to order</p>
           </div>
         </div>
-        <div className="p-4 flex flex-col items-center">
-          {/* Stylised QR grid */}
-          <div className="w-28 h-28 bg-white rounded-xl p-2 shadow-inner border border-kado-dark/10 mb-2">
-            <div className="w-full h-full"
+        <div className="flex flex-col items-center p-4">
+          <div className="mb-2 h-28 w-28 rounded-xl border border-kado-dark/10 bg-white p-2 shadow-inner">
+            <div
+              className="h-full w-full"
               style={{
-                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='white'/%3E%3Crect x='4' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='60' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='68' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='4' y='60' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='68' width='16' height='16' fill='%239E181D'/%3E%3Crect x='44' y='4' width='4' height='4' fill='%23191919'/%3E%3Crect x='44' y='20' width='8' height='4' fill='%23191919'/%3E%3Crect x='52' y='36' width='4' height='8' fill='%23191919'/%3E%3Crect x='44' y='44' width='12' height='4' fill='%23191919'/%3E%3Crect x='60' y='44' width='4' height='12' fill='%23191919'/%3E%3Crect x='68' y='52' width='12' height='4' fill='%23191919'/%3E%3Crect x='76' y='60' width='4' height='12' fill='%23191919'/%3E%3Crect x='52' y='68' width='8' height='4' fill='%23191919'/%3E%3Crect x='44' y='76' width='4' height='16' fill='%23191919'/%3E%3Crect x='60' y='76' width='12' height='4' fill='%23191919'/%3E%3C/svg%3E\")",
-                backgroundSize: "contain",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='white'/%3E%3Crect x='4' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='60' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='68' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='4' y='60' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='68' width='16' height='16' fill='%239E181D'/%3E%3C/svg%3E\")",
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
               }}
             />
           </div>
-          <p className="text-[8px] text-kado-dark/40 font-medium text-center">Scan → menu → GCash QR</p>
+          <p className="text-center text-[8px] font-medium text-kado-dark/40">Scan → menu → GCash QR</p>
         </div>
       </div>
-
-      {/* Mobile scan result */}
-      <div className="absolute bottom-[6%] left-0 w-[50%] bg-kado-dark rounded-2xl overflow-hidden shadow-xl">
-        <img src="/images/hero-coffee.png"
-          alt="Coffee shop table" className="w-full h-16 object-cover opacity-60" />
+      <div className="absolute bottom-[6%] left-0 w-[50%] overflow-hidden rounded-2xl bg-kado-dark shadow-xl">
+        <img src="/images/hero-coffee.png" alt="Coffee shop table" className="h-16 w-full object-cover opacity-60" />
         <div className="p-3">
-          <p className="text-kado-red text-[8px] font-bold uppercase tracking-widest mb-0.5">Table 5 · Dine In</p>
-          <p className="text-kado-cream text-[10px] font-bold">Menu loaded!</p>
-          <p className="text-kado-cream/40 text-[8px] mt-0.5">Ready to take your order</p>
+          <p className="mb-0.5 text-[8px] font-bold uppercase tracking-widest text-kado-red">Table 5 · Dine In</p>
+          <p className="text-[10px] font-bold text-kado-cream">Menu loaded!</p>
         </div>
       </div>
     </div>
@@ -229,51 +186,51 @@ function VisualQROrder() {
 
 function VisualLoyalty() {
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Loyalty card */}
-      <div className="absolute right-0 top-[4%] w-[68%] rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: "linear-gradient(135deg,#9E181D 0%,#4a0d10 100%)" }}>
+    <div className="relative h-full w-full overflow-hidden">
+      <div
+        className="absolute right-0 top-[4%] w-[68%] overflow-hidden rounded-2xl shadow-2xl"
+        style={{ background: 'linear-gradient(135deg,#9E181D 0%,#4a0d10 100%)' }}
+      >
         <div className="p-5">
-          <div className="flex justify-between items-start mb-4">
+          <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="text-kado-cream/50 text-[8px] font-bold uppercase tracking-[0.25em]">Kado Circle</p>
-              <p className="text-kado-cream text-base font-black tracking-tight">Juan Cruz</p>
+              <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-kado-cream/50">Kado Circle</p>
+              <p className="text-base font-black tracking-tight text-kado-cream">Juan Cruz</p>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-kado-cream/10 border border-kado-cream/20 flex items-center justify-center">
-              <span className="text-kado-cream text-sm font-black">角</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-kado-cream/20 bg-kado-cream/10">
+              <span className="text-sm font-black text-kado-cream">角</span>
             </div>
           </div>
-          <p className="text-kado-cream/40 text-[8px] uppercase tracking-widest mb-2">Stamps collected</p>
           <div className="grid grid-cols-5 gap-1.5">
-            {Array(10).fill(0).map((_, i) => (
-              <div key={i} className="w-full aspect-square rounded-full flex items-center justify-center"
-                style={{
-                  background: i < 8 ? "rgba(241,223,186,0.9)" : "rgba(255,255,255,0.1)",
-                  border: "1px solid rgba(241,223,186,0.2)",
-                }}>
-                {i < 8 && <span className="text-kado-red text-[8px] font-black">角</span>}
-              </div>
-            ))}
+            {Array(10)
+              .fill(0)
+              .map((_, i) => (
+                <div
+                  key={i}
+                  className="flex aspect-square w-full items-center justify-center rounded-full"
+                  style={{
+                    background: i < 8 ? 'rgba(241,223,186,0.9)' : 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(241,223,186,0.2)',
+                  }}
+                >
+                  {i < 8 && <span className="text-[8px] font-black text-kado-red">角</span>}
+                </div>
+              ))}
           </div>
-          <p className="text-kado-cream/50 text-[8px] mt-3">2 more stamps · Free drink awaits!</p>
         </div>
       </div>
-
-      {/* Push notification */}
-      <div className="absolute bottom-[8%] left-0 bg-white rounded-2xl p-3 shadow-2xl border border-kado-dark/8 flex items-center gap-3 w-[52%]">
-        <div className="w-9 h-9 rounded-xl bg-kado-red flex items-center justify-center flex-shrink-0">
-          <span className="text-kado-cream text-[8px] font-black uppercase tracking-wide">+1</span>
+      <div className="absolute bottom-[8%] left-0 flex w-[52%] items-center gap-3 rounded-2xl border border-kado-dark/8 bg-white p-3 shadow-2xl">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kado-red">
+          <span className="text-[8px] font-black uppercase tracking-wide text-kado-cream">+1</span>
         </div>
         <div>
-          <p className="text-kado-dark text-[9px] font-black">Congrats! Free drink earned</p>
-          <p className="text-kado-dark/40 text-[8px]">Redeem at any Kado branch</p>
+          <p className="text-[9px] font-black text-kado-dark">Congrats! Free drink earned</p>
+          <p className="text-[8px] text-kado-dark/40">Redeem at any Kado branch</p>
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Step visuals (fixed layout; copy comes from CMS) ─────────────────────────
 
 const STEP_VISUALS = [
   <VisualInStore key="walk-in" />,
@@ -284,36 +241,36 @@ const STEP_VISUALS = [
 
 const DEFAULT_STEP_COPY = [
   {
-    id: "walk-in",
-    eyebrow: "Walk In",
-    title: "Order at the counter.",
+    id: 'walk-in',
+    eyebrow: 'Walk In',
+    title: 'Order at the counter.',
     description:
-      "Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.",
+      'Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.',
   },
   {
-    id: "online-gcash",
-    eyebrow: "Order Online",
-    title: "Menu, cart & GCash QR.",
+    id: 'online-gcash',
+    eyebrow: 'Order Online',
+    title: 'Menu, cart & GCash QR.',
     description:
-      "Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order.",
+      'Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order.',
   },
   {
-    id: "table-qr",
-    eyebrow: "Dine In · Table QR",
-    title: "Scan, order, pay with GCash.",
+    id: 'table-qr',
+    eyebrow: 'Dine In · Table QR',
+    title: 'Scan, order, pay with GCash.',
     description:
-      "Scan the QR on your table to open the menu for your seat. Pay via GCash QR and upload proof — no app download required.",
+      'Scan the QR on your table to open the menu for your seat. Pay via GCash QR and upload proof — no app download required.',
   },
   {
-    id: "loyalty",
-    eyebrow: "Kado Circle",
-    title: "Earn stamps & vouchers.",
+    id: 'loyalty',
+    eyebrow: 'Kado Circle',
+    title: 'Earn stamps & vouchers.',
     description:
-      "Completed drink orders earn stamps. Claim voucher rewards in your account and apply them at checkout.",
+      'Completed drink orders earn stamps. Claim voucher rewards in your account and apply them at checkout.',
   },
 ] as const;
 
-function buildSteps(copySteps?: KadoOrderingCarouselCopy['steps']): Step[] {
+function buildSteps(copySteps?: OrderingCopy['steps']): Step[] {
   return DEFAULT_STEP_COPY.map((fallback, i) => {
     const cms = copySteps?.[i];
     return {
@@ -326,234 +283,7 @@ function buildSteps(copySteps?: KadoOrderingCarouselCopy['steps']): Step[] {
   });
 }
 
-// ─── Inner card with mouse-tracking sheen ─────────────────────────────────────
-
-function FeatureCard({
-  children,
-  step,
-  steps,
-  cmsEditMode,
-  onStepPatch,
-}: {
-  children: ReactNode;
-  step: number;
-  steps: Step[];
-  cmsEditMode?: boolean;
-  onStepPatch?: (index: number, patch: Partial<Pick<Step, 'eyebrow' | 'title' | 'description'>>) => void;
-}) {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const isMobile = useIsMobile();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  function handleMouseMove({ clientX, clientY }: MouseEvent) {
-    if (isMobile || !cardRef.current) return;
-    const { left, top } = cardRef.current.getBoundingClientRect();
-    mouseX.set(clientX - left);
-    mouseY.set(clientY - top);
-  }
-
-  return (
-    <motion.div
-      ref={cardRef}
-      className="group relative w-full rounded-3xl"
-      onMouseMove={handleMouseMove}
-      style={
-        {
-          "--x": useMotionTemplate`${mouseX}px`,
-          "--y": useMotionTemplate`${mouseY}px`,
-        } as WrapperStyle
-      }
-    >
-      {/* Sheen overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-3xl z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{
-          background:
-            "radial-gradient(400px circle at var(--x, 50%) var(--y, 50%), rgba(158,24,29,0.07) 0%, transparent 60%)",
-        }}
-      />
-
-      <div className="relative w-full overflow-hidden rounded-3xl border border-kado-dark/10 bg-kado-offwhite shadow-sm">
-        <div className="flex flex-col md:flex-row min-h-0 md:min-h-[380px]">
-
-          {/* Left: text */}
-          <div className="flex flex-col justify-center p-6 sm:p-8 md:p-10 md:w-[44%] shrink-0 gap-4 sm:gap-5">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -18 }}
-                transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                className="flex flex-col gap-4"
-              >
-                <motion.div
-                  className="flex items-center gap-2"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.06, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <span className="text-[10px] font-black tabular-nums tracking-[0.2em] text-kado-dark/35">
-                    {String(step + 1).padStart(2, '0')}
-                  </span>
-                  <CmsStyledText
-                    value={steps[step].eyebrow}
-                    as="span"
-                    className="text-[10px] font-black uppercase tracking-[0.25em]"
-                    defaultColorClass="text-kado-red"
-                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.eyebrow`, `Step ${step + 1} eyebrow`, (v) =>
-                      onStepPatch?.(step, { eyebrow: v }),
-                    )}
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="kado-h3 text-kado-dark leading-tight tracking-tight"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <CmsStyledText
-                    value={steps[step].title}
-                    as="span"
-                    defaultSizeClass="kado-h3"
-                    defaultColorClass="text-kado-dark"
-                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.title`, `Step ${step + 1} title`, (v) =>
-                      onStepPatch?.(step, { title: v }),
-                    )}
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="text-sm md:text-base leading-relaxed"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.14, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <CmsStyledText
-                    value={steps[step].description}
-                    as="p"
-                    defaultSizeClass="kado-body"
-                    defaultColorClass="text-kado-dark/65"
-                    {...cmsTextProps(cmsEditMode, `ordering.step.${step}.description`, `Step ${step + 1} body`, (v) =>
-                      onStepPatch?.(step, { description: v }),
-                    )}
-                  />
-                </motion.div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Right: visual */}
-          <div className="relative flex-1 bg-kado-dark/[0.03] border-t md:border-t-0 md:border-l border-kado-dark/8 overflow-hidden min-h-[220px] sm:min-h-[260px] md:min-h-0">
-            {/* Corner kanji watermark */}
-            <span className="pointer-events-none absolute -bottom-4 -right-2 font-display text-[8rem] font-black text-kado-dark/[0.04] leading-none select-none">
-              角
-            </span>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                className="absolute inset-0 p-6"
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Step nav ─────────────────────────────────────────────────────────────────
-
-function StepNav({
-  steps,
-  current,
-  onChange,
-}: {
-  steps: Step[];
-  current: number;
-  onChange: (i: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-2 flex-wrap">
-      {steps.map((s, i) => {
-        const done = current > i;
-        const active = current === i;
-        return (
-          <motion.button
-            key={s.id}
-            type="button"
-            onClick={() => onChange(i)}
-            aria-label={cmsTextPlain(s.eyebrow)}
-            aria-current={active ? 'step' : undefined}
-            animate={active ? { scale: 1, opacity: 1 } : { scale: 0.93, opacity: 0.7 }}
-            transition={{ duration: 0.25 }}
-            className={clsx(
-              "flex items-center gap-2 rounded-full px-4 py-2.5 min-h-[44px] text-xs font-bold transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2",
-              active
-                ? "bg-kado-dark text-kado-cream"
-                : "bg-kado-dark/8 text-kado-dark hover:bg-kado-dark/14"
-            )}
-          >
-            {/* Step number/check */}
-            <span
-              className={clsx(
-                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black transition-all duration-300",
-                done
-                  ? "bg-kado-red text-white"
-                  : active
-                  ? "bg-kado-red text-white"
-                  : "bg-kado-dark/15 text-kado-dark/60"
-              )}
-            >
-              {done ? "✓" : i + 1}
-            </span>
-            <span className="hidden sm:inline">
-              <CmsStyledText value={s.eyebrow} as="span" />
-            </span>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-
-function ProgressBar({ step, total, interval }: { step: number; total: number; interval: number }) {
-  return (
-    <div className="flex gap-1.5">
-      {Array(total)
-        .fill(0)
-        .map((_, i) => (
-          <div key={i} className="h-[2px] flex-1 rounded-full bg-kado-dark/10 overflow-hidden">
-            <motion.div
-              className="h-full bg-kado-red origin-left"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: step === i ? 1 : step > i ? 1 : 0 }}
-              transition={
-                step === i
-                  ? { duration: interval / 1000, ease: "linear" }
-                  : { duration: 0.25 }
-              }
-            />
-          </div>
-        ))}
-    </div>
-  );
-}
-
 export type KadoOrderingCarouselCopy = OrderingCopy;
-
-// ─── Public export ────────────────────────────────────────────────────────────
 
 export function KadoOrderingCarousel({
   className,
@@ -567,21 +297,20 @@ export function KadoOrderingCarousel({
   const updateOrdering = useLandingContentStore((s) => s.updateOrdering);
   const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const INTERVAL = 6000;
   const steps = buildSteps(copy?.steps);
-  const { current, setStep } = useNumberCycler(steps.length, INTERVAL, prefersReducedMotion);
+  const { current, setStep } = useStepIndex(steps.length, 7000, prefersReducedMotion || !!cmsEditMode);
 
   return (
-    <section
-      className={clsx(
-        "landing-section w-full min-w-0 bg-kado-offwhite",
-        className
-      )}
-    >
-      <div className="max-w-[1100px] mx-auto flex flex-col gap-10">
+    <section className={clsx('landing-section relative w-full min-w-0 overflow-hidden bg-kado-offwhite', className)}>
+      <div
+        aria-hidden
+        className="kado-kanji-watermark -right-2 top-6 text-[clamp(7rem,20vw,14rem)] text-kado-dark/[0.04]"
+      >
+        角
+      </div>
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
+      <div className="relative mx-auto flex max-w-[1200px] flex-col gap-8 lg:gap-10">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
           <div>
             <CmsStyledText
               value={copy?.badge ?? 'How it works'}
@@ -621,22 +350,106 @@ export function KadoOrderingCarousel({
           )}
         />
 
-        {/* Progress */}
-        <ProgressBar step={current} total={steps.length} interval={INTERVAL} />
+        <div className="overflow-hidden rounded-3xl border border-kado-dark/10 bg-kado-cream shadow-[0_24px_64px_rgba(25,25,25,0.08)]">
+          <div className="grid min-h-[420px] lg:grid-cols-[minmax(0,13rem)_1fr]">
+            <nav
+              className="flex flex-row gap-1 overflow-x-auto border-b border-kado-dark/10 bg-kado-dark p-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-b-0 lg:border-r lg:p-0"
+              aria-label="Ordering steps"
+            >
+              {steps.map((step, i) => {
+                const active = current === i;
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setStep(i)}
+                    aria-current={active ? 'step' : undefined}
+                    className={clsx(
+                      'flex min-h-[44px] min-w-[9rem] shrink-0 items-center gap-3 px-4 py-3 text-left transition-colors lg:min-w-0 lg:w-full lg:px-5 lg:py-5',
+                      active ? 'bg-kado-red text-kado-cream' : 'text-kado-cream/65 hover:bg-white/5 hover:text-kado-cream',
+                    )}
+                  >
+                    <span
+                      className={clsx(
+                        'font-display text-2xl font-black leading-none tabular-nums lg:text-3xl',
+                        active ? 'text-kado-cream' : 'text-kado-cream/35',
+                      )}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="hidden text-[10px] font-bold uppercase tracking-[0.18em] sm:inline">
+                      <CmsStyledText value={step.eyebrow} as="span" />
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
 
-        {/* Card */}
-        <FeatureCard
-          step={current}
-          steps={steps}
-          cmsEditMode={cmsEditMode}
-          onStepPatch={(index, patch) => updateOrderingStep(index, patch)}
-        >
-          {steps[current].visual}
-        </FeatureCard>
+            <div className="grid min-h-[380px] lg:grid-cols-[minmax(0,1fr)_minmax(0,44%)]">
+              <div className="flex flex-col justify-center gap-4 p-6 sm:p-8 lg:p-10">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={current}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex flex-col gap-4"
+                  >
+                    <CmsStyledText
+                      value={steps[current].eyebrow}
+                      as="p"
+                      className="kado-label text-kado-red"
+                      {...cmsTextProps(cmsEditMode, `ordering.step.${current}.eyebrow`, `Step ${current + 1} eyebrow`, (v) =>
+                        updateOrderingStep(current, { eyebrow: v }),
+                      )}
+                    />
+                    <CmsStyledText
+                      value={steps[current].title}
+                      as="h3"
+                      className="kado-h2 leading-tight text-kado-dark"
+                      {...cmsTextProps(cmsEditMode, `ordering.step.${current}.title`, `Step ${current + 1} title`, (v) =>
+                        updateOrderingStep(current, { title: v }),
+                      )}
+                    />
+                    <CmsStyledText
+                      value={steps[current].description}
+                      as="p"
+                      className="max-w-lg"
+                      defaultSizeClass="kado-body"
+                      defaultColorClass="text-kado-dark/65"
+                      {...cmsTextProps(
+                        cmsEditMode,
+                        `ordering.step.${current}.description`,
+                        `Step ${current + 1} body`,
+                        (v) => updateOrderingStep(current, { description: v }),
+                      )}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
 
-        {/* Nav */}
-        <StepNav steps={steps} current={current} onChange={setStep} />
+              <div className="relative min-h-[240px] border-t border-kado-dark/8 bg-kado-dark/[0.03] lg:min-h-0 lg:border-l lg:border-t-0">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={steps[current].id}
+                    className="absolute inset-0 p-5 sm:p-6"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.35 }}
+                  >
+                    {steps[current].visual}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <p className="text-center kado-subtext text-kado-dark/40">
+          {cmsTextPlain(steps[current].eyebrow)} — step {current + 1} of {steps.length}
+        </p>
       </div>
     </section>
   );

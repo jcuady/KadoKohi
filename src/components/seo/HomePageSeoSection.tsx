@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, MapPin, Star } from 'lucide-react';
+import { ArrowUpRight, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
   SEO_HOME_BODY_PARAGRAPHS,
@@ -22,7 +22,7 @@ import { cmsTextPlain } from '../../lib/cmsTypography';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 
 const pillarCard =
-  'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/8 bg-kado-dark sm:min-h-[240px] lg:min-h-[280px] xl:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
+  'group relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-kado-dark sm:min-h-[240px] lg:min-h-[280px] xl:min-h-[300px] [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[180px]';
 
 type Props = { copy: MenuSeoCopy; cmsEditMode?: boolean };
 
@@ -35,7 +35,6 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
   const products = useMenuStore((s) => s.products);
   const menuRemoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const hydrateMenu = useMenuStore((s) => s.hydrateFromRemote);
-  const { rating, reviewCount } = KADO_GOOGLE_LISTING;
 
   useEffect(() => {
     if (!menuRemoteLoaded) void hydrateMenu();
@@ -46,9 +45,15 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
   return (
     <section
       aria-labelledby="home-menu-seo-heading"
-      className="landing-section customer-menu-page bg-kado-offwhite"
+      className="landing-section relative overflow-hidden customer-menu-page bg-kado-dark"
     >
-      <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
+      <div
+        aria-hidden
+        className="kado-kanji-watermark -left-6 bottom-0 text-[clamp(8rem,20vw,14rem)] text-white/[0.04]"
+      >
+        角
+      </div>
+      <div className="relative mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
         <CmsStyledText
           value={copy.locationBadge}
           as="p"
@@ -60,7 +65,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           )}
         />
 
-        <h2 id="home-menu-seo-heading" className="max-w-4xl kado-h2 text-kado-dark leading-snug">
+        <h2 id="home-menu-seo-heading" className="max-w-4xl kado-h2 leading-snug text-kado-cream">
           <AccentHeadline
             copy={copy.headline}
             cmsEditMode={cmsEditMode}
@@ -71,13 +76,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
         </h2>
 
         <div className="mt-6 flex flex-col gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3">
-          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 kado-body text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
-            <Star className="h-4 w-4 shrink-0 fill-kado-red text-kado-red" aria-hidden />
-            <span className="truncate">
-              {rating}★ · {reviewCount} Google reviews
-            </span>
-          </div>
-          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white/90 px-4 py-2.5 kado-body text-kado-dark shadow-sm backdrop-blur-sm sm:w-auto">
+          <div className="inline-flex w-full min-w-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 kado-body text-kado-cream shadow-sm backdrop-blur-sm sm:w-auto">
             <MapPin className="h-4 w-4 shrink-0 text-kado-red" aria-hidden />
             <span className="truncate">
               <CmsStyledText
@@ -161,7 +160,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
                 value={paragraph}
                 as="p"
                 defaultSizeClass="kado-body"
-                defaultColorClass="text-kado-dark/70"
+                defaultColorClass="text-kado-cream/70"
                 {...cmsTextProps(cmsEditMode, `menu-seo.body.${pi}`, `Body paragraph ${pi + 1}`, (v) => {
                   const next = [...copy.bodyParagraphs] as [typeof paragraph, typeof paragraph];
                   next[pi] = v;
@@ -172,7 +171,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           ))}
         </div>
 
-        <p className="mt-5 max-w-3xl font-sans text-sm leading-relaxed text-kado-dark/65 sm:text-[0.9375rem]">
+        <p className="mt-5 max-w-3xl font-sans text-sm leading-relaxed text-kado-cream/65 sm:text-[0.9375rem]">
           <Link to="/menu" className="font-semibold text-kado-red underline-offset-4 hover:underline">
             Full menu
           </Link>
@@ -193,13 +192,13 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
 
         <nav
           aria-label="Kado Coffee site sections"
-          className="mt-8 border-t border-kado-dark/8 pt-6 sm:mt-10 sm:pt-8"
+          className="mt-8 border-t border-white/10 pt-6 sm:mt-10 sm:pt-8"
         >
           <CmsStyledText
             value={copy.exploreHeading}
             as="p"
             className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em]"
-            defaultColorClass="text-kado-dark/40"
+            defaultColorClass="text-kado-cream/40"
             {...cmsTextProps(cmsEditMode, 'menu-seo.exploreHeading', 'Explore heading', (v) =>
               updateMenuSeo({ exploreHeading: v }),
             )}
@@ -209,7 +208,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
               <li key={to}>
                 <Link
                   to={to}
-                  className="inline-flex min-h-[44px] max-w-full items-center rounded-full border border-kado-dark/10 bg-white px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-kado-dark transition-colors hover:border-kado-red/30 hover:text-kado-red sm:px-4"
+                  className="inline-flex min-h-[44px] max-w-full items-center rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-kado-cream transition-colors hover:border-kado-red/40 hover:text-kado-red sm:px-4"
                 >
                   <span className="truncate">{label}</span>
                 </Link>
@@ -218,7 +217,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           </ul>
         </nav>
 
-        <p className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-wider text-kado-dark/35">
+        <p className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-wider text-kado-cream/35">
           <a href={SEO_SOCIAL.instagram} target="_blank" rel="noopener noreferrer me" className="hover:text-kado-red">
             @kadocoffeeph
           </a>

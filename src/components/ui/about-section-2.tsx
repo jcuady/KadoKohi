@@ -10,7 +10,6 @@ import { cmsTextPlain } from '@/lib/cmsTypography';
 import { cmsTextProps } from '@/lib/cmsFieldBind';
 import ResilientImage from '@/components/ui/ResilientImage';
 import { SEO_SOCIAL } from '@/content/seo';
-import { KADO_GOOGLE_LISTING } from '@/content/kadoGoogleReviews';
 import TikTokIcon from '@/components/icons/TikTokIcon';
 import type { BrandStoryCopy } from '@/store/landingContentStore';
 import { useLandingContentStore } from '@/store/landingContentStore';
@@ -72,14 +71,19 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
   const updateStorySeo = useLandingContentStore((s) => s.updateStorySeo);
   const updateStorySeoPillar = useLandingContentStore((s) => s.updateStorySeoPillar);
-  const { rating, reviewCount } = KADO_GOOGLE_LISTING;
 
   return (
     <section
       aria-labelledby="home-brand-story-heading"
-      className="landing-section customer-menu-page bg-kado-cream"
+      className="landing-section relative overflow-hidden customer-menu-page bg-kado-cream"
     >
-      <div className="mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]" ref={heroRef}>
+      <div
+        aria-hidden
+        className="kado-kanji-watermark -right-4 top-4 text-[clamp(7rem,18vw,12rem)] text-kado-red/[0.05]"
+      >
+        角
+      </div>
+      <div className="relative mx-auto max-w-6xl min-w-0 pr-[max(0px,env(safe-area-inset-right))]" ref={heroRef}>
         <TimelineContent
           as="p"
           animationNum={0}
@@ -130,7 +134,7 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
           />
         </TimelineContent>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-3">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-rows-2 lg:gap-5">
           {copy.pillars.map((pillar, i) => (
             <TimelineContent
               key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
@@ -138,7 +142,7 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
               animationNum={3 + i}
               timelineRef={heroRef}
               customVariants={revealVariants}
-              className={pillarCard}
+              className={`${pillarCard} ${i === 0 ? 'lg:row-span-2 lg:min-h-[520px]' : 'lg:min-h-[240px]'}`}
             >
               {cmsEditMode ? (
                 <CmsEditableImage
@@ -200,7 +204,6 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
           customVariants={textVariants}
           className="mt-8 max-w-2xl kado-body text-kado-dark/65 sm:mt-10"
         >
-          Rated {rating}★ on Google ({reviewCount} reviews).{' '}
           <Link to="/menu" className={linkClass}>
             See the menu
           </Link>
