@@ -98,7 +98,7 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           {copy.pillars.map((pillar, pi) => (
             <article
               key={`${cmsTextPlain(pillar.title)}-${cmsTextPlain(pillar.subtitle)}`}
-              className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink`}
+              className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink-0`}
             >
               {cmsEditMode ? (
                 <CmsEditableImage

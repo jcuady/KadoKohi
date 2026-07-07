@@ -38,6 +38,7 @@ const MOTION_TAGS = new Set([
   'ul',
   'li',
   'section',
+  'article',
 ]);
 
 const defaultVariants: Variants = {

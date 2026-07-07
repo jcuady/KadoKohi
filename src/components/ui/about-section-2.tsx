@@ -146,59 +146,59 @@ export default function AboutSection2({ copy, cmsEditMode }: Props) {
                 animationNum={3 + i}
                 timelineRef={heroRef}
                 customVariants={revealVariants}
-                className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink ${i === 0 ? 'lg:row-span-2 lg:min-h-[520px]' : 'lg:min-h-[240px]'}`}
+                className={`${pillarCard} w-[min(85vw,18rem)] shrink-0 snap-center lg:w-auto lg:shrink-0 ${i === 0 ? 'lg:row-span-2 lg:min-h-[520px]' : 'lg:min-h-[240px]'}`}
               >
-              {cmsEditMode ? (
-                <CmsEditableImage
-                  cmsField={`story.pillar.${i}.image`}
-                  cmsLabel={`Pillar ${i + 1} image`}
-                  src={pillar.imageUrl}
-                  alt={pillar.imageAlt}
-                  className="absolute inset-0 h-full w-full"
-                  onImageChange={(url) => updateStorySeoPillar(i, { imageUrl: url })}
-                />
-              ) : (
-                <ResilientImage
-                  src={pillar.imageUrl}
-                  alt={pillar.imageAlt}
-                  className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
-              <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
-                <CmsStyledText
-                  value={pillar.subtitle}
-                  as="p"
-                  className="kado-label"
-                  defaultColorClass="text-kado-cream/60"
-                  {...cmsTextProps(cmsEditMode, `story.pillar.${i}.subtitle`, `Pillar ${i + 1} subtitle`, (v) =>
-                    updateStorySeoPillar(i, { subtitle: v }),
-                  )}
-                />
-                <CmsStyledText
-                  value={pillar.title}
-                  as="h3"
-                  className="mt-1 kado-h3"
-                  defaultColorClass="text-kado-cream"
-                  {...cmsTextProps(cmsEditMode, `story.pillar.${i}.title`, `Pillar ${i + 1} title`, (v) =>
-                    updateStorySeoPillar(i, { title: v }),
-                  )}
-                />
-                {pillar.body ? (
+                {cmsEditMode ? (
+                  <CmsEditableImage
+                    cmsField={`story.pillar.${i}.image`}
+                    cmsLabel={`Pillar ${i + 1} image`}
+                    src={pillar.imageUrl}
+                    alt={pillar.imageAlt}
+                    className="absolute inset-0 h-full w-full"
+                    onImageChange={(url) => updateStorySeoPillar(i, { imageUrl: url })}
+                  />
+                ) : (
+                  <ResilientImage
+                    src={pillar.imageUrl}
+                    alt={pillar.imageAlt}
+                    className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/10" />
+                <div className="relative mt-auto p-4 sm:p-5 lg:p-6">
                   <CmsStyledText
-                    value={pillar.body}
+                    value={pillar.subtitle}
                     as="p"
-                    className="mt-2"
-                    defaultSizeClass="kado-body-sm"
-                    defaultColorClass="text-kado-cream/80"
-                    {...cmsTextProps(cmsEditMode, `story.pillar.${i}.body`, `Pillar ${i + 1} body`, (v) =>
-                      updateStorySeoPillar(i, { body: v }),
+                    className="kado-label"
+                    defaultColorClass="text-kado-cream/60"
+                    {...cmsTextProps(cmsEditMode, `story.pillar.${i}.subtitle`, `Pillar ${i + 1} subtitle`, (v) =>
+                      updateStorySeoPillar(i, { subtitle: v }),
                     )}
                   />
-                ) : null}
-              </div>
-            </TimelineContent>
-          ))}
+                  <CmsStyledText
+                    value={pillar.title}
+                    as="h3"
+                    className="mt-1 kado-h3"
+                    defaultColorClass="text-kado-cream"
+                    {...cmsTextProps(cmsEditMode, `story.pillar.${i}.title`, `Pillar ${i + 1} title`, (v) =>
+                      updateStorySeoPillar(i, { title: v }),
+                    )}
+                  />
+                  {pillar.body ? (
+                    <CmsStyledText
+                      value={pillar.body}
+                      as="p"
+                      className="mt-2"
+                      defaultSizeClass="kado-body-sm"
+                      defaultColorClass="text-kado-cream/80"
+                      {...cmsTextProps(cmsEditMode, `story.pillar.${i}.body`, `Pillar ${i + 1} body`, (v) =>
+                        updateStorySeoPillar(i, { body: v }),
+                      )}
+                    />
+                  ) : null}
+                </div>
+              </TimelineContent>
+            ))}
           </div>
           {copy.pillars.length > 1 ? (
             <div className="mt-3 flex items-center justify-center gap-1.5 lg:hidden">
