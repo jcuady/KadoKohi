@@ -211,7 +211,7 @@ export function AnimatedTestimonials({
   if (testimonials.length === 0) return null;
 
   const visible = testimonials.slice(0, 6);
-  const mobileVisible = visible.slice(0, 4);
+  const mobileCarouselItems = visible.slice(0, 4);
 
   return (
     <section
@@ -287,40 +287,47 @@ export function AnimatedTestimonials({
             ) : null}
           </motion.header>
 
-          {/* Mobile: compact horizontal snap carousel */}
-          <div className="relative md:hidden">
-            <div
-              className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-1 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-8 touch-pan-x"
-              aria-label="Customer reviews carousel"
-            >
-              {mobileVisible.map((testimonial, index) => (
-                <motion.div
-                  key={testimonial.id}
-                  variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-                  className="w-[min(82vw,18.5rem)] shrink-0 snap-center"
-                >
-                  <TestimonialCard
-                    testimonial={testimonial}
-                    index={index}
-                    cmsEditMode={cmsEditMode}
-                    compact
-                    className="min-h-[11.5rem]"
-                  />
-                </motion.div>
-              ))}
-            </div>
-            {mobileVisible.length > 1 ? (
-              <div className="mt-3 flex items-center justify-center gap-1.5">
-                <ChevronRight className="h-3 w-3 text-kado-dark/30" aria-hidden />
-                <p className="kado-subtext text-[10px] font-semibold uppercase tracking-[0.16em] text-kado-dark/40">
-                  Swipe for more
-                </p>
+          {/* Mobile: compact horizontal snap carousel (public site only) */}
+          {!cmsEditMode ? (
+            <div className="relative md:hidden">
+              <div
+                className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-1 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-8 touch-pan-x"
+                aria-label="Customer reviews carousel"
+              >
+                {mobileCarouselItems.map((testimonial, index) => (
+                  <motion.div
+                    key={testimonial.id}
+                    variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+                    className="w-[min(82vw,18.5rem)] shrink-0 snap-center"
+                  >
+                    <TestimonialCard
+                      testimonial={testimonial}
+                      index={index}
+                      cmsEditMode={cmsEditMode}
+                      compact
+                      className="min-h-[11.5rem]"
+                    />
+                  </motion.div>
+                ))}
               </div>
-            ) : null}
-          </div>
+              {mobileCarouselItems.length > 1 ? (
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  <ChevronRight className="h-3 w-3 text-kado-dark/30" aria-hidden />
+                  <p className="kado-subtext text-[10px] font-semibold uppercase tracking-[0.16em] text-kado-dark/40">
+                    Swipe for more
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
-          {/* Desktop: masonry quote grid */}
-          <div className="hidden columns-1 gap-4 sm:columns-2 md:block lg:gap-5">
+          {/* Masonry grid — desktop public site; all breakpoints in CMS edit */}
+          <div
+            className={cn(
+              'columns-1 gap-4 sm:columns-2 lg:gap-5',
+              cmsEditMode ? 'block' : 'hidden md:block',
+            )}
+          >
             {visible.map((testimonial, index) => (
               <motion.div
                 key={testimonial.id}

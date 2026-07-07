@@ -105,5 +105,15 @@ function applyImageField(
       next[slot] = url;
       store.updateFeatured({ cardImageOverrides: next });
     }
+    return;
+  }
+  if (section === 'testimonials' && rest[0] === 'item' && rest[2] === 'avatar') {
+    const i = Number(rest[1]);
+    if (Number.isFinite(i)) store.updateTestimonialItem(i, { avatar: url });
+    return;
+  }
+  if (section === 'testimonials' && rest[0] === 'trustedBrand' && rest[2] === 'image') {
+    const bi = Number(rest[1]);
+    if (Number.isFinite(bi)) store.updateTrustedBrand(bi, { imageUrl: url });
   }
 }
