@@ -36,7 +36,7 @@ export default function Blog() {
       <section className="border-b border-kado-dark/5 bg-kado-cream px-6 pb-12 pt-28">
         <div className="mx-auto max-w-5xl text-center">
           <p className="kado-label mb-3 text-kado-red">Stories from the corner</p>
-          <h1 className="kado-h2 text-kado-dark uppercase tracking-tight">Kado Kohi Blogs</h1>
+          <h1 className="kado-h2 text-kado-dark uppercase tracking-tight">Kado Kohi Features</h1>
           <p className="mx-auto mt-4 max-w-xl kado-body text-kado-dark/65">
             Community runs, tambayan nights, booth season notes, and what&apos;s brewing at our Marikina cafe.
           </p>

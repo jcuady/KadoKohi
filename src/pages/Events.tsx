@@ -69,10 +69,15 @@ export default function Events() {
   );
 
   const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
   const activeBranches = useMemo(
-    () => branches.filter((b) => b.status === 'active'),
+    () => branches.filter((b) => b.status === 'active').sort((a, b) => a.name.localeCompare(b.name)),
     [branches],
   );
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
 
   const branchFilter = useMemo(
     () => resolveEventBranchFilter(searchParams.get('branch'), branches),

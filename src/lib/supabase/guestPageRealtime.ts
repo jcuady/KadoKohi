@@ -5,6 +5,7 @@ import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBlogStore } from '../../store/blogStore';
+import { useEventStore } from '../../store/eventStore';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
@@ -19,6 +20,7 @@ const GUEST_TABLES = [
   'kk_branches',
   'kk_app_settings',
   'kk_blog_posts',
+  'kk_events',
 ] as const;
 
 type GuestTable = (typeof GUEST_TABLES)[number];
@@ -55,6 +57,7 @@ const refresh = {
     void useCareersStore.getState().hydrateFromRemote();
   }, 300),
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
+  events: debounce(() => void useEventStore.getState().hydrateFromRemote(), 300),
 };
 
 function onTableChange(table: GuestTable) {
@@ -68,6 +71,7 @@ function onTableChange(table: GuestTable) {
       break;
     case 'kk_branches':
       refresh.branches();
+      refresh.events();
       break;
     case 'kk_app_settings':
       refresh.settings();
@@ -75,16 +79,12 @@ function onTableChange(table: GuestTable) {
     case 'kk_blog_posts':
       refresh.blog();
       break;
+    case 'kk_events':
+      refresh.events();
+      break;
     default:
       break;
   }
-}
-
-function teardownChannel(): void {
-  if (!channel || !supabase) return;
-  const ch = channel;
-  channel = null;
-  void supabase.removeChannel(ch);
 }
 
 /** Live menu / branch / table sync for guest ordering surfaces. */
@@ -94,19 +94,25 @@ export function startGuestPageRealtime(): void {
   refCount += 1;
   if (channel) return;
 
-  channel = supabase.channel('kk_guest_pages_live');
+  const ch = supabase.channel('kk_guest_pages_live');
+  channel = ch;
   for (const table of GUEST_TABLES) {
-    channel.on(
+    ch.on(
       'postgres_changes',
       { event: '*', schema: 'public', table },
       () => onTableChange(table),
     );
   }
-  channel.subscribe();
+  ch.subscribe();
 }
 
 export function stopGuestPageRealtime(): void {
   refCount = Math.max(0, refCount - 1);
   if (refCount > 0) return;
-  deferRealtimeStop(teardownChannel);
+  const ch = channel;
+  channel = null;
+  if (!ch) return;
+  deferRealtimeStop(() => {
+    if (supabase) void supabase.removeChannel(ch);
+  });
 }

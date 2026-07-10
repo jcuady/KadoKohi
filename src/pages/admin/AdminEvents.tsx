@@ -72,8 +72,9 @@ export default function AdminEvents() {
   const updateEvent = useEventStore((s) => s.updateEvent);
   const removeEvent = useEventStore((s) => s.removeEvent);
   const branches = useBranchStore((s) => s.branches);
-  const activeBranches = useMemo(
-    () => branches.filter((b) => b.status === 'active'),
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
+  const eventBranches = useMemo(
+    () => [...branches].sort((a, b) => a.name.localeCompare(b.name)),
     [branches],
   );
   const formTemplates = useEventFormStore((s) => s.forms);
@@ -104,9 +105,10 @@ export default function AdminEvents() {
   useEffect(() => {
     void hydrateEvents();
     void hydrateFormTemplates();
+    void hydrateBranches();
     loadCounts();
     loadAllRegistrations();
-  }, [hydrateEvents, hydrateFormTemplates]);
+  }, [hydrateEvents, hydrateFormTemplates, hydrateBranches]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -340,9 +342,10 @@ export default function AdminEvents() {
                   aria-label="Filter events by branch"
                 >
                   <option value="all">All branches</option>
-                  {activeBranches.map((b) => (
+                  {eventBranches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
+                      {b.status === 'coming_soon' ? ' (soon)' : ''}
                     </option>
                   ))}
                 </select>
@@ -659,9 +662,10 @@ export default function AdminEvents() {
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 >
                   <option value="">All branches</option>
-                  {activeBranches.map((b) => (
+                  {eventBranches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
+                      {b.status === 'coming_soon' ? ' (soon)' : ''}
                     </option>
                   ))}
                 </select>

@@ -117,7 +117,7 @@ const NAV: NavEntry[] = [
     icon: Image,
     children: [
       { to: '/admin/landing', label: 'Homepage', icon: Image },
-      { to: '/admin/blog', label: 'Blog', icon: Newspaper },
+      { to: '/admin/blog', label: 'Features', icon: Newspaper },
       { to: '/admin/careers', label: 'Careers', icon: PenLine },
       { to: '/admin/pastries', label: 'Pastries', icon: Cake },
     ],

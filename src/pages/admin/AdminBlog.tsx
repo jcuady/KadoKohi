@@ -249,7 +249,7 @@ export default function AdminBlog() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">CMS</p>
-          <h1 className="dash-heading font-display text-2xl font-bold">Blog</h1>
+          <h1 className="dash-heading font-display text-2xl font-bold">Features</h1>
           <p className="dash-muted mt-1 text-sm max-w-xl">
             Create and manage stories for the public <code className="text-xs">/blog</code> page. Drafts stay hidden when visibility is off.
           </p>

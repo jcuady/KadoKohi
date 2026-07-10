@@ -45,7 +45,7 @@ export default function Footer() {
                 Pastries
               </Link>
               <Link to="/blog" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
-                Blogs
+                Features
               </Link>
               <Link to="/book/coffee-cart" className="text-sm text-kado-cream/70 hover:text-kado-red transition-colors">
                 Coffee Cart Bookings

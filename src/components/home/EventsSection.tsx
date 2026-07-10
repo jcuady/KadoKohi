@@ -30,11 +30,16 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
   const events = useEventStore((s) => s.events);
   const eventsHydrated = useEventStore((s) => s.hydrated);
   const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!eventsHydrated) void hydrateEvents();
   }, [eventsHydrated]);
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
 
   useEffect(() => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});

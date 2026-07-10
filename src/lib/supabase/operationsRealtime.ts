@@ -49,6 +49,14 @@ type OpsTable = (typeof OPS_TABLES)[number];
 
 let channel: RealtimeChannel | null = null;
 let started = false;
+let connecting = false;
+
+function disposeChannel(): void {
+  if (!channel || !supabase) return;
+  const ch = channel;
+  channel = null;
+  void supabase.removeChannel(ch);
+}
 
 function debounce(fn: () => void, ms: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -112,6 +120,7 @@ function onTableChange(
       break;
     case 'kk_branches':
       refresh.branches();
+      refresh.events();
       break;
     case 'kk_app_settings':
       refresh.settings();
@@ -201,40 +210,53 @@ export async function refreshOperationsData(): Promise<void> {
  * Idempotent — safe to call from layout mount and after sign-in.
  */
 export function startOperationsRealtime(): void {
-  if (!supabase || started) return;
+  if (!supabase || started || connecting) return;
   cancelDeferredRealtimeStop();
-  started = true;
+  connecting = true;
 
-  const user = useAuthStore.getState().user;
-  const ordersFilter =
-    user?.role === 'barista' && user.branchId
-      ? `branch_id=eq.${user.branchId}`
-      : undefined;
+  try {
+    // StrictMode stop→start can leave a subscribed channel before deferred teardown runs.
+    disposeChannel();
 
-  channel = supabase.channel('kk_ops_live');
-  for (const table of OPS_TABLES) {
-    const filter = table === 'kk_orders' ? ordersFilter : undefined;
-    channel.on(
-      'postgres_changes',
-      filter
-        ? { event: '*', schema: 'public', table, filter }
-        : { event: '*', schema: 'public', table },
-      (payload) =>
-        onTableChange(table, payload as { new?: Record<string, unknown>; old?: Record<string, unknown> }),
-    );
+    const user = useAuthStore.getState().user;
+    const ordersFilter =
+      user?.role === 'barista' && user.branchId
+        ? `branch_id=eq.${user.branchId}`
+        : undefined;
+
+    const ch = supabase.channel('kk_ops_live');
+    channel = ch;
+    for (const table of OPS_TABLES) {
+      const filter = table === 'kk_orders' ? ordersFilter : undefined;
+      ch.on(
+        'postgres_changes',
+        filter
+          ? { event: '*', schema: 'public', table, filter }
+          : { event: '*', schema: 'public', table },
+        (payload) =>
+          onTableChange(table, payload as { new?: Record<string, unknown>; old?: Record<string, unknown> }),
+      );
+    }
+    ch.subscribe();
+    started = true;
+  } catch (err) {
+    console.error('startOperationsRealtime failed', err);
+    started = false;
+    disposeChannel();
+  } finally {
+    connecting = false;
   }
-  channel.subscribe();
 }
 
 export function stopOperationsRealtime(): void {
-  if (!started) return;
+  if (!started && !channel) return;
   started = false;
+  connecting = false;
+  const ch = channel;
+  channel = null;
+  if (!ch || !supabase) return;
   deferRealtimeStop(() => {
-    if (channel && supabase) {
-      const ch = channel;
-      channel = null;
-      void supabase.removeChannel(ch);
-    }
+    void supabase.removeChannel(ch);
   });
 }
 

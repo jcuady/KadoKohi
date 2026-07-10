@@ -1,8 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Branch, BranchStatus } from '../../types/domain';
 import { useBranchStore } from '../../store/branchStore';
 import { formatBranchCrudError } from '../../lib/supabase/repositories/ordering';
-import { MapPin, Pencil, Trash2, Plus, Navigation, ExternalLink, Loader2 } from 'lucide-react';
+import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
+import { branchGoogleMapsUrl, branchHeroImageUrl, branchOsmEmbedUrl } from '../../lib/branchMaps';
+import BranchLocationPicker from '../../components/admin/BranchLocationPicker';
+import { MapPin, Pencil, Trash2, Plus, ExternalLink, Loader2, Upload } from 'lucide-react';
 
 const emptyForm: Omit<Branch, 'id' | 'createdAt' | 'updatedAt' | 'hours'> & { hoursNote: string } = {
   slug: '',
@@ -16,15 +19,6 @@ const emptyForm: Omit<Branch, 'id' | 'createdAt' | 'updatedAt' | 'hours'> & { ho
   lng: undefined,
 };
 
-function osmEmbedUrl(lat: number, lng: number) {
-  const d = 0.005;
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
-}
-
-function googleMapsUrl(lat: number, lng: number) {
-  return `https://www.google.com/maps?q=${lat},${lng}`;
-}
-
 export default function AdminBranches() {
   const branches = useBranchStore((s) => s.branches);
   const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
@@ -34,11 +28,12 @@ export default function AdminBranches() {
 
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState('');
   const [saveOk, setSaveOk] = useState('');
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     void hydrateBranches();
@@ -50,9 +45,15 @@ export default function AdminBranches() {
     return () => window.clearTimeout(timer);
   }, [saveOk]);
 
+  const locationSearchHint = useMemo(() => {
+    const parts = [form.address, form.city].filter(Boolean);
+    return parts.length ? parts.join(', ') : undefined;
+  }, [form.address, form.city]);
+
   const reset = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setUploadError('');
   };
 
   const startEdit = (b: Branch) => {
@@ -68,18 +69,7 @@ export default function AdminBranches() {
       lat: b.lat,
       lng: b.lng,
     });
-  };
-
-  const autoLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude }));
-        setLocating(false);
-      },
-      () => setLocating(false),
-    );
+    setUploadError('');
   };
 
   const submit = async (e: FormEvent) => {
@@ -151,6 +141,7 @@ export default function AdminBranches() {
   };
 
   const hasCoords = form.lat != null && form.lng != null;
+  const heroPreview = branchHeroImageUrl({ slug: form.slug || 'branch', heroImage: form.heroImage });
 
   return (
     <div className="max-w-5xl dash-page">
@@ -221,86 +212,88 @@ export default function AdminBranches() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Hero image URL</label>
-            <input
-              value={form.heroImage}
-              onChange={(e) => setForm((f) => ({ ...f, heroImage: e.target.value }))}
-              className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
-              placeholder="https://… or /images/branch.jpg"
+            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Branch photo</label>
+            <div className="mb-2 overflow-hidden rounded-xl border dash-border">
+              <img
+                src={heroPreview}
+                alt={form.name || 'Branch preview'}
+                className="h-36 w-full object-cover"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={form.heroImage}
+                onChange={(e) => setForm((f) => ({ ...f, heroImage: e.target.value }))}
+                placeholder="/path, https://…, or upload"
+                className="flex-1 min-w-0 rounded-xl dash-input border px-3 py-2 text-sm"
+              />
+              <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:border-kado-red/40 shrink-0">
+                {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                Upload
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    setUploadError('');
+                    setUploadingImage(true);
+                    const prefix = `branches/${form.slug.trim() || 'new'}`;
+                    void uploadCmsImageFile(file, prefix)
+                      .then((url) => setForm((f) => ({ ...f, heroImage: url })))
+                      .catch((err) =>
+                        setUploadError(err instanceof Error ? err.message : 'Could not upload image.'),
+                      )
+                      .finally(() => setUploadingImage(false));
+                  }}
+                />
+              </label>
+            </div>
+            {uploadError ? <p className="mt-1 text-xs text-red-600">{uploadError}</p> : null}
+          </div>
+
+          <div key={editingId ?? 'new'}>
+            <BranchLocationPicker
+              searchHint={locationSearchHint}
+              value={{
+                lat: form.lat,
+                lng: form.lng,
+                address: form.address,
+                city: form.city,
+              }}
+              onChange={(next) =>
+                setForm((f) => ({
+                  ...f,
+                  lat: next.lat,
+                  lng: next.lng,
+                  address: next.address ?? f.address,
+                  city: next.city ?? f.city,
+                }))
+              }
             />
           </div>
 
-          {/* Lat / Lng */}
-          <div className="grid grid-cols-2 gap-3">
+          {hasCoords ? (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Latitude</label>
+              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                Google Maps link
+              </label>
               <input
-                type="number"
-                step="any"
-                value={form.lat ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, lat: e.target.value === '' ? undefined : Number(e.target.value) }))
-                }
-                className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
-                placeholder="14.5547"
+                readOnly
+                value={branchGoogleMapsUrl(form.lat!, form.lng!)}
+                className="w-full rounded-xl dash-input border px-3 py-2 text-xs dash-muted select-all"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                value={form.lng ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, lng: e.target.value === '' ? undefined : Number(e.target.value) }))
-                }
-                className="w-full rounded-xl dash-input border px-3 py-2 text-sm"
-                placeholder="121.0244"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={autoLocate}
-            disabled={locating}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border dash-border px-3 py-2 text-sm font-semibold dash-muted hover:bg-kado-cream transition-colors disabled:opacity-50"
-          >
-            {locating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Navigation className="w-4 h-4" />
-            )}
-            {locating ? 'Locating…' : 'Auto-locate (use my position)'}
-          </button>
-
-          {hasCoords && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
-                  Google Maps URL
-                </label>
-                <input
-                  readOnly
-                  value={googleMapsUrl(form.lat!, form.lng!)}
-                  className="w-full rounded-xl dash-input border px-3 py-2 text-xs dash-muted select-all"
-                />
-              </div>
-              <div className="rounded-xl overflow-hidden border dash-border">
-                <iframe
-                  title="Map preview"
-                  src={osmEmbedUrl(form.lat!, form.lng!)}
-                  className="w-full h-48"
-                  style={{ border: 0 }}
-                />
-              </div>
-            </div>
-          )}
+          ) : null}
 
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingImage}
               className="flex-1 rounded-xl bg-kado-red text-kado-cream py-3 text-sm font-bold uppercase tracking-wider hover:bg-kado-red-hover transition-colors disabled:opacity-60"
             >
               {saving ? 'Saving…' : editingId ? 'Save' : 'Create'}
@@ -320,95 +313,99 @@ export default function AdminBranches() {
         <div className="lg:col-span-3 space-y-3">
           {branches.map((b) => {
             const branchHasCoords = b.lat != null && b.lng != null;
+            const hero = branchHeroImageUrl(b);
             return (
               <div
                 key={b.id}
-                className="rounded-2xl dash-card border p-5 space-y-3"
+                className="rounded-2xl dash-card border overflow-hidden"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MapPin className="w-4 h-4 text-kado-red shrink-0" />
-                      <span className="text-xs font-mono dash-muted">{b.slug}</span>
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                          b.status === 'active' ? 'bg-kado-dark text-kado-cream' : 'bg-kado-red/10 text-kado-red'
-                        }`}
-                      >
-                        {b.status === 'active' ? 'Active' : 'Soon'}
-                      </span>
-                    </div>
-                    <h3 className="font-display font-bold text-lg text-kado-dark dash-heading truncate">{b.name}</h3>
-                    {(b.address || b.city) && (
-                      <p className="text-sm dash-muted truncate">
-                        {[b.address, b.city].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(b)}
-                      className="p-2.5 rounded-xl border dash-border hover:bg-kado-cream text-kado-dark dash-heading"
-                      aria-label="Edit"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={deletingId === b.id || saving}
-                      onClick={() => {
-                        if (
-                          !confirm(
-                            `Remove branch "${b.name}"? Its tables will be removed. This may fail if orders still reference this branch.`,
-                          )
-                        ) {
-                          return;
-                        }
-                        setSaveError('');
-                        setDeletingId(b.id);
-                        void removeBranch(b.id)
-                          .then(() => {
-                            setSaveOk(`"${b.name}" removed.`);
-                          })
-                          .catch((err) =>
-                            setSaveError(formatBranchCrudError(err, 'delete')),
-                          )
-                          .finally(() => setDeletingId(null));
-                      }}
-                      className="p-2.5 rounded-xl border border-kado-red/20 text-kado-red hover:bg-kado-red/10 disabled:opacity-50"
-                      aria-label="Delete"
-                    >
-                      {deletingId === b.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
+                <img src={hero} alt={b.name} className="h-40 w-full object-cover" />
+                <div className="p-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MapPin className="w-4 h-4 text-kado-red shrink-0" />
+                        <span className="text-xs font-mono dash-muted">{b.slug}</span>
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            b.status === 'active' ? 'bg-kado-dark text-kado-cream' : 'bg-kado-red/10 text-kado-red'
+                          }`}
+                        >
+                          {b.status === 'active' ? 'Active' : 'Soon'}
+                        </span>
+                      </div>
+                      <h3 className="font-display font-bold text-lg text-kado-dark dash-heading truncate">{b.name}</h3>
+                      {(b.address || b.city) && (
+                        <p className="text-sm dash-muted truncate">
+                          {[b.address, b.city].filter(Boolean).join(', ')}
+                        </p>
                       )}
-                    </button>
-                  </div>
-                </div>
-
-                {branchHasCoords && (
-                  <div className="space-y-2">
-                    <div className="rounded-xl overflow-hidden border dash-border">
-                      <iframe
-                        title={`Map of ${b.name}`}
-                        src={osmEmbedUrl(b.lat!, b.lng!)}
-                        className="w-full h-36"
-                        style={{ border: 0 }}
-                      />
                     </div>
-                    <a
-                      href={googleMapsUrl(b.lat!, b.lng!)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-kado-red hover:underline"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      View on Maps
-                    </a>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(b)}
+                        className="p-2.5 rounded-xl border dash-border hover:bg-kado-cream text-kado-dark dash-heading"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deletingId === b.id || saving}
+                        onClick={() => {
+                          if (
+                            !confirm(
+                              `Remove branch "${b.name}"? Its tables will be removed. This may fail if orders still reference this branch.`,
+                            )
+                          ) {
+                            return;
+                          }
+                          setSaveError('');
+                          setDeletingId(b.id);
+                          void removeBranch(b.id)
+                            .then(() => {
+                              setSaveOk(`"${b.name}" removed.`);
+                            })
+                            .catch((err) =>
+                              setSaveError(formatBranchCrudError(err, 'delete')),
+                            )
+                            .finally(() => setDeletingId(null));
+                        }}
+                        className="p-2.5 rounded-xl border border-kado-red/20 text-kado-red hover:bg-kado-red/10 disabled:opacity-50"
+                        aria-label="Delete"
+                      >
+                        {deletingId === b.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  {branchHasCoords && (
+                    <div className="space-y-2">
+                      <div className="rounded-xl overflow-hidden border dash-border">
+                        <iframe
+                          title={`Map of ${b.name}`}
+                          src={branchOsmEmbedUrl(b.lat!, b.lng!)}
+                          className="w-full h-36"
+                          style={{ border: 0 }}
+                        />
+                      </div>
+                      <a
+                        href={branchGoogleMapsUrl(b.lat!, b.lng!)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-kado-red hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        View on Maps
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

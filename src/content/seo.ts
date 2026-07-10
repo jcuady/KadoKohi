@@ -257,7 +257,7 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
   },
   {
     path: '/blog',
-    title: 'Kado Kohi Blog | Community Runs & Events',
+    title: 'Kado Kohi Features | Community Runs & Events',
     description:
       'Stories from Kado Kohi — Kado Run community mornings, tambayan nights, mobile booth season, and cafe updates in Marikina.',
   },
@@ -303,7 +303,7 @@ export const SEO_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/book/coffee-cart', name: 'Coffee Cart Bookings' },
   { path: '/book/matcha-bar', name: 'Matcha Bar Bookings' },
   { path: '/careers', name: 'Careers' },
-  { path: '/blog', name: 'Blog' },
+  { path: '/blog', name: 'Features' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About' },
   { path: '/contact', name: 'Contact' },
