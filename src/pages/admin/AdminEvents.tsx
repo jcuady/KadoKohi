@@ -7,6 +7,7 @@ import { newId } from '../../lib/id';
 import {
   eventDurationLabel,
   eventImages,
+  eventMatchesBranchFilter,
   signupClosesBeforeEventStart,
   signupDaysBeforeFromCloses,
 } from '../../lib/eventTiming';
@@ -14,6 +15,7 @@ import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { useEventFormStore } from '../../store/eventFormStore';
 import EventFormBuilder from '../../components/admin/EventFormBuilder';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Badge } from '../../components/ui/badge';
 import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users, FileText, CalendarDays } from 'lucide-react';
 
 type EventsTab = 'events' | 'forms' | 'submissions';
@@ -70,6 +72,10 @@ export default function AdminEvents() {
   const updateEvent = useEventStore((s) => s.updateEvent);
   const removeEvent = useEventStore((s) => s.removeEvent);
   const branches = useBranchStore((s) => s.branches);
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.status === 'active'),
+    [branches],
+  );
   const formTemplates = useEventFormStore((s) => s.forms);
   const formsHydrated = useEventFormStore((s) => s.hydrated);
   const hydrateFormTemplates = useEventFormStore((s) => s.hydrateFromRemote);
@@ -85,6 +91,7 @@ export default function AdminEvents() {
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [branchFilter, setBranchFilter] = useState<string>('all');
 
   const loadCounts = () => {
     void orderingRepo.fetchEventRegistrationCounts().then(setRegCounts).catch(() => {});
@@ -261,6 +268,17 @@ export default function AdminEvents() {
     });
   }, [allRegistrations, registrationEventFilter, registrationQuery]);
 
+  const branchName = (id?: string | null) =>
+    branches.find((b) => b.id === id)?.name ?? 'All branches';
+
+  const filteredEvents = useMemo(() => {
+    if (branchFilter === 'all') return events;
+    return events.filter((evt) => eventMatchesBranchFilter(evt, branchFilter));
+  }, [events, branchFilter]);
+
+  const branchFilterLabel =
+    branchFilter === 'all' ? 'All branches' : branchName(branchFilter);
+
   return (
     <div className="dash-page max-w-5xl space-y-6 pb-16">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -310,11 +328,38 @@ export default function AdminEvents() {
 
         {tab === 'events' ? (
           <section className="space-y-3" aria-label="Event listings">
-            {events.length === 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs dash-muted">
+                Showing {filteredEvents.length} of {events.length} · {branchFilterLabel}
+              </p>
+              <div className="flex items-center gap-2 rounded-xl border dash-border dash-input px-3 py-2">
+                <select
+                  value={branchFilter}
+                  onChange={(e) => setBranchFilter(e.target.value)}
+                  className="min-w-[9rem] bg-transparent text-[10px] font-bold uppercase tracking-wider outline-none"
+                  aria-label="Filter events by branch"
+                >
+                  <option value="all">All branches</option>
+                  {activeBranches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {filteredEvents.length === 0 ? (
               <div className="rounded-2xl dash-card-alt border dash-border p-10 text-center">
                 <CalendarDays className="mx-auto mb-3 h-10 w-10 dash-muted" aria-hidden />
-                <p className="font-display font-bold dash-heading">No events yet</p>
-                <p className="dash-muted mt-1 text-sm">Create your first listing for the public /events page.</p>
+                <p className="font-display font-bold dash-heading">
+                  {events.length === 0 ? 'No events yet' : `No events for ${branchFilterLabel}`}
+                </p>
+                <p className="dash-muted mt-1 text-sm">
+                  {events.length === 0
+                    ? 'Create your first listing for the public /events page.'
+                    : 'Try another branch filter or create a new listing.'}
+                </p>
+                {events.length === 0 ? (
                 <button
                   type="button"
                   onClick={startAdd}
@@ -322,10 +367,11 @@ export default function AdminEvents() {
                 >
                   New event
                 </button>
+                ) : null}
               </div>
             ) : (
               <ul className="space-y-3">
-                {events.map((evt) => {
+                {filteredEvents.map((evt) => {
                   const thumb = eventImages(evt)[0];
                   const count = regCounts[evt.id] ?? 0;
                   return (
@@ -351,11 +397,13 @@ export default function AdminEvents() {
                               Hidden
                             </span>
                           )}
+                          <Badge variant="outline" className="text-[9px]">
+                            {evt.branchId ? branchName(evt.branchId) : 'All branches'}
+                          </Badge>
                         </div>
                         <p className="text-xs dash-muted line-clamp-2">{evt.description}</p>
                         <p className="text-[10px] dash-muted mt-1">
                           {new Date(evt.startsAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {evt.branchId ? ` · ${branches.find((b) => b.id === evt.branchId)?.name ?? evt.branchId}` : ' · All branches'}
                           {evt.signupEnabled && evt.signupClosesAt
                             ? ` · Sign-up until ${new Date(evt.signupClosesAt).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}`
                             : ''}
@@ -611,12 +659,15 @@ export default function AdminEvents() {
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 >
                   <option value="">All branches</option>
-                  {branches.map((b) => (
+                  {activeBranches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
                   ))}
                 </select>
+                <p className="mt-1.5 text-[11px] dash-muted leading-relaxed">
+                  All branches = visible at every location; pick one branch for location-specific events.
+                </p>
               </div>
 
               <div className="rounded-xl border dash-border p-4 space-y-3">

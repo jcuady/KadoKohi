@@ -23,6 +23,14 @@ import {
   showMilkChoice,
 } from '../lib/menuProductModifiers';
 import { ensureOrderReadiness } from '../lib/orderReadiness';
+import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
+import CatalogToolbar from '../components/catalog/CatalogToolbar';
+import {
+  baseProductsForFilters,
+  DEFAULT_MENU_CATALOG_FILTERS,
+  filterMenuProducts,
+  type MenuCatalogFilters,
+} from '../lib/menuCatalogFilters';
 
 type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
 
@@ -39,6 +47,7 @@ export default function Order() {
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
   const productsByCategory = useMenuStore((s) => s.productsByCategory);
+  const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const createOrder = useOrderStore((s) => s.createOrder);
   const branches = useBranchStore((s) => s.branches);
 
@@ -50,6 +59,7 @@ export default function Order() {
   );
 
   const [activeCat, setActiveCat] = useState(sortedCategories[0]?.id ?? '');
+  const [catalogFilters, setCatalogFilters] = useState<MenuCatalogFilters>(DEFAULT_MENU_CATALOG_FILTERS);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [branchId, setBranchId] = useState(activeBranches[0]?.id ?? '');
   const [guestName, setGuestName] = useState('');
@@ -68,7 +78,27 @@ export default function Order() {
     }
   }, [activeBranches, branchId]);
 
-  const list = productsByCategory(activeCat || sortedCategories[0]?.id || '');
+  useEffect(() => {
+    if (!sortedCategories.length) return;
+    if (!activeCat || !sortedCategories.some((c) => c.id === activeCat)) {
+      setActiveCat(sortedCategories[0].id);
+    }
+  }, [sortedCategories, activeCat]);
+
+  const filterCtx = useMemo(
+    () => ({ categories: sortedCategories, productsByCategory }),
+    [sortedCategories, productsByCategory],
+  );
+
+  const filtersWithCategory = useMemo(
+    () => ({ ...catalogFilters, categoryId: activeCat || sortedCategories[0]?.id || 'all' }),
+    [catalogFilters, activeCat, sortedCategories],
+  );
+
+  const list = useMemo(() => {
+    const base = baseProductsForFilters(filtersWithCategory, filterCtx);
+    return filterMenuProducts(base, filtersWithCategory, filterCtx);
+  }, [filtersWithCategory, filterCtx]);
 
   const addToCart = (product: Product) => {
     if (!isProductInStock(product)) return;
@@ -299,6 +329,27 @@ export default function Order() {
     );
   }
 
+  if (!remoteLoaded) {
+    return (
+      <div className="guest-order-page flex flex-col w-full bg-kado-cream font-sans">
+        <section className="pt-20 sm:pt-24 pb-4 px-[max(1rem,env(safe-area-inset-left))] sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <SectionHeader
+              label="Online"
+              title="Place an order"
+              subtitle="Browse the menu, add to cart, and submit your order for pickup."
+            />
+          </div>
+        </section>
+        <section className="px-[max(1rem,env(safe-area-inset-left))] sm:px-6 pb-24">
+          <div className="max-w-6xl mx-auto">
+            <CatalogPageSkeleton variant="menu" />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="guest-order-page flex flex-col w-full bg-kado-cream font-sans">
       <section className="pt-20 sm:pt-24 pb-4 px-[max(1rem,env(safe-area-inset-left))] sm:px-6 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-16 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-2">
@@ -316,6 +367,13 @@ export default function Order() {
           <form onSubmit={placeOrder}>
             <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
               <div className="lg:col-span-2 space-y-4 min-w-0">
+                <CatalogToolbar
+                  filters={catalogFilters}
+                  resultCount={list.length}
+                  onChange={(patch) => setCatalogFilters((f) => ({ ...f, ...patch }))}
+                  onClear={() => setCatalogFilters(DEFAULT_MENU_CATALOG_FILTERS)}
+                />
+
                 <div className="guest-order-category-rail -mx-4 px-4 sm:mx-0 sm:px-0 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
                   {sortedCategories.map((c) => (
                     <button
@@ -333,6 +391,11 @@ export default function Order() {
                   ))}
                 </div>
 
+                {list.length === 0 ? (
+                  <p className="text-sm text-kado-dark/55 py-8 text-center">
+                    No drinks match your search or filters. Try clearing filters above.
+                  </p>
+                ) : (
                 <div className="guest-order-product-grid">
                   {list.map((p) => {
                     const inStock = isProductInStock(p);
@@ -382,6 +445,7 @@ export default function Order() {
                     );
                   })}
                 </div>
+                )}
               </div>
 
               <div className="hidden lg:block rounded-[2rem] border border-kado-dark/10 bg-kado-offwhite p-6 h-fit sticky top-24">

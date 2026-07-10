@@ -223,10 +223,10 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
   },
   {
     path: '/events',
-    title: 'Kado Coffee Events | Tambayan Marikina',
+    title: 'Kado Coffee Events | Marikina & Greenhills',
     description:
-      'Kado Coffee events and tambayan nights in Marikina — pop-ups, community hangouts, and seasonal gatherings near Sta. Elena.',
-    keywords: routeKeywords('kado coffee events', 'coffee events marikina'),
+      'Kado Coffee events and tambayan nights in Marikina and Greenhills — pop-ups, community hangouts, and seasonal gatherings.',
+    keywords: routeKeywords('kado coffee events', 'coffee events marikina', 'coffee events greenhills'),
   },
   {
     path: '/book/coffee-cart',

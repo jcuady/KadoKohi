@@ -235,7 +235,7 @@ export default function OrderTrackingPanel({
           )}
         </motion.div>
 
-        <h1 className="font-display text-2xl sm:text-[1.65rem] font-black text-kado-dark text-center mb-2 leading-tight">
+        <h1 className="font-display text-2xl sm:text-[1.65rem] font-black qr-text text-center mb-2 leading-tight">
           {headline}
         </h1>
         <p className="text-[var(--qr-text-muted)] text-sm text-center mb-4 leading-relaxed">{sub}</p>
@@ -280,9 +280,9 @@ export default function OrderTrackingPanel({
         )}
 
         {!isCancelled && (
-          <div className="rounded-2xl border border-kado-dark/10 bg-white p-5 sm:p-6 mb-4">
+          <div className="qr-surface-card rounded-2xl p-5 sm:p-6 mb-4">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-kado-dark/45">
+              <p className="qr-text-subtle text-[10px] font-black uppercase tracking-widest">
                 Order status
               </p>
               {!isCompleted && (

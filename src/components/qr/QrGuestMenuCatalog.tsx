@@ -4,6 +4,7 @@ import type { Product } from '../../types/domain';
 import type { QrGuestMenuSection } from '../../lib/qrGuestMenu';
 import { formatPhp } from '../../lib/money';
 import { getProductDescription } from '../../lib/productImage';
+import { isIcedOnlyDrink } from '../../lib/menuProductModifiers';
 import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 
@@ -59,7 +60,7 @@ export default function QrGuestMenuCatalog({
 
   if (!sections.length) {
     return (
-      <p className="text-center text-sm text-kado-dark/50 py-12">
+      <p className="qr-text-muted text-center text-sm py-12">
         No drinks available right now. Please ask staff.
       </p>
     );
@@ -79,19 +80,24 @@ export default function QrGuestMenuCatalog({
           data-category-id={section.id}
           id={`qr-cat-${section.id}`}
           aria-labelledby={`qr-cat-heading-${section.id}`}
-          className="scroll-mt-[9.5rem] sm:scroll-mt-[10.5rem]"
+          className="scroll-mt-[var(--qr-menu-scroll-anchor,10.5rem)] sm:scroll-mt-[var(--qr-menu-scroll-anchor,11rem)] qr-menu-section-anchor"
         >
-          <h2
-            id={`qr-cat-heading-${section.id}`}
-            className={`font-display text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] mb-2 px-0.5 ${
-              activeCategoryId === section.id ? 'text-kado-red' : 'text-kado-dark/55'
-            }`}
-          >
-            {section.name}
-          </h2>
+          <div className="mb-2 flex items-baseline justify-between gap-2 px-0.5">
+            <h2
+              id={`qr-cat-heading-${section.id}`}
+              className={`font-display text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] ${
+                activeCategoryId === section.id ? 'text-kado-red' : 'qr-text-subtle'
+              }`}
+            >
+              {section.name}
+            </h2>
+            <span className="qr-text-subtle shrink-0 text-[9px] font-bold uppercase tracking-wider opacity-80">
+              {section.products.length}
+            </span>
+          </div>
           <div className="guest-order-product-grid">
             {section.products.map((p) => {
-              const tag = p.tags?.[0];
+              const tag = isIcedOnlyDrink(p) ? 'Iced only' : p.tags?.[0];
               const inStock = isProductInStock(p);
               const i = itemIndex++;
               return (
@@ -103,13 +109,13 @@ export default function QrGuestMenuCatalog({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.02, 0.18) }}
                   onClick={() => inStock && onSelectProduct(p)}
-                  className={`text-left bg-white border border-kado-dark/8 rounded-xl overflow-hidden transition-all touch-manipulation flex flex-col h-full ${
+                  className={`qr-surface-card text-left rounded-xl overflow-hidden transition-all touch-manipulation flex flex-col h-full ${
                     inStock
                       ? 'hover:border-kado-red/25 active:scale-[0.98]'
                       : 'opacity-55 cursor-not-allowed'
                   }`}
                 >
-                  <div className="relative aspect-square bg-kado-dark/5 shrink-0">
+                  <div className="relative aspect-square qr-image-placeholder shrink-0">
                     <MenuProductImage
                       product={p}
                       alt={p.name}
@@ -122,7 +128,7 @@ export default function QrGuestMenuCatalog({
                       </span>
                     ) : (
                       tag && (
-                        <span className="absolute top-1 left-1 text-[6px] font-black uppercase tracking-widest bg-kado-dark/85 text-white px-1 py-0.5 rounded-full max-w-[calc(100%-0.5rem)] truncate">
+                        <span className="absolute top-1 left-1 text-[6px] font-black uppercase tracking-widest qr-badge-tag px-1 py-0.5 rounded-full max-w-[calc(100%-0.5rem)] truncate">
                           {tag}
                         </span>
                       )
@@ -130,14 +136,14 @@ export default function QrGuestMenuCatalog({
                   </div>
                   <div className="p-1.5 sm:p-2 flex flex-col flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-0.5">
-                      <h3 className="font-display font-bold text-[10px] sm:text-xs text-kado-dark line-clamp-2 leading-tight">
+                      <h3 className="font-display font-bold text-[10px] sm:text-xs qr-text line-clamp-2 leading-tight">
                         {p.name}
                       </h3>
                       <span className="font-black text-[10px] sm:text-xs text-kado-red shrink-0">
                         {formatPhp(p.basePrice)}
                       </span>
                     </div>
-                    <p className="hidden sm:block text-[9px] text-kado-dark/40 line-clamp-1 leading-snug mt-0.5">
+                    <p className="hidden sm:block qr-text-subtle text-[9px] line-clamp-1 leading-snug mt-0.5">
                       {getProductDescription(p)}
                     </p>
                   </div>

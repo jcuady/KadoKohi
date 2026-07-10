@@ -1,6 +1,6 @@
 /** Page numbers + ellipses for catalog grids (Menu / Merch). */
 
-export const PRODUCT_GRID_PAGE_SIZE = 8;
+export const PRODUCT_GRID_PAGE_SIZE = 12;
 
 export function getPaginationItems(
   current: number,
@@ -22,23 +22,47 @@ export function getPaginationItems(
 interface ProductGridPaginationProps {
   page: number;
   totalPages: number;
+  totalItems?: number;
+  pageSize?: number;
   onPageChange: (page: number) => void;
   className?: string;
+}
+
+export function paginationRangeLabel(
+  page: number,
+  pageSize: number,
+  totalItems: number,
+): string | null {
+  if (totalItems <= 0) return null;
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+  return `Showing ${start}–${end} of ${totalItems}`;
 }
 
 export default function ProductGridPagination({
   page,
   totalPages,
+  totalItems,
+  pageSize = PRODUCT_GRID_PAGE_SIZE,
   onPageChange,
   className = '',
 }: ProductGridPaginationProps) {
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1 && !totalItems) return null;
 
   const items = getPaginationItems(page, totalPages);
+  const rangeLabel =
+    totalItems != null ? paginationRangeLabel(page, pageSize, totalItems) : null;
 
   return (
+    <div className={`mt-8 md:mt-10 space-y-3 ${className}`}>
+      {rangeLabel ? (
+        <p className="text-center text-[10px] font-bold uppercase tracking-wider text-kado-dark/45">
+          {rangeLabel}
+        </p>
+      ) : null}
+      {totalPages <= 1 ? null : (
     <nav
-      className={`mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-1.5 md:gap-2 ${className}`}
+      className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2"
       aria-label="Pagination"
     >
       <button
@@ -85,5 +109,7 @@ export default function ProductGridPagination({
         ›
       </button>
     </nav>
+      )}
+    </div>
   );
 }

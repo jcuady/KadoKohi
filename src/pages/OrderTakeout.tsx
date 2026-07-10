@@ -20,12 +20,21 @@ import { buildTrackedOrderSnapshot } from '../lib/guestOrderSnapshot';
 import QrProductSheet, { type QrCartPayload } from '../components/qr/QrProductSheet';
 import QrStickyCart from '../components/qr/QrStickyCart';
 import QrGuestMenuCatalog from '../components/qr/QrGuestMenuCatalog';
+import QrGuestFilteredCatalog from '../components/qr/QrGuestFilteredCatalog';
 import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
+import QrCatalogToolbar from '../components/catalog/QrCatalogToolbar';
+import QrMenuSkeleton from '../components/catalog/QrMenuSkeleton';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import { Store } from 'lucide-react';
-import { qrPillClass } from '../lib/qrGuestTheme';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import { qrGuestCategoryTabs, qrGuestMenuSections } from '../lib/qrGuestMenu';
+import {
+  DEFAULT_MENU_CATALOG_FILTERS,
+  filterMenuProducts,
+  flattenMenuProducts,
+  hasQrFilteredBrowse,
+  type MenuCatalogFilters,
+} from '../lib/menuCatalogFilters';
 
 export default function OrderTakeout() {
   const user = useAuthStore((s) => s.user);
@@ -65,6 +74,8 @@ export default function OrderTakeout() {
   const [syncing, setSyncing] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
+  const [catalogFilters, setCatalogFilters] = useState<MenuCatalogFilters>(DEFAULT_MENU_CATALOG_FILTERS);
+  const [filterPage, setFilterPage] = useState(1);
   const [trackedLabel, setTrackedLabel] = useState('');
   const [orderError, setOrderError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
@@ -110,6 +121,22 @@ export default function OrderTakeout() {
     () => qrGuestMenuSections(categories, products, productsByCategory),
     [categories, products, productsByCategory],
   );
+
+  const filterCtx = useMemo(
+    () => ({ categories, productsByCategory }),
+    [categories, productsByCategory],
+  );
+
+  const filteredProducts = useMemo(() => {
+    const base = flattenMenuProducts(filterCtx);
+    return filterMenuProducts(base, catalogFilters, filterCtx);
+  }, [catalogFilters, filterCtx]);
+
+  const qrFilteredMode = hasQrFilteredBrowse(catalogFilters);
+
+  useEffect(() => {
+    setFilterPage(1);
+  }, [catalogFilters]);
 
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
   const cartTotals = useMemo(
@@ -212,23 +239,23 @@ export default function OrderTakeout() {
 
   const mainPaddingBottom = guestOrderMainPadding(cartExpanded, cart.length > 0);
 
-  if (!menuReady || !bootstrapped) {
+  if (!bootstrapped) {
     return (
-      <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-kado-dark/15 border-t-kado-red" />
+      <div className="qr-root min-h-[100dvh] bg-[var(--qr-bg)] text-[var(--qr-text)] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--qr-border)] border-t-kado-red" />
       </div>
     );
   }
 
   if (!branch) {
     return (
-      <div className="min-h-[100dvh] bg-[#FAF7F2] flex items-center justify-center px-6 py-16 text-center">
+      <div className="qr-root min-h-[100dvh] bg-[var(--qr-bg)] text-[var(--qr-text)] flex items-center justify-center px-6 py-16 text-center">
         <div className="max-w-sm">
           <Store className="w-12 h-12 text-kado-red/40 mx-auto mb-4" />
-          <h1 className="font-display text-2xl sm:text-3xl font-black text-kado-dark mb-2">
+          <h1 className="font-display text-2xl sm:text-3xl font-black mb-2">
             Branch not found
           </h1>
-          <p className="text-kado-dark/60 text-sm mb-6">
+          <p className="qr-text-muted text-sm mb-6">
             {branchSlug
               ? `No active branch matches “${branchSlug}”. Use the takeout QR from Admin → Tables & QR.`
               : 'Add ?b=your-branch-slug to the URL or scan a branch takeout QR.'}
@@ -291,15 +318,15 @@ export default function OrderTakeout() {
 
         {!catalogOrderable && menuDataSource === 'seed' && (
           <div className="max-w-3xl mx-auto px-4 pb-3">
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-              <p className="text-xs text-amber-900 flex-1">
+            <div className="qr-seed-banner rounded-xl px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+              <p className="text-xs flex-1">
                 {hydrateError ?? 'Connecting menu to the shop…'}
               </p>
               <button
                 type="button"
                 onClick={() => void runSync()}
                 disabled={syncing}
-                className="shrink-0 min-h-[40px] rounded-lg bg-white border border-amber-300 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-900 touch-manipulation disabled:opacity-50"
+                className="qr-field shrink-0 min-h-[40px] rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider touch-manipulation disabled:opacity-50"
               >
                 {syncing ? 'Syncing…' : 'Retry sync'}
               </button>
@@ -307,31 +334,26 @@ export default function OrderTakeout() {
           </div>
         )}
 
-        <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 pb-2">
-          <div className="guest-order-category-rail w-full pb-0.5 pr-[max(1rem,env(safe-area-inset-right))] sm:pr-0">
-            {categoryTabs.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  setActiveCat(c.id);
-                  document.getElementById(`qr-cat-${c.id}`)?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
-                  });
-                }}
-                className={qrPillClass(activeCat === c.id)}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <QrCatalogToolbar
+          filters={catalogFilters}
+          categoryTabs={categoryTabs}
+          activeCategoryId={activeCat}
+          resultCount={qrFilteredMode ? filteredProducts.length : menuSections.reduce((n, s) => n + s.products.length, 0)}
+          onFiltersChange={(patch) => setCatalogFilters((f) => ({ ...f, ...patch }))}
+          onClearFilters={() => setCatalogFilters(DEFAULT_MENU_CATALOG_FILTERS)}
+          onCategoryPillClick={(id) => {
+            setActiveCat(id);
+            document.getElementById(`qr-cat-${id}`)?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            });
+          }}
+        />
       </header>
 
       <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-2 sm:py-4 [@media(orientation:landscape)_and_(max-height:30rem)]:py-1.5 ${mainPaddingBottom}`}>
-        <div className="mb-3 rounded-xl border border-kado-dark/8 bg-white p-3">
-          <label className="block text-[9px] font-black uppercase tracking-widest text-kado-dark/45 mb-1.5">
+        <div className="qr-surface-card mb-3 rounded-xl p-3">
+          <label className="qr-text-subtle mb-1.5 block text-[9px] font-black uppercase tracking-widest">
             Your name (for pickup)
           </label>
           <input
@@ -342,16 +364,27 @@ export default function OrderTakeout() {
             }}
             placeholder="e.g. Juan"
             maxLength={80}
-            className="w-full rounded-lg border border-kado-dark/12 bg-[#FAF7F2] px-3 py-2.5 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-kado-red/30 touch-manipulation"
+            className="qr-field w-full rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-kado-red/30 touch-manipulation"
           />
         </div>
 
-        <QrGuestMenuCatalog
-          sections={menuSections}
-          activeCategoryId={activeCat}
-          onActiveCategoryChange={setActiveCat}
-          onSelectProduct={setSelectedProduct}
-        />
+        {!menuReady ? (
+          <QrMenuSkeleton />
+        ) : qrFilteredMode ? (
+          <QrGuestFilteredCatalog
+            products={filteredProducts}
+            page={filterPage}
+            onPageChange={setFilterPage}
+            onSelectProduct={setSelectedProduct}
+          />
+        ) : (
+          <QrGuestMenuCatalog
+            sections={menuSections}
+            activeCategoryId={activeCat}
+            onActiveCategoryChange={setActiveCat}
+            onSelectProduct={setSelectedProduct}
+          />
+        )}
       </main>
 
       <QrStickyCart

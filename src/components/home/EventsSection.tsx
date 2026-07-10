@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { CalendarDays, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEventStore } from '../../store/eventStore';
+import { useBranchStore } from '../../store/branchStore';
 import { hydrateEvents } from '../../lib/bootstrapHydration';
 import { useCountdown } from '../../hooks/useCountdown';
 import {
@@ -28,6 +29,7 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
   const updateEvents = useLandingContentStore((s) => s.updateEvents);
   const events = useEventStore((s) => s.events);
   const eventsHydrated = useEventStore((s) => s.hydrated);
+  const branches = useBranchStore((s) => s.branches);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -39,6 +41,11 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
   }, [events.length]);
 
   const ev = useMemo(() => pickCurrentOrUpcoming(events), [events]);
+  const eventBranch = ev?.branchId ? branches.find((b) => b.id === ev.branchId) : null;
+  const branchLabel = eventBranch?.name ?? null;
+  const eventsListHref = eventBranch?.slug
+    ? `/events?branch=${encodeURIComponent(eventBranch.slug)}`
+    : '/events';
   const signupPhase = ev ? getEventSignupPhase(ev, regCounts[ev.id] ?? 0) : 'disabled';
   const lifecycle = ev ? getEventLifecyclePhase(ev) : 'upcoming';
   const countdownTarget = useMemo(() => {
@@ -51,7 +58,10 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
   const heroImage = copy.coverImageOverride?.trim() || (ev ? eventImages(ev)[0] : '') || FALLBACK_EVENT_IMG;
   const coverSrc = copy.coverImageOverride?.trim() || heroImage;
   const durationLabel = ev ? eventDurationLabel(ev) : null;
-  const ctaHref = ev && signupPhase === 'open' ? `/events?event=${encodeURIComponent(ev.id)}#event-${ev.id}` : '/events';
+  const ctaHref =
+    ev && signupPhase === 'open'
+      ? `/events?event=${encodeURIComponent(ev.id)}#event-${ev.id}`
+      : eventsListHref;
   const ctaLabel =
     ev && signupPhase === 'open'
       ? (ev.cta?.label?.trim() || 'Sign up now')
@@ -199,6 +209,11 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                   transition={{ delay: 0.1 }}
                 >
                   <h3 className="mb-3 kado-h3 leading-[1.12] text-kado-offwhite sm:mb-4 lg:mb-6">{ev.title}</h3>
+                  {branchLabel ? (
+                    <span className="mb-3 inline-flex rounded-full border border-kado-cream/30 bg-kado-cream/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-kado-cream">
+                      {branchLabel}
+                    </span>
+                  ) : null}
                   <p className="kado-body mb-6 line-clamp-6 leading-relaxed text-kado-cream/90 sm:mb-8 sm:line-clamp-none md:text-base">
                     {ev.description}
                   </p>

@@ -1,4 +1,6 @@
-import type { Event } from '../types/domain';
+import type { Branch, Event } from '../types/domain';
+
+export type EventBranchFilter = 'all' | string;
 
 export type EventLifecyclePhase = 'upcoming' | 'current' | 'past';
 
@@ -40,9 +42,52 @@ export function signupCountdownTarget(evt: Event, phase: EventSignupPhase): stri
   return undefined;
 }
 
+/** Inclusive branch filter: specific branch shows branch events + network-wide (null branchId). */
+export function eventMatchesBranchFilter(event: Event, branchFilter: EventBranchFilter): boolean {
+  if (branchFilter === 'all') return true;
+  return !event.branchId || event.branchId === branchFilter;
+}
+
+/** Resolve ?branch= slug or id to a branch id; invalid values fall back to 'all'. */
+export function resolveEventBranchFilter(
+  slugOrId: string | null | undefined,
+  branches: Branch[],
+): EventBranchFilter {
+  const raw = slugOrId?.trim().toLowerCase();
+  if (!raw || raw === 'all') return 'all';
+  const active = branches.filter((b) => b.status === 'active');
+  const bySlug = active.find((b) => b.slug.toLowerCase() === raw);
+  if (bySlug) return bySlug.id;
+  const byId = active.find((b) => b.id.toLowerCase() === raw);
+  if (byId) return byId.id;
+  return 'all';
+}
+
+export function branchSlugFromFilter(
+  branchFilter: EventBranchFilter,
+  branches: Branch[],
+): string | null {
+  if (branchFilter === 'all') return null;
+  return branches.find((b) => b.id === branchFilter)?.slug ?? null;
+}
+
+type PickCurrentOrUpcomingOptions = {
+  branchFilter?: EventBranchFilter;
+  now?: number;
+};
+
 /** Homepage priority: current first, otherwise nearest upcoming. */
-export function pickCurrentOrUpcoming(events: Event[], now = Date.now()): Event | undefined {
-  const visible = events.filter((e) => e.visible);
+export function pickCurrentOrUpcoming(
+  events: Event[],
+  options: PickCurrentOrUpcomingOptions | number = {},
+): Event | undefined {
+  const opts: PickCurrentOrUpcomingOptions =
+    typeof options === 'number' ? { now: options } : options;
+  const now = opts.now ?? Date.now();
+  const branchFilter = opts.branchFilter ?? 'all';
+  const visible = events
+    .filter((e) => e.visible)
+    .filter((e) => eventMatchesBranchFilter(e, branchFilter));
   const current = visible
     .filter((e) => getEventLifecyclePhase(e, now) === 'current')
     .sort((a, b) => {

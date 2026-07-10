@@ -7,11 +7,15 @@ import EventSignupCountdown from '../components/events/EventSignupCountdown';
 import EventSignupModal from '../components/events/EventSignupModal';
 import { useSearchParams } from 'react-router-dom';
 import {
+  branchSlugFromFilter,
   eventDurationLabel,
   eventImages,
+  eventMatchesBranchFilter,
   getEventLifecyclePhase,
   getEventSignupPhase,
+  resolveEventBranchFilter,
   signupCountdownTarget,
+  type EventBranchFilter,
   type EventLifecyclePhase,
 } from '../lib/eventTiming';
 import type { Event } from '../types/domain';
@@ -64,18 +68,46 @@ export default function Events() {
     [allEvents],
   );
 
+  const branches = useBranchStore((s) => s.branches);
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.status === 'active'),
+    [branches],
+  );
+
+  const branchFilter = useMemo(
+    () => resolveEventBranchFilter(searchParams.get('branch'), branches),
+    [searchParams, branches],
+  );
+
+  const setBranchFilter = (next: EventBranchFilter) => {
+    const params = new URLSearchParams(searchParams);
+    const slug = branchSlugFromFilter(next, branches);
+    if (slug) params.set('branch', slug);
+    else params.delete('branch');
+    setSearchParams(params, { replace: true });
+  };
+
+  const branchName = (id?: string | null) => branches.find((b) => b.id === id)?.name ?? 'All branches';
+  const branchFilterLabel =
+    branchFilter === 'all' ? 'All branches' : branchName(branchFilter);
+
+  const branchFiltered = useMemo(
+    () => visible.filter((e) => eventMatchesBranchFilter(e, branchFilter)),
+    [visible, branchFilter],
+  );
+
   const filtered = useMemo(() => {
     const phase: EventLifecyclePhase = tab;
-    return visible.filter((e) => getEventLifecyclePhase(e) === phase);
-  }, [visible, tab]);
+    return branchFiltered.filter((e) => getEventLifecyclePhase(e) === phase);
+  }, [branchFiltered, tab]);
 
   useEffect(() => {
-    if (visible.some((e) => getEventLifecyclePhase(e) === 'current')) {
+    if (branchFiltered.some((e) => getEventLifecyclePhase(e) === 'current')) {
       setTab('current');
     } else {
       setTab('upcoming');
     }
-  }, [visible]);
+  }, [branchFiltered]);
 
   useEffect(() => {
     const eventId = searchParams.get('event');
@@ -91,8 +123,14 @@ export default function Events() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams, visible, regCounts]);
 
-  const branches = useBranchStore((s) => s.branches);
-  const branchName = (id?: string | null) => branches.find((b) => b.id === id)?.name ?? 'All branches';
+  const lifecycleEmptyMessage =
+    tab === 'upcoming'
+      ? branchFilter === 'all'
+        ? 'No upcoming events right now. Check back soon!'
+        : `No upcoming events for ${branchFilterLabel} right now. Check back soon!`
+      : branchFilter === 'all'
+        ? 'No events happening right now.'
+        : `No events happening at ${branchFilterLabel} right now.`;
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
@@ -105,10 +143,10 @@ export default function Events() {
             Kado Coffee Events
           </h1>
           <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Event coffee, tambayan nights, and community gatherings at Kado Coffee (Kado Kohi) in Marikina.
+            Event coffee, tambayan nights, and community gatherings at Kado Coffee — Marikina &amp; Greenhills.
           </p>
 
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-2 mt-8 flex-wrap">
             {(['upcoming', 'current'] as const).map((key) => (
               <button
                 key={key}
@@ -124,17 +162,41 @@ export default function Events() {
               </button>
             ))}
           </div>
+
+          <div className="flex justify-center gap-2 mt-4 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setBranchFilter('all')}
+              className={`min-h-[40px] px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                branchFilter === 'all'
+                  ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
+                  : 'bg-white border border-kado-dark/15 text-kado-dark/60 hover:border-kado-red/40'
+              }`}
+            >
+              All branches
+            </button>
+            {activeBranches.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setBranchFilter(b.id)}
+                className={`min-h-[40px] px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                  branchFilter === b.id
+                    ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
+                    : 'bg-white border border-kado-dark/15 text-kado-dark/60 hover:border-kado-red/40'
+                }`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
           {filtered.length === 0 ? (
-            <p className="text-center text-kado-dark/55 text-sm font-medium py-12">
-              {tab === 'upcoming'
-                ? 'No upcoming events right now. Check back soon!'
-                : 'No events happening right now.'}
-            </p>
+            <p className="text-center text-kado-dark/55 text-sm font-medium py-12">{lifecycleEmptyMessage}</p>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
               {filtered.map((evt) => (
@@ -142,6 +204,7 @@ export default function Events() {
                   key={evt.id}
                   evt={evt}
                   branchLabel={branchName(evt.branchId)}
+                  branchHighlighted={branchFilter !== 'all' && Boolean(evt.branchId)}
                   registrationCount={regCounts[evt.id] ?? 0}
                   onSignUp={() => setSignupEvent(evt)}
                 />
@@ -163,6 +226,7 @@ export default function Events() {
 type EventCardProps = {
   evt: Event;
   branchLabel: string;
+  branchHighlighted?: boolean;
   registrationCount: number;
   onSignUp: () => void;
 };
@@ -170,6 +234,7 @@ type EventCardProps = {
 const EventCard: FC<EventCardProps> = ({
   evt,
   branchLabel,
+  branchHighlighted = false,
   registrationCount,
   onSignUp,
 }) => {
@@ -228,7 +293,9 @@ const EventCard: FC<EventCardProps> = ({
               Duration: {durationLabel}
             </span>
           )}
-          <span className="flex items-center gap-2">
+          <span
+            className={`flex items-center gap-2 ${branchHighlighted ? 'text-kado-red' : ''}`}
+          >
             <MapPin className="w-4 h-4 text-kado-red" />
             {branchLabel}
           </span>

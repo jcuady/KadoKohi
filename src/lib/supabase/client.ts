@@ -46,6 +46,7 @@ export const guestSupabase = isSupabaseConfigured
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
+        storageKey: `sb-${KADO_SUPABASE_PROJECT_REF}-guest-auth-token`,
       },
     })
   : null;

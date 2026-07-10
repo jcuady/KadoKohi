@@ -15,29 +15,63 @@ export function isCustomerFacingPath(pathname: string): boolean {
   return !isInternalPortalPath(pathname);
 }
 
-/** Customer-facing routes always use brand light mode (cream / red / dark text). */
+/** Standalone guest ordering (mobile QR scan) — respects OS light/dark. */
+export function isQrGuestOrderPath(pathname: string): boolean {
+  return pathname.startsWith('/order/qr/') || pathname === '/order/takeout';
+}
+
+function applyQrThemeColor(): void {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  meta.setAttribute('content', dark ? '#191919' : '#faf7f2');
+}
+
+/** Customer-facing routes use brand light mode; QR/takeout also adapts to OS dark mode. */
 export function usePublicLightDocumentTheme(): void {
   const { pathname } = useLocation();
-  const internal = isInternalPortalPath(pathname);
-  const customerFacing = isCustomerFacingPath(pathname);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (internal) {
-      root.classList.remove('public-light', 'customer-facing');
+    const internal = isInternalPortalPath(pathname);
+    const customerFacing = isCustomerFacingPath(pathname);
+    const qrAdaptive = isQrGuestOrderPath(pathname);
+
+    const cleanup = () => {
+      root.classList.remove('public-light', 'customer-facing', 'qr-adaptive-theme');
       root.style.colorScheme = '';
-      return;
+    };
+
+    if (internal) {
+      cleanup();
+      return cleanup;
     }
+
     root.classList.remove('dash-dark');
     root.classList.add('public-light');
     if (customerFacing) root.classList.add('customer-facing');
     else root.classList.remove('customer-facing');
-    root.style.colorScheme = 'light';
+
+    let mq: MediaQueryList | null = null;
+    let onScheme: (() => void) | null = null;
+
+    if (qrAdaptive) {
+      root.classList.add('qr-adaptive-theme');
+      root.style.colorScheme = 'light dark';
+      applyQrThemeColor();
+      mq = window.matchMedia('(prefers-color-scheme: dark)');
+      onScheme = () => applyQrThemeColor();
+      mq.addEventListener('change', onScheme);
+    } else {
+      root.classList.remove('qr-adaptive-theme');
+      root.style.colorScheme = 'light';
+    }
+
     return () => {
-      root.classList.remove('public-light', 'customer-facing');
-      root.style.colorScheme = '';
+      if (mq && onScheme) mq.removeEventListener('change', onScheme);
+      cleanup();
     };
-  }, [internal, customerFacing]);
+  }, [pathname]);
 }
 
 export function useDashTheme(): { isDark: boolean; theme: DashTheme; toggle: () => void } {

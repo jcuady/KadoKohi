@@ -78,7 +78,13 @@ export default function CatalogPageSkeleton({
   return (
     <>
       <section className={tabsSectionClass} aria-busy="true" aria-label="Loading categories">
-        <div className="mx-auto max-w-6xl min-w-0">
+        <div className="mx-auto max-w-6xl min-w-0 space-y-3">
+          <Skeleton className="h-11 w-full rounded-full md:max-w-xl" />
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-10 w-28 rounded-full" />
+            <Skeleton className="h-10 w-32 rounded-full" />
+            <Skeleton className="h-10 w-24 rounded-full" />
+          </div>
           {variant === 'menu' ? (
             <MenuCategoryTabsSkeleton count={categoryCount} />
           ) : (

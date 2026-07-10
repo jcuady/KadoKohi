@@ -7,16 +7,30 @@ import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
+import CatalogToolbar from '../components/catalog/CatalogToolbar';
 import MenuProductImage from '../components/catalog/MenuProductImage';
 import type { Product } from '../types/domain';
 import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { isIcedOnlyDrink, productFallbackDescription } from '../lib/menuProductModifiers';
 import {
+  baseProductsForFilters,
+  DEFAULT_MENU_CATALOG_FILTERS,
+  filterMenuProducts,
+  hasActiveMenuFilters,
+  parseMenuCatalogFilters,
+  parseMenuPage,
+  shouldPaginateMenuCatalog,
+  writeMenuCatalogFilters,
+  type MenuCatalogFilters,
+} from '../lib/menuCatalogFilters';
+import {
   findVisibleMenuProduct,
   menuProductDomId,
   pageForProductInList,
 } from '../lib/menuDeepLink';
+
+const ALL_CATEGORY_ID = 'all';
 
 function categoryIcon(categoryId: string, categoryName?: string): React.ReactNode {
   if (categoryName?.trim().toLowerCase() === 'pastries') {
@@ -54,27 +68,43 @@ export default function Menu() {
     [categories],
   );
 
-  const [activeCategoryId, setActiveCategoryId] = useState<string>(
-    () => sortedCategories[0]?.id ?? '',
+  const filters = useMemo(() => parseMenuCatalogFilters(searchParams), [searchParams]);
+  const page = parseMenuPage(searchParams);
+
+  const filterCtx = useMemo(
+    () => ({
+      categories: sortedCategories,
+      productsByCategory,
+    }),
+    [sortedCategories, productsByCategory],
   );
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const deepLinkHandled = useRef('');
 
-  useEffect(() => {
-    if (!sortedCategories.length) return;
-    if (!sortedCategories.some((c) => c.id === activeCategoryId)) {
-      setActiveCategoryId(sortedCategories[0].id);
-    }
-  }, [sortedCategories, activeCategoryId]);
+  const updateFilters = (patch: Partial<MenuCatalogFilters>) => {
+    const next = { ...filters, ...patch };
+    const params = writeMenuCatalogFilters(searchParams, next, 1);
+    setSearchParams(params, { replace: true });
+  };
+
+  const clearFilters = () => {
+    const params = writeMenuCatalogFilters(searchParams, DEFAULT_MENU_CATALOG_FILTERS, 1);
+    setSearchParams(params, { replace: true });
+  };
+
+  const setPage = (nextPage: number) => {
+    const params = writeMenuCatalogFilters(searchParams, filters, nextPage);
+    setSearchParams(params, { replace: true });
+  };
 
   useEffect(() => {
-    if (!remoteLoaded) return;
-    if (deepLinkCategoryId && sortedCategories.some((c) => c.id === deepLinkCategoryId)) {
-      setActiveCategoryId(deepLinkCategoryId);
+    if (!remoteLoaded || !deepLinkCategoryId || deepLinkProductId) return;
+    if (sortedCategories.some((c) => c.id === deepLinkCategoryId)) {
+      updateFilters({ categoryId: deepLinkCategoryId });
     }
-  }, [remoteLoaded, deepLinkCategoryId, sortedCategories]);
+  }, [remoteLoaded, deepLinkCategoryId, deepLinkProductId, sortedCategories]);
 
   useEffect(() => {
     if (!remoteLoaded || !deepLinkProductId) return;
@@ -83,19 +113,61 @@ export default function Menu() {
     const product = findVisibleMenuProduct(products, deepLinkProductId);
     if (!product?.categoryId) return;
 
-    const categoryItems = productsByCategory(product.categoryId);
-    const targetPage = pageForProductInList(product.id, categoryItems, PRODUCT_GRID_PAGE_SIZE);
+    const base = baseProductsForFilters(
+      { ...filters, categoryId: product.categoryId },
+      filterCtx,
+    );
+    const filtered = filterMenuProducts(base, filters, filterCtx);
+    const targetPage = pageForProductInList(product.id, filtered, PRODUCT_GRID_PAGE_SIZE);
 
     deepLinkHandled.current = deepLinkProductId;
-    setActiveCategoryId(product.categoryId);
-    if (targetPage) setPage(targetPage);
+    const params = writeMenuCatalogFilters(
+      searchParams,
+      { ...filters, categoryId: product.categoryId },
+      targetPage ?? 1,
+    );
+    setSearchParams(params, { replace: true });
     setSelectedProduct(product);
     setHighlightProductId(product.id);
-  }, [remoteLoaded, deepLinkProductId, products, productsByCategory]);
+  }, [remoteLoaded, deepLinkProductId, products, filters, filterCtx, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!deepLinkProductId) deepLinkHandled.current = '';
   }, [deepLinkProductId]);
+
+  const activeCategory = useMemo(() => {
+    if (filters.categoryId === ALL_CATEGORY_ID) return undefined;
+    return sortedCategories.find((c) => c.id === filters.categoryId);
+  }, [sortedCategories, filters.categoryId]);
+
+  const baseItems = useMemo(
+    () => baseProductsForFilters(filters, filterCtx),
+    [filters, filterCtx],
+  );
+
+  const filteredItems = useMemo(
+    () => filterMenuProducts(baseItems, filters, filterCtx),
+    [baseItems, filters, filterCtx],
+  );
+
+  const shouldPaginate = shouldPaginateMenuCatalog(
+    filters,
+    filteredItems.length,
+    PRODUCT_GRID_PAGE_SIZE,
+  );
+  const browsingFullCatalog =
+    filters.categoryId === ALL_CATEGORY_ID && !shouldPaginate && filteredItems.length > 0;
+
+  const totalPages =
+    filteredItems.length === 0 ? 1 : Math.ceil(filteredItems.length / PRODUCT_GRID_PAGE_SIZE);
+  const safePage =
+    filteredItems.length === 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+
+  const paginatedItems = useMemo(() => {
+    if (!shouldPaginate) return filteredItems;
+    const start = (safePage - 1) * PRODUCT_GRID_PAGE_SIZE;
+    return filteredItems.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
+  }, [filteredItems, safePage, shouldPaginate]);
 
   const clearMenuDeepLink = () => {
     deepLinkHandled.current = '';
@@ -103,27 +175,9 @@ export default function Menu() {
     if (!searchParams.has('product') && !searchParams.has('category')) return;
     const next = new URLSearchParams(searchParams);
     next.delete('product');
-    next.delete('category');
+    if (filters.categoryId === ALL_CATEGORY_ID) next.delete('category');
     setSearchParams(next, { replace: true });
   };
-
-  const activeCategory = useMemo(
-    () => sortedCategories.find((c) => c.id === activeCategoryId),
-    [sortedCategories, activeCategoryId],
-  );
-
-  const items = activeCategoryId ? productsByCategory(activeCategoryId) : [];
-
-  useEffect(() => {
-    setPage(1);
-  }, [activeCategoryId]);
-
-  const totalPages = items.length === 0 ? 1 : Math.ceil(items.length / PRODUCT_GRID_PAGE_SIZE);
-  const safePage = items.length === 0 ? 1 : Math.min(Math.max(1, page), totalPages);
-  const paginatedItems = useMemo(() => {
-    const start = (safePage - 1) * PRODUCT_GRID_PAGE_SIZE;
-    return items.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
-  }, [items, safePage]);
 
   useEffect(() => {
     if (!highlightProductId || highlightProductId !== deepLinkProductId) return;
@@ -139,10 +193,16 @@ export default function Menu() {
       window.clearTimeout(scrollTimer);
       window.clearTimeout(clearTimer);
     };
-  }, [highlightProductId, deepLinkProductId, paginatedItems, safePage, activeCategoryId]);
+  }, [highlightProductId, deepLinkProductId, paginatedItems, safePage, filters.categoryId]);
+
+  const emptyMessage = hasActiveMenuFilters(filters)
+    ? 'No drinks match your search or filters. Try clearing filters or another category.'
+    : filters.categoryId === ALL_CATEGORY_ID
+      ? 'No drinks on the menu yet.'
+      : 'No drinks in this category yet.';
 
   return (
-    <div className="customer-menu-page relative w-full bg-white font-sans">
+    <div className="customer-menu-page relative w-full font-sans">
       {/* Full-viewport ribbon: fixed below navbar, does not scroll with content */}
       <div
         className="hidden md:block pointer-events-none fixed left-0 top-16 bottom-0 z-[30] w-28 lg:w-40 bg-kado-red shadow-[10px_0_30px_rgba(158,24,29,0.15)] overflow-hidden"
@@ -194,15 +254,30 @@ export default function Menu() {
           <CatalogPageSkeleton variant="menu" />
         ) : (
           <>
-        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-white/95 px-4 pb-4 pt-4 backdrop-blur-md sm:px-6 sm:pt-5 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 md:pb-5 md:pt-0 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
-          <div className="mx-auto max-w-6xl min-w-0">
+        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-[#FAF9F6]/95 px-4 pb-0 pt-4 backdrop-blur-md sm:px-6 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
+          <div className="mx-auto max-w-6xl min-w-0 space-y-0">
             <div
               className="menu-category-tabs grid grid-cols-2 gap-2 sm:gap-2.5 md:flex md:flex-wrap md:items-center md:gap-3 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-4 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-1.5 [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex-wrap"
               role="tablist"
               aria-label="Menu categories"
             >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filters.categoryId === ALL_CATEGORY_ID}
+                aria-label="All items"
+                onClick={() => updateFilters({ categoryId: ALL_CATEGORY_ID })}
+                className={`flex min-h-[44px] min-w-0 touch-manipulation items-center font-black uppercase tracking-widest transition-all duration-300 ${
+                  filters.categoryId === ALL_CATEGORY_ID
+                    ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
+                    : 'border border-kado-dark/15 bg-white text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
+                } flex-col justify-center gap-1.5 rounded-2xl px-2.5 py-3 text-[9px] leading-snug text-center sm:text-[10px] md:flex-row md:justify-start md:gap-2 md:rounded-full md:px-5 md:py-2.5 md:text-[11px] md:whitespace-nowrap md:text-left`}
+              >
+                <Coffee className="w-4 h-4 shrink-0" />
+                <span>All items</span>
+              </button>
               {sortedCategories.map((cat) => {
-                const active = activeCategoryId === cat.id;
+                const active = filters.categoryId === cat.id;
                 return (
                   <button
                     key={cat.id}
@@ -210,7 +285,7 @@ export default function Menu() {
                     role="tab"
                     aria-selected={active}
                     aria-label={cat.name}
-                    onClick={() => setActiveCategoryId(cat.id)}
+                    onClick={() => updateFilters({ categoryId: cat.id })}
                     className={`flex min-h-[44px] min-w-0 touch-manipulation items-center font-black uppercase tracking-widest transition-all duration-300 ${
                       active
                         ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
@@ -224,19 +299,40 @@ export default function Menu() {
                 );
               })}
             </div>
+            <CatalogToolbar
+              filters={filters}
+              resultCount={filteredItems.length}
+              onChange={updateFilters}
+              onClear={clearFilters}
+            />
           </div>
         </section>
 
         {/* Product grid */}
         <section className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16">
           <div className="mx-auto min-w-0 max-w-6xl">
+            {browsingFullCatalog ? (
+              <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45">
+                {filteredItems.length} drink{filteredItems.length === 1 ? '' : 's'} across{' '}
+                {sortedCategories.length} categor{sortedCategories.length === 1 ? 'y' : 'ies'}
+              </p>
+            ) : null}
             {paginatedItems.length === 0 ? (
               <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 text-center">
-                <p className="text-sm font-semibold text-kado-dark/50">No drinks in this category yet.</p>
+                <p className="text-sm font-semibold text-kado-dark/50">{emptyMessage}</p>
+                {hasActiveMenuFilters(filters) ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-4 rounded-full bg-kado-dark px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-white"
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
               </div>
             ) : (
             <motion.div
-              key={`${activeCategoryId}-${safePage}`}
+              key={`${filters.categoryId}-${filters.query}-${safePage}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
@@ -320,6 +416,7 @@ export default function Menu() {
             <ProductGridPagination
               page={safePage}
               totalPages={totalPages}
+              totalItems={shouldPaginate ? filteredItems.length : undefined}
               onPageChange={setPage}
             />
           </div>
@@ -340,7 +437,10 @@ export default function Menu() {
       {/* Product detail drawer */}
       <ProductDetailDrawer
         product={selectedProduct}
-        categoryName={activeCategory?.name}
+        categoryName={
+          activeCategory?.name ??
+          sortedCategories.find((c) => c.id === selectedProduct?.categoryId)?.name
+        }
         onClose={() => {
           setSelectedProduct(null);
           clearMenuDeepLink();

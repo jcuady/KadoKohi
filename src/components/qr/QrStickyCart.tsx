@@ -73,7 +73,7 @@ export default function QrStickyCart({
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
       <div className="pointer-events-auto max-w-3xl mx-auto px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pr-4">
-        <div className="rounded-2xl border border-kado-dark/10 bg-white shadow-[0_-8px_32px_rgba(25,25,25,0.14)] overflow-hidden">
+        <div className="qr-cart-shell rounded-2xl overflow-hidden">
           {/* Collapsed summary — tap to open cart */}
           <button
             type="button"
@@ -85,10 +85,10 @@ export default function QrStickyCart({
             <div className="flex items-center gap-2 min-w-0">
               <ShoppingBag className="w-5 h-5 text-kado-red shrink-0" />
               <div className="min-w-0">
-                <p className="font-display font-bold text-sm text-kado-dark">
+                <p className="font-display font-bold text-sm qr-text">
                   {cartCount === 0 ? emptyCartTitle : `${cartCount} item${cartCount !== 1 ? 's' : ''}`}
                 </p>
-                <p className="text-[10px] text-kado-dark/45 truncate">
+                <p className="qr-text-subtle text-[10px] truncate">
                   {cartCount === 0
                     ? 'Tap a drink to add'
                     : cartExpanded
@@ -99,9 +99,9 @@ export default function QrStickyCart({
             </div>
             {hasItems &&
               (cartExpanded ? (
-                <ChevronDown className="w-5 h-5 text-kado-dark/40 shrink-0" aria-hidden />
+                <ChevronDown className="qr-text-subtle w-5 h-5 shrink-0" aria-hidden />
               ) : (
-                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-kado-dark text-kado-cream px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-kado-red text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider">
                   View cart
                   <ChevronUp className="w-3.5 h-3.5" />
                 </span>
@@ -109,12 +109,12 @@ export default function QrStickyCart({
           </button>
 
           {cartExpanded && hasItems && (
-            <div className="border-t border-kado-dark/8">
+            <div className="border-t border-[var(--qr-border)]">
               <div className="px-4 pt-3 pb-2 flex justify-center">
                 <button
                   type="button"
                   onClick={() => onCartExpandedChange(false)}
-                  className="inline-flex items-center justify-center gap-2 min-h-[44px] w-full rounded-xl border border-kado-dark/12 bg-[#FAF7F2] text-kado-dark px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider touch-manipulation hover:border-kado-red/30"
+                  className="qr-field inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider touch-manipulation hover:border-kado-red/30"
                 >
                   <UtensilsCrossed className="w-4 h-4 text-kado-red shrink-0" />
                   Order more drinks
@@ -131,7 +131,7 @@ export default function QrStickyCart({
                     return (
                       <li
                         key={line.key}
-                        className="flex gap-2 items-center rounded-xl bg-[#FAF7F2] border border-kado-dark/5 p-2.5"
+                        className="qr-line-item flex gap-2 items-center rounded-xl p-2.5"
                       >
                         <MenuProductImage
                           product={p}
@@ -140,8 +140,8 @@ export default function QrStickyCart({
                           className="w-14 h-14 rounded-lg object-cover shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-kado-dark truncate">{p.name}</p>
-                          <p className="text-[10px] text-kado-dark/45 truncate">
+                          <p className="text-xs font-bold qr-text truncate">{p.name}</p>
+                          <p className="qr-text-subtle text-[10px] truncate">
                             {[line.milkLabel, line.temperature].filter(Boolean).join(' · ')}
                           </p>
                           <p className="text-xs font-bold text-kado-red mt-0.5">{formatPhp(unit * line.qty)}</p>
@@ -150,12 +150,12 @@ export default function QrStickyCart({
                           <button
                             type="button"
                             onClick={() => onRemoveLine(line.key)}
-                            className="p-2 -m-1 text-kado-dark/35 hover:text-red-500 touch-manipulation"
+                            className="p-2 -m-1 qr-text-subtle hover:text-red-500 touch-manipulation"
                             aria-label="Remove"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                          <div className="flex items-center gap-0.5 bg-white rounded-full border border-kado-dark/10 px-0.5">
+                          <div className="flex items-center gap-0.5 qr-field rounded-full px-0.5">
                             <button
                               type="button"
                               onClick={() => onUpdateQty(line.key, line.qty - 1)}
@@ -180,7 +180,7 @@ export default function QrStickyCart({
                   })}
                 </ul>
 
-                <div className="mt-3 pt-3 border-t border-kado-dark/8 space-y-1 text-[11px] text-kado-dark/55">
+                <div className="qr-text-muted mt-3 space-y-1 border-t border-[var(--qr-border)] pt-3 text-[11px]">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>{formatPhp(cartTotals.subtotal)}</span>
@@ -197,7 +197,7 @@ export default function QrStickyCart({
                       <span>{formatPhp(cartTotals.tax)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-kado-dark text-sm pt-1">
+                  <div className="flex justify-between pt-1 text-sm font-bold qr-text">
                     <span>Total</span>
                     <span className="text-kado-red">{formatPhp(cartTotals.total)}</span>
                   </div>
@@ -210,16 +210,16 @@ export default function QrStickyCart({
             </div>
           )}
 
-          <div className="border-t border-kado-dark/8 p-3 sm:p-4 space-y-2">
+          <div className="space-y-2 border-t border-[var(--qr-border)] p-3 sm:p-4">
             {beforePlaceButton}
             {orderError && (
-              <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 space-y-2">
-                <p className="text-xs text-red-700 font-medium leading-relaxed">{orderError}</p>
+              <div className="qr-error-panel space-y-2 rounded-xl px-3 py-2.5">
+                <p className="text-xs font-medium leading-relaxed">{orderError}</p>
                 {onRetrySync && (
                   <button
                     type="button"
                     onClick={onRetrySync}
-                    className="w-full min-h-[40px] rounded-lg bg-white border border-red-200 text-red-700 text-[10px] font-bold uppercase tracking-wider touch-manipulation"
+                    className="qr-field w-full min-h-[40px] rounded-lg text-[10px] font-bold uppercase tracking-wider touch-manipulation"
                   >
                     Try again
                   </button>
@@ -230,7 +230,7 @@ export default function QrStickyCart({
               <button
                 type="button"
                 onClick={() => onCartExpandedChange(true)}
-                className="w-full min-h-[44px] rounded-xl border border-kado-dark/12 text-kado-dark text-[10px] font-bold uppercase tracking-wider touch-manipulation hover:border-kado-red/30"
+                className="qr-field w-full min-h-[44px] rounded-xl text-[10px] font-bold uppercase tracking-wider touch-manipulation hover:border-kado-red/30"
               >
                 Review cart &amp; pay
               </button>

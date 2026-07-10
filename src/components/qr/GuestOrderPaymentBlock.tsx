@@ -28,7 +28,7 @@ type Props = {
 };
 
 const actionBtn =
-  'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-kado-dark/15 bg-white px-4 py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-kado-dark hover:border-kado-red/40 active:scale-[0.98] transition touch-manipulation w-full sm:w-auto';
+  'qr-field inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 active:scale-[0.98] transition touch-manipulation w-full sm:w-auto';
 
 const GCASH_PROOF_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif';
 
@@ -116,7 +116,7 @@ export default function GuestOrderPaymentBlock({
   };
 
   return (
-    <div className="rounded-2xl border border-kado-red/15 bg-white p-4 sm:p-5 space-y-3 mb-4">
+    <div className="qr-surface-card rounded-2xl border-kado-red/15 p-4 sm:p-5 space-y-3 mb-4">
       <p className="text-[10px] font-black uppercase tracking-widest text-kado-red">GCash payment</p>
 
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2">
@@ -138,7 +138,7 @@ export default function GuestOrderPaymentBlock({
       </div>
 
       {paymentStatus === 'unpaid' && (
-        <p className="text-xs text-kado-dark/55 leading-relaxed">
+        <p className="qr-text-muted text-xs leading-relaxed">
           Pay {formatPhp(total)} via GCash, then upload your receipt screenshot.
         </p>
       )}
@@ -176,10 +176,10 @@ export default function GuestOrderPaymentBlock({
           <img
             src={proofDisplayUrl ?? proofRef}
             alt="Payment proof"
-            className="w-full sm:w-20 h-auto sm:h-20 max-h-48 sm:max-h-none rounded-lg object-cover border border-kado-dark/10 shrink-0"
+            className="w-full sm:w-20 h-auto sm:h-20 max-h-48 sm:max-h-none rounded-lg object-cover border border-[var(--qr-border)] shrink-0"
           />
-          <div className="text-xs text-kado-dark/50 min-w-0">
-            <p className="font-bold text-kado-dark/70 flex items-center gap-1">
+          <div className="qr-text-muted text-xs min-w-0">
+            <p className="font-bold qr-text flex items-center gap-1">
               <ImageIcon className="w-3.5 h-3.5 shrink-0" />
               Proof uploaded
             </p>
@@ -196,8 +196,8 @@ export default function GuestOrderPaymentBlock({
       {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
       {(canSwitchToCash || onRequestCancel || onRequestChange) && paymentStatus !== 'paid' && (
-        <div className="border-t border-kado-dark/8 pt-3 space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-kado-dark/45">
+        <div className="border-t border-[var(--qr-border)] pt-3 space-y-2">
+          <p className="qr-text-subtle text-[10px] font-bold uppercase tracking-wider">
             Changed your mind?
           </p>
           {canSwitchToCash && onSwitchToCash ? (
@@ -213,7 +213,7 @@ export default function GuestOrderPaymentBlock({
                   })
                   .finally(() => setSwitching(false));
               }}
-              className="w-full min-h-[44px] rounded-xl border border-kado-dark/15 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
+              className="qr-field w-full min-h-[44px] rounded-xl flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
             >
               <Banknote className="w-4 h-4 shrink-0" />
               {switching ? 'Switching…' : 'Pay with cash at counter'}
@@ -224,7 +224,7 @@ export default function GuestOrderPaymentBlock({
               type="button"
               disabled={switching || uploading}
               onClick={onRequestChange}
-              className="w-full min-h-[40px] rounded-xl border border-kado-dark/12 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
+              className="qr-field w-full min-h-[40px] rounded-xl flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider hover:border-kado-red/40 transition-colors touch-manipulation disabled:opacity-50"
             >
               Change order
             </button>
