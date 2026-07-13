@@ -1,6 +1,11 @@
 import type { MenuCategory, Product } from '../types/domain';
 import { isIcedOnlyDrink, productFallbackDescription } from './menuProductModifiers';
-import { isPastriesCategoryId, pastryHasPrice } from './pastriesCategory';
+import {
+  isPastriesCategory,
+  isPastriesCategoryId,
+  pastryCategoryIds,
+  pastryHasPrice,
+} from './pastriesCategory';
 import { isProductInStock } from './productStock';
 
 export type MenuTemperatureFilter = 'all' | 'hot' | 'iced' | 'both';
@@ -93,13 +98,23 @@ export function flattenMenuProducts(ctx: MenuCatalogFilterContext): Product[] {
     .filter((c) => c.visible)
     .sort((a, b) => a.order - b.order);
 
+  const pastryIds = pastryCategoryIds(ctx.categories);
+  let pastryEmitted = false;
   const out: Product[] = [];
+
   for (const cat of sortedCategories) {
-    let items = ctx.productsByCategory(cat.id);
-    if (isPastriesCategoryId(ctx.categories, cat.id)) {
-      items = items.filter((p) => pastryHasPrice(p));
+    if (isPastriesCategory(cat)) {
+      if (pastryEmitted) continue;
+      pastryEmitted = true;
+      const pastryItems: Product[] = [];
+      for (const id of pastryIds) {
+        pastryItems.push(...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p)));
+      }
+      pastryItems.sort((a, b) => a.order - b.order);
+      out.push(...pastryItems);
+      continue;
     }
-    out.push(...items);
+    out.push(...ctx.productsByCategory(cat.id));
   }
   return out;
 }
@@ -109,11 +124,14 @@ export function baseProductsForFilters(
   ctx: MenuCatalogFilterContext,
 ): Product[] {
   if (filters.categoryId === 'all') return flattenMenuProducts(ctx);
-  let items = ctx.productsByCategory(filters.categoryId);
   if (isPastriesCategoryId(ctx.categories, filters.categoryId)) {
-    items = items.filter((p) => pastryHasPrice(p));
+    const pastryItems: Product[] = [];
+    for (const id of pastryCategoryIds(ctx.categories)) {
+      pastryItems.push(...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p)));
+    }
+    return pastryItems.sort((a, b) => a.order - b.order);
   }
-  return items;
+  return ctx.productsByCategory(filters.categoryId);
 }
 
 export function filterMenuProducts(
@@ -154,6 +172,16 @@ export function hasActiveMenuFilters(filters: MenuCatalogFilters): boolean {
   return (
     Boolean(filters.query.trim()) ||
     filters.categoryId !== 'all' ||
+    filters.temperature !== 'all' ||
+    filters.inStockOnly ||
+    filters.sort !== 'order'
+  );
+}
+
+/** Search / temp / stock / sort only — ignores category (sticky chip selection). */
+export function hasActiveBrowseFilters(filters: MenuCatalogFilters): boolean {
+  return (
+    Boolean(filters.query.trim()) ||
     filters.temperature !== 'all' ||
     filters.inStockOnly ||
     filters.sort !== 'order'

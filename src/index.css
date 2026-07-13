@@ -1000,6 +1000,47 @@ html.dash-dark {
   background-color: #faf9f6;
 }
 
+/*
+ * Vertical catalog ribbon label (MENU / MERCH).
+ * After -rotate-90 the glyph run becomes height — size from available
+ * viewport height so it never clips at 100% zoom / short landscape.
+ */
+.catalog-side-ribbon-label {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  user-select: none;
+  color: #fff;
+  /* ~6 slots: padding + 4–5 expanded letters (MERCH longest) */
+  font-size: clamp(
+    2rem,
+    calc((100dvh - var(--public-nav-height, 4rem) - 2rem) / 6),
+    5.25rem
+  );
+}
+
+@media (min-width: 64rem) {
+  .catalog-side-ribbon-label {
+    font-size: clamp(
+      2.25rem,
+      calc((100dvh - var(--public-nav-height, 4rem) - 2rem) / 5.75),
+      6rem
+    );
+  }
+}
+
+@media (orientation: landscape) and (max-height: 40rem) {
+  .catalog-side-ribbon-label {
+    font-size: clamp(
+      1.75rem,
+      calc((100dvh - var(--public-nav-height, 3.5rem) - 1.25rem) / 6.5),
+      3.75rem
+    );
+  }
+}
+
 /* QR dine-in / takeout — scroll anchor below sticky header + toolbar */
 .qr-menu-section-anchor {
   scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 10.5rem);
@@ -1016,7 +1057,20 @@ html.dash-dark {
   }
 }
 
-/* Coffee menu (/menu): category grid cells shrink correctly on mobile */
+/* Catalog browse (/menu, /pastries): sticky filter chrome */
+.catalog-filter-panel {
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.03);
+}
+
+@media (orientation: landscape) and (max-height: 30rem) {
+  .catalog-category-chip {
+    min-height: 2.25rem;
+    padding-inline: 0.75rem;
+    font-size: 0.6875rem;
+  }
+}
+
+/* Coffee menu (/menu): legacy category grid cells — keep for any residual use */
 .menu-category-tabs button {
   min-width: 0;
 }

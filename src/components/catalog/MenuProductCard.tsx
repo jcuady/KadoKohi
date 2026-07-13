@@ -11,9 +11,10 @@ type Props = {
   highlight: boolean;
   imagePriority: boolean;
   onSelect: (product: Product) => void;
+  pastriesCategoryId?: string;
 };
 
-function MenuProductCard({ product, highlight, imagePriority, onSelect }: Props) {
+function MenuProductCard({ product, highlight, imagePriority, onSelect, pastriesCategoryId }: Props) {
   const tag = isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0];
   const inStock = isProductInStock(product);
   const desc = productFallbackDescription(product);
@@ -39,6 +40,7 @@ function MenuProductCard({ product, highlight, imagePriority, onSelect }: Props)
           product={product}
           alt={product.name}
           loading={imagePriority ? 'eager' : 'lazy'}
+          pastriesCategoryId={pastriesCategoryId}
           className="h-full w-full object-cover transition-transform duration-500 ease-out md:group-hover:scale-105"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -85,6 +87,7 @@ export default memo(
     prev.product.id === next.product.id &&
     prev.highlight === next.highlight &&
     prev.imagePriority === next.imagePriority &&
+    prev.pastriesCategoryId === next.pastriesCategoryId &&
     prev.product.inStock === next.product.inStock &&
     prev.product.image === next.product.image &&
     prev.product.basePrice === next.product.basePrice &&

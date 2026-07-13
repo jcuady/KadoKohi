@@ -7,6 +7,7 @@ import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
 import CatalogToolbar from '../components/catalog/CatalogToolbar';
+import CatalogCategoryRail from '../components/catalog/CatalogCategoryRail';
 import MenuProductCard from '../components/catalog/MenuProductCard';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
@@ -14,6 +15,7 @@ import {
   baseProductsForFilters,
   DEFAULT_MENU_CATALOG_FILTERS,
   filterMenuProducts,
+  hasActiveBrowseFilters,
   hasActiveMenuFilters,
   parseMenuCatalogFilters,
   parseMenuPage,
@@ -26,27 +28,33 @@ import {
   menuProductDomId,
   pageForProductInList,
 } from '../lib/menuDeepLink';
+import { uniqueVisibleMenuCategories } from '../lib/pastriesCategory';
+import CatalogPageFrame from '../components/catalog/CatalogPageFrame';
 
 const ALL_CATEGORY_ID = 'all';
 
 function categoryIcon(categoryId: string, categoryName?: string): React.ReactNode {
   if (categoryName?.trim().toLowerCase() === 'pastries') {
-    return <Croissant className="w-4 h-4 shrink-0" />;
+    return <Croissant className="w-4 h-4 shrink-0" aria-hidden />;
   }
-  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4 shrink-0" />;
-  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4 shrink-0" />;
-  return <Coffee className="w-4 h-4 shrink-0" />;
+  if (categoryId === 'cat_matcha') return <Leaf className="w-4 h-4 shrink-0" aria-hidden />;
+  if (categoryId === 'cat_yuzu') return <IceCreamCone className="w-4 h-4 shrink-0" aria-hidden />;
+  return <Coffee className="w-4 h-4 shrink-0" aria-hidden />;
 }
 
-/** Shorter labels for narrow mobile grid cells — full name stays in aria-label. */
+/** Shorter labels for mobile chips — full name stays in aria-label. */
 function categoryShortLabel(categoryId: string, fullName: string): string {
   switch (categoryId) {
     case 'cat_classics':
-      return 'Espresso Classics';
+      return 'Classics';
     case 'cat_signatures':
-      return 'Espresso Signatures';
+      return 'Signatures';
+    case 'cat_matcha':
+      return 'Matcha';
+    case 'cat_yuzu':
+      return 'Yuzu';
     default:
-      return fullName;
+      return fullName.length > 14 ? fullName.slice(0, 12).trim() + '…' : fullName;
   }
 }
 
@@ -60,6 +68,11 @@ export default function Menu() {
   const catalogLoading = !remoteLoaded;
 
   const sortedCategories = useMemo(
+    () => uniqueVisibleMenuCategories(categories),
+    [categories],
+  );
+
+  const allVisibleCategories = useMemo(
     () => [...categories].filter((c) => c.visible).sort((a, b) => a.order - b.order),
     [categories],
   );
@@ -79,10 +92,10 @@ export default function Menu() {
       list.sort((a, b) => a.order - b.order);
     }
     return {
-      categories: sortedCategories,
+      categories: allVisibleCategories,
       productsByCategory: (categoryId: string) => byCategory.get(categoryId) ?? [],
     };
-  }, [sortedCategories, products]);
+  }, [allVisibleCategories, products]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
@@ -211,163 +224,120 @@ export default function Menu() {
     };
   }, [highlightProductId, deepLinkProductId, paginatedItems, safePage, filters.categoryId]);
 
-  const emptyMessage = hasActiveMenuFilters(filters)
+  const browseFiltersActive = hasActiveBrowseFilters(filters);
+  const emptyMessage = browseFiltersActive
     ? 'No drinks match your search or filters. Try clearing filters or another category.'
     : filters.categoryId === ALL_CATEGORY_ID
       ? 'No drinks on the menu yet.'
       : 'No drinks in this category yet.';
 
+  const categoryItems = useMemo(
+    () => [
+      {
+        id: ALL_CATEGORY_ID,
+        label: 'All items',
+        shortLabel: 'All',
+        icon: <Coffee className="h-4 w-4 shrink-0" aria-hidden />,
+      },
+      ...sortedCategories.map((cat) => ({
+        id: cat.id,
+        label: cat.name,
+        shortLabel: categoryShortLabel(cat.id, cat.name),
+        icon: categoryIcon(cat.id, cat.name),
+      })),
+    ],
+    [sortedCategories],
+  );
+
+  const statusLine = useMemo(() => {
+    if (browsingAllUnfiltered) {
+      return `${filteredItems.length} drink${filteredItems.length === 1 ? '' : 's'} across ${sortedCategories.length} categor${sortedCategories.length === 1 ? 'y' : 'ies'}`;
+    }
+    if (activeCategory) {
+      return `${filteredItems.length} in ${activeCategory.name}`;
+    }
+    return null;
+  }, [
+    browsingAllUnfiltered,
+    filteredItems.length,
+    sortedCategories.length,
+    activeCategory,
+  ]);
+
   return (
-    <div className="customer-menu-page relative w-full font-sans">
-      {/* Full-viewport ribbon: fixed below navbar, does not scroll with content */}
-      <div
-        className="hidden md:block pointer-events-none fixed left-0 top-16 bottom-0 z-[30] w-28 lg:w-40 bg-kado-red shadow-[10px_0_30px_rgba(158,24,29,0.15)] overflow-hidden"
-        aria-hidden
+    <div className="relative w-full">
+      <CatalogPageFrame
+        ribbon="MENU"
+        eyebrow="Daily Rituals"
+        title="Our Menu"
+        subhead="Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism."
       >
-        <div className="absolute inset-0 flex items-center justify-center">
-          <h1 className="font-display font-black text-white text-[10rem] lg:text-[13rem] leading-none -rotate-90 tracking-tighter whitespace-nowrap select-none opacity-95">
-            MENU
-          </h1>
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-col overflow-x-clip md:pl-28 lg:pl-40">
-        {/* Mobile Header (Red block) */}
-        <div className="relative overflow-hidden bg-kado-red px-4 pb-7 pt-8 shadow-md sm:px-6 sm:pb-8 sm:pt-10 [@media(orientation:landscape)_and_(max-height:30rem)]:px-4 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-4 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-5 md:hidden">
-          <div className="absolute right-0 top-0 opacity-10 pointer-events-none">
-            <h1 className="font-display font-black text-white text-[8rem] leading-none -mt-4">
-              MENU
-            </h1>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 mb-2 relative z-10">
-            Daily Rituals
-          </p>
-          <h1 className="relative z-10 mb-2 font-display text-[clamp(1.75rem,8vw,3rem)] font-black uppercase tracking-tighter text-white sm:text-5xl">
-            Our Menu
-          </h1>
-          <p className="relative z-10 max-w-sm text-sm leading-relaxed text-white/80">
-            Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
-          </p>
-        </div>
-
-        {/* Desktop Header */}
-        <section className="hidden md:block pt-10 pb-6 px-8 lg:px-16">
-          <div className="max-w-6xl mx-auto">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red mb-3">
-              Daily Rituals
-            </p>
-            <h1 className="font-display text-4xl lg:text-5xl font-black text-kado-dark mb-3 tracking-tighter uppercase">
-              Our Menu
-            </h1>
-            <p className="text-kado-dark/60 text-base max-w-lg leading-relaxed">
-              Carefully sourced beans, masterful techniques, and a touch of Japanese minimalism.
-            </p>
-          </div>
-        </section>
-
-        {/* Category tabs — one control: 2×2 grid on mobile, wrapped pills on md+ */}
         {catalogLoading ? (
           <CatalogPageSkeleton variant="menu" />
         ) : (
           <>
-        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-kado-offwhite/95 px-4 pb-0 pt-4 backdrop-blur-md sm:px-6 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
-          <div className="mx-auto max-w-6xl min-w-0 space-y-0">
-            <div
-              className="menu-category-tabs grid grid-cols-2 gap-2 sm:gap-2.5 md:flex md:flex-wrap md:items-center md:gap-3 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-4 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-1.5 [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex-wrap"
-              role="tablist"
-              aria-label="Menu categories"
+            <section
+              className="catalog-filter-panel sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/8 bg-kado-offwhite/95 px-4 pb-3 pt-3 backdrop-blur-md sm:px-6 sm:pb-4 sm:pt-4 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2"
+              aria-label="Menu filters"
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={filters.categoryId === ALL_CATEGORY_ID}
-                aria-label="All items"
-                onClick={() => updateFilters({ categoryId: ALL_CATEGORY_ID })}
-                className={`flex min-h-[44px] min-w-0 touch-manipulation items-center font-black uppercase tracking-widest transition-all duration-300 ${
-                  filters.categoryId === ALL_CATEGORY_ID
-                    ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
-                    : 'border border-kado-dark/15 bg-white text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
-                } flex-col justify-center gap-1.5 rounded-2xl px-2.5 py-3 text-[9px] leading-snug text-center sm:text-[10px] md:flex-row md:justify-start md:gap-2 md:rounded-full md:px-5 md:py-2.5 md:text-[11px] md:whitespace-nowrap md:text-left`}
-              >
-                <Coffee className="w-4 h-4 shrink-0" />
-                <span>All items</span>
-              </button>
-              {sortedCategories.map((cat) => {
-                const active = filters.categoryId === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    aria-label={cat.name}
-                    onClick={() => updateFilters({ categoryId: cat.id })}
-                    className={`flex min-h-[44px] min-w-0 touch-manipulation items-center font-black uppercase tracking-widest transition-all duration-300 ${
-                      active
-                        ? 'bg-kado-red text-white shadow-lg shadow-kado-red/30'
-                        : 'border border-kado-dark/15 bg-white text-kado-dark/70 hover:border-kado-red/50 hover:text-kado-red'
-                    } flex-col justify-center gap-1.5 rounded-2xl px-2.5 py-3 text-[9px] leading-snug text-center sm:text-[10px] md:flex-row md:justify-start md:gap-2 md:rounded-full md:px-5 md:py-2.5 md:text-[11px] md:whitespace-nowrap md:text-left`}
-                  >
-                    {categoryIcon(cat.id, cat.name)}
-                    <span className="md:hidden">{categoryShortLabel(cat.id, cat.name)}</span>
-                    <span className="hidden md:inline">{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <CatalogToolbar
-              filters={filters}
-              resultCount={filteredItems.length}
-              onChange={updateFilters}
-              onClear={clearFilters}
-            />
-          </div>
-        </section>
-
-        {/* Product grid */}
-        <section className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16">
-          <div className="mx-auto min-w-0 max-w-6xl">
-            {browsingAllUnfiltered ? (
-              <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45">
-                {filteredItems.length} drink{filteredItems.length === 1 ? '' : 's'} across{' '}
-                {sortedCategories.length} categor{sortedCategories.length === 1 ? 'y' : 'ies'}
-              </p>
-            ) : null}
-            {paginatedItems.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-12 text-center">
-                <p className="text-sm font-semibold text-kado-dark/50">{emptyMessage}</p>
-                {hasActiveMenuFilters(filters) ? (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="mt-4 rounded-full bg-kado-dark px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-white"
-                  >
-                    Clear filters
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-            <div className="menu-product-grid grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
-              {paginatedItems.map((product, i) => (
-                <MenuProductCard
-                  key={product.id}
-                  product={product}
-                  highlight={highlightProductId === product.id}
-                  imagePriority={i < 4}
-                  onSelect={openProduct}
+              <div className="mx-auto flex min-w-0 max-w-6xl flex-col gap-3 sm:gap-3.5 md:gap-4">
+                <CatalogCategoryRail
+                  items={categoryItems}
+                  value={filters.categoryId}
+                  onChange={(id) => updateFilters({ categoryId: id })}
+                  ariaLabel="Menu categories"
                 />
-              ))}
-            </div>
-            )}
+                <CatalogToolbar
+                  filters={filters}
+                  resultCount={filteredItems.length}
+                  onChange={updateFilters}
+                  onClear={clearFilters}
+                />
+              </div>
+            </section>
 
-            <ProductGridPagination
-              page={safePage}
-              totalPages={totalPages}
-              totalItems={shouldPaginate ? filteredItems.length : undefined}
-              onPageChange={setPage}
-            />
-          </div>
-        </section>
+            <section className="px-4 py-5 sm:px-6 sm:py-7 md:px-8 md:py-9 lg:px-16">
+              <div className="mx-auto min-w-0 max-w-6xl">
+                {statusLine ? (
+                  <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 sm:mb-5">
+                    {statusLine}
+                  </p>
+                ) : null}
+                {paginatedItems.length === 0 ? (
+                  <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-cream/40 px-6 py-12 text-center sm:py-14">
+                    <p className="text-sm font-semibold text-kado-dark/50">{emptyMessage}</p>
+                    {browseFiltersActive || filters.categoryId !== ALL_CATEGORY_ID ? (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="mt-4 min-h-11 rounded-full bg-kado-dark px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-white touch-manipulation"
+                      >
+                        Clear filters
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="menu-product-grid grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+                    {paginatedItems.map((product, i) => (
+                      <MenuProductCard
+                        key={product.id}
+                        product={product}
+                        highlight={highlightProductId === product.id}
+                        imagePriority={i < 4}
+                        onSelect={openProduct}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <ProductGridPagination
+                  page={safePage}
+                  totalPages={totalPages}
+                  totalItems={shouldPaginate ? filteredItems.length : undefined}
+                  onPageChange={setPage}
+                />
+              </div>
+            </section>
           </>
         )}
 
@@ -377,7 +347,7 @@ export default function Menu() {
             <LoyaltyCard />
           </div>
         </section>
-      </div>
+      </CatalogPageFrame>
 
       <PageSeoBlurb />
 

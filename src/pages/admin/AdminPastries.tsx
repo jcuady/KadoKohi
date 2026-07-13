@@ -117,11 +117,11 @@ export default function AdminPastries() {
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Pastries Page</h1>
           <p className="dash-muted text-sm">
-            Edit hero copy and poster images for{' '}
+            Edit catalog header copy for{' '}
             <a href="/pastries" target="_blank" rel="noreferrer" className="text-kado-red underline-offset-2 hover:underline inline-flex items-center gap-1">
               /pastries <ExternalLink className="w-3.5 h-3.5" />
             </a>
-            . Product grid still comes from Menu admin.
+            . Layout matches /menu (ribbon + search). Product cards come from Menu Manager → Pastries.
           </p>
         </div>
         <button
@@ -142,11 +142,14 @@ export default function AdminPastries() {
       {uploadError ? <p className="mb-4 text-sm text-red-600 font-medium">{uploadError}</p> : null}
 
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">Hero</h2>
+        <h2 className="font-display text-xl font-bold dash-heading">Catalog header</h2>
+        <p className="text-xs dash-muted">
+          Eyebrow + headline + subhead appear in the same chrome as /menu. Badge shows beside “All pastries”.
+        </p>
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Eyebrow" value={content.hero.eyebrow} onChange={(v) => updateHero({ eyebrow: v })} />
-          <Field label="Headline top" value={content.hero.headlineTop} onChange={(v) => updateHero({ headlineTop: v })} />
-          <Field label="Headline bottom" value={content.hero.headlineBottom} onChange={(v) => updateHero({ headlineBottom: v })} />
+          <Field label="Headline (before)" value={content.hero.headlineTop} onChange={(v) => updateHero({ headlineTop: v })} />
+          <Field label="Headline (after)" value={content.hero.headlineBottom} onChange={(v) => updateHero({ headlineBottom: v })} />
           <Field label="Badge" value={content.hero.badge} onChange={(v) => updateHero({ badge: v })} />
           <Field label="Badge note" value={content.hero.badgeNote} onChange={(v) => updateHero({ badgeNote: v })} />
         </div>
@@ -154,7 +157,10 @@ export default function AdminPastries() {
       </section>
 
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">Poster images</h2>
+        <h2 className="font-display text-xl font-bold dash-heading">Poster images (optional)</h2>
+        <p className="text-xs dash-muted">
+          Kept for CMS/backups. The public /pastries page now uses the menu-style catalog layout (no large poster hero).
+        </p>
         <ImageField
           label="Primary image"
           value={content.poster.primaryImage}
@@ -172,9 +178,9 @@ export default function AdminPastries() {
       </section>
 
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
-        <h2 className="font-display text-xl font-bold dash-heading">Product grid intro</h2>
-        <Field label="Section title" value={content.cta.title} onChange={(v) => updateCta({ title: v })} />
-        <Field label="Body" value={content.cta.body} onChange={(v) => updateCta({ body: v })} multiline />
+        <h2 className="font-display text-xl font-bold dash-heading">Footer CTA</h2>
+        <Field label="Grid summary label" value={content.cta.title} onChange={(v) => updateCta({ title: v })} />
+        <Field label="CTA body" value={content.cta.body} onChange={(v) => updateCta({ body: v })} multiline />
       </section>
     </div>
   );
