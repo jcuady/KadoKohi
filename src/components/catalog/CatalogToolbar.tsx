@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import type { MenuCatalogFilters, MenuSortKey, MenuTemperatureFilter } from '../../lib/menuCatalogFilters';
 import { hasActiveMenuFilters } from '../../lib/menuCatalogFilters';
+
+const SEARCH_DEBOUNCE_MS = 280;
 
 type Props = {
   filters: MenuCatalogFilters;
@@ -28,23 +31,55 @@ const selectClass =
 
 export default function CatalogToolbar({ filters, resultCount, onChange, onClear }: Props) {
   const active = hasActiveMenuFilters(filters);
+  const [draftQuery, setDraftQuery] = useState(filters.query);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    setDraftQuery(filters.query);
+  }, [filters.query]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const commitQuery = (value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onChange({ query: value }), SEARCH_DEBOUNCE_MS);
+  };
+
+  const handleQueryChange = (value: string) => {
+    setDraftQuery(value);
+    commitQuery(value);
+  };
+
+  const clearQuery = () => {
+    setDraftQuery('');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    onChange({ query: '' });
+  };
 
   return (
-    <div className="space-y-3 border-b border-kado-dark/5 bg-[#FAF7F2]/95 pb-4 pt-3 backdrop-blur-md [@media(orientation:landscape)_and_(max-height:30rem)]:space-y-2 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-3 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-2">
+    <div className="space-y-3 border-b border-kado-dark/5 bg-kado-offwhite/95 pb-4 pt-3 backdrop-blur-md [@media(orientation:landscape)_and_(max-height:30rem)]:space-y-2 [@media(orientation:landscape)_and_(max-height:30rem)]:pb-3 [@media(orientation:landscape)_and_(max-height:30rem)]:pt-2">
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-kado-red/50" />
         <input
           type="search"
-          value={filters.query}
-          onChange={(e) => onChange({ query: e.target.value })}
+          value={draftQuery}
+          onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="Search drinks, flavors, tags…"
           aria-label="Search menu"
           className="w-full min-h-[44px] rounded-full border border-kado-dark/15 bg-white py-2.5 pl-11 pr-11 text-sm font-medium text-kado-dark placeholder:text-kado-dark/40 outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/15 [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[40px]"
         />
-        {filters.query ? (
+        {draftQuery ? (
           <button
             type="button"
-            onClick={() => onChange({ query: '' })}
+            onClick={clearQuery}
             className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-kado-dark/50 hover:bg-kado-dark/5"
             aria-label="Clear search"
           >
@@ -97,7 +132,14 @@ export default function CatalogToolbar({ filters, resultCount, onChange, onClear
         {active ? (
           <button
             type="button"
-            onClick={onClear}
+            onClick={() => {
+              if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+                debounceRef.current = null;
+              }
+              setDraftQuery('');
+              onClear();
+            }}
             className="min-h-[44px] rounded-full border border-kado-red/30 px-4 text-[10px] font-black uppercase tracking-wider text-kado-red hover:bg-kado-red/5 md:min-h-[40px]"
           >
             Clear filters

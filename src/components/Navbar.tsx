@@ -46,7 +46,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[100] w-full border-b border-black/10 bg-kado-red text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] pt-safe-nav">
+      <nav className="sticky top-0 z-[100] w-full border-b border-kado-dark/10 bg-kado-red text-kado-cream shadow-[0_1px_3px_rgba(0,0,0,0.12)] pt-safe-nav">
         <div className="mx-auto flex min-h-[3.25rem] max-w-7xl items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:min-h-14 lg:px-8">
           <Link
             to="/"

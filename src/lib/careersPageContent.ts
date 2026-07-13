@@ -4,6 +4,7 @@ import {
   parseFormFields,
   type EventFormField,
 } from './eventForms';
+import type { Branch } from '../types/domain';
 import { newId } from './id';
 
 export type CareerListingCategory = 'careers' | 'content-creators' | 'collaborations';
@@ -13,6 +14,7 @@ export interface CareerListing {
   id: string;
   title: string;
   category: CareerListingCategory;
+  branchId?: string;
   location?: string;
   employmentType?: string;
   description: string;
@@ -21,7 +23,57 @@ export interface CareerListing {
   applyMode: CareerApplyMode;
   visible: boolean;
   sortOrder: number;
+  postedAt?: string;
 }
+
+export const CAREER_EMPLOYMENT_PRESETS = [
+  'Full-time',
+  'Part-time',
+  'Full-time / Part-time',
+  'Part-time / Full-time',
+  'Part-time / Events',
+  'Contract',
+  'Project-based',
+  'Events',
+  'Partnership',
+] as const;
+
+export function defaultApplyLabelForCategory(category: CareerListingCategory): string {
+  if (category === 'content-creators') return 'Submit pitch';
+  if (category === 'collaborations') return 'Propose a collab';
+  return 'Apply now';
+}
+
+export function branchLocationLabel(branch: Pick<Branch, 'name' | 'city'>): string {
+  return [branch.name, branch.city].filter(Boolean).join(' · ');
+}
+
+export function careerListingLocationLabel(
+  listing: Pick<CareerListing, 'location' | 'branchId'>,
+  branches: Branch[],
+): string | undefined {
+  if (listing.branchId) {
+    const branch = branches.find((b) => b.id === listing.branchId);
+    if (branch) return branchLocationLabel(branch);
+  }
+  return listing.location?.trim() || undefined;
+}
+
+export function formatCareerPostedLabel(postedAt?: string): string | null {
+  if (!postedAt) return null;
+  const posted = new Date(postedAt).getTime();
+  if (!Number.isFinite(posted)) return null;
+  const days = Math.floor((Date.now() - posted) / 86_400_000);
+  if (days <= 0) return 'Posted today';
+  if (days === 1) return 'Posted 1 day ago';
+  if (days < 14) return `Posted ${days} days ago`;
+  return new Date(postedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** Admin templates — omit id/sortOrder so new listings get fresh values. */
+export type CareerListingTemplate = Omit<CareerListing, 'id' | 'sortOrder' | 'postedAt' | 'visible'> & {
+  visible?: boolean;
+};
 
 export interface CareerApplicationFormConfig {
   title: string;
@@ -113,7 +165,7 @@ export const DEFAULT_CAREERS_PAGE_COPY: CareersPageCopy = {
   collabsSectionTitle: 'Collaborations',
   collabsSectionIntro:
     'Pop-ups, co-branded drinks, neighborhood activations, and partner booths — tell us your idea and we\'ll explore it together.',
-  emptyMessage: 'No open listings in this section right now. Follow @kadocoffeeph or check back soon.',
+  emptyMessage: 'No open roles match your search right now. Try clearing filters or check back soon.',
 };
 
 export const SEED_CAREER_LISTINGS: CareerListing[] = [
@@ -121,6 +173,7 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     id: 'career_barista',
     title: 'Barista',
     category: 'careers',
+    branchId: 'branch_marikina',
     location: 'Marikina · Sta. Elena',
     employmentType: 'Full-time / Part-time',
     description:
@@ -129,11 +182,13 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyMode: 'form',
     visible: true,
     sortOrder: 0,
+    postedAt: '2026-01-15T08:00:00+08:00',
   },
   {
     id: 'career_marketing_manager',
     title: 'Marketing Manager',
     category: 'careers',
+    branchId: 'branch_marikina',
     location: 'Marikina · Sta. Elena',
     employmentType: 'Full-time',
     description:
@@ -142,11 +197,13 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyMode: 'form',
     visible: true,
     sortOrder: 1,
+    postedAt: '2026-02-01T08:00:00+08:00',
   },
   {
     id: 'career_dj',
     title: 'DJ',
     category: 'careers',
+    branchId: 'branch_marikina',
     location: 'Marikina · Metro Manila',
     employmentType: 'Part-time / Events',
     description:
@@ -155,11 +212,13 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyMode: 'form',
     visible: true,
     sortOrder: 2,
+    postedAt: '2026-02-10T08:00:00+08:00',
   },
   {
     id: 'career_delivery_rider',
     title: 'Delivery Rider',
     category: 'careers',
+    branchId: 'branch_marikina',
     location: 'Marikina & nearby areas',
     employmentType: 'Part-time / Full-time',
     description:
@@ -168,6 +227,7 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyMode: 'form',
     visible: true,
     sortOrder: 3,
+    postedAt: '2026-02-18T08:00:00+08:00',
   },
   {
     id: 'career_creator',
@@ -180,7 +240,8 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyLabel: 'Submit pitch',
     applyMode: 'form',
     visible: true,
-    sortOrder: 0,
+    sortOrder: 4,
+    postedAt: '2026-03-01T08:00:00+08:00',
   },
   {
     id: 'career_collab_pop',
@@ -193,9 +254,17 @@ export const SEED_CAREER_LISTINGS: CareerListing[] = [
     applyLabel: 'Propose a collab',
     applyMode: 'form',
     visible: true,
-    sortOrder: 0,
+    sortOrder: 5,
+    postedAt: '2026-03-05T08:00:00+08:00',
   },
 ];
+
+export const CAREER_LISTING_TEMPLATES: CareerListingTemplate[] = SEED_CAREER_LISTINGS.map(
+  ({ id: _id, sortOrder: _sort, postedAt: _posted, visible, ...rest }) => ({
+    ...rest,
+    visible: visible ?? true,
+  }),
+);
 
 function clampCopyField(raw: unknown, fallback: string): string {
   return typeof raw === 'string' && raw.trim() ? raw : fallback;
@@ -247,6 +316,7 @@ function clampListing(raw: Partial<CareerListing>, fallback?: CareerListing): Ca
     id: typeof raw.id === 'string' && raw.id ? raw.id : base.id,
     title: clampCopyField(raw.title, base.title),
     category,
+    branchId: typeof raw.branchId === 'string' && raw.branchId.trim() ? raw.branchId.trim() : base.branchId,
     location: typeof raw.location === 'string' ? raw.location : base.location,
     employmentType: typeof raw.employmentType === 'string' ? raw.employmentType : base.employmentType,
     description: clampCopyField(raw.description, base.description),
@@ -255,6 +325,10 @@ function clampListing(raw: Partial<CareerListing>, fallback?: CareerListing): Ca
     applyMode,
     visible: typeof raw.visible === 'boolean' ? raw.visible : base.visible,
     sortOrder: typeof raw.sortOrder === 'number' ? raw.sortOrder : base.sortOrder,
+    postedAt:
+      typeof raw.postedAt === 'string' && raw.postedAt.trim()
+        ? raw.postedAt.trim()
+        : base.postedAt ?? new Date().toISOString(),
   };
 }
 

@@ -426,9 +426,9 @@ export default function AdminMenu() {
       temperature: isPastryForm ? ('both' as const) : form.temperature,
       visible: form.visible,
       tags: form.tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
       milks: form.milks.filter((m) => m.label.trim()),
       sizes: form.sizes.filter((s) => s.label.trim()),
       customFields: form.customFields.filter(
@@ -583,11 +583,11 @@ export default function AdminMenu() {
                 </TabsTrigger>
                 <TabsTrigger value="pastries" className="gap-1.5 text-[10px] font-bold uppercase tracking-wider">
                   <Croissant className="h-3.5 w-3.5" />
-                  Pastries
+          Pastries
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-          </div>
+      </div>
         </CardHeader>
       </Card>
 
@@ -663,18 +663,18 @@ export default function AdminMenu() {
         action={
           menuTab === 'coffee' ? (
             <form onSubmit={(e) => void handleAddCategory(e)} className="flex w-full max-w-xs gap-2 sm:w-auto">
-              <input
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
+        <input
+          value={newCatName}
+          onChange={(e) => setNewCatName(e.target.value)}
                 placeholder="New categoryâ€¦"
-                disabled={addingCategory}
+          disabled={addingCategory}
                 className="min-w-0 flex-1 rounded-lg border dash-border dash-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
               <Button type="submit" size="sm" disabled={addingCategory || !newCatName.trim()}>
                 <Plus className="h-3.5 w-3.5" />
                 {addingCategory ? 'â€¦' : 'Add'}
               </Button>
-            </form>
+      </form>
           ) : null
         }
       >
@@ -692,11 +692,11 @@ export default function AdminMenu() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {visibleCategories.map((cat) => {
-              const catIndex = sortedCategories.findIndex((c) => c.id === cat.id);
-              const catProducts = products
-                .filter((p) => p.categoryId === cat.id)
-                .sort((a, b) => a.order - b.order);
+        {visibleCategories.map((cat) => {
+          const catIndex = sortedCategories.findIndex((c) => c.id === cat.id);
+          const catProducts = products
+            .filter((p) => p.categoryId === cat.id)
+            .sort((a, b) => a.order - b.order);
 
               return (
                 <Fragment key={cat.id}>
@@ -715,16 +715,16 @@ export default function AdminMenu() {
                   onDragStartCat={() => setDrag({ kind: 'cat', from: catIndex })}
                   onDragEnd={onDragEnd}
                   onCatDrop={(e) => {
-                    e.preventDefault();
-                    if (drag?.kind === 'cat' && drag.from !== catIndex) reorderCategories(drag.from, catIndex);
-                    setDrag(null);
+            e.preventDefault();
+            if (drag?.kind === 'cat' && drag.from !== catIndex) reorderCategories(drag.from, catIndex);
+            setDrag(null);
                   }}
                   onSetEditingCategoryName={setEditingCategoryName}
                   onCommitCategoryRename={commitCategoryRename}
                   onCancelCategoryRename={() => {
-                    setEditingCategoryId(null);
-                    setEditingCategoryName('');
-                  }}
+                        setEditingCategoryId(null);
+                        setEditingCategoryName('');
+                      }}
                   onBeginCategoryRename={() => beginCategoryRename(cat)}
                   onToggleCategoryVisible={() => updateCategory(cat.id, { visible: !cat.visible })}
                   onDeleteCategory={() => {
@@ -738,9 +738,9 @@ export default function AdminMenu() {
                   onAddProduct={() => startAddProduct(cat.id)}
                 />
                 </Fragment>
-              );
-            })}
-          </div>
+          );
+        })}
+      </div>
         )}
       </DashboardSection>
 

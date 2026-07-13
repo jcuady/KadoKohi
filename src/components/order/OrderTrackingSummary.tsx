@@ -72,7 +72,7 @@ export default function OrderTrackingSummary({ tracked, snapshot, taxRate }: Pro
         ))}
       </ul>
 
-      <div className="px-4 py-3 bg-[#FAF7F2] border-t border-kado-dark/8 space-y-1 text-[11px] text-kado-dark/55">
+      <div className="px-4 py-3 bg-kado-offwhite border-t border-kado-dark/8 space-y-1 text-[11px] text-kado-dark/55">
         <div className="flex justify-between">
           <span>Subtotal</span>
           <span>{formatPhp(subtotal)}</span>

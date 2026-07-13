@@ -4,6 +4,7 @@ import { ArrowUpRight, CalendarDays, Clock } from 'lucide-react';
 import { useBlogStore } from '../store/blogStore';
 import BlogGridSkeleton from '../components/catalog/BlogGridSkeleton';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import PublicPageBanner from '../components/seo/PublicPageBanner';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', {
@@ -33,15 +34,11 @@ export default function Blog() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-kado-offwhite font-sans">
-      <section className="border-b border-kado-dark/5 bg-kado-cream px-6 pb-12 pt-28">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="kado-label mb-3 text-kado-red">Stories from the corner</p>
-          <h1 className="kado-h2 text-kado-dark uppercase tracking-tight">Kado Kohi Features</h1>
-          <p className="mx-auto mt-4 max-w-xl kado-body text-kado-dark/65">
-            Community runs, tambayan nights, booth season notes, and what&apos;s brewing at our Marikina cafe.
-          </p>
-        </div>
-      </section>
+      <PublicPageBanner
+        eyebrow="Stories from the corner"
+        title="Kado Kohi Features"
+        description="Community runs, tambayan nights, booth season notes, and what's brewing at our Marikina cafe."
+      />
 
       <section className="px-6 py-16 md:py-24">
         {loading && !hydrated ? (

@@ -15,6 +15,8 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
+import { LOGO } from '../lib/brandTokens';
+import BrandHybridMark from '../components/BrandHybridMark';
 import NotificationToggle from '../components/NotificationToggle';
 import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 
@@ -65,12 +67,12 @@ export default function BaristaLayout() {
         <div className="shrink-0 border-b px-2 pb-3 pt-3 md:px-4" style={{ borderColor: 'var(--color-dash-border)' }}>
           <Link to="/barista" className="flex items-center justify-center md:justify-start">
             <img
-              src="/logo/Logo2.png"
+              src={LOGO.hybridMark}
               alt="Kado Kohi"
               className="hidden h-7 w-auto object-contain object-left md:block"
               style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}
             />
-            <span className="font-display text-base font-bold text-kado-red md:hidden">角</span>
+            <BrandHybridMark size="sm" alt="" className="md:hidden" />
           </Link>
           <div className="mt-2 hidden min-w-0 md:block">
             <div className="flex items-center gap-2">

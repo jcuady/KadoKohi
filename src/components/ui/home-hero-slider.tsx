@@ -7,7 +7,7 @@
  *  - Motion: one orchestrated staggered entrance (badge → H1 → slide copy →
  *    CTAs → social proof), scroll-free; respects prefers-reduced-motion
  *  - Spatial: asymmetric copy/collage grid, oversized 角 kanji overlay
- *  - Height: 92svh — ~8vh peek of next section (client revision §3.4)
+ *  - Height: fills viewport below nav (100dvh − nav); grows if content needs more
  */
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -119,7 +119,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         角
       </div>
 
-      <div className="landing-hero-inner relative z-10 mx-auto h-full min-h-0 w-full max-w-[1400px] px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8 lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(220px,22rem)] lg:items-center lg:gap-10 lg:px-12 lg:py-8 xl:px-16">
+      <div className="landing-hero-inner relative z-10 mx-auto w-full max-w-[1400px] px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8 lg:gap-10 lg:px-12 lg:py-8 xl:px-16">
         <div className="landing-hero-copy min-w-0 max-w-3xl">
           <motion.div {...reveal(0)}>
             <CmsStyledText
@@ -238,9 +238,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
           </div>
         </div>
 
-        <div className="landing-hero-copy-spacer lg:hidden" aria-hidden />
-
-        <div className="landing-hero-mobile-bar mt-3 flex shrink-0 items-end justify-between gap-3 sm:mt-4 lg:hidden">
+        <div className="landing-hero-mobile-bar flex shrink-0 items-end justify-between gap-3 sm:gap-4 lg:hidden">
           <div className="min-w-0 flex flex-col gap-2">
             <div className="flex gap-2">
               {current.cards.slice(0, 2).map((card) => (

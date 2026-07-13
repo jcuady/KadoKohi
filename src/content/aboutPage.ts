@@ -13,7 +13,8 @@ export const ABOUT_HERO = {
   heroImageAlt: 'Matcha and craft coffee at Kado Kohi Marikina',
 } as const;
 
-/** Hatton-style editorial headlines — accent words use kado-red on dark / cream panels. */
+/** Hatton-style editorial headlines — accent words use kado-red on dark / cream panels.
+ *  Hero lines on /about are CMS-driven (`landingContentStore.aboutPage`); defaults mirror seed below. */
 export const ABOUT_EDITORIAL = {
   heroLines: [
     [

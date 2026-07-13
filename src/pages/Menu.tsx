@@ -1,18 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Coffee, Leaf, IceCreamCone, Star, Croissant } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
-import { formatPhp } from '../lib/money';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
 import CatalogToolbar from '../components/catalog/CatalogToolbar';
-import MenuProductImage from '../components/catalog/MenuProductImage';
+import MenuProductCard from '../components/catalog/MenuProductCard';
 import type { Product } from '../types/domain';
-import { isProductInStock } from '../lib/productStock';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import { isIcedOnlyDrink, productFallbackDescription } from '../lib/menuProductModifiers';
 import {
   baseProductsForFilters,
   DEFAULT_MENU_CATALOG_FILTERS,
@@ -59,7 +56,6 @@ export default function Menu() {
   const deepLinkCategoryId = searchParams.get('category')?.trim() ?? '';
   const categories = useMenuStore((s) => s.categories);
   const products = useMenuStore((s) => s.products);
-  const productsByCategory = useMenuStore((s) => s.productsByCategory);
   const remoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const catalogLoading = !remoteLoaded;
 
@@ -71,17 +67,29 @@ export default function Menu() {
   const filters = useMemo(() => parseMenuCatalogFilters(searchParams), [searchParams]);
   const page = parseMenuPage(searchParams);
 
-  const filterCtx = useMemo(
-    () => ({
+  const filterCtx = useMemo(() => {
+    const byCategory = new Map<string, Product[]>();
+    for (const product of products) {
+      if (!product.visible) continue;
+      const list = byCategory.get(product.categoryId);
+      if (list) list.push(product);
+      else byCategory.set(product.categoryId, [product]);
+    }
+    for (const list of byCategory.values()) {
+      list.sort((a, b) => a.order - b.order);
+    }
+    return {
       categories: sortedCategories,
-      productsByCategory,
-    }),
-    [sortedCategories, productsByCategory],
-  );
+      productsByCategory: (categoryId: string) => byCategory.get(categoryId) ?? [],
+    };
+  }, [sortedCategories, products]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
   const deepLinkHandled = useRef('');
+  const openProduct = useCallback((product: Product) => {
+    setSelectedProduct(product);
+  }, []);
 
   const updateFilters = (patch: Partial<MenuCatalogFilters>) => {
     const next = { ...filters, ...patch };
@@ -155,8 +163,10 @@ export default function Menu() {
     filteredItems.length,
     PRODUCT_GRID_PAGE_SIZE,
   );
-  const browsingFullCatalog =
-    filters.categoryId === ALL_CATEGORY_ID && !shouldPaginate && filteredItems.length > 0;
+  const browsingAllUnfiltered =
+    filters.categoryId === ALL_CATEGORY_ID &&
+    !hasActiveMenuFilters(filters) &&
+    filteredItems.length > 0;
 
   const totalPages =
     filteredItems.length === 0 ? 1 : Math.ceil(filteredItems.length / PRODUCT_GRID_PAGE_SIZE);
@@ -168,6 +178,12 @@ export default function Menu() {
     const start = (safePage - 1) * PRODUCT_GRID_PAGE_SIZE;
     return filteredItems.slice(start, start + PRODUCT_GRID_PAGE_SIZE);
   }, [filteredItems, safePage, shouldPaginate]);
+
+  useEffect(() => {
+    if (filteredItems.length === 0 || page === safePage) return;
+    const params = writeMenuCatalogFilters(searchParams, filters, safePage);
+    setSearchParams(params, { replace: true });
+  }, [filteredItems.length, page, safePage, filters, searchParams, setSearchParams]);
 
   const clearMenuDeepLink = () => {
     deepLinkHandled.current = '';
@@ -254,7 +270,7 @@ export default function Menu() {
           <CatalogPageSkeleton variant="menu" />
         ) : (
           <>
-        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-[#FAF9F6]/95 px-4 pb-0 pt-4 backdrop-blur-md sm:px-6 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
+        <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[35] border-b border-kado-dark/5 bg-kado-offwhite/95 px-4 pb-0 pt-4 backdrop-blur-md sm:px-6 md:top-[calc(3.75rem+env(safe-area-inset-top,0px))] md:px-8 lg:px-16 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2">
           <div className="mx-auto max-w-6xl min-w-0 space-y-0">
             <div
               className="menu-category-tabs grid grid-cols-2 gap-2 sm:gap-2.5 md:flex md:flex-wrap md:items-center md:gap-3 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-4 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-1.5 [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex [@media(orientation:landscape)_and_(max-height:30rem)_and_(min-width:48rem)]:flex-wrap"
@@ -311,14 +327,14 @@ export default function Menu() {
         {/* Product grid */}
         <section className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16">
           <div className="mx-auto min-w-0 max-w-6xl">
-            {browsingFullCatalog ? (
+            {browsingAllUnfiltered ? (
               <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45">
                 {filteredItems.length} drink{filteredItems.length === 1 ? '' : 's'} across{' '}
                 {sortedCategories.length} categor{sortedCategories.length === 1 ? 'y' : 'ies'}
               </p>
             ) : null}
             {paginatedItems.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 text-center">
+              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-12 text-center">
                 <p className="text-sm font-semibold text-kado-dark/50">{emptyMessage}</p>
                 {hasActiveMenuFilters(filters) ? (
                   <button
@@ -331,86 +347,17 @@ export default function Menu() {
                 ) : null}
               </div>
             ) : (
-            <motion.div
-              key={`${filters.categoryId}-${filters.query}-${safePage}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4"
-            >
-              {paginatedItems.map((product, i) => {
-                const tag = isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0];
-                const inStock = isProductInStock(product);
-                const desc = productFallbackDescription(product);
-
-                return (
-                  <motion.button
-                    key={product.id}
-                    id={menuProductDomId(product.id)}
-                    type="button"
-                    disabled={!inStock}
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06, ease: 'easeOut' }}
-                    onClick={() => inStock && setSelectedProduct(product)}
-                    className={`group flex h-full touch-manipulation flex-col overflow-hidden rounded-xl border bg-white text-left transition-all duration-300 focus:outline-none active:scale-[0.99] md:rounded-[1.25rem] ${
-                      highlightProductId === product.id
-                        ? 'border-kado-red ring-2 ring-kado-red ring-offset-2'
-                        : 'border-kado-dark/10'
-                    } ${
-                      inStock
-                        ? 'hover:-translate-y-0.5 hover:border-kado-red/30 hover:shadow-[0_12px_28px_rgba(158,24,29,0.08)] focus-visible:ring-2 focus-visible:ring-kado-red'
-                        : 'cursor-not-allowed border-kado-dark/5 opacity-60'
-                    }`}
-                  >
-                    {/* Image */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-kado-dark/5 shrink-0">
-                      <MenuProductImage
-                        product={product}
-                        alt={product.name}
-                        loading={i < 4 ? 'eager' : 'lazy'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600 ease-out"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                      {!inStock ? (
-                        <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-amber-600 text-white px-2 py-0.5 rounded-full shadow">
-                          Out of stock
-                        </span>
-                      ) : (
-                        tag && (
-                          <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-widest bg-kado-dark text-white px-2 py-0.5 rounded-full shadow">
-                            {tag}
-                          </span>
-                        )
-                      )}
-
-                      {/* Quick-add hint on hover */}
-                      <div className="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <span className="bg-kado-red/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
-                          View details
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div className="flex flex-1 flex-col p-2.5 sm:p-4">
-                      <div className="mb-1 flex items-start justify-between gap-1.5 sm:gap-2">
-                        <h3 className="line-clamp-2 font-display text-xs font-black leading-snug text-kado-dark transition-colors group-hover:text-kado-red sm:text-[0.95rem]">
-                          {product.name}
-                        </h3>
-                        <span className="shrink-0 font-sans text-xs font-black text-kado-dark sm:text-base">
-                          {formatPhp(product.basePrice)}
-                        </span>
-                      </div>
-                      <p className="mt-auto line-clamp-2 pt-1 text-[10px] font-medium leading-relaxed text-kado-dark/60 sm:text-xs">
-                        {desc}
-                      </p>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </motion.div>
+            <div className="menu-product-grid grid grid-cols-2 gap-2.5 sm:gap-4 [@media(orientation:landscape)_and_(max-height:30rem)]:grid-cols-3 [@media(orientation:landscape)_and_(max-height:30rem)]:gap-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+              {paginatedItems.map((product, i) => (
+                <MenuProductCard
+                  key={product.id}
+                  product={product}
+                  highlight={highlightProductId === product.id}
+                  imagePriority={i < 4}
+                  onSelect={openProduct}
+                />
+              ))}
+            </div>
             )}
 
             <ProductGridPagination

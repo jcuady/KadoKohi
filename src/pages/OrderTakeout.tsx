@@ -26,6 +26,7 @@ import QrCatalogToolbar from '../components/catalog/QrCatalogToolbar';
 import QrMenuSkeleton from '../components/catalog/QrMenuSkeleton';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
 import { Store } from 'lucide-react';
+import BrandHybridMark from '../components/BrandHybridMark';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import { qrGuestCategoryTabs, qrGuestMenuSections } from '../lib/qrGuestMenu';
 import {
@@ -291,9 +292,7 @@ export default function OrderTakeout() {
       <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)] pt-safe-nav">
         <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-5 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2.5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-lg shrink-0">
-              角
-            </div>
+            <BrandHybridMark size="md" className="h-11 w-11" />
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
                 Takeout · {branch.name}

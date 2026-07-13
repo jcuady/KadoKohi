@@ -5,8 +5,8 @@ import { logAudit } from '../lib/audit';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 
-const IMG_LATTE = 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1200&auto=format&fit=crop';
-const IMG_CUPPING = 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1200&auto=format&fit=crop';
+const IMG_LATTE = '/images/hero-coffee.png';
+const IMG_CUPPING = '/images/hero-interior.png';
 
 const SEED_EVENTS: Event[] = [
   {

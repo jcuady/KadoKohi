@@ -160,20 +160,13 @@ export function hasActiveMenuFilters(filters: MenuCatalogFilters): boolean {
   );
 }
 
-/** Online /menu: show full grid on All tab with default filters; paginate when filtered or per-category overflow. */
+/** Paginate whenever the result set exceeds one page — keeps /menu grids responsive. */
 export function shouldPaginateMenuCatalog(
-  filters: MenuCatalogFilters,
+  _filters: MenuCatalogFilters,
   resultCount: number,
   pageSize: number,
 ): boolean {
-  if (resultCount <= pageSize) return false;
-  const browsingAll =
-    filters.categoryId === 'all' &&
-    !Boolean(filters.query.trim()) &&
-    filters.temperature === 'all' &&
-    !filters.inStockOnly &&
-    filters.sort === 'order';
-  return !browsingAll;
+  return resultCount > pageSize;
 }
 
 export function parseMenuCatalogFilters(params: URLSearchParams): MenuCatalogFilters {

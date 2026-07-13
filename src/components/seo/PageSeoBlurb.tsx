@@ -10,7 +10,7 @@ export default function PageSeoBlurb() {
   return (
     <aside
       aria-label="About Kado Coffee in Marikina"
-      className="border-t border-kado-dark/8 bg-[#FAF7F2] px-4 py-10 sm:px-6 md:px-12 lg:px-24"
+      className="border-t border-kado-dark/8 bg-kado-offwhite px-4 py-10 sm:px-6 md:px-12 lg:px-24"
     >
       <div className="mx-auto max-w-3xl">
         <h2 className="font-display text-lg sm:text-xl font-bold text-kado-dark mb-3">{blurb.heading}</h2>

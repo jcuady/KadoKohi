@@ -367,7 +367,7 @@ export default function ProductDetailDrawer({
                       className={`flex-1 rounded-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300 shadow-lg ${
                         added
                           ? 'bg-kado-dark text-white shadow-kado-dark/20'
-                          : 'bg-kado-red text-white shadow-kado-red/30 hover:bg-[#8A1519] hover:shadow-kado-red/40'
+                          : 'bg-kado-red text-white shadow-kado-red/30 hover:bg-kado-red-hover hover:shadow-kado-red/40'
                       }`}
                     >
                       {added ? (
@@ -396,7 +396,7 @@ export default function ProductDetailDrawer({
                       to="/auth/login"
                       state={{ from: '/' }}
                       onClick={onClose}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-kado-red py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-kado-red/30 hover:bg-[#8A1519] transition-colors"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-kado-red py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
                     >
                       <LogIn className="w-4 h-4" />
                       Sign in to order

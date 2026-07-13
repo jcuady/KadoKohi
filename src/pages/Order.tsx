@@ -205,7 +205,7 @@ export default function Order() {
                         c.map((x) => (x.key === line.key ? { ...x, milkId: e.target.value || undefined } : x)),
                       )
                     }
-                    className="mt-2 w-full min-h-[44px] rounded-lg border border-kado-dark/10 bg-[#FAF7F2] text-sm py-2 px-3 touch-manipulation"
+                    className="mt-2 w-full min-h-[44px] rounded-lg border border-kado-dark/10 bg-kado-offwhite text-sm py-2 px-3 touch-manipulation"
                   >
                     {getOrderableMilks(p).map((m) => (
                       <option key={m.id} value={m.id}>

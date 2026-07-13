@@ -21,6 +21,8 @@ import {
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { usePushToggle } from '../hooks/usePushToggle';
 import { useAuthStore } from '../store/authStore';
+import { LOGO } from '../lib/brandTokens';
+import BrandHybridMark from '../components/BrandHybridMark';
 
 type OSTab = 'android' | 'ios';
 
@@ -114,14 +116,13 @@ export default function HelpInstall() {
             <span className="hidden sm:inline">{backLabel}</span>
           </Link>
           <div className="flex-1 flex justify-center">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-kado-red text-white flex items-center justify-center font-display font-bold rounded-sm text-base">
-                角
-              </div>
+            <Link to="/" className="flex items-center gap-2.5" aria-label="Kado Kohi home">
+              <BrandHybridMark size="sm" />
               <img
-                src="/logo/Logo1.png"
-                alt="Kado Kohi"
+                src={LOGO.wordmark}
+                alt=""
                 className="h-7 w-auto object-contain mix-blend-multiply contrast-[1.08]"
+                aria-hidden
               />
             </Link>
           </div>
@@ -432,7 +433,7 @@ export default function HelpInstall() {
       <footer className="mt-12 border-t border-kado-dark/8 bg-kado-dark">
         <div className="max-w-3xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-kado-red text-white flex items-center justify-center font-display font-bold text-xs rounded-sm">角</div>
+            <BrandHybridMark size="sm" />
             <span className="text-xs font-bold text-white/55">Kado Kohi &copy; 2026</span>
           </div>
           <div className="flex items-center gap-5 text-xs text-white/40">

@@ -14,6 +14,7 @@ import { formatPhp } from '../../lib/money';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import ResilientImage from '../ui/ResilientImage';
+import BrandHybridMark from '../BrandHybridMark';
 import {
   getMenuProductImageUrl,
   listVisibleCoffeeProducts,
@@ -220,9 +221,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               timelineRef={sectionRef}
               className="mb-3 flex flex-wrap items-center gap-2.5 sm:mb-4 sm:gap-3"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kado-red font-display text-base font-black text-kado-cream shadow-md sm:h-11 sm:w-11 sm:text-lg">
-                角
-              </span>
+              <BrandHybridMark size="md" className="h-9 w-9 shadow-md sm:h-11 sm:w-11" />
               <CmsStyledText
                 value={copy.badge}
                 as="span"

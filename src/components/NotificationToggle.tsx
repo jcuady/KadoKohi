@@ -160,7 +160,7 @@ export default function NotificationToggle({
 
   if (status === 'unsupported') {
     return (
-      <div className="rounded-2xl border border-kado-dark/10 bg-[#FAF7F2] p-5 flex items-start gap-3">
+      <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-5 flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kado-dark/5 text-kado-dark/40">
           <BellOff className="w-5 h-5" />
         </div>
@@ -230,7 +230,7 @@ export default function NotificationToggle({
       )}
 
       {isProfile && (
-        <div className="border-t border-kado-dark/5 bg-[#FAF7F2] px-5 sm:px-6 py-3">
+        <div className="border-t border-kado-dark/5 bg-kado-offwhite px-5 sm:px-6 py-3">
           <p className="text-[10px] text-kado-dark/45 leading-relaxed">
             You'll receive professional updates for each step — received, confirmed, brewing, ready, and complete.
             Stamps are included when your order finishes.

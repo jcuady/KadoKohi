@@ -55,7 +55,7 @@ export default function GcashQrModal({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="w-full max-w-md max-h-[min(92dvh,720px)] flex flex-col rounded-t-[1.75rem] sm:rounded-[1.75rem] bg-[#FAF7F2] border border-kado-dark/10 shadow-2xl overflow-hidden"
+            className="w-full max-w-md max-h-[min(92dvh,720px)] flex flex-col rounded-t-[1.75rem] sm:rounded-[1.75rem] bg-kado-offwhite border border-kado-dark/10 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-kado-dark/10 shrink-0">

@@ -110,7 +110,7 @@ export function buildBoothQuoteEmailHtml(input: BoothQuoteEmailInput): string {
         <tr><td style="padding:6px 0;color:#666">Quoted total</td><td style="padding:6px 0;font-size:18px;font-weight:bold;color:#9E181D">${escapeHtml(formatPhp(quotedTotal))}</td></tr>
         ${amountDue !== quotedTotal ? `<tr><td style="padding:6px 0;color:#666">Amount due</td><td style="padding:6px 0;font-weight:600">${escapeHtml(formatPhp(amountDue))}</td></tr>` : ''}
       </table>
-      ${msg ? `<p style="background:#FAF7F2;padding:12px 14px;border-radius:8px;font-size:14px;line-height:1.5">${escapeHtml(msg).replace(/\n/g, '<br/>')}</p>` : ''}
+      ${msg ? `<p style="background:#FAF9F6;padding:12px 14px;border-radius:8px;font-size:14px;line-height:1.5">${escapeHtml(msg).replace(/\n/g, '<br/>')}</p>` : ''}
       ${paymentBlock}
       <p style="font-size:13px;color:#666;margin-top:20px">Upload payment proof at <a href="https://www.kadokohi.com/account/booth">your account</a> or reply to confirm.</p>
     </div>

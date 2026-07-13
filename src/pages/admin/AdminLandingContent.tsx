@@ -48,6 +48,7 @@ export default function AdminLandingContent() {
   const reorderOrderingSteps = useLandingContentStore((s) => s.reorderOrderingSteps);
   const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
+  const updateAboutPage = useLandingContentStore((s) => s.updateAboutPage);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
   const updateFaq = useLandingContentStore((s) => s.updateFaq);
   const updateFaqItem = useLandingContentStore((s) => s.updateFaqItem);
@@ -624,6 +625,80 @@ export default function AdminLandingContent() {
             />
           </div>
         </section>
+          </div>
+        </LandingCmsSectionCard>
+
+        <LandingCmsSectionCard tab={cmsTab('about')} onUploadError={setUploadError}>
+          <div className="space-y-6">
+            <section className="rounded-2xl dash-card border p-5 md:p-6">
+              <h2 className="font-display font-bold text-xl dash-heading mb-2">About page hero</h2>
+              <p className="text-xs dash-muted mb-4">
+                Live on <code className="text-[10px]">/about</code>. Headline accents render in brand red.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <CmsField
+                  label="Eyebrow"
+                  value={content.aboutPage.eyebrow}
+                  onChange={(v) => updateAboutPage({ eyebrow: v })}
+                />
+                <CmsField
+                  label="Soft opening chip"
+                  value={content.aboutPage.softOpeningLabel}
+                  onChange={(v) => updateAboutPage({ softOpeningLabel: v })}
+                />
+                <CmsField
+                  label="Soft opening date"
+                  value={content.aboutPage.softOpeningDate}
+                  onChange={(v) => updateAboutPage({ softOpeningDate: v })}
+                />
+                <CmsField
+                  label="Location note"
+                  value={content.aboutPage.locationNote}
+                  onChange={(v) => updateAboutPage({ locationNote: v })}
+                />
+                <CmsField
+                  label="Headline line 1"
+                  value={content.aboutPage.line1Before}
+                  onChange={(v) => updateAboutPage({ line1Before: v })}
+                />
+                <CmsField
+                  label="Line 1 accent (red)"
+                  value={content.aboutPage.line1Accent}
+                  onChange={(v) => updateAboutPage({ line1Accent: v })}
+                />
+                <CmsField
+                  label="Headline line 2"
+                  value={content.aboutPage.line2Before}
+                  onChange={(v) => updateAboutPage({ line2Before: v })}
+                />
+                <CmsField
+                  label="Line 2 accent (red)"
+                  value={content.aboutPage.line2Accent}
+                  onChange={(v) => updateAboutPage({ line2Accent: v })}
+                />
+              </div>
+              <CmsField
+                label="Tagline"
+                value={content.aboutPage.tagline}
+                onChange={(v) => updateAboutPage({ tagline: v })}
+                multiline
+              />
+              <div className="mt-4 grid md:grid-cols-2 gap-4">
+                <ImageUrlField
+                  label="Hero photo URL"
+                  value={content.aboutPage.heroImageSrc}
+                  onChange={(v) => updateAboutPage({ heroImageSrc: v })}
+                  onPickFile={(files) =>
+                    onPickImage(`landing/about/hero`, (url) => updateAboutPage({ heroImageSrc: url }), files)
+                  }
+                />
+                <CmsField
+                  label="Hero image alt"
+                  value={content.aboutPage.heroImageAlt}
+                  onChange={(v) => updateAboutPage({ heroImageAlt: v })}
+                />
+              </div>
+            </section>
           </div>
         </LandingCmsSectionCard>
 

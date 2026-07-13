@@ -24,9 +24,11 @@ export interface CareersStore {
   updatePageCopy: (patch: Partial<CareersPageCopy>) => void;
   updateApplicationForm: (patch: Partial<CareerApplicationFormConfig>) => void;
   setApplicationFormFields: (fields: CareerApplicationFormConfig['fields']) => void;
-  addListing: (input: Omit<CareerListing, 'id' | 'sortOrder'> & { id?: string; sortOrder?: number }) => void;
+  addListing: (input: Omit<CareerListing, 'id' | 'sortOrder'> & { id?: string; sortOrder?: number; postedAt?: string }) => void;
   updateListing: (id: string, patch: Partial<CareerListing>) => void;
   removeListing: (id: string) => void;
+  reorderListing: (from: number, to: number) => void;
+  duplicateListing: (id: string) => void;
   visibleListings: (category?: CareerListingCategory) => CareerListing[];
   seed: () => void;
 }
@@ -99,6 +101,7 @@ export const useCareersStore = create<CareersStore>()((set, get) => ({
           ...input,
           id: input.id ?? newId(),
           sortOrder: input.sortOrder ?? get().listings.length,
+          postedAt: input.postedAt ?? new Date().toISOString(),
         },
       ],
     }),
@@ -112,6 +115,29 @@ export const useCareersStore = create<CareersStore>()((set, get) => ({
     set({
       listings: get().listings.filter((item) => item.id !== id),
     }),
+
+  reorderListing: (from, to) => {
+    const list = [...get().listings].sort((a, b) => a.sortOrder - b.sortOrder);
+    if (from < 0 || from >= list.length || to < 0 || to >= list.length) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    set({
+      listings: list.map((item, index) => ({ ...item, sortOrder: index })),
+    });
+  },
+
+  duplicateListing: (id) => {
+    const source = get().listings.find((item) => item.id === id);
+    if (!source) return;
+    const copy: CareerListing = {
+      ...source,
+      id: newId(),
+      title: `${source.title} (copy)`,
+      sortOrder: get().listings.length,
+      postedAt: new Date().toISOString(),
+    };
+    set({ listings: [...get().listings, copy] });
+  },
 
   visibleListings: (category) =>
     get()

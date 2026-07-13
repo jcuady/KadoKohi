@@ -96,24 +96,24 @@ Canonical values live in `src/lib/brandTokens.ts` and `src/index.css`:
 Fonts are loaded from Google Fonts in `index.css`. Logo paths are centralized in `brandTokens.ts` (`LOGO.wordmark`, `LOGO.hybridMark`, etc.).
 
 ### Remaining alignment gaps vs fixed brand system
-1. **Logo usage inconsistency** — some nav/footer surfaces still use a text + kanji box instead of official lockups in `public/logo/`.
-2. **Image sourcing** — mix of local brand assets (`public/images`, `public/Branding`) and external stock URLs on some sections.
-3. **Collateral style on web** — high-energy Japanese overlay treatment from social collaterals is only partially reflected.
-4. **Hero viewport** — client wants 8–10vh peek of the next section below hero (`kado-kohi-revisions.md`); hero is still near full viewport.
+1. **Logo usage** — customer chrome (nav, footer, auth, QR/takeout, account, Help Install) and internal sidebars use official `LOGO.*` / `BrandHybridMark` / `BrandWordmark`. Decorative `角` watermarks and loyalty stamp motifs remain intentional per §1 symbol use.
+2. **Image sourcing** — live UI defaults prefer local `public/` assets; offline seed data in `src/data/seed.ts` still uses Unsplash (CMS/prod overrides when loaded).
+3. **Collateral style on web** — high-energy Japanese overlay treatment from social collaterals is only partially reflected (section watermarks + ordering carousel).
+4. **Hero viewport** — client revision asked for 8–10vh next-section peek; current hero fills viewport below nav (cream gap removed). Revisit only if product wants peek restored.
 
 ## 4) Project Progress Status
 
 ### Already strong
 - Canonical color and typography tokens deployed in CSS and `brandTokens.ts`.
+- Official mark system on key surfaces (header, footer, auth, QR/takeout, internal portals).
 - Full multi-page + operations platform (not just a landing page).
 - Data-driven menu, merch, events, blog, and landing CMS.
 - QR ordering, loyalty, and admin tooling on production Supabase.
 
 ### Not yet finished for full brand lock
-- Official mark system on every key surface (header, footer, auth, internal portals).
-- Replace remaining external stock imagery with approved local photography.
-- Consistent Japanese overlay / campaign block patterns on marketing sections.
-- Hero height adjustment per client revision.
+- Optional: replace Unsplash URLs in seed/demo data with local photography.
+- Deeper campaign-block / kanji-overlay patterns on remaining marketing sections.
+- Hero peek height only if reinstated by client.
 
 ## 5) Practical Guidance for Next Iterations
 

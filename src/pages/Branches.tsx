@@ -3,6 +3,7 @@ import { MapPin, Clock } from 'lucide-react';
 import { useBranchStore } from '../store/branchStore';
 import { branchDirectionsUrl, branchHeroImageUrl } from '../lib/branchMaps';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import PublicPageBanner from '../components/seo/PublicPageBanner';
 
 export default function Branches() {
   const branches = useBranchStore((s) => s.branches);
@@ -14,19 +15,11 @@ export default function Branches() {
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
-      <section className="pt-28 pb-12 px-6 border-b border-kado-dark/5 bg-[#FAF7F2]">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-2 text-center">
-            Locations
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            Kado Coffee — Marikina
-          </h1>
-          <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Coffee near me in Marikina &amp; Sta. Elena — J.P. Laurel corner Mt. Everest. Greenhills branch coming soon.
-          </p>
-        </div>
-      </section>
+      <PublicPageBanner
+        eyebrow="Locations"
+        title="Kado Coffee — Marikina"
+        description="Coffee near me in Marikina & Sta. Elena — J.P. Laurel corner Mt. Everest. Greenhills branch coming soon."
+      />
 
       <section className="px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2">

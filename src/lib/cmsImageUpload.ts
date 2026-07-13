@@ -32,5 +32,6 @@ export function cmsImagePrefixForField(fieldId: string): string {
   if (section === 'featured' && rest[0] === 'card') return `landing/featured/cards/${rest[1] ?? '0'}`;
   if (section === 'testimonials' && rest[0] === 'item') return `landing/testimonials/items/${rest[1] ?? '0'}`;
   if (section === 'testimonials' && rest[0] === 'trustedBrand') return `landing/testimonials/brands/${rest[1] ?? '0'}`;
+  if (section === 'about') return 'landing/about/hero';
   return `landing/misc/${fieldId.replace(/\./g, '-')}`;
 }

@@ -35,6 +35,22 @@ export function pathUsesGuestRealtime(pathname: string): boolean {
 
 let channel: RealtimeChannel | null = null;
 let refCount = 0;
+let connecting = false;
+
+function disposeGuestChannel(): void {
+  if (!supabase) return;
+  if (channel) {
+    const ch = channel;
+    channel = null;
+    void supabase.removeChannel(ch);
+  }
+  // StrictMode: stop clears our ref before deferred removeChannel — sweep stale topic.
+  for (const ch of supabase.getChannels()) {
+    if (ch.topic === 'realtime:kk_guest_pages_live') {
+      void supabase.removeChannel(ch);
+    }
+  }
+}
 
 function debounce(fn: () => void, ms: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -92,27 +108,39 @@ export function startGuestPageRealtime(): void {
   if (!supabase) return;
   cancelDeferredRealtimeStop();
   refCount += 1;
-  if (channel) return;
+  if (channel || connecting) return;
 
-  const ch = supabase.channel('kk_guest_pages_live');
-  channel = ch;
-  for (const table of GUEST_TABLES) {
-    ch.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table },
-      () => onTableChange(table),
-    );
+  connecting = true;
+  try {
+    disposeGuestChannel();
+
+    const ch = supabase.channel('kk_guest_pages_live');
+    channel = ch;
+    for (const table of GUEST_TABLES) {
+      ch.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table },
+        () => onTableChange(table),
+      );
+    }
+    ch.subscribe();
+  } catch (err) {
+    console.error('startGuestPageRealtime failed', err);
+    refCount = Math.max(0, refCount - 1);
+    disposeGuestChannel();
+  } finally {
+    connecting = false;
   }
-  ch.subscribe();
 }
 
 export function stopGuestPageRealtime(): void {
   refCount = Math.max(0, refCount - 1);
   if (refCount > 0) return;
+  connecting = false;
   const ch = channel;
   channel = null;
-  if (!ch) return;
+  if (!ch || !supabase) return;
   deferRealtimeStop(() => {
-    if (supabase) void supabase.removeChannel(ch);
+    void supabase.removeChannel(ch);
   });
 }

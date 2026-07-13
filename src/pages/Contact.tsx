@@ -10,6 +10,7 @@ import {
 import { sendInboundEmail, validateContactForm } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import PublicPageBanner from '../components/seo/PublicPageBanner';
 import { cn } from '../lib/utils';
 import { kadoMapsSearchUrl, isStaleMapsEmbedUrl, kadoMapsEmbedUrl } from '../content/kadoLocation';
 
@@ -77,23 +78,19 @@ export default function Contact() {
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
-      <section className="pt-28 pb-12 px-6 border-b border-kado-dark/5 bg-[#FAF7F2]">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-2 text-center">
-            Contact
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            We'd Love to Hear From You
-          </h1>
-          <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Choose why you're reaching out — your message goes to{' '}
-            <a href={mailHref} className="text-kado-red font-bold hover:underline">
+      <PublicPageBanner
+        eyebrow="Contact"
+        title="We'd Love to Hear From You"
+        description={
+          <>
+            Choose why you&apos;re reaching out — your message goes to{' '}
+            <a href={mailHref} className="font-bold text-kado-red hover:underline">
               {inboundEmail}
             </a>
             .
-          </p>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <section className="px-6 py-16 md:py-24">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
@@ -194,7 +191,7 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="group w-full bg-kado-red text-white py-4 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#8A1519] shadow-lg shadow-kado-red/20 transition-all disabled:opacity-60"
+                className="group w-full bg-kado-red text-white py-4 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-kado-red-hover shadow-lg shadow-kado-red/20 transition-all disabled:opacity-60"
               >
                 <Send className="w-4 h-4" />
                 {submitting ? 'Sending…' : 'Send message'}
@@ -280,7 +277,7 @@ export default function Contact() {
                   key={info.label}
                   className="bg-white border border-kado-dark/10 rounded-xl p-5 flex items-start gap-4 hover:border-kado-red/30 hover:shadow-lg hover:shadow-kado-red/5 transition-all group"
                 >
-                  <div className="w-10 h-10 bg-[#FAF7F2] rounded-xl flex items-center justify-center text-kado-dark group-hover:text-kado-red group-hover:bg-kado-red/10 transition-colors shrink-0">
+                  <div className="w-10 h-10 bg-kado-offwhite rounded-xl flex items-center justify-center text-kado-dark group-hover:text-kado-red group-hover:bg-kado-red/10 transition-colors shrink-0">
                     {info.icon}
                   </div>
                   <div className="min-w-0">
@@ -303,7 +300,7 @@ export default function Contact() {
             </div>
 
             {showSocial ? (
-              <div className="flex items-center gap-4 bg-[#FAF7F2] p-5 rounded-xl border border-kado-dark/5">
+              <div className="flex items-center gap-4 bg-kado-offwhite p-5 rounded-xl border border-kado-dark/5">
                 <span className="text-[10px] font-black uppercase tracking-widest text-kado-dark shrink-0">
                   Follow us
                 </span>

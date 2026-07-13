@@ -28,6 +28,8 @@ import {
   PenLine,
   Cake,
 } from 'lucide-react';
+import { LOGO } from '../lib/brandTokens';
+import BrandHybridMark from '../components/BrandHybridMark';
 import { useAuthStore } from '../store/authStore';
 import { useDashTheme } from '../lib/theme';
 import { hasAllBranchAccess } from '../lib/roles';
@@ -256,12 +258,12 @@ export default function AdminLayout() {
         <div className="shrink-0 border-b px-2 pb-3 pt-3 md:px-4 md:pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
           <Link to="/admin" className="flex items-center justify-center md:justify-start">
             <img
-              src="/logo/Logo2.png"
+              src={LOGO.hybridMark}
               alt="Kado Kohi"
               className="hidden h-8 w-auto object-contain object-left md:block"
               style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}
             />
-            <span className="font-display text-base font-bold text-kado-red md:hidden">角</span>
+            <BrandHybridMark size="sm" alt="" className="md:hidden" />
           </Link>
           <div className="mt-3 hidden items-center gap-2.5 md:flex">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kado-red text-[11px] font-black uppercase text-white">

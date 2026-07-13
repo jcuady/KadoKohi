@@ -93,7 +93,7 @@ export default function AccountDashboard() {
             className="bg-white border border-kado-dark/8 rounded-2xl p-5 md:p-6 hover:shadow-[0_12px_32px_rgba(158,24,29,0.06)] hover:border-kado-red/15 transition-all duration-300 group"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center group-hover:bg-kado-red/10 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-kado-offwhite flex items-center justify-center group-hover:bg-kado-red/10 transition-colors">
                 <card.icon className={`w-4 h-4 ${card.color} group-hover:text-kado-red transition-colors`} />
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function AccountDashboard() {
         </div>
 
         {activeOrders.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-10 md:p-14 text-center">
+          <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-10 md:p-14 text-center">
             <ShoppingBag className="w-10 h-10 text-kado-dark/15 mx-auto mb-4" />
             <p className="text-sm font-bold text-kado-dark/50 mb-1">No active orders</p>
             <p className="text-xs text-kado-dark/35 mb-5">Place an order from the menu to get started.</p>
@@ -238,7 +238,7 @@ export default function AccountDashboard() {
                 transition={{ delay: i * 0.05 }}
                 className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex items-center gap-4 hover:shadow-[0_8px_24px_rgba(158,24,29,0.05)] hover:border-kado-red/15 transition-all duration-300 group"
               >
-                <div className="w-12 h-12 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0 group-hover:bg-kado-red/10 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0 group-hover:bg-kado-red/10 transition-colors">
                   <Clock className="w-5 h-5 text-amber-600" />
                 </div>
                 <div className="flex-1 min-w-0">

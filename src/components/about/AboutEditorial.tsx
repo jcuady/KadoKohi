@@ -69,7 +69,8 @@ export function EditorialHeadline({
     return (
       <Tag
         className={cn(
-          'about-editorial-headline max-w-full break-words',
+          'about-editorial-headline max-w-full',
+          size === 'display' ? '' : 'break-words',
           sizeClass,
           dark ? 'text-kado-cream' : 'text-kado-dark',
           className,
@@ -83,14 +84,15 @@ export function EditorialHeadline({
   return (
     <Tag
       className={cn(
-        'about-editorial-headline max-w-full break-words',
+        'about-editorial-headline max-w-full',
+        size === 'display' ? '' : 'break-words',
         sizeClass,
         dark ? 'text-kado-cream' : 'text-kado-dark',
         className,
       )}
     >
       {lines?.map((line, i) => (
-        <span key={i} className="block">
+        <span key={i} className={size === 'display' ? 'about-editorial-line' : 'block'}>
           {renderParts(line)}
         </span>
       ))}

@@ -50,7 +50,7 @@ export default function AboutValues() {
       </AboutSectionShell>
 
       {/* Philosophy grid */}
-      <AboutSectionShell className="bg-[#FAF7F2]" id="about-philosophy">
+      <AboutSectionShell className="bg-kado-offwhite" id="about-philosophy">
         <AboutEditorialGrid>
           <div className="mb-10 md:mb-14">
             <p className="kado-label mb-3 text-kado-red">{ABOUT_VALUES.eyebrow}</p>

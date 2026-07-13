@@ -58,8 +58,11 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
   );
 
   return (
-    <div className="w-full bg-[#FAF7F2] min-h-screen">
-      <section className="relative w-full overflow-hidden bg-kado-dark" style={{ minHeight: 'min(92svh, 680px)' }}>
+    <div className="w-full min-h-screen bg-kado-cream">
+      <section
+        className="relative w-full overflow-hidden bg-kado-dark"
+        style={{ minHeight: 'min(calc(100dvh - var(--public-nav-height, 4rem)), 40rem)' }}
+      >
         <div className={`absolute inset-0 gap-0.5 opacity-60 ${isMatcha ? 'grid grid-cols-2 lg:grid-cols-3' : 'grid grid-cols-12 grid-rows-6'}`}>
           {isMatcha
             ? heroImages.map((img) => (
@@ -105,21 +108,21 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
             <CmsStyledText
               value={pageCopy.heroEyebrow}
               as="p"
-              className="text-[10px] sm:text-xs font-black uppercase tracking-[0.28em] mb-4"
+              className="kado-label mb-4"
               defaultColorClass="text-kado-red"
             />
             {!isMatcha ? null : (
               <p className="sr-only">{BOOKING_PAGE_LABELS[kind]}</p>
             )}
-            <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] font-black leading-[0.95] tracking-tight uppercase mb-5 drop-shadow-lg">
-              <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-white" />
+            <h1 className="mb-5 font-display text-[clamp(2rem,6.5vw,4.5rem)] font-black uppercase leading-[0.95] tracking-tight drop-shadow-lg">
+              <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-kado-cream" />
               <br />
-              <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-white" />
+              <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-kado-cream" />
             </h1>
             <CmsStyledText
               value={pageCopy.heroDescription}
               as="p"
-              className="text-base sm:text-lg leading-relaxed max-w-xl mb-8"
+              className="kado-body mb-8 max-w-xl leading-relaxed"
               defaultColorClass="text-kado-cream/85"
             />
 

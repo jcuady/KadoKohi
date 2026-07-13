@@ -12,6 +12,11 @@ export const LANDING_CMS_TABS = [
     hint: 'Branches strip badge, title, and CTA — branch rows come from Branches admin.',
   },
   {
+    id: 'about',
+    label: 'About page',
+    hint: '/about hero — headline accents, tagline, soft opening, location, and photo.',
+  },
+  {
     id: 'faq',
     label: 'FAQ',
     hint: 'Good-to-know accordion — ordering, loyalty, booth booking, and site policies.',

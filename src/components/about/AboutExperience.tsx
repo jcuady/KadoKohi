@@ -7,7 +7,7 @@ import { AboutEditorialGrid, EditorialHeadline } from './AboutEditorial';
 
 export default function AboutExperience() {
   return (
-    <AboutSectionShell className="bg-[#FAF7F2]">
+    <AboutSectionShell className="bg-kado-offwhite">
       <AboutEditorialGrid>
         <div className="mb-10 md:mb-12">
           <p className="kado-label mb-3 text-kado-red">{ABOUT_EXPERIENCE.eyebrow}</p>

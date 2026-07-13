@@ -19,11 +19,11 @@
   --color-ring: #9E181D;
   --color-muted-foreground: rgba(25, 25, 25, 0.55);
 
-  /* Dashboard theme tokens (light defaults) */
-  --color-dash-bg: #FAF7F2;
-  --color-dash-surface: #FFFFFF;
-  --color-dash-surface-alt: #FAF7F2;
-  --color-dash-sidebar: #FFFFFF;
+  /* Dashboard theme tokens (light defaults) — brand off-white, not pure white */
+  --color-dash-bg: #FAF9F6;
+  --color-dash-surface: #FAF9F6;
+  --color-dash-surface-alt: #F1DFBA;
+  --color-dash-sidebar: #FAF9F6;
   --color-dash-text: #191919;
   --color-dash-text-muted: rgba(25, 25, 25, 0.55);
   --color-dash-border: rgba(25, 25, 25, 0.10);
@@ -138,7 +138,7 @@
 
 /* Kiosk display (customer-facing order board) — light default */
 .kiosk-root {
-  --kiosk-bg: #FAF7F2;
+  --kiosk-bg: #FAF9F6;
   --kiosk-bg-accent: #F1DFBA;
   --kiosk-surface: #FFFFFF;
   --kiosk-surface-muted: #FAF9F6;
@@ -767,11 +767,72 @@ html.customer-facing {
   }
 }
 
-/* Homepage hero — 92svh leaves an ~8vh peek of the next section
-   (client revision, BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md §3.4) */
+/* Homepage hero — fill viewport below sticky nav; grows with content when needed */
 .landing-hero {
-  min-height: calc(92svh - var(--public-nav-height));
-  min-height: calc(92dvh - var(--public-nav-height));
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh - var(--public-nav-height));
+  min-height: calc(100dvh - var(--public-nav-height));
+}
+
+.landing-hero-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+}
+
+.landing-hero-mobile-bar {
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+@media (min-width: 64rem) {
+  .landing-hero-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(220px, 22rem);
+    align-items: center;
+    justify-content: unset;
+  }
+
+  .landing-hero-mobile-bar {
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  .landing-hero {
+    min-height: calc(100svh - var(--public-nav-height));
+    min-height: calc(100dvh - var(--public-nav-height));
+  }
+
+  .landing-hero-inner {
+    justify-content: flex-start;
+    padding-top: 0.75rem !important;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .landing-hero-cards {
+    display: none !important;
+  }
+
+  .landing-section {
+    padding-block: clamp(1.75rem, 3vw + 0.75rem, 2.75rem);
+  }
+}
+
+@media (orientation: landscape) and (min-width: 64rem) and (max-height: 40rem) {
+  .landing-hero-inner {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: center !important;
+  }
+
+  .landing-hero-cards {
+    display: none !important;
+  }
 }
 
 /* Kanji overlay — brand watermark layer (BRANDING §1 visual language) */
@@ -838,51 +899,6 @@ html.customer-facing {
   }
 }
 
-@media (max-width: 63.99rem) {
-  .landing-hero-inner {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    min-height: calc(92svh - var(--public-nav-height));
-    min-height: calc(92dvh - var(--public-nav-height));
-  }
-
-  .landing-hero-copy-spacer {
-    flex: 1 1 auto;
-    min-height: 0.75rem;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 32rem) {
-  .landing-hero {
-    height: auto !important;
-    min-height: min(calc(100svh - var(--public-nav-height)), 28rem) !important;
-  }
-
-  .landing-hero-inner {
-    padding-top: 0.75rem !important;
-    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .landing-hero-cards {
-    display: none !important;
-  }
-
-  .landing-section {
-    padding-block: clamp(1.75rem, 3vw + 0.75rem, 2.75rem);
-  }
-}
-
-@media (orientation: landscape) and (min-width: 64rem) and (max-height: 40rem) {
-  .landing-hero-inner {
-    grid-template-columns: minmax(0, 1fr) !important;
-    align-items: center !important;
-  }
-
-  .landing-hero-cards {
-    display: none !important;
-  }
-}
 
 html.dash-dark {
   color-scheme: dark;
@@ -1081,11 +1097,33 @@ html.dash-dark {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: -0.03em;
-  line-height: 0.92;
+  line-height: 0.95;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* Scale display type to container so expanded words never orphan mid-word */
+.about-editorial-headline-scale {
+  container-type: inline-size;
+  container-name: about-hero-copy;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .about-editorial-headline-display {
-  font-size: clamp(2.35rem, 10.5vw, 6.25rem);
+  font-size: clamp(1.4rem, 8.5cqi, 4.5rem);
+}
+
+.about-editorial-headline-display .about-editorial-line {
+  display: block;
+  white-space: normal;
+  max-width: 100%;
+}
+
+.about-editorial-headline-display .about-editorial-line > span {
+  white-space: nowrap;
 }
 
 .about-editorial-headline-section {
@@ -1110,6 +1148,59 @@ html.dash-dark {
 .about-editorial-headline-inline {
   font-size: clamp(1.25rem, 4.5vw, 2.5rem);
   line-height: 1.05;
+}
+
+/* About hero — fill viewport below nav; columns never bleed */
+.about-hero-grid {
+  min-height: min(100svh - var(--public-nav-height, 3.75rem), 52rem);
+}
+
+@media (max-width: 63.99rem) {
+  .about-hero-grid {
+    min-height: auto;
+  }
+}
+
+/* Portrait phones — slightly tighter so long lines fit */
+@media (max-width: 39.99rem) {
+  .about-editorial-headline-display {
+    font-size: clamp(1.25rem, 9cqi, 2.35rem);
+  }
+}
+
+/* Short landscape — compact hero, no mid-word orphans */
+@media (orientation: landscape) and (max-height: 40rem) {
+  .about-hero-section {
+    min-height: auto !important;
+  }
+
+  .about-hero-grid {
+    min-height: auto;
+  }
+
+  .about-editorial-headline-display {
+    font-size: clamp(1.15rem, 6cqi, 2.15rem);
+  }
+
+  .about-hero-parallax-off {
+    transform: none !important;
+  }
+
+  .about-hero-media {
+    min-height: min(48svh, 14rem) !important;
+  }
+}
+
+@supports not (font-size: 1cqi) {
+  .about-editorial-headline-display {
+    font-size: clamp(1.4rem, 6.5vw, 4.5rem);
+  }
+
+  @media (max-width: 39.99rem) {
+    .about-editorial-headline-display {
+      font-size: clamp(1.25rem, 7.5vw, 2.25rem);
+    }
+  }
 }
 
 .about-editorial-photo {
@@ -1199,4 +1290,10 @@ html {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Menu grid: skip paint/layout for off-screen cards while scrolling */
+.menu-product-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
 }

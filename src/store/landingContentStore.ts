@@ -86,6 +86,21 @@ export interface BranchesStripCopy {
   ctaLabel: CmsText;
 }
 
+/** /about page hero — editable via Admin → Landing content. */
+export interface AboutPageCopy {
+  eyebrow: CmsText;
+  tagline: CmsText;
+  softOpeningLabel: CmsText;
+  softOpeningDate: CmsText;
+  locationNote: CmsText;
+  heroImageSrc: string;
+  heroImageAlt: CmsText;
+  line1Before: CmsText;
+  line1Accent: CmsText;
+  line2Before: CmsText;
+  line2Accent: CmsText;
+}
+
 export interface KadoCircleStat {
   num: CmsText;
   label: CmsText;
@@ -174,6 +189,7 @@ export interface LandingContentState {
   trustedBrands: BrandMarqueeItem[];
   ordering: OrderingCopy;
   branchesStrip: BranchesStripCopy;
+  aboutPage: AboutPageCopy;
   faq: FaqCopy;
   kadoCircle: KadoCircleCopy;
 }
@@ -219,6 +235,7 @@ interface LandingContentStore {
   updateOrderingStep: (index: number, patch: Partial<OrderingStepCopy>) => void;
   reorderOrderingSteps: (fromIndex: number, toIndex: number) => void;
   updateBranchesStrip: (patch: Partial<BranchesStripCopy>) => void;
+  updateAboutPage: (patch: Partial<AboutPageCopy>) => void;
   updateFaq: (patch: Partial<FaqCopy>) => void;
   updateFaqItem: (index: number, patch: Partial<FaqItemCopy>) => void;
   updateKadoCircle: (patch: Partial<KadoCircleCopy>) => void;
@@ -433,6 +450,20 @@ export const SEED_CONTENT: LandingContentState = {
     badge: 'Locations',
     title: 'Find us.',
     ctaLabel: 'All branches',
+  },
+  aboutPage: {
+    eyebrow: 'About Kado Kohi',
+    tagline:
+      'A Japanese-inspired urban tambayan where craft coffee, premium matcha, and Marikina community share the same ritual.',
+    softOpeningLabel: 'Soft Opening',
+    softOpeningDate: 'February 15, 2026',
+    locationNote: 'J.P. Laurel corner Mt. Everest · Sta. Elena, Marikina City',
+    heroImageSrc: '/featuredmarikina/kadom2.jpg',
+    heroImageAlt: 'Matcha and craft coffee at Kado Kohi Marikina',
+    line1Before: 'Rooted in ',
+    line1Accent: 'Matcha',
+    line2Before: 'Reshaping ',
+    line2Accent: 'Ritual',
   },
   faq: {
     eyebrow: 'KADO KŌHĪ',
@@ -737,6 +768,24 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
       steps: clampOrderingSteps(raw.ordering?.steps),
     },
     branchesStrip: clampCmsSection(SEED_CONTENT.branchesStrip, raw.branchesStrip, ['badge', 'title', 'ctaLabel']),
+    aboutPage: {
+      ...clampCmsSection(SEED_CONTENT.aboutPage, raw.aboutPage, [
+        'eyebrow',
+        'tagline',
+        'softOpeningLabel',
+        'softOpeningDate',
+        'locationNote',
+        'heroImageAlt',
+        'line1Before',
+        'line1Accent',
+        'line2Before',
+        'line2Accent',
+      ]),
+      heroImageSrc:
+        typeof raw.aboutPage?.heroImageSrc === 'string' && raw.aboutPage.heroImageSrc.trim()
+          ? raw.aboutPage.heroImageSrc.trim()
+          : SEED_CONTENT.aboutPage.heroImageSrc,
+    },
     faq: clampFaq(raw.faq, SEED_CONTENT.faq),
     kadoCircle: {
       ...clampCmsSection(SEED_CONTENT.kadoCircle, raw.kadoCircle, [
@@ -1057,6 +1106,9 @@ export const useLandingContentStore = create<LandingContentStore>()(
 
       updateBranchesStrip: (patch) =>
         patchDraft(set, get, (d) => ({ ...d, branchesStrip: { ...d.branchesStrip, ...patch } })),
+
+      updateAboutPage: (patch) =>
+        patchDraft(set, get, (d) => ({ ...d, aboutPage: { ...d.aboutPage, ...patch } })),
 
       updateFaq: (patch) =>
         patchDraft(set, get, (d) => ({

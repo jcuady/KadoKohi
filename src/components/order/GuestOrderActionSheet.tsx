@@ -49,7 +49,7 @@ export default function GuestOrderActionSheet({
             className={`min-h-[36px] px-3 py-1.5 rounded-full text-[10px] font-bold border-2 touch-manipulation transition-colors ${
               reason === r.id
                 ? 'border-kado-red bg-kado-red text-kado-cream'
-                : 'border-kado-dark/12 bg-[#FAF7F2] text-kado-dark/70 hover:border-kado-red/30'
+                : 'border-kado-dark/12 bg-kado-offwhite text-kado-dark/70 hover:border-kado-red/30'
             }`}
           >
             {r.label}
@@ -64,7 +64,7 @@ export default function GuestOrderActionSheet({
           placeholder="Tell us briefly (optional detail)"
           maxLength={200}
           rows={2}
-          className="w-full rounded-xl border border-kado-dark/12 bg-[#FAF7F2] px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-kado-red/30 resize-none"
+          className="w-full rounded-xl border border-kado-dark/12 bg-kado-offwhite px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-kado-red/30 resize-none"
         />
       )}
 

@@ -28,7 +28,7 @@ export default function OnlineOrderHoursNotice({ status, variant = 'cart', class
   const tone =
     variant === 'cart'
       ? 'border-amber-200/90 bg-amber-50/90 text-amber-950/85'
-      : 'border-kado-dark/10 bg-[#FAF7F2] text-kado-dark/65';
+      : 'border-kado-dark/10 bg-kado-offwhite text-kado-dark/65';
 
   return (
     <div className={`rounded-xl border px-4 py-3 text-xs leading-relaxed ${tone} ${className}`}>

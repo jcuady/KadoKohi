@@ -39,9 +39,9 @@ test('careers page renders open roles and apply flow', async ({ page }) => {
   await page.goto('/careers');
   await expect(page.locator('#root')).not.toBeEmpty();
   await expect(page.getByRole('heading', { name: /build the tambayan/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^barista$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /marketing manager/i })).toBeVisible();
-  await page.getByRole('button', { name: /apply now/i }).first().click();
+  await expect(page.getByRole('heading', { name: /^barista$/i }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: /marketing manager/i }).first()).toBeVisible();
+  await page.getByRole('button', { name: /easy apply/i }).first().click();
   const applyDialog = page.getByRole('dialog', { name: /apply to kado kohi/i });
   await expect(applyDialog).toBeVisible();
   await expect(applyDialog.getByPlaceholder(/your name/i)).toBeVisible();

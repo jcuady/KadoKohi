@@ -70,7 +70,7 @@ export default function BoothPaymentPanel({ booking }: Props) {
   };
 
   return (
-    <div className="mt-4 rounded-xl border border-kado-red/15 bg-[#FAF7F2] p-4 space-y-3">
+    <div className="mt-4 rounded-xl border border-kado-red/15 bg-kado-offwhite p-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-[9px] font-black uppercase tracking-[0.18em] text-kado-red">Payment</p>
         <span

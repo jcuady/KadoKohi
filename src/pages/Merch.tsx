@@ -9,8 +9,7 @@ import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop';
+const DEFAULT_IMAGE = '/social/coffee-series.png';
 
 export default function Merch() {
   const categories = useMerchStore((s) => s.categories);
@@ -126,7 +125,7 @@ export default function Merch() {
         <section className="px-6 md:px-8 lg:px-16 py-8 md:py-10">
           <div className="max-w-6xl mx-auto">
             {paginatedItems.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 text-center">
+              <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-12 text-center">
                 <p className="text-sm font-semibold text-kado-dark/50">No merch items in this category yet.</p>
               </div>
             ) : (

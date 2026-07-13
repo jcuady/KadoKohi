@@ -13,6 +13,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useDashTheme } from '../lib/theme';
+import { LOGO } from '../lib/brandTokens';
 import NotificationToggle from '../components/NotificationToggle';
 import { hydrateOpsPortal } from '../lib/bootstrapHydration';
 
@@ -64,7 +65,7 @@ export default function StaffLayout() {
         <div className="shrink-0 border-b px-4 pb-3 pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
           <Link to="/staff/merch-orders" className="block">
             <img
-              src="/logo/Logo2.png"
+              src={LOGO.hybridMark}
               alt="Kado Kohi"
               className="h-8 w-auto object-contain object-left"
               style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}

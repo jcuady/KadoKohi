@@ -28,7 +28,7 @@ export function buildBoothPaymentInstructionsHtml(opts: {
   const gcashUrl = bp.gcashQrImage?.trim() || shopGcashQr?.trim() || '';
 
   const parts: string[] = [
-    `<div style="margin-top:20px;padding:16px;border-radius:12px;background:#FAF7F2;border:1px solid #e8e0d5">`,
+    `<div style="margin-top:20px;padding:16px;border-radius:12px;background:#FAF9F6;border:1px solid #e8e0d5">`,
     `<p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9E181D">Payment instructions</p>`,
     `<p style="margin:0 0 12px;font-size:14px"><strong>Amount due:</strong> ${escapeHtml(formatPhp(amountDue))}</p>`,
     `<p style="margin:0 0 12px;font-size:13px;color:#555">Reference: <strong>${escapeHtml(shortCode)}</strong> · ${escapeHtml(boothPaymentMethodLabel(paymentMethod))}</p>`,

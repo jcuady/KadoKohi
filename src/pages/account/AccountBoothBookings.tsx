@@ -73,7 +73,7 @@ export default function AccountBoothBookings() {
       </div>
 
       {myBookings.length === 0 ? (
-        <div className="rounded-2xl border border-kado-dark/10 bg-[#FAF7F2] p-12 text-center">
+        <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-12 text-center">
           <CalendarHeart className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
           <p className="font-display font-bold text-kado-dark text-lg mb-2">No booth bookings yet</p>
           <p className="text-sm text-kado-dark/55 mb-6 max-w-sm mx-auto">
@@ -181,7 +181,7 @@ export default function AccountBoothBookings() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden border-t border-kado-dark/5"
                     >
-                      <div className="p-4 sm:p-5 space-y-4 bg-[#FAF7F2]/50">
+                      <div className="p-4 sm:p-5 space-y-4 bg-kado-offwhite/50">
                         <BoothEstimateBreakdown
                           estimate={booking.estimateSnapshot}
                           title="Your submitted estimate"

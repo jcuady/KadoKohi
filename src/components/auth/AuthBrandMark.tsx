@@ -1,3 +1,4 @@
+import { LOGO } from '../../lib/brandTokens';
 import { cn } from '../../lib/utils';
 
 type AuthBrandMarkProps = {
@@ -14,20 +15,27 @@ export default function AuthBrandMark({ variant = 'customer', subtitle, onDark =
   return (
     <div className="text-left">
       <div className={cn('inline-flex items-center gap-2.5', isInternal ? 'mb-5' : 'mb-0')}>
-        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-kado-red text-kado-cream flex items-center justify-center font-display font-bold text-lg sm:text-xl rounded-sm shadow-lg shadow-kado-red/25">
-          角
-        </div>
+        <img
+          src={LOGO.hybridMark}
+          alt=""
+          decoding="async"
+          className={cn(
+            'h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11',
+            lightOnDark && 'brightness-0 invert',
+          )}
+          aria-hidden
+        />
         <div className="text-left">
           <p
             className={cn(
-              'font-display font-bold text-base sm:text-lg leading-tight tracking-tight',
+              'font-display text-base font-bold leading-tight tracking-tight sm:text-lg',
               lightOnDark ? 'text-kado-cream' : 'text-kado-dark',
             )}
           >
             Kado Kohi
           </p>
           {isInternal && (
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red mt-0.5">
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-kado-red">
               Operations
             </p>
           )}
@@ -36,7 +44,7 @@ export default function AuthBrandMark({ variant = 'customer', subtitle, onDark =
       {subtitle && (
         <p
           className={cn(
-            'text-sm leading-relaxed mt-3',
+            'mt-3 text-sm leading-relaxed',
             lightOnDark ? 'text-kado-cream/65' : 'text-kado-dark/60',
           )}
         >

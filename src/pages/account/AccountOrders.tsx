@@ -142,7 +142,7 @@ export default function AccountOrders() {
       </div>
 
       {filteredOrders.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-[#FAF7F2] p-12 md:p-16 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-12 md:p-16 text-center">
           <ShoppingBag className="w-10 h-10 text-kado-dark/15 mx-auto mb-4" />
           <p className="text-sm font-bold text-kado-dark/50 mb-1">
             {myOrders.length === 0 ? "You haven't placed any orders yet." : 'No matching orders found.'}
@@ -173,7 +173,7 @@ export default function AccountOrders() {
                   className="w-full p-4 sm:p-5 text-left touch-manipulation"
                 >
                   <div className="flex gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0">
                       <StatusIcon className={`w-5 h-5 ${cfg.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export default function AccountOrders() {
                         <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
                           {cfg.label}
                         </span>
-                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FAF7F2] text-kado-dark/40 border border-kado-dark/5">
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-kado-offwhite text-kado-dark/40 border border-kado-dark/5">
                           {o.channel}
                         </span>
                         <OrderTableBadge order={o} />
@@ -203,7 +203,7 @@ export default function AccountOrders() {
                         {o.status !== 'completed' &&
                           o.status !== 'cancelled' &&
                           pendingStamps > 0 && (
-                            <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FAF7F2] text-kado-dark/45 border border-kado-dark/8">
+                            <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-kado-offwhite text-kado-dark/45 border border-kado-dark/8">
                               {pendingStamps} stamp{pendingStamps !== 1 ? 's' : ''} when done
                             </span>
                           )}

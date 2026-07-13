@@ -13,7 +13,7 @@ type Props = {
 export default function LegalDocumentPage({ title, subtitle, sections, sibling }: Props) {
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-dvh overflow-x-hidden">
-      <section className="pt-24 sm:pt-28 pb-8 sm:pb-10 px-4 sm:px-6 border-b border-kado-dark/5 bg-[#FAF7F2]">
+      <section className="pt-24 sm:pt-28 pb-8 sm:pb-10 px-4 sm:px-6 border-b border-kado-dark/5 bg-kado-offwhite">
         <div className="max-w-3xl mx-auto w-full">
           <Link
             to="/"

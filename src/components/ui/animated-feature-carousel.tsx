@@ -8,6 +8,7 @@ import { useLandingContentStore } from '../../store/landingContentStore';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { LOGO } from '../../lib/brandTokens';
 
 interface Step {
   id: string;
@@ -37,9 +38,7 @@ function VisualInStore() {
         <img src="/images/hero-interior.png" alt="Barista at the counter" className="h-36 w-full object-cover sm:h-44 lg:h-52" />
         <div className="bg-kado-offwhite p-3 sm:p-4">
           <div className="mb-2 flex items-center gap-2 sm:mb-3">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-kado-red">
-              <span className="text-[7px] font-black text-white">角</span>
-            </div>
+            <img src={LOGO.hybridMark} alt="" className="h-5 w-5 object-contain" aria-hidden />
             <span className="text-[11px] font-bold tracking-tight text-kado-dark">Kado Counter</span>
           </div>
           <div className="space-y-2">
@@ -149,9 +148,12 @@ function VisualQROrder() {
     <div className="flex h-full flex-col gap-3 sm:flex-row lg:relative lg:block lg:overflow-visible">
       <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/15 bg-kado-offwhite shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-[2%] lg:top-[2%] lg:w-[58%]">
         <div className="flex items-center gap-2 bg-kado-dark p-4">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-kado-red">
-            <span className="text-[8px] font-black text-white">角</span>
-          </div>
+          <img
+            src={LOGO.hybridMark}
+            alt=""
+            className="h-6 w-6 object-contain brightness-0 invert"
+            aria-hidden
+          />
           <div>
             <p className="text-[10px] font-black tracking-tight text-kado-cream">TABLE 5</p>
             <p className="text-[8px] text-kado-cream/40">Scan to order</p>
@@ -201,9 +203,12 @@ function VisualLoyalty() {
               <p className="text-[8px] font-bold uppercase tracking-[0.28em] text-kado-cream/55">Kado Circle</p>
               <p className="font-display text-lg font-black tracking-tight text-kado-cream sm:text-xl">Juan Cruz</p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-kado-cream/25 bg-kado-cream/10 backdrop-blur-sm">
-              <span className="text-base font-black text-kado-cream">角</span>
-            </div>
+            <img
+              src={LOGO.hybridMark}
+              alt=""
+              className="h-9 w-9 rounded-xl object-contain brightness-0 invert"
+              aria-hidden
+            />
           </div>
           <div className="grid grid-cols-5 gap-2">
             {Array(10)

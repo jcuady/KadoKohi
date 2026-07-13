@@ -1,6 +1,6 @@
 import { MapPin, Clock, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LOGO } from '../lib/brandTokens';
+import BrandHybridMark from './BrandHybridMark';
 import { useSettingsStore } from '../store/settingsStore';
 import { FooterSocialLinks } from './ContactSocialLinks';
 import { requestCookiePreferences } from '../lib/cookieConsent';
@@ -16,11 +16,8 @@ export default function Footer() {
       <div className="bg-kado-dark text-kado-cream py-16">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="flex flex-col gap-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-kado-red text-kado-cream flex items-center justify-center font-display font-bold text-xl rounded-sm">
-                角
-              </div>
-              <img src={LOGO.wordmark} alt="Kado Kohi" className="h-6 w-auto object-contain invert" />
+            <Link to="/" className="inline-flex items-center" aria-label="Kado Kohi home">
+              <BrandHybridMark size="lg" className="h-12 w-auto max-w-[10rem] brightness-0 invert" />
             </Link>
             <p className="text-sm text-kado-cream/70 leading-relaxed max-w-xs">
               Handcrafted specialty coffee made from carefully selected 100% Arabica beans in the heart of Marikina

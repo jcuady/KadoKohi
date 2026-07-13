@@ -12,6 +12,7 @@ import { useKioskTheme } from '../../hooks/useKioskTheme';
 import { hydrateOpsPortal } from '../../lib/bootstrapHydration';
 import { kioskDisplayColumnKey, type KioskDisplayColumn } from '../../lib/orderStatus';
 import { getKioskOrderTags, type KioskOrderTag } from '../../lib/orderTable';
+import { LOGO } from '../../lib/brandTokens';
 
 const SYNC_POLL_MS = 45_000;
 
@@ -277,15 +278,12 @@ export default function BaristaKioskDisplay() {
           }}
         >
           <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kado-red text-base font-black text-white shadow-md shadow-kado-red/25">
-              角
-            </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <img
-                  src="/logo/Logo2.png"
+                  src={LOGO.hybridMark}
                   alt="Kado Kohi"
-                  className="h-6 w-auto object-contain object-left"
+                  className="h-8 w-auto object-contain object-left"
                   style={{ filter: 'var(--kiosk-logo-filter)' }}
                 />
                 <span className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red">Order status</span>

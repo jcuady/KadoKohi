@@ -10,6 +10,7 @@ export const LANDING_SECTION_IDS: Record<LandingTabId, string> = {
   events: 'landing-events',
   testimonials: 'landing-testimonials',
   branches: 'landing-branches',
+  about: 'landing-about',
   faq: 'landing-faq',
   'kado-circle': 'landing-kado-circle',
 };

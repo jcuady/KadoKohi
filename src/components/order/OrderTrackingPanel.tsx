@@ -19,6 +19,7 @@ import OrderTrackingSummary from './OrderTrackingSummary';
 import GuestOrderActionSheet from './GuestOrderActionSheet';
 import { formatOrderError } from '../../lib/validation';
 import { useSettingsStore } from '../../store/settingsStore';
+import BrandHybridMark from '../BrandHybridMark';
 
 type Channel = 'dine-in' | 'takeout';
 
@@ -210,9 +211,7 @@ export default function OrderTrackingPanel({
     <div className="qr-root customer-surface guest-order-page min-h-[100svh] bg-[var(--qr-bg)] text-[var(--qr-text)] flex flex-col items-center px-[max(1rem,env(safe-area-inset-left))] py-6 sm:py-10 pb-safe [@media(orientation:landscape)_and_(max-height:30rem)]:py-4">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-kado-red text-white flex items-center justify-center font-display font-black text-base shrink-0">
-            角
-          </div>
+          <BrandHybridMark size="md" />
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
             {flowChannel === 'takeout' ? 'Takeout' : 'Dine-in'} · Order tracking
           </p>
@@ -404,7 +403,7 @@ export default function OrderTrackingPanel({
                   <button
                     type="button"
                     onClick={() => openAction('change_order')}
-                    className="min-h-[44px] rounded-xl border border-kado-dark/12 bg-[#FAF7F2] text-kado-dark flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:border-kado-red/30 touch-manipulation"
+                    className="min-h-[44px] rounded-xl border border-kado-dark/12 bg-kado-offwhite text-kado-dark flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:border-kado-red/30 touch-manipulation"
                   >
                     <Pencil className="w-4 h-4 text-kado-red shrink-0" />
                     Change order

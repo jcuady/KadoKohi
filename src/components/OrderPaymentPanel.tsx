@@ -57,7 +57,7 @@ export default function OrderPaymentPanel({ order, onViewQr, onUploadProof }: Pr
   };
 
   return (
-    <div className="mt-4 rounded-xl border border-kado-red/15 bg-[#FAF7F2] p-3.5 sm:p-4 space-y-3">
+    <div className="mt-4 rounded-xl border border-kado-red/15 bg-kado-offwhite p-3.5 sm:p-4 space-y-3">
       <p className="text-[9px] font-black uppercase tracking-[0.18em] text-kado-red">GCash payment</p>
 
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:flex sm:flex-wrap gap-2">

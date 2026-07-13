@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { LandingTabId } from '../../lib/landingCmsTabs';
 import HomePageContent from '../home/HomePageContent';
+import AboutHero from '../about/AboutHero';
 import { LandingCmsEditProvider } from '../../contexts/LandingCmsEditContext';
 import LandingCmsFormatToolbar from './LandingCmsFormatToolbar';
 import { cmsImagePrefixForField, uploadCmsImageFile } from '../../lib/cmsImageUpload';
@@ -56,7 +57,11 @@ export default function LandingSectionPreview({
           </>
         ) : null}
         <div className="max-h-[min(52vh,640px)] overflow-y-auto overflow-x-hidden scroll-smooth [transform-origin:top_center]">
-          <HomePageContent landing={ctx} sectionOnly={sectionId} cmsEditMode={editing} />
+          {sectionId === 'about' ? (
+            <AboutHero copy={ctx.aboutPage} cmsEditMode={editing} />
+          ) : (
+            <HomePageContent landing={ctx} sectionOnly={sectionId} cmsEditMode={editing} />
+          )}
         </div>
       </div>
     </LandingCmsEditProvider>
@@ -115,5 +120,8 @@ function applyImageField(
   if (section === 'testimonials' && rest[0] === 'trustedBrand' && rest[2] === 'image') {
     const bi = Number(rest[1]);
     if (Number.isFinite(bi)) store.updateTrustedBrand(bi, { imageUrl: url });
+  }
+  if (section === 'about' && rest[0] === 'heroImage') {
+    store.updateAboutPage({ heroImageSrc: url });
   }
 }

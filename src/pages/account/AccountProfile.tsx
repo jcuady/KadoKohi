@@ -182,7 +182,7 @@ export default function AccountProfile() {
             transition={{ delay: 0.1, duration: 0.4 }}
             className="rounded-2xl border border-kado-dark/8 bg-white overflow-hidden"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-kado-dark/5 bg-[#FAF7F2]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-kado-dark/5 bg-kado-offwhite">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-kado-dark">Account Details</h2>
               {!editing ? (
                 <button
@@ -250,7 +250,7 @@ export default function AccountProfile() {
               <div className="divide-y divide-kado-dark/5">
                 {profileFields.map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-center gap-4 px-6 py-4 group">
-                    <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0 group-hover:bg-kado-red/10 transition-colors">
+                    <div className="w-9 h-9 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0 group-hover:bg-kado-red/10 transition-colors">
                       <Icon className="w-4 h-4 text-kado-dark/40 group-hover:text-kado-red transition-colors" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -270,13 +270,13 @@ export default function AccountProfile() {
             transition={{ delay: 0.2, duration: 0.4 }}
             className="rounded-2xl border border-kado-dark/8 bg-white overflow-hidden"
           >
-            <div className="px-6 py-4 border-b border-kado-dark/5 bg-[#FAF7F2]">
+            <div className="px-6 py-4 border-b border-kado-dark/5 bg-kado-offwhite">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-kado-dark">Preferences</h2>
             </div>
             <div className="divide-y divide-kado-dark/5">
               {preferences.map(({ icon: Icon, label, desc, enabled }) => (
                 <div key={label} className="flex items-center gap-4 px-6 py-4">
-                  <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0">
                     <Icon className="w-4 h-4 text-kado-dark/40" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -302,13 +302,13 @@ export default function AccountProfile() {
             transition={{ delay: 0.3, duration: 0.4 }}
             className="rounded-2xl border border-kado-dark/8 bg-white overflow-hidden"
           >
-            <div className="px-6 py-4 border-b border-kado-dark/5 bg-[#FAF7F2]">
+            <div className="px-6 py-4 border-b border-kado-dark/5 bg-kado-offwhite">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-kado-dark">Security</h2>
             </div>
             <div className="p-6">
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0">
                     <Lock className="w-4 h-4 text-kado-dark/40" />
                   </div>
                   <div className="flex-1">

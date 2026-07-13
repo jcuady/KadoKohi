@@ -52,10 +52,17 @@ let started = false;
 let connecting = false;
 
 function disposeChannel(): void {
-  if (!channel || !supabase) return;
-  const ch = channel;
-  channel = null;
-  void supabase.removeChannel(ch);
+  if (!supabase) return;
+  if (channel) {
+    const ch = channel;
+    channel = null;
+    void supabase.removeChannel(ch);
+  }
+  for (const ch of supabase.getChannels()) {
+    if (ch.topic === 'realtime:kk_ops_live') {
+      void supabase.removeChannel(ch);
+    }
+  }
 }
 
 function debounce(fn: () => void, ms: number) {

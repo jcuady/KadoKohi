@@ -21,6 +21,7 @@ import {
 import type { Event } from '../types/domain';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
+import PublicPageBanner from '../components/seo/PublicPageBanner';
 
 type Tab = 'upcoming' | 'current';
 
@@ -139,64 +140,55 @@ export default function Events() {
 
   return (
     <div className="flex flex-col w-full bg-white font-sans min-h-screen">
-      <section className="pt-28 pb-12 px-6 border-b border-kado-dark/5 bg-[#FAF7F2]">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-2 text-center">
-            What&apos;s happening
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-black text-kado-dark mb-4 text-center uppercase tracking-tighter">
-            Kado Coffee Events
-          </h1>
-          <p className="text-kado-dark/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed text-center font-medium">
-            Event coffee, tambayan nights, and community gatherings at Kado Coffee — Marikina &amp; Greenhills.
-          </p>
-
-          <div className="flex justify-center gap-2 mt-8 flex-wrap">
-            {(['upcoming', 'current'] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={`min-h-[44px] px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
-                  tab === key
-                    ? 'bg-kado-dark text-kado-cream shadow-md'
-                    : 'bg-white border border-kado-dark/15 text-kado-dark/60 hover:border-kado-red/40'
-                }`}
-              >
-                {key === 'upcoming' ? 'Upcoming' : 'Happening now'}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex justify-center gap-2 mt-4 flex-wrap">
+      <PublicPageBanner
+        eyebrow="What's happening"
+        title="Kado Coffee Events"
+        description="Event coffee, tambayan nights, and community gatherings at Kado Coffee — Marikina & Greenhills."
+      >
+        <div className="flex flex-wrap justify-center gap-2">
+          {(['upcoming', 'current'] as const).map((key) => (
             <button
+              key={key}
               type="button"
-              onClick={() => setBranchFilter('all')}
-              className={`min-h-[40px] px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
-                branchFilter === 'all'
-                  ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
-                  : 'bg-white border border-kado-dark/15 text-kado-dark/60 hover:border-kado-red/40'
+              onClick={() => setTab(key)}
+              className={`min-h-[44px] rounded-full px-6 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                tab === key
+                  ? 'bg-kado-dark text-kado-cream shadow-md'
+                  : 'border border-kado-dark/15 bg-white text-kado-dark/60 hover:border-kado-red/40'
               }`}
             >
-              All branches
+              {key === 'upcoming' ? 'Upcoming' : 'Happening now'}
             </button>
-            {activeBranches.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => setBranchFilter(b.id)}
-                className={`min-h-[40px] px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
-                  branchFilter === b.id
-                    ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
-                    : 'bg-white border border-kado-dark/15 text-kado-dark/60 hover:border-kado-red/40'
-                }`}
-              >
-                {b.name}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
-      </section>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBranchFilter('all')}
+            className={`min-h-[44px] rounded-full px-5 text-[10px] font-black uppercase tracking-widest transition-colors ${
+              branchFilter === 'all'
+                ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
+                : 'border border-kado-dark/15 bg-white text-kado-dark/60 hover:border-kado-red/40'
+            }`}
+          >
+            All branches
+          </button>
+          {activeBranches.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => setBranchFilter(b.id)}
+              className={`min-h-[44px] rounded-full px-5 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                branchFilter === b.id
+                  ? 'bg-kado-red text-white shadow-md shadow-kado-red/20'
+                  : 'border border-kado-dark/15 bg-white text-kado-dark/60 hover:border-kado-red/40'
+              }`}
+            >
+              {b.name}
+            </button>
+          ))}
+        </div>
+      </PublicPageBanner>
 
       <section className="px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
