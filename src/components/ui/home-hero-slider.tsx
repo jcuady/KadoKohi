@@ -155,25 +155,25 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         <div className="landing-hero-copy min-w-0 max-w-3xl">
           <motion.div {...reveal(0)}>
             <CmsStyledText
-              value={c?.locationBadge ?? 'Kado Kohi · Marikina'}
+              value={c?.locationBadge ?? 'Kado Coffee · Metro Manila'}
               as="p"
               className="kado-label mb-2 inline-flex rounded-full border border-kado-red/50 bg-kado-red/20 px-3 py-1.5 backdrop-blur-sm drop-shadow-md sm:mb-3"
               defaultColorClass="text-kado-cream/95"
-              {...textProps('hero.chrome.locationBadge', 'Location badge', c?.locationBadge ?? 'Kado Kohi · Marikina', (v) =>
+              {...textProps('hero.chrome.locationBadge', 'Location badge', c?.locationBadge ?? 'Kado Coffee · Metro Manila', (v) =>
                 updateHeroChrome({ locationBadge: v }),
               )}
             />
           </motion.div>
           <motion.div id="hero-main-headline" {...reveal(0.08)}>
             <CmsStyledText
-              value={c?.mainHeadline ?? 'Kado Coffee — Matcha & Specialty Coffee in Marikina'}
+              value={c?.mainHeadline ?? 'Kado Coffee — Ceremonial Grade Matcha & Specialty Coffee'}
               as="h1"
               className="kado-h1 kado-h1-hero drop-shadow-lg"
               defaultColorClass="text-kado-offwhite"
               {...textProps(
                 'hero.chrome.mainHeadline',
                 'Main headline',
-                c?.mainHeadline ?? 'Kado Coffee — Matcha & Specialty Coffee in Marikina',
+                c?.mainHeadline ?? 'Kado Coffee — Ceremonial Grade Matcha & Specialty Coffee',
                 (v) => updateHeroChrome({ mainHeadline: v }),
               )}
             />

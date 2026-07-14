@@ -121,9 +121,9 @@ export default function RouteSeo() {
     }
 
     upsertMetaByName('geo.region', 'PH-00');
-    upsertMetaByName('geo.placename', 'Marikina City');
-    upsertMetaByName('geo.position', '14.6502;121.1024');
-    upsertMetaByName('ICBM', '14.6502, 121.1024');
+    upsertMetaByName('geo.placename', 'Metro Manila');
+    upsertMetaByName('geo.position', '14.5995;120.9842');
+    upsertMetaByName('ICBM', '14.5995, 120.9842');
 
     upsertMetaByProperty('og:title', meta.title);
     upsertMetaByProperty('og:description', meta.description);

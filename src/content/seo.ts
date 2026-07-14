@@ -132,16 +132,16 @@ export const SEO_KEYWORDS = [
 export const SEO_META_KEYWORDS = SEO_KEYWORDS.slice(0, 40).join(', ');
 
 /** Homepage title — under 580px, no repeated words (Seobility). */
-export const SEO_HOME_TITLE = 'Kado Coffee | Best Matcha in Marikina | Near Me';
+export const SEO_HOME_TITLE = 'Kado Coffee | Ceremonial Grade Matcha and Coffee';
 
 /** Meta description — under Seobility ~1000px width limit. */
 export const SEO_DEFAULT_DESCRIPTION =
-  'Kado Kohi in Sta. Elena, Marikina — matcha oat latte, hojicha and KADO Latte. 4.9 stars. Order online.';
+  'Kado Coffee (Kado Kohi) — ceremonial grade matcha, specialty coffee, and oat lattes across Metro Manila. Order online. Rated 4.9★.';
 
-export const SEO_HOME_H1 = 'Kado Coffee — Matcha & Specialty Coffee in Marikina';
+export const SEO_HOME_H1 = 'Kado Coffee — Ceremonial Grade Matcha & Specialty Coffee';
 
 /** Image alt / campaign line for premium matcha hero & menu SEO pillars. */
-export const SEO_PREMIUM_MATCHA_MARIKINA = 'Kado Kohi — Premium Matcha in Marikina';
+export const SEO_PREMIUM_MATCHA_MARIKINA = 'Kado Kohi — Ceremonial Grade Matcha & Specialty Coffee';
 
 /** Signature drinks for homepage copy & schema (aligned with live menu catalog). */
 export const SEO_SIGNATURE_DRINKS = [
@@ -176,17 +176,17 @@ export const SEO_INTERNAL_LINKS = [
 
 /** Full homepage copy for crawlers (index.html prerender + sr-only). */
 export const SEO_HOME_BODY_PARAGRAPHS = [
-  'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe on J.P. Laurel corner Mt. Everest in Sta. Elena, Marikina City, where guests searching for the best matcha in Marikina, matcha near me, or coffee near me in Eastern Metro Manila discover a neighborhood favorite rated 4.9 stars on Google with warm barista service and a cozy tambayan atmosphere.',
-  'Our menu highlights premium matcha and hojicha drinks crafted with quality ingredients — Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — each a popular choice for oat latte lovers across Marikina who want café-quality drinks without leaving the city.',
+  'Kado Coffee (Kado Kohi) is a Japanese-inspired specialty cafe serving ceremonial grade matcha and specialty coffee across Metro Manila — find us in Marikina and Greenhills, with more branches on the way. Guests searching for matcha near me, specialty coffee, or a cozy tambayan rated 4.9 stars on Google discover warm barista service and drinks crafted for everyday ritual.',
+  'Our menu highlights ceremonial grade matcha and hojicha drinks crafted with quality ingredients — Matcha Oat Latte, Dirty Matcha Oat Latte, Matcha Strawberry Oat Latte, Hojicha Oat Latte, and Salted Cream Hojicha Oat Latte — popular choices for oat latte lovers who want café-quality drinks wherever they are in Metro Manila.',
   'Signature espresso drinks include the KADO Latte with torched muscovado, Ube Shio Karamel Latte, and Yuzu AmeriKado, while classic lattes such as Spanish Latte, Moka Latte, and Karamel Latte are available hot or iced with regular milk or oat milk for every kind of coffee drinker.',
   'Refreshing yuzu sodas round out the menu for guests who want something bright and citrus-forward after coffee or matcha, and our team keeps the lineup updated with seasonal specials you can follow on social media throughout the year.',
-  'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours, and join tambayan events or community nights listed on our events calendar in Marikina whenever you want a relaxed hangout with great drinks.',
-  'Book our mobile coffee booth for weddings, birthdays, and corporate functions across Metro Manila, or stop by when you are in Sta. Elena, Santo Niño, Parang, Concepcion, and surrounding Marikina barangays — follow @kadocoffeeph on Instagram and KadoKohi on Facebook for menu updates and booth availability.',
+  'Visit us for dine-in, table QR ordering, takeout, or online GCash checkout during open hours, and join tambayan events and community nights listed on our events calendar whenever you want a relaxed hangout with great drinks.',
+  'Book our mobile coffee booth for weddings, birthdays, and corporate functions across Metro Manila — follow @kadocoffeeph on Instagram and KadoKohi on Facebook for menu updates, branch hours, and booth availability.',
 ] as const;
 
 /** Concise copy shown in the UI — keywords live in headings, cards, links, and sr-only block. */
 export const SEO_HOME_BODY_VISIBLE = [
-  'Japanese-inspired specialty cafe on J.P. Laurel, Sta. Elena — matcha, hojicha oat lattes, and signature drinks in a neighborhood tambayan rated 4.9 stars on Google.',
+  'Japanese-inspired specialty cafe for ceremonial grade matcha, specialty coffee, and oat lattes across Metro Manila — rated 4.9 stars on Google.',
   'Dine-in, takeout, or order online. Join our events or book the mobile booth for gatherings across Metro Manila.',
 ] as const;
 
@@ -206,7 +206,13 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
     path: '/',
     title: SEO_HOME_TITLE,
     description: SEO_DEFAULT_DESCRIPTION,
-    keywords: routeKeywords('best matcha marikina', 'hojicha oat latte marikina'),
+    keywords: routeKeywords(
+      'ceremonial grade matcha',
+      'ceremonial matcha',
+      'specialty coffee metro manila',
+      'kado coffee matcha',
+      'hojicha oat latte',
+    ),
   },
   {
     path: '/menu',
@@ -397,13 +403,13 @@ export type PageSeoBlurbContent = {
 
 const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
   '/': {
-    heading: 'Kado Coffee — specialty coffee & matcha in Marikina',
+    heading: 'Kado Coffee — ceremonial grade matcha & specialty coffee',
     paragraphs: [
-      'Kado Coffee (Kado Kohi) on J.P. Laurel, Sta. Elena is a specialty cafe for matcha oat latte, hojicha oat latte, KADO Latte, and oat lattes — rated 4.9 stars on Google for guests searching coffee near me or matcha near me in Marikina.',
+      'Kado Coffee (Kado Kohi) serves ceremonial grade matcha, specialty coffee, hojicha oat lattes, and signature drinks across Metro Manila — Marikina, Greenhills, and expanding. Rated 4.9 stars on Google for guests searching matcha near me or specialty coffee.',
     ],
     links: [
       { label: 'Full menu', to: '/menu' },
-      { label: 'Google Maps', href: KADO_GOOGLE_LISTING.mapsUrl, external: true },
+      { label: 'Branches', to: '/branches' },
       { label: 'Coffee cart booking', to: '/book/coffee-cart' },
       { label: 'Matcha bar booking', to: '/book/matcha-bar' },
     ],

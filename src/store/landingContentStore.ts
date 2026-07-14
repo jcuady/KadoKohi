@@ -368,9 +368,9 @@ const SEED_MENU_SEO_PILLARS: [
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
-    mainHeadline: 'Kado Coffee — Matcha & Specialty Coffee in Marikina',
-    locationBadge: 'Kado Coffee · Marikina',
-    imageCredit: 'Images: Kado Kohi Social + InsideMarikina',
+    mainHeadline: 'Kado Coffee — Ceremonial Grade Matcha & Specialty Coffee',
+    locationBadge: 'Kado Coffee · Metro Manila',
+    imageCredit: 'Images: Kado Kohi Social',
     primaryCtaLabel: 'Explore Menu',
     primaryCtaPath: '/menu',
     secondaryCtaLabel: 'Shop Merch',
