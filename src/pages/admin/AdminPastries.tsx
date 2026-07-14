@@ -159,7 +159,7 @@ export default function AdminPastries() {
       <section className="rounded-2xl dash-card border p-5 md:p-6 mb-8 space-y-4">
         <h2 className="font-display text-xl font-bold dash-heading">Poster images (optional)</h2>
         <p className="text-xs dash-muted">
-          Kept for CMS/backups. The public /pastries page now uses the menu-style catalog layout (no large poster hero).
+          Shown as a dual-image strip on public <code className="text-[10px]">/pastries</code> below the product grid when set.
         </p>
         <ImageField
           label="Primary image"

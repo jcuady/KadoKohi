@@ -699,6 +699,61 @@ export default function AdminLandingContent() {
                 />
               </div>
             </section>
+
+            <section className="rounded-2xl dash-card border p-5 md:p-6">
+              <h2 className="font-display font-bold text-xl dash-heading mb-2">About — Origins</h2>
+              <p className="text-xs dash-muted mb-4">
+                Second section on <code className="text-[10px]">/about</code> (story + photo). Headline lines stay on the brand editorial set.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <CmsField
+                  label="Eyebrow"
+                  value={content.aboutPage.originsEyebrow}
+                  onChange={(v) => updateAboutPage({ originsEyebrow: v })}
+                />
+                <CmsField
+                  label="Image alt"
+                  value={content.aboutPage.originsImageAlt}
+                  onChange={(v) => updateAboutPage({ originsImageAlt: v })}
+                />
+              </div>
+              <CmsField
+                label="Lead"
+                value={content.aboutPage.originsLead}
+                onChange={(v) => updateAboutPage({ originsLead: v })}
+                multiline
+              />
+              <CmsField
+                label="Paragraph 1"
+                value={content.aboutPage.originsParagraph1}
+                onChange={(v) => updateAboutPage({ originsParagraph1: v })}
+                multiline
+              />
+              <CmsField
+                label="Paragraph 2"
+                value={content.aboutPage.originsParagraph2}
+                onChange={(v) => updateAboutPage({ originsParagraph2: v })}
+                multiline
+              />
+              <div className="mt-4 grid md:grid-cols-2 gap-4">
+                <ImageUrlField
+                  label="Origins photo URL"
+                  value={content.aboutPage.originsImageSrc}
+                  onChange={(v) => updateAboutPage({ originsImageSrc: v })}
+                  onPickFile={(files) =>
+                    onPickImage(`landing/about/origins`, (url) => updateAboutPage({ originsImageSrc: url }), files)
+                  }
+                />
+                <ImageUrlField
+                  label="Fallback photo URL"
+                  value={content.aboutPage.originsImageFallback}
+                  onChange={(v) => updateAboutPage({ originsImageFallback: v })}
+                  onPickFile={(files) =>
+                    onPickImage(`landing/about/origins-fallback`, (url) => updateAboutPage({ originsImageFallback: url }), files)
+                  }
+                />
+              </div>
+            </section>
           </div>
         </LandingCmsSectionCard>
 

@@ -86,7 +86,7 @@ export interface BranchesStripCopy {
   ctaLabel: CmsText;
 }
 
-/** /about page hero — editable via Admin → Landing content. */
+/** /about page hero + Origins — editable via Admin → Landing content. */
 export interface AboutPageCopy {
   eyebrow: CmsText;
   tagline: CmsText;
@@ -99,6 +99,13 @@ export interface AboutPageCopy {
   line1Accent: CmsText;
   line2Before: CmsText;
   line2Accent: CmsText;
+  originsEyebrow: CmsText;
+  originsLead: CmsText;
+  originsParagraph1: CmsText;
+  originsParagraph2: CmsText;
+  originsImageSrc: string;
+  originsImageAlt: CmsText;
+  originsImageFallback: string;
 }
 
 export interface KadoCircleStat {
@@ -464,6 +471,16 @@ export const SEED_CONTENT: LandingContentState = {
     line1Accent: 'Matcha',
     line2Before: 'Reshaping ',
     line2Accent: 'Ritual',
+    originsEyebrow: 'Origins',
+    originsLead:
+      'Kado (角) means corner. Kohi (コーヒー) means coffee. Together they name a daily ritual — not just a shop, but Marikina’s living room for creatives, early risers, and anyone who treats a great cup seriously.',
+    originsParagraph1:
+      'Kado Kohi began as a vision for a minimalist sanctuary: Japanese restraint, Filipino warmth, and coffee culture you can feel in every pour. Sta. Elena’s J.P. Laurel corner felt right — walkable, creative, and rooted in local life.',
+    originsParagraph2:
+      'Before the doors opened, months of cupping, menu testing, and community feedback shaped what you taste today — from signature matcha oat lattes to pastries that belong beside the bar.',
+    originsImageSrc: '/featuredmarikina/kadom1.jpg',
+    originsImageAlt: 'Kado Kohi cafe interior in Marikina — warm wood, concrete, and bar craft',
+    originsImageFallback: '/social/cafe-latte.png',
   },
   faq: {
     eyebrow: 'KADO KŌHĪ',
@@ -780,11 +797,24 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
         'line1Accent',
         'line2Before',
         'line2Accent',
+        'originsEyebrow',
+        'originsLead',
+        'originsParagraph1',
+        'originsParagraph2',
+        'originsImageAlt',
       ]),
       heroImageSrc:
         typeof raw.aboutPage?.heroImageSrc === 'string' && raw.aboutPage.heroImageSrc.trim()
           ? raw.aboutPage.heroImageSrc.trim()
           : SEED_CONTENT.aboutPage.heroImageSrc,
+      originsImageSrc:
+        typeof raw.aboutPage?.originsImageSrc === 'string' && raw.aboutPage.originsImageSrc.trim()
+          ? raw.aboutPage.originsImageSrc.trim()
+          : SEED_CONTENT.aboutPage.originsImageSrc,
+      originsImageFallback:
+        typeof raw.aboutPage?.originsImageFallback === 'string' && raw.aboutPage.originsImageFallback.trim()
+          ? raw.aboutPage.originsImageFallback.trim()
+          : SEED_CONTENT.aboutPage.originsImageFallback,
     },
     faq: clampFaq(raw.faq, SEED_CONTENT.faq),
     kadoCircle: {

@@ -41,7 +41,6 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
 
   const pageCopy = isMatcha ? matchaPageCopy : coffeePageCopy;
   const showcaseMediaRaw = isMatcha ? matchaMedia : coffeeMedia;
-  const heroImages = isMatcha ? MATCHA_HERO_IMAGES : BOOTH_HERO_IMAGES;
 
   useEffect(() => {
     void hydrateCatalog();
@@ -56,6 +55,23 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
         .sort((a, b) => a.order - b.order),
     [showcaseMediaRaw],
   );
+
+  const seedHero = isMatcha ? MATCHA_HERO_IMAGES : BOOTH_HERO_IMAGES;
+  const heroImages = useMemo(() => {
+    const fromCms = showcaseMedia.map((m) => ({ src: m.image, alt: m.title || m.caption || 'Kado Kohi event' }));
+    const slots = seedHero.length;
+    const merged = [...fromCms];
+    for (const pad of seedHero) {
+      if (merged.length >= slots) break;
+      if (merged.some((img) => img.src === pad.src)) continue;
+      merged.push({ src: pad.src, alt: pad.alt });
+    }
+    while (merged.length < slots) {
+      const pad = seedHero[merged.length % seedHero.length]!;
+      merged.push({ src: pad.src, alt: pad.alt });
+    }
+    return merged.slice(0, slots);
+  }, [showcaseMedia, seedHero]);
 
   return (
     <div className="w-full min-h-screen bg-kado-cream">

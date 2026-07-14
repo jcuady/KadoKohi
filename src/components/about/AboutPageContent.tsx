@@ -17,7 +17,7 @@ export default function AboutPageContent() {
   return (
     <div className="flex w-full min-w-0 flex-col overflow-x-clip bg-kado-cream text-kado-dark">
       <AboutHero copy={aboutPage} />
-      <AboutOrigins />
+      <AboutOrigins copy={aboutPage} />
       <AboutMarqueeBand />
       <AboutCommitment />
       <AboutValues />

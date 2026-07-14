@@ -38,7 +38,7 @@ export default function AdminBoothContent() {
           <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-2">Booking Page Content</h1>
           <p className="dash-muted text-sm">
             Edit hero copy, how-it-works steps, proposal form text, and showcase gallery for coffee cart and matcha bar
-            booking pages. Publish to save to the database.
+            booking pages. Showcase images (ordered + visible) also drive the public hero collage. Publish to save.
           </p>
         </div>
         <button
@@ -99,6 +99,7 @@ export default function AdminBoothContent() {
         addMedia={active.addMedia}
         updateMedia={active.updateMedia}
         removeMedia={active.removeMedia}
+        reorderMedia={active.reorderMedia}
       />
     </div>
   );

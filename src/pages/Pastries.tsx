@@ -125,9 +125,10 @@ export default function Pastries() {
 
   const openProduct = useCallback((product: Product) => setSelected(product), []);
 
-  const { hero, cta } = pastriesHydrated ? cmsContent : PASTRIES_PAGE;
+  const { hero, cta, poster } = pastriesHydrated ? cmsContent : PASTRIES_PAGE;
   const title = `${hero.headlineTop} ${hero.headlineBottom}`.replace(/\s+/g, ' ').trim() || 'Our Pastries';
   const catalogLoading = !remoteLoaded;
+  const showPoster = Boolean(poster.primaryImage?.trim() || poster.secondaryImage?.trim());
 
   const pastryFiltersActive = hasActiveBrowseFilters(filters);
   const pastryCategoryId = pastriesCategory?.id ?? 'all';
@@ -236,6 +237,35 @@ export default function Pastries() {
                 />
               </div>
             </section>
+
+            {showPoster ? (
+              <section className="px-4 sm:px-6 md:px-8 lg:px-16" aria-label="Pastries gallery">
+                <div className="mx-auto grid max-w-6xl gap-3 sm:grid-cols-2 sm:gap-4">
+                  {poster.primaryImage?.trim() ? (
+                    <div className="overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-kado-cream aspect-[4/3] sm:aspect-[5/4]">
+                      <img
+                        src={poster.primaryImage}
+                        alt="Kado Kohi pastries"
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ) : null}
+                  {poster.secondaryImage?.trim() ? (
+                    <div className="overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-kado-cream aspect-[4/3] sm:aspect-[5/4]">
+                      <img
+                        src={poster.secondaryImage}
+                        alt="Fresh bakes at Kado Kohi"
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
 
             <section className="px-4 pb-[max(6rem,calc(5rem+env(safe-area-inset-bottom)))] sm:px-6 md:px-8 lg:px-16">
               <div className="mx-auto max-w-6xl border-t border-kado-dark/10 pt-10 sm:pt-14">

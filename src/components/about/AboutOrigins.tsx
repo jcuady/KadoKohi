@@ -1,8 +1,7 @@
 import { useRef } from 'react';
 import { motion } from 'motion/react';
 import ResilientImage from '@/components/ui/ResilientImage';
-import { ABOUT_ORIGINS } from '@/content/aboutPage';
-import { ABOUT_EDITORIAL } from '@/content/aboutPage';
+import { ABOUT_EDITORIAL, ABOUT_ORIGINS } from '@/content/aboutPage';
 import { AboutSectionShell } from './AboutUi';
 import {
   AboutEditorialGrid,
@@ -10,10 +9,25 @@ import {
   EditorialHeadline,
 } from './AboutEditorial';
 import { useParallaxY } from './useAboutMotion';
+import { useLandingContentStore, type AboutPageCopy } from '@/store/landingContentStore';
+import CmsStyledText from '@/components/cms/CmsStyledText';
+import { cmsTextPlain } from '@/lib/cmsTypography';
 
-export default function AboutOrigins() {
+type Props = {
+  /** Admin preview / draft override. Public page uses published store. */
+  copy?: AboutPageCopy;
+};
+
+export default function AboutOrigins({ copy: copyProp }: Props) {
+  const published = useLandingContentStore((s) => s.published.aboutPage);
+  const copy = copyProp ?? published;
+
   const imageWrapRef = useRef<HTMLDivElement>(null);
   useParallaxY(imageWrapRef, 14);
+
+  const imageSrc = copy.originsImageSrc?.trim() || ABOUT_ORIGINS.imageSrc;
+  const imageFallback = copy.originsImageFallback?.trim() || ABOUT_ORIGINS.imageFallback;
+  const imageAlt = cmsTextPlain(copy.originsImageAlt) || ABOUT_ORIGINS.imageAlt;
 
   return (
     <AboutSectionShell className="bg-kado-cream" innerClassName="max-w-none">
@@ -31,9 +45,9 @@ export default function AboutOrigins() {
               className="relative aspect-[4/5] max-h-[min(520px,65vh)] overflow-hidden border border-kado-dark/10 lg:max-h-none"
             >
               <ResilientImage
-                src={ABOUT_ORIGINS.imageSrc}
-                fallbackSrc={ABOUT_ORIGINS.imageFallback}
-                alt={ABOUT_ORIGINS.imageAlt}
+                src={imageSrc}
+                fallbackSrc={imageFallback}
+                alt={imageAlt}
                 className="about-editorial-photo h-full w-full object-cover"
               />
             </div>
@@ -50,9 +64,19 @@ export default function AboutOrigins() {
               viewport={{ once: true }}
               transition={{ duration: 0.55 }}
             >
-              <p className="kado-label mb-4 text-kado-red">{ABOUT_ORIGINS.eyebrow}</p>
+              <CmsStyledText
+                value={copy.originsEyebrow}
+                as="p"
+                className="kado-label mb-4"
+                defaultColorClass="text-kado-red"
+              />
               <EditorialHeadline as="h2" lines={ABOUT_EDITORIAL.aboutLines} size="section" className="mb-6" />
-              <p className="kado-body mb-8 font-semibold text-kado-dark/90">{ABOUT_ORIGINS.lead}</p>
+              <CmsStyledText
+                value={copy.originsLead}
+                as="p"
+                className="kado-body mb-8 font-semibold"
+                defaultColorClass="text-kado-dark/90"
+              />
             </motion.div>
 
             <motion.div
@@ -62,9 +86,8 @@ export default function AboutOrigins() {
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               <EditorialColumns>
-                {ABOUT_ORIGINS.paragraphs.map((p) => (
-                  <p key={p.slice(0, 48)}>{p}</p>
-                ))}
+                <CmsStyledText value={copy.originsParagraph1} as="p" defaultColorClass="text-kado-dark/80" />
+                <CmsStyledText value={copy.originsParagraph2} as="p" defaultColorClass="text-kado-dark/80" />
               </EditorialColumns>
             </motion.div>
           </div>

@@ -5,6 +5,7 @@ import type { BookingShowcaseMedia } from '../../types/domain';
 import type { CmsText } from '../../lib/cmsTypography';
 import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
+import CmsReorderList from './CmsReorderList';
 
 type MediaForm = {
   title: string;
@@ -24,6 +25,7 @@ export type BoothPageContentFormProps = {
   addMedia: (input: Omit<BookingShowcaseMedia, 'id'> & { id?: string }) => void;
   updateMedia: (id: string, patch: Partial<BookingShowcaseMedia>) => void;
   removeMedia: (id: string) => void;
+  reorderMedia: (fromIndex: number, toIndex: number) => void;
 };
 
 export default function BoothPageContentForm({
@@ -35,6 +37,7 @@ export default function BoothPageContentForm({
   addMedia,
   updateMedia,
   removeMedia,
+  reorderMedia,
 }: BoothPageContentFormProps) {
   const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -135,13 +138,22 @@ export default function BoothPageContentForm({
             <Plus className="w-4 h-4" /> Media
           </button>
         </div>
-        <div className="space-y-2.5">
-          {sortedMedia.map((item) => (
-            <article key={item.id} className="rounded-2xl dash-card border p-4 flex items-start gap-4">
+        <p className="text-xs dash-muted mb-3">
+          Visible images (in this order) also fill the booking page hero collage. Drag to reorder.
+        </p>
+        <CmsReorderList<BookingShowcaseMedia>
+          items={sortedMedia}
+          onReorder={reorderMedia}
+          keyFn={(item) => item.id}
+          renderItem={(item) => (
+            <div className="flex items-start gap-4">
               <img src={item.image} alt={item.title} className="w-28 h-20 rounded-xl object-cover border dash-border" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="font-display font-bold dash-heading">{item.title}</p>
                 {item.caption && <p className="text-sm dash-muted">{item.caption}</p>}
+                {!item.visible ? (
+                  <p className="text-[10px] font-bold uppercase tracking-wider dash-muted mt-1">Hidden</p>
+                ) : null}
               </div>
               <div className="flex gap-1.5">
                 <button type="button" onClick={() => openEditMedia(item.id)} className="p-1.5 dash-muted hover:text-kado-red">
@@ -151,9 +163,9 @@ export default function BoothPageContentForm({
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </article>
-          ))}
-        </div>
+            </div>
+          )}
+        />
       </section>
 
       {showMediaModal && (

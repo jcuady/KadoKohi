@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import type { BoothAddonPricingType } from '../../types/domain';
+import type { BoothAddon, BoothAddonPricingType, BoothPackage } from '../../types/domain';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import CmsReorderList from '../../components/admin/CmsReorderList';
 
 type PackageForm = {
   name: string;
@@ -58,6 +59,8 @@ export default function AdminBoothCatalog() {
   const addAddon = useBoothCatalogStore((s) => s.addAddon);
   const updateAddon = useBoothCatalogStore((s) => s.updateAddon);
   const removeAddon = useBoothCatalogStore((s) => s.removeAddon);
+  const reorderPackages = useBoothCatalogStore((s) => s.reorderPackages);
+  const reorderAddons = useBoothCatalogStore((s) => s.reorderAddons);
   const hydrateFromRemote = useBoothCatalogStore((s) => s.hydrateFromRemote);
   const saveToRemote = useBoothCatalogStore((s) => s.saveToRemote);
   const saving = useBoothCatalogStore((s) => s.saving);
@@ -250,9 +253,13 @@ export default function AdminBoothCatalog() {
 
       <section className="mb-8">
         <h2 className="font-display text-xl font-bold dash-heading mb-3">Packages</h2>
-        <div className="space-y-2.5">
-          {sortedPackages.map((pkg) => (
-            <article key={pkg.id} className="rounded-2xl dash-card border p-5 flex items-start gap-4">
+        <p className="text-xs dash-muted mb-3">Drag to reorder. Publish to save.</p>
+        <CmsReorderList<BoothPackage>
+          items={sortedPackages}
+          onReorder={reorderPackages}
+          keyFn={(pkg) => pkg.id}
+          renderItem={(pkg) => (
+            <div className="flex items-start gap-4">
               {pkg.image && (
                 <img
                   src={pkg.image}
@@ -283,16 +290,20 @@ export default function AdminBoothCatalog() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </article>
-          ))}
-        </div>
+            </div>
+          )}
+        />
       </section>
 
       <section>
         <h2 className="font-display text-xl font-bold dash-heading mb-3">Add-ons</h2>
-        <div className="space-y-2.5">
-          {sortedAddons.map((addon) => (
-            <article key={addon.id} className="rounded-2xl dash-card border p-5 flex items-start justify-between gap-4">
+        <p className="text-xs dash-muted mb-3">Drag to reorder. Publish to save.</p>
+        <CmsReorderList<BoothAddon>
+          items={sortedAddons}
+          onReorder={reorderAddons}
+          keyFn={(addon) => addon.id}
+          renderItem={(addon) => (
+            <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h3 className="font-display text-lg font-bold dash-heading">{addon.name}</h3>
@@ -316,9 +327,9 @@ export default function AdminBoothCatalog() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </article>
-          ))}
-        </div>
+            </div>
+          )}
+        />
       </section>
 
       {showPkgModal && (
