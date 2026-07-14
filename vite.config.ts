@@ -97,6 +97,7 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return;
+            if (id.includes('exceljs')) return 'vendor-exceljs';
             if (id.includes('recharts')) return 'vendor-recharts';
             if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-leaflet';
             if (id.includes('three')) return 'vendor-three';

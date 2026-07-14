@@ -7,8 +7,9 @@ import { refreshOperationsData } from '../../lib/supabase/operationsRealtime';
 import { useBranchStore } from '../../store/branchStore';
 import { useAuthStore } from '../../store/authStore';
 import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
-import { AlertTriangle, Check, ExternalLink, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, Download, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { clampTaxRate } from '../../lib/validation';
+import { downloadAdminDataBackup } from '../../lib/adminDataBackup';
 
 type ResetCardDef = {
   scope: ResetScope;
@@ -122,6 +123,9 @@ export default function AdminSettings() {
   const [resetBusy, setResetBusy] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupError, setBackupError] = useState('');
+  const [backupSuccess, setBackupSuccess] = useState('');
 
   useEffect(() => {
     void hydrateFromRemote().finally(() => setHydrating(false));
@@ -208,6 +212,22 @@ export default function AdminSettings() {
       setResetError(err instanceof Error ? err.message : 'Unable to reset data. Try again or redeploy the admin edge function.');
     } finally {
       setResetBusy(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    setBackupError('');
+    setBackupSuccess('');
+    setBackupBusy(true);
+    try {
+      const result = await downloadAdminDataBackup();
+      setBackupSuccess(
+        `Downloaded ${result.filename} (${result.sheetCount} sheets: sales, orders, catalog, profiles, bookings…).`,
+      );
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : 'Could not build the backup workbook.');
+    } finally {
+      setBackupBusy(false);
     }
   };
 
@@ -616,6 +636,40 @@ export default function AdminSettings() {
         </div>
 
         <div className="space-y-4">
+          <div className="rounded-2xl dash-card border p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kado-red/10 text-kado-red">
+                <Download className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-display font-bold text-lg dash-heading">Complete data backup</h2>
+                <p className="text-xs dash-muted mt-1 leading-relaxed">
+                  Download a formatted Excel workbook with sales summaries, orders, line items, payments,
+                  branches, tables, menu/merch catalog, profiles, booth bookings, events, loyalty, promos,
+                  audit logs, and more. Recommended before any danger-zone reset.
+                </p>
+              </div>
+            </div>
+            {backupSuccess && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 font-medium flex items-start gap-2">
+                <Check className="w-4 h-4 shrink-0 mt-0.5" />
+                {backupSuccess}
+              </div>
+            )}
+            {backupError && (
+              <p className="text-xs text-red-600 font-medium">{backupError}</p>
+            )}
+            <button
+              type="button"
+              disabled={backupBusy}
+              onClick={() => void handleDownloadBackup()}
+              className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-black uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
+            >
+              {backupBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {backupBusy ? 'Building workbook…' : 'Download XLSX backup'}
+            </button>
+          </div>
+
           <div className="flex items-start gap-3 pt-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
               <AlertTriangle className="w-5 h-5" />
