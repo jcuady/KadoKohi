@@ -264,8 +264,18 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
                         />
                       ) : (
                         <img
-                          src={item.imageUrl}
+                          src={
+                            item.imageUrl.includes('Logo1.png')
+                              ? '/logo/Logo1-sm.png'
+                              : item.imageUrl.includes('Logo2.png')
+                                ? '/logo/Logo2-sm.png'
+                                : item.imageUrl
+                          }
                           alt={cmsTextPlain(item.label)}
+                          width={140}
+                          height={48}
+                          loading="lazy"
+                          decoding="async"
                           className="h-8 sm:h-10 md:h-12 w-auto max-w-[140px] md:max-w-[180px] object-contain opacity-90"
                         />
                       )

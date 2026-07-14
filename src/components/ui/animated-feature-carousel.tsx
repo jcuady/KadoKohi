@@ -37,11 +37,16 @@ function VisualInStore() {
     <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
       <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-[2%] lg:w-[70%]">
         <img
-          src={toWebpSrc('/images/hero-interior.png')}
+          src={toWebpSrc('/images/hero-interior-sm.webp') || '/images/hero-interior-sm.webp'}
           alt="Barista at the counter"
           className="h-36 w-full object-cover sm:h-44 lg:h-52"
           loading="lazy"
           decoding="async"
+          width={720}
+          height={429}
+          onError={(e) => {
+            e.currentTarget.src = '/images/hero-interior.webp';
+          }}
         />
         <div className="bg-kado-offwhite p-3 sm:p-4">
           <div className="mb-2 flex items-center gap-2 sm:mb-3">

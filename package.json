@@ -25,8 +25,6 @@
     "optimize:images": "node scripts/optimize_public_images.mjs"
   },
   "dependencies": {
-    "@fontsource/m-plus-1": "^5.2.9",
-    "@fontsource/zalando-sans-expanded": "^5.2.2",
     "@gsap/react": "^2.1.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-separator": "^1.1.8",

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { toWebpSrc } from '../../lib/toWebpSrc';
+import { resolveDisplayImageUrl } from '../../lib/toWebpSrc';
 import { useLandingCmsEditOptional } from '../../contexts/LandingCmsEditContext';
 
 type Props = {
@@ -51,7 +51,7 @@ export default function CmsEditableImage({
     document.getElementById(inputId)?.click();
   };
 
-  const displaySrc = toWebpSrc(src) || src;
+  const displaySrc = resolveDisplayImageUrl(src) || src;
 
   if (!editable) {
     return (

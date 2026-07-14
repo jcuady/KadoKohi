@@ -308,57 +308,73 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
         </div>
 
         <div className="mt-8 min-w-0 md:mt-10">
+          <div className="relative lg:hidden">
+            {!menuReady ? (
+              <div className="flex gap-3 overflow-hidden">
+                <div className="aspect-[3/4] w-[min(85vw,20rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10" />
+                <div className="aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10" />
+              </div>
+            ) : showcaseDrinks.length === 0 ? (
+              <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 sm:px-6 sm:py-8">
+                No coffee items are available on the menu yet. Add products in Admin → Menu, then select
+                them in Homepage content.
+              </p>
+            ) : (
+              <div
+                className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-2 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x"
+                aria-label="Featured drinks carousel"
+              >
+                {showcaseDrinks.map((drink, i) => (
+                  <div
+                    key={drink.id}
+                    className={[
+                      'shrink-0 snap-center',
+                      i === 0 ? 'w-[min(84vw,20rem)]' : 'w-[min(72vw,17rem)]',
+                    ].join(' ')}
+                  >
+                    <DrinkCard
+                      drink={drink}
+                      categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
+                      index={i}
+                      hero={i === 0}
+                      imageOverride={copy.cardImageOverrides[i]}
+                      cmsEditMode={cmsEditMode}
+                      cardIndex={i}
+                      onImageOverride={(url) => setCardImage(i, url)}
+                      sectionRef={sectionRef}
+                      onSelect={setSelectedProduct}
+                      orderHint={orderHint}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Reserved row — prevents CLS 0.29 when “Swipe for more” mounts after menu hydrate */}
+            <div className="mt-4 flex h-5 items-center justify-center gap-1.5" aria-hidden={showcaseDrinks.length <= 1}>
+              {menuReady && showcaseDrinks.length > 1 ? (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-kado-dark/35" aria-hidden />
+                  <p className="kado-subtext font-semibold uppercase tracking-[0.18em] text-kado-dark/55">
+                    Swipe for more
+                  </p>
+                </>
+              ) : null}
+            </div>
+          </div>
+
           {!menuReady ? (
-            <div className="flex gap-3 overflow-hidden lg:grid lg:grid-cols-12 lg:grid-rows-2 lg:gap-5">
+            <div className="hidden lg:grid lg:grid-cols-12 lg:grid-rows-2 lg:gap-5">
               <div className="aspect-[3/4] w-[min(85vw,20rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 lg:col-span-7 lg:row-span-2 lg:aspect-auto lg:min-h-[22rem] lg:w-auto" />
               <div className="aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 lg:col-span-5 lg:aspect-auto lg:min-h-[16rem] lg:w-auto" />
               <div className="hidden aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 sm:block lg:col-span-5 lg:aspect-auto lg:min-h-[16rem] lg:w-auto" />
             </div>
           ) : showcaseDrinks.length === 0 ? (
-            <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 sm:px-6 sm:py-8">
+            <p className="hidden rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 lg:block sm:px-6 sm:py-8">
               No coffee items are available on the menu yet. Add products in Admin → Menu, then select
               them in Homepage content.
             </p>
           ) : (
             <>
-              {/* Phone + tablet: horizontal snap carousel with next-card peek */}
-              <div className="relative lg:hidden">
-                <div
-                  className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-2 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x"
-                  aria-label="Featured drinks carousel"
-                >
-                  {showcaseDrinks.map((drink, i) => (
-                    <div
-                      key={drink.id}
-                      className={[
-                        'shrink-0 snap-center',
-                        i === 0 ? 'w-[min(84vw,20rem)]' : 'w-[min(72vw,17rem)]',
-                      ].join(' ')}
-                    >
-                      <DrinkCard
-                        drink={drink}
-                        categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
-                        index={i}
-                        hero={i === 0}
-                        imageOverride={copy.cardImageOverrides[i]}
-                        cmsEditMode={cmsEditMode}
-                        cardIndex={i}
-                        onImageOverride={(url) => setCardImage(i, url)}
-                        sectionRef={sectionRef}
-                        onSelect={setSelectedProduct}
-                        orderHint={orderHint}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex items-center justify-center gap-1.5">
-                  <ChevronRight className="h-3.5 w-3.5 text-kado-dark/35" aria-hidden />
-                  <p className="kado-subtext font-semibold uppercase tracking-[0.18em] text-kado-dark/40">
-                    Swipe for more
-                  </p>
-                </div>
-              </div>
-
               {/* Desktop: bento grid */}
               <div className="hidden lg:grid lg:grid-cols-12 lg:grid-rows-2 lg:gap-5 lg:min-h-[28rem]">
                 {showcaseDrinks[0] && (

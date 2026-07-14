@@ -2,18 +2,6 @@ import {StrictMode} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useEffect } from 'react';
 import App from './App.tsx';
-// Self-hosted latin subsets — avoid render-blocking Google Fonts on mobile (PSI ~3.6s).
-import '@fontsource/m-plus-1/latin-300.css';
-import '@fontsource/m-plus-1/latin-400.css';
-import '@fontsource/m-plus-1/latin-500.css';
-import '@fontsource/m-plus-1/latin-600.css';
-import '@fontsource/m-plus-1/latin-700.css';
-import '@fontsource/m-plus-1/latin-800.css';
-import '@fontsource/zalando-sans-expanded/latin-400.css';
-import '@fontsource/zalando-sans-expanded/latin-500.css';
-import '@fontsource/zalando-sans-expanded/latin-600.css';
-import '@fontsource/zalando-sans-expanded/latin-700.css';
-import '@fontsource/zalando-sans-expanded/latin-800.css';
 import './index.css';
 import { useAuthStore } from './store/authStore';
 import { hydrateGlobalMinimal } from './lib/bootstrapHydration';

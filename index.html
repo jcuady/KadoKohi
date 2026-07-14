@@ -30,9 +30,11 @@
     <meta name="geo.region" content="PH-00" />
     <meta name="geo.placename" content="Marikina City" />
     <link rel="canonical" href="https://www.kadokohi.com/" />
-    <!-- Critical origins + responsive LCP preload (self-hosted fonts in JS bundle) -->
+    <!-- Critical origins + LCP preload + optional fonts (mobile: don't chain fonts after JS) -->
     <link rel="preconnect" href="https://idwtlujcdfnnndxmlaco.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://idwtlujcdfnnndxmlaco.supabase.co" />
+    <link rel="preload" href="/fonts/m-plus-1-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/zalando-700.woff2" as="font" type="font/woff2" crossorigin />
     <link
       rel="preload"
       as="image"

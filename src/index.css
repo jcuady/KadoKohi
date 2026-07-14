@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* Critical self-hosted fonts — optional so mobile FCP isn't blocked waiting on woff2. */
+@font-face {
+  font-family: 'M PLUS 1';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('/fonts/m-plus-1-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'M PLUS 1';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('/fonts/m-plus-1-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Zalando Sans Expanded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('/fonts/zalando-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Zalando Sans Expanded';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('/fonts/zalando-700.woff2') format('woff2');
+}
+
 @theme {
   --color-kado-cream: #F1DFBA;
   --color-kado-cream-light: #F5E8C8;

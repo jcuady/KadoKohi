@@ -31,10 +31,8 @@ function showSection(id: LandingTabId, sectionOnly?: LandingTabId) {
 export default function HomePageContent({ landing, previewBanner, sectionOnly, cmsEditMode }: Props) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-      className="flex w-full min-w-0 flex-col gap-0 overflow-x-hidden bg-kado-cream font-sans"
+      initial={false}
+      className="flex w-full min-w-0 flex-col gap-0 overflow-x-hidden bg-kado-cream font-sans text-kado-dark"
     >
       {previewBanner ? (
         <motion.div

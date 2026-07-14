@@ -128,10 +128,11 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
             loading="eager"
             decoding="async"
             fetchPriority="high"
-            initial={{ opacity: 0.32, scale: 1.04 }}
+            // ponytail: never fade the LCP image in — PSI mobile charged ~1.85s render delay
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0.2, scale: 1.02 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0.35, scale: 1.02 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: 'easeOut' }}
             onError={(e) => {
               const el = e.currentTarget;
               if (el.src !== current.image) el.src = current.image;
@@ -272,10 +273,16 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         <div className="landing-hero-mobile-bar flex shrink-0 items-end justify-between gap-3 sm:gap-4 lg:hidden">
           <div className="min-w-0 flex flex-col gap-2">
             <div className="flex gap-2">
-              {current.cards.slice(0, 2).map((card) => (
+              {current.cards.slice(0, 2).map((card) => {
+                const thumbSrc = card.src.includes('Copy of 5')
+                  ? '/Social%20Media%20References/Copy%20of%205-thumb.webp'
+                  : card.src.includes('Copy of 10')
+                    ? '/Social%20Media%20References/Copy%20of%2010-thumb.webp'
+                    : toWebpSrc(card.src) || card.src;
+                return (
                 <img
                   key={card.id}
-                  src={toWebpSrc(card.src) || card.src}
+                  src={thumbSrc}
                   alt={card.alt}
                   className="h-12 w-9 rounded-md border border-white/30 object-cover shadow-lg sm:h-14 sm:w-10"
                   loading="lazy"
@@ -286,7 +293,8 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
                     if (e.currentTarget.src !== card.src) e.currentTarget.src = card.src;
                   }}
                 />
-              ))}
+              );
+              })}
             </div>
             <p className="max-w-[9.5rem] text-[9px] font-semibold uppercase leading-tight tracking-[0.1em] text-kado-cream/70 drop-shadow-md sm:max-w-[10.5rem] sm:text-[10px] sm:tracking-[0.12em]">
               {c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
