@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { Lock, User, Mail, Shield, MapPin, Save } from 'lucide-react';
+import { User, Mail, Shield, MapPin, Save } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useBranchStore } from '../../store/branchStore';
-import { authRepo } from '../../lib/supabase/repositories/auth';
-import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { hasAllBranchAccess } from '../../lib/roles';
+import ChangePasswordForm from '../../components/auth/ChangePasswordForm';
 
 type Props = {
   portalLabel: string;
@@ -20,13 +19,6 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
   const [nameMsg, setNameMsg] = useState('');
   const [nameError, setNameError] = useState('');
   const [savingName, setSavingName] = useState(false);
-
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordMsg, setPasswordMsg] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
 
   if (!user) return null;
 
@@ -54,36 +46,6 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
       setNameError(err instanceof Error ? err.message : 'Unable to update name.');
     } finally {
       setSavingName(false);
-    }
-  };
-
-  const handlePasswordChange = async (e: FormEvent) => {
-    e.preventDefault();
-    setPasswordMsg('');
-    setPasswordError('');
-    if (!currentPassword.trim()) {
-      setPasswordError('Enter your current password.');
-      return;
-    }
-    if (newPassword.trim().length < 8) {
-      setPasswordError('Password must be at least 8 characters.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match.');
-      return;
-    }
-    setChangingPassword(true);
-    try {
-      await authRepo.changePassword(currentPassword, newPassword.trim());
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordMsg('Password updated. Use it the next time you sign in.');
-    } catch (err) {
-      setPasswordError(formatAuthErrorMessage(err, 'Unable to change password.'));
-    } finally {
-      setChangingPassword(false);
     }
   };
 
@@ -137,67 +99,13 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
         </button>
       </form>
 
-      <form onSubmit={handlePasswordChange} className="rounded-2xl dash-card border dash-border p-6 space-y-4">
-        <h2 className="text-[11px] font-black uppercase tracking-widest dash-heading flex items-center gap-2">
-          <Lock className="w-4 h-4" /> Password
-        </h2>
-        <p className="text-xs dash-muted">
-          Enter your current password, then a new one (at least 8 characters). No email is required — you stay signed in.
-        </p>
-        <div>
-          <label htmlFor="internal-current-password" className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
-            Current password
-          </label>
-          <input
-            id="internal-current-password"
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-          />
-        </div>
-        <div>
-          <label htmlFor="internal-new-password" className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
-            New password
-          </label>
-          <input
-            id="internal-new-password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            minLength={8}
-            autoComplete="new-password"
-            required
-            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-          />
-        </div>
-        <div>
-          <label htmlFor="internal-confirm-password" className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
-            Confirm password
-          </label>
-          <input
-            id="internal-confirm-password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            minLength={8}
-            autoComplete="new-password"
-            required
-            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-          />
-        </div>
-        {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
-        {passwordMsg && <p className="text-xs text-emerald-700">{passwordMsg}</p>}
-        <button
-          type="submit"
-          disabled={changingPassword}
-          className="rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 hover:text-kado-red transition-colors disabled:opacity-60"
-        >
-          {changingPassword ? 'Updating…' : 'Change password'}
-        </button>
-      </form>
+      <div className="rounded-2xl dash-card border dash-border p-6">
+        <ChangePasswordForm
+          tone="dashboard"
+          email={user.email}
+          successMessage="Password updated. Use it the next time you sign in."
+        />
+      </div>
     </div>
   );
 }

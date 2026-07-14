@@ -6,6 +6,7 @@ import AuthAlert from './AuthAlert';
 import { useAuthStore } from '../../store/authStore';
 import { isValidEmail } from '../../lib/validation';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
+import { forgotPasswordPath } from '../../lib/authRedirects';
 
 type Props = {
   expectedRole: Extract<Role, 'admin' | 'barista' | 'staff'>;
@@ -81,7 +82,10 @@ export default function InternalSignInForm({ expectedRole }: Props) {
           required
         />
         <div className="flex justify-end">
-          <Link to="/management-portal/forgot-password" className="text-xs font-semibold text-kado-red hover:underline">
+          <Link
+            to={forgotPasswordPath('internal', email)}
+            className="text-xs font-semibold text-kado-red hover:underline"
+          >
             Forgot password?
           </Link>
         </div>

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { passwordResetRedirectUrl } from '../../lib/authRedirects';
@@ -16,7 +16,8 @@ type ForgotPasswordProps = {
 export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordProps) {
   const isInternal = variant === 'internal';
   const signInPath = isInternal ? '/management-portal' : '/auth/login';
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState(() => searchParams.get('email')?.trim() ?? '');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);

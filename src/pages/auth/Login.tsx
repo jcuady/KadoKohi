@@ -13,6 +13,7 @@ import {
   SIGNUP_EMAIL_NEXT_STEPS,
   SIGNUP_EMAIL_QUERY,
 } from '../../lib/authNotices';
+import { forgotPasswordPath } from '../../lib/authRedirects';
 import AuthAlert from '../../components/auth/AuthAlert';
 import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
@@ -191,7 +192,7 @@ export default function Login() {
           ) : (
             <span />
           )}
-          <Link to="/auth/forgot-password" className="text-xs font-semibold text-kado-red hover:underline">
+          <Link to={forgotPasswordPath('customer', email)} className="text-xs font-semibold text-kado-red hover:underline">
             Forgot password?
           </Link>
         </div>
