@@ -256,14 +256,14 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
 
           <div className="mt-8 hidden lg:block">
             <CmsStyledText
-              value={c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
+              value={c?.imageCredit ?? 'Images: Kado Kohi Social'}
               as="p"
               className="inline-flex rounded-full border border-white/20 bg-black/35 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md"
               defaultColorClass="text-kado-cream/85"
               {...textProps(
                 'hero.chrome.imageCredit',
                 'Image credit',
-                c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina',
+                c?.imageCredit ?? 'Images: Kado Kohi Social',
                 (v) => updateHeroChrome({ imageCredit: v }),
               )}
             />
