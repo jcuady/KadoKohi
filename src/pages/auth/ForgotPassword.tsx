@@ -46,8 +46,8 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
       {sent ? (
         <>
           <AuthAlert variant="success">
-            If an account exists for that email, we sent a password reset link. Check inbox and spam (from
-            Kado Kohi / Supabase Auth). The link expires after use.
+            If an account exists for that email, we sent a reset link. Check your inbox and spam folder — it may take a
+            few minutes. The link works once, then expires.
           </AuthAlert>
           {!isInternal && <AuthFlowGuide steps={PASSWORD_RESET_SENT_STEPS} title="Next steps" variant="success" />}
           {isInternal ? (
