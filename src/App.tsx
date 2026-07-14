@@ -161,7 +161,6 @@ export default function App() {
             <Route path="blog" element={<LazyRoutes><AdminBlog /></LazyRoutes>} />
             <Route path="careers" element={<LazyRoutes><AdminCareers /></LazyRoutes>} />
             <Route path="pastries" element={<LazyRoutes><AdminPastries /></LazyRoutes>} />
-            <Route path="pastries" element={<Navigate to="/admin/menu?tab=pastries" replace />} />
             <Route path="users" element={<LazyRoutes><AdminUsers /></LazyRoutes>} />
             <Route path="audit" element={<LazyRoutes><AdminAuditLog /></LazyRoutes>} />
             <Route path="vouchers" element={<LazyRoutes><AdminVouchers /></LazyRoutes>} />

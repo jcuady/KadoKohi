@@ -20,6 +20,7 @@ export default function Blog() {
   const allPosts = useBlogStore((s) => s.posts);
   const loading = useBlogStore((s) => s.loading);
   const hydrated = useBlogStore((s) => s.hydrated);
+  const hydrateError = useBlogStore((s) => s.hydrateError);
 
   const posts = useMemo(
     () =>
@@ -44,6 +45,10 @@ export default function Blog() {
       <section className="px-6 py-16 md:py-24">
         {loading && !hydrated ? (
           <BlogGridSkeleton />
+        ) : hydrateError && posts.length === 0 ? (
+          <p className="mx-auto max-w-md text-center kado-body text-kado-dark/55">
+            Stories could not load right now. Please refresh and try again.
+          </p>
         ) : posts.length === 0 ? (
           <p className="mx-auto max-w-md text-center kado-body text-kado-dark/55">
             New stories are on the way. Check back soon.

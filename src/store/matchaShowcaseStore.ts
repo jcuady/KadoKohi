@@ -42,10 +42,14 @@ export const useMatchaShowcaseStore = create<MatchaShowcaseStore>()(
         try {
           const remote = await orderingRepo.fetchMatchaPageContent();
           if (!remote || typeof remote !== 'object') {
-            set({ hydrated: true });
+            set({
+              media: SEED_MATCHA_SHOWCASE_GALLERY,
+              pageCopy: DEFAULT_MATCHA_PAGE_COPY,
+              hydrated: true,
+            });
             return;
           }
-          const normalized = normalizeMatchaPageContent(remote, get().media);
+          const normalized = normalizeMatchaPageContent(remote, SEED_MATCHA_SHOWCASE_GALLERY);
           set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null, hydrated: true });
         } catch {
           set({ hydrated: true });

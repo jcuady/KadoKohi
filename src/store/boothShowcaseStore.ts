@@ -43,10 +43,14 @@ export const useBoothShowcaseStore = create<BoothShowcaseStore>()(
         try {
           const remote = await orderingRepo.fetchBoothPageContent();
           if (!remote || typeof remote !== 'object') {
-            set({ hydrated: true });
+            set({
+              media: SEED_BOOKING_SHOWCASE_GALLERY,
+              pageCopy: DEFAULT_BOOTH_PAGE_COPY,
+              hydrated: true,
+            });
             return;
           }
-          const normalized = normalizeBoothPageContent(remote, get().media);
+          const normalized = normalizeBoothPageContent(remote, SEED_BOOKING_SHOWCASE_GALLERY);
           set({ media: normalized.showcase, pageCopy: normalized.copy, saveError: null, hydrated: true });
         } catch {
           set({ hydrated: true });

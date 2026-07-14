@@ -11,6 +11,7 @@ import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
 import { useMatchaShowcaseStore } from '../../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
+import { usePastriesContentStore } from '../../store/pastriesContentStore';
 import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
 
 const GUEST_TABLES = [
@@ -71,6 +72,7 @@ const refresh = {
     void useMatchaShowcaseStore.getState().hydrateFromRemote();
     void useBoothCatalogStore.getState().hydrateFromRemote();
     void useCareersStore.getState().hydrateFromRemote();
+    void usePastriesContentStore.getState().hydrateFromRemote();
   }, 300),
   blog: debounce(() => void useBlogStore.getState().hydrateFromRemote(), 300),
   events: debounce(() => void useEventStore.getState().hydrateFromRemote(), 300),
