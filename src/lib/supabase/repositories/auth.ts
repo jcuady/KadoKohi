@@ -120,6 +120,38 @@ export const authRepo = {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
   },
+  /**
+   * Change password while signed in — verifies current password first (no email OTP).
+   * Fresh sign-in satisfies Supabase "Secure password change"; current_password covers
+   * projects that require the old password on updateUser.
+   */
+  async changePassword(currentPassword: string, newPassword: string) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const current = currentPassword.trim();
+    const next = newPassword.trim();
+    if (current.length < 1) throw new Error('Enter your current password.');
+    if (next.length < 8) throw new Error('Password must be at least 8 characters.');
+    if (current === next) throw new Error('New password must be different from your current password.');
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const email = userData.user?.email?.trim();
+    if (!email) throw new Error('You must be signed in to change your password.');
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: current,
+    });
+    if (signInError) {
+      throw new Error('Current password is incorrect.');
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: next,
+      current_password: current,
+    });
+    if (error) throw error;
+  },
   async resetPasswordForEmail(email: string, redirectTo: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });

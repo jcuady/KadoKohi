@@ -21,6 +21,7 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
   const [nameError, setNameError] = useState('');
   const [savingName, setSavingName] = useState(false);
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
@@ -60,6 +61,10 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
     e.preventDefault();
     setPasswordMsg('');
     setPasswordError('');
+    if (!currentPassword.trim()) {
+      setPasswordError('Enter your current password.');
+      return;
+    }
     if (newPassword.trim().length < 8) {
       setPasswordError('Password must be at least 8 characters.');
       return;
@@ -70,7 +75,8 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
     }
     setChangingPassword(true);
     try {
-      await authRepo.updatePassword(newPassword.trim());
+      await authRepo.changePassword(currentPassword, newPassword.trim());
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMsg('Password updated. Use it the next time you sign in.');
@@ -135,7 +141,23 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
         <h2 className="text-[11px] font-black uppercase tracking-widest dash-heading flex items-center gap-2">
           <Lock className="w-4 h-4" /> Password
         </h2>
-        <p className="text-xs dash-muted">Use at least 8 characters. You stay signed in after changing your password.</p>
+        <p className="text-xs dash-muted">
+          Enter your current password, then a new one (at least 8 characters). No email is required — you stay signed in.
+        </p>
+        <div>
+          <label htmlFor="internal-current-password" className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
+            Current password
+          </label>
+          <input
+            id="internal-current-password"
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+          />
+        </div>
         <div>
           <label htmlFor="internal-new-password" className="block text-[10px] font-bold uppercase tracking-wider dash-muted mb-1.5">
             New password

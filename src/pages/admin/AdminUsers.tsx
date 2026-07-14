@@ -447,7 +447,7 @@ export default function AdminUsers() {
           <form onSubmit={submitResetPassword} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl">
             <h2 className="font-display font-bold text-xl dash-heading mb-4">Reset password</h2>
             <p className="text-xs dash-muted mb-3">
-              Set a new password for this account.
+              Instant admin set — use this when a customer or teammate cannot receive the reset email. Share the temporary password with them securely.
             </p>
             <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">New password</label>
             <input

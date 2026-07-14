@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
-import { getAuthRedirectOrigin } from '../../lib/siteUrl';
+import { passwordResetRedirectUrl } from '../../lib/authRedirects';
 import { isValidEmail } from '../../lib/validation';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
@@ -30,7 +30,7 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
     }
     setSubmitting(true);
     try {
-      const redirectTo = `${getAuthRedirectOrigin()}/auth/reset-password`;
+      const redirectTo = passwordResetRedirectUrl();
       await authRepo.resetPasswordForEmail(email.trim().toLowerCase(), redirectTo);
       setSent(true);
     } catch (err) {
@@ -45,9 +45,20 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
       {sent ? (
         <>
           <AuthAlert variant="success">
-            If an account exists for that email, we sent a password reset link. Check your inbox.
+            If an account exists for that email, we sent a password reset link. Check inbox and spam (from
+            Kado Kohi / Supabase Auth). The link expires after use.
           </AuthAlert>
           {!isInternal && <AuthFlowGuide steps={PASSWORD_RESET_SENT_STEPS} title="Next steps" variant="success" />}
+          {isInternal ? (
+            <p className="mt-4 text-xs text-white/55">
+              Still nothing? Ask a super admin to set a temporary password in Admin → Users (instant, no email).
+            </p>
+          ) : (
+            <p className="mt-4 text-xs text-kado-dark/55">
+              Still nothing after a few minutes? Message us on Instagram @kadocoffeeph or visit the cafe — staff can
+              help escalate a reset.
+            </p>
+          )}
         </>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">

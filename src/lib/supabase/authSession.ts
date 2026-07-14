@@ -82,6 +82,12 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
   if (/email not confirmed|confirm your email/i.test(lower)) {
     return 'Please confirm your email first — check your inbox for the Kado Kohi link. After you confirm, you\'ll be signed in automatically.';
   }
+  if (/reauthentication|reauthenticate|recently logged in|secure password/i.test(lower)) {
+    return 'For security, enter your current password to confirm this change. No email is required.';
+  }
+  if (/current.?password/i.test(lower) && /incorrect|invalid|wrong|required/i.test(lower)) {
+    return 'Current password is incorrect.';
+  }
   if (/invalid login credentials|invalid credentials/i.test(lower)) {
     return fallback;
   }

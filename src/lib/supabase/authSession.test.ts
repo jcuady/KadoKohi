@@ -87,6 +87,18 @@ describe('formatAuthErrorMessage', () => {
     expect(formatAuthErrorMessage(new Error('Invalid login credentials'), fb)).toBe(fb);
   });
 
+  it('maps reauthentication errors to current-password guidance', () => {
+    expect(
+      formatAuthErrorMessage(new Error('Password update requires reauthentication'), fallback),
+    ).toMatch(/current password/i);
+  });
+
+  it('maps current password failures', () => {
+    expect(formatAuthErrorMessage(new Error('Incorrect current password'), fallback)).toMatch(
+      /current password is incorrect/i,
+    );
+  });
+
   it('returns raw message when present', () => {
     expect(formatAuthErrorMessage(new Error('Custom server message'), fallback)).toBe('Custom server message');
   });

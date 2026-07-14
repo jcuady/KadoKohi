@@ -35,6 +35,7 @@ export default function AccountProfile() {
   const [phoneLocal, setPhoneLocal] = useState(() =>
     user?.phone ? philippinePhoneLocalPart(user.phone) : '',
   );
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
@@ -59,6 +60,10 @@ export default function AccountProfile() {
     e.preventDefault();
     setPasswordMsg('');
     setPasswordError('');
+    if (!currentPassword.trim()) {
+      setPasswordError('Enter your current password.');
+      return;
+    }
     if (newPassword.trim().length < 8) {
       setPasswordError('Password must be at least 8 characters.');
       return;
@@ -69,7 +74,8 @@ export default function AccountProfile() {
     }
     setChangingPassword(true);
     try {
-      await authRepo.updatePassword(newPassword.trim());
+      await authRepo.changePassword(currentPassword, newPassword.trim());
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMsg('Password updated successfully.');
@@ -313,8 +319,21 @@ export default function AccountProfile() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-bold text-kado-dark">Password</p>
-                    <p className="text-xs text-kado-dark/40 font-medium">Use at least 8 characters.</p>
+                    <p className="text-xs text-kado-dark/40 font-medium">
+                      Enter your current password, then choose a new one (min. 8 characters). No email required.
+                    </p>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/40 mb-1.5">Current Password</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-kado-dark/40 mb-1.5">New Password</label>
@@ -323,6 +342,7 @@ export default function AccountProfile() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     minLength={8}
+                    autoComplete="new-password"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
                   />
@@ -334,19 +354,28 @@ export default function AccountProfile() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     minLength={8}
+                    autoComplete="new-password"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-kado-dark/10 bg-white text-sm font-bold text-kado-dark focus:outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 transition-all"
                   />
                 </div>
                 {passwordError && <p className="text-xs text-red-600 font-medium">{passwordError}</p>}
                 {passwordMsg && <p className="text-xs text-emerald-700 font-medium">{passwordMsg}</p>}
-                <button
-                  type="submit"
-                  disabled={changingPassword}
-                  className="px-4 py-2 rounded-full border border-kado-dark/10 text-[10px] font-black uppercase tracking-widest text-kado-dark/70 hover:border-kado-red/30 hover:text-kado-red transition-all disabled:opacity-50"
-                >
-                  {changingPassword ? 'Updating…' : 'Change Password'}
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    className="px-4 py-2 rounded-full border border-kado-dark/10 text-[10px] font-black uppercase tracking-widest text-kado-dark/70 hover:border-kado-red/30 hover:text-kado-red transition-all disabled:opacity-50"
+                  >
+                    {changingPassword ? 'Updating…' : 'Change Password'}
+                  </button>
+                  <Link
+                    to="/auth/forgot-password"
+                    className="text-[10px] font-black uppercase tracking-widest text-kado-dark/40 hover:text-kado-red transition-colors"
+                  >
+                    Forgot current password?
+                  </Link>
+                </div>
               </form>
             </div>
           </motion.div>
