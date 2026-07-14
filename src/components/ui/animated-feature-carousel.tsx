@@ -9,6 +9,7 @@ import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { LOGO } from '../../lib/brandTokens';
+import { toWebpSrc } from '../../lib/toWebpSrc';
 
 interface Step {
   id: string;
@@ -35,7 +36,13 @@ function VisualInStore() {
   return (
     <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
       <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-[2%] lg:w-[70%]">
-        <img src="/images/hero-interior.png" alt="Barista at the counter" className="h-36 w-full object-cover sm:h-44 lg:h-52" />
+        <img
+          src={toWebpSrc('/images/hero-interior.png')}
+          alt="Barista at the counter"
+          className="h-36 w-full object-cover sm:h-44 lg:h-52"
+          loading="lazy"
+          decoding="async"
+        />
         <div className="bg-kado-offwhite p-3 sm:p-4">
           <div className="mb-2 flex items-center gap-2 sm:mb-3">
             <img src={LOGO.hybridMark} alt="" className="h-5 w-5 object-contain" aria-hidden />
@@ -176,7 +183,13 @@ function VisualQROrder() {
         </div>
       </div>
       <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/10 bg-kado-dark shadow-[0_16px_40px_rgba(0,0,0,0.4)] lg:absolute lg:bottom-[4%] lg:left-0 lg:w-[52%]">
-        <img src="/images/hero-coffee.png" alt="Coffee shop table" className="h-16 w-full object-cover opacity-70" />
+        <img
+          src={toWebpSrc('/images/hero-coffee.png')}
+          alt="Coffee shop table"
+          className="h-16 w-full object-cover opacity-70"
+          loading="lazy"
+          decoding="async"
+        />
         <div className="p-3">
           <p className="mb-0.5 text-[8px] font-bold uppercase tracking-widest text-kado-red">Table 5 · Dine In</p>
           <p className="text-[10px] font-bold text-kado-cream">Menu loaded!</p>

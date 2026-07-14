@@ -32,13 +32,13 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
     id: 'matcha-series',
     title: 'Matcha Series',
     subtitle: 'Bold Japanese-inspired visuals, premium matcha, and modern cafe craft in every cup.',
-    image: `${SOCIAL}/Copy of 3.png`,
+    image: `${SOCIAL}/Copy of 3.webp`,
     imageAlt: 'Kado Kohi matcha latte poster from social media campaign',
     source: 'KadoKohi Social',
     cards: [
       {
         id: 'social-10',
-        src: `${SOCIAL}/Copy of 10.png`,
+        src: `${SOCIAL}/Copy of 10.webp`,
         alt: 'Kado Kohi story campaign',
         title: 'Story Campaign',
         tag: 'Story',
@@ -46,7 +46,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-5',
-        src: '/social/matcha-latte.png',
+        src: '/social/matcha-latte.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -54,7 +54,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-4',
-        src: '/social/matcha-series.png',
+        src: '/social/matcha-series.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -62,7 +62,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-8',
-        src: `${SOCIAL}/Copy of 8.png`,
+        src: `${SOCIAL}/Copy of 8.webp`,
         alt: 'Kado Kohi coffee series square campaign art',
         title: 'Coffee Series',
         tag: 'Square',
@@ -74,13 +74,13 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
     id: 'coffee-culture',
     title: 'Coffee Culture In Marikina',
     subtitle: 'Rooted in local culture, featured in community stories, and built for modern coffee rituals.',
-    image: `${FEATURED}/kadom1.jpg`,
+    image: `${FEATURED}/kadom1.webp`,
     imageAlt: 'Kado Kohi featured photo from InsideMarikina',
     source: 'InsideMarikina',
     cards: [
       {
         id: 'featured-1',
-        src: `${FEATURED}/kadom1.jpg`,
+        src: `${FEATURED}/kadom1.webp`,
         alt: 'InsideMarikina featured photo of Kado Kohi',
         title: 'Featured Marikina',
         tag: 'Community',
@@ -88,7 +88,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'featured-2',
-        src: '/social/matcha-latte.png',
+        src: '/social/matcha-latte.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -96,7 +96,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-6',
-        src: '/social/matcha-series.png',
+        src: '/social/matcha-series.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -104,7 +104,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-2',
-        src: `${SOCIAL}/Copy of 2.png`,
+        src: `${SOCIAL}/Copy of 2.webp`,
         alt: 'Kado Kohi cafe latte social card',
         title: 'Cafe Latte',
         tag: 'Portrait',
@@ -116,13 +116,13 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
     id: 'campaign-grid',
     title: 'Designed For Social-First Moments',
     subtitle: 'Campaign-driven aesthetics with strong typography, elevated drink styling, and clear brand identity.',
-    image: `${SOCIAL}/Copy of 9.png`,
+    image: `${SOCIAL}/Copy of 9.webp`,
     imageAlt: 'Kado Kohi portrait campaign board',
     source: 'KadoKohi Social',
     cards: [
       {
         id: 'social-10b',
-        src: `${SOCIAL}/Copy of 10.png`,
+        src: `${SOCIAL}/Copy of 10.webp`,
         alt: 'Kado Kohi story format campaign visual',
         title: 'Story Campaign',
         tag: 'Story',
@@ -130,7 +130,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-5b',
-        src: '/social/matcha-latte.png',
+        src: '/social/matcha-latte.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -138,7 +138,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-2square',
-        src: '/social/matcha-series.png',
+        src: '/social/matcha-series.webp',
         alt: PREMIUM_MATCHA_ALT,
         title: 'Premium Matcha',
         tag: 'Marikina',
@@ -146,7 +146,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
       },
       {
         id: 'social-4b',
-        src: `${SOCIAL}/Copy of 4.png`,
+        src: `${SOCIAL}/Copy of 4.webp`,
         alt: 'Kado Kohi matcha portrait',
         title: 'Matcha Visual',
         tag: 'Portrait',

@@ -29,7 +29,7 @@ export default function ContactSocialLinks({ className, iconClassName, buttonCla
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            'w-9 h-9 bg-white border border-kado-dark/10 text-kado-dark rounded-full flex items-center justify-center hover:bg-kado-red hover:text-white hover:border-kado-red transition-all shadow-sm',
+            'min-h-11 min-w-11 w-11 h-11 bg-white border border-kado-dark/10 text-kado-dark rounded-full flex items-center justify-center hover:bg-kado-red hover:text-white hover:border-kado-red transition-all shadow-sm touch-manipulation',
             buttonClassName,
           )}
           aria-label={label}
@@ -54,17 +54,17 @@ export function FooterSocialLinks({ className }: { className?: string }) {
   if (links.length === 0) return null;
 
   return (
-    <div className={cn('flex items-center gap-4', className)}>
+    <div className={cn('flex items-center gap-3', className)}>
       {links.map(({ key, href, label, Icon }) => (
         <a
           key={key}
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-kado-red transition-colors"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-kado-cream/80 transition-colors hover:bg-white/10 hover:text-kado-red touch-manipulation"
           aria-label={label}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="h-5 w-5" aria-hidden />
         </a>
       ))}
     </div>

@@ -2,6 +2,18 @@ import {StrictMode} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useEffect } from 'react';
 import App from './App.tsx';
+// Self-hosted latin subsets — avoid render-blocking Google Fonts on mobile (PSI ~3.6s).
+import '@fontsource/m-plus-1/latin-300.css';
+import '@fontsource/m-plus-1/latin-400.css';
+import '@fontsource/m-plus-1/latin-500.css';
+import '@fontsource/m-plus-1/latin-600.css';
+import '@fontsource/m-plus-1/latin-700.css';
+import '@fontsource/m-plus-1/latin-800.css';
+import '@fontsource/zalando-sans-expanded/latin-400.css';
+import '@fontsource/zalando-sans-expanded/latin-500.css';
+import '@fontsource/zalando-sans-expanded/latin-600.css';
+import '@fontsource/zalando-sans-expanded/latin-700.css';
+import '@fontsource/zalando-sans-expanded/latin-800.css';
 import './index.css';
 import { useAuthStore } from './store/authStore';
 import { hydrateGlobalMinimal } from './lib/bootstrapHydration';
@@ -21,10 +33,11 @@ function Bootstrap() {
 
   useEffect(() => {
     void recoverStaleAuthSession().then(() => initAuth());
-    void (async () => {
-      await ensurePublishedCms();
-      await hydrateGlobalMinimal();
-    })();
+    // Homepage critical path: don't block FCP/LCP on CMS seed probes.
+    void hydrateGlobalMinimal();
+    window.setTimeout(() => {
+      void ensurePublishedCms();
+    }, 2500);
 
     // Keep auth state in sync with Supabase session events (token refresh,
     // sign-out from another tab, OAuth callback, email confirmation, etc.).
@@ -58,12 +71,20 @@ function Bootstrap() {
 if (!pendingAuthRedirect) {
   clearChunkReloadFlag();
 
-  registerSW({
-    immediate: true,
-    onNeedRefresh() {
-      window.location.reload();
-    },
-  });
+  // Register SW after first paint — keeps workbox off the LCP critical path.
+  const registerWhenIdle = () => {
+    registerSW({
+      immediate: false,
+      onNeedRefresh() {
+        window.location.reload();
+      },
+    });
+  };
+  if (document.readyState === 'complete') {
+    window.setTimeout(registerWhenIdle, 1500);
+  } else {
+    window.addEventListener('load', () => window.setTimeout(registerWhenIdle, 1500), { once: true });
+  }
 
   const container = document.getElementById('root')!;
   type RootHost = HTMLElement & { __kkReactRoot?: Root };

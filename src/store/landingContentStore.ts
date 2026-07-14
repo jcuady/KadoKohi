@@ -253,7 +253,7 @@ const SEED_TRUSTED_BRANDS: BrandMarqueeItem[] = [
 ];
 
 const SEED_KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
-  { label: 'Kado Kohi', imageUrl: '/logo/Logo1.png' },
+  { label: 'Kado Kohi', imageUrl: '/logo/Logo1-sm.png' },
   { label: 'Anytime Fitness', imageUrl: '' },
   { label: 'foodpanda', imageUrl: '' },
   { label: 'GrabFood', imageUrl: '' },

@@ -91,6 +91,23 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, 'src'),
       },
     },
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('recharts')) return 'vendor-recharts';
+            if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-leaflet';
+            if (id.includes('three')) return 'vendor-three';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('gsap') || id.includes('@gsap')) return 'vendor-gsap';
+            if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+          },
+        },
+      },
+    },
     server: {
       host: DEV_HOST,
       port: DEV_PORT,

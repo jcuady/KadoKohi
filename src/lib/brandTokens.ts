@@ -17,11 +17,13 @@ export const FONT_BODY = '"M PLUS 1", ui-sans-serif, system-ui, sans-serif';
 export const FONT_MONO = 'ui-monospace, "Cascadia Mono", Consolas, monospace';
 
 export const LOGO = {
-  /** Horizontal KADO KOHI wordmark — primary nav mark */
-  wordmark: '/logo/Logo1.png',
+  /** Horizontal KADO KOHI wordmark — primary nav mark (display-sized asset) */
+  wordmark: '/logo/Logo1-sm.png',
+  wordmarkWebp: '/logo/Logo1.webp',
   /** Stacked KADO / KŌHĪ lockup */
   stackedWordmark: '/logo/Copy%20of%20KADO%20LOGOS-01.png',
-  hybridMark: '/logo/Logo2.png',
+  hybridMark: '/logo/Logo2-sm.png',
+  hybridMarkWebp: '/logo/Logo2.webp',
 } as const;
 
 /** Square table tent — print at table edge (1:1). */

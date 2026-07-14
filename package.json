@@ -21,9 +21,12 @@
     "test:e2e:ui": "playwright test --ui",
     "screenshots:hero": "node scripts/snapshot-hero.mjs",
     "sync:google-reviews": "node scripts/sync-google-reviews.mjs",
-    "generate:sitemap": "node scripts/generate-sitemap.mjs"
+    "generate:sitemap": "node scripts/generate-sitemap.mjs",
+    "optimize:images": "node scripts/optimize_public_images.mjs"
   },
   "dependencies": {
+    "@fontsource/m-plus-1": "^5.2.9",
+    "@fontsource/zalando-sans-expanded": "^5.2.2",
     "@gsap/react": "^2.1.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-separator": "^1.1.8",
@@ -53,6 +56,7 @@
     "@types/three": "^0.184.1",
     "autoprefixer": "^10.4.21",
     "playwright": "^1.49.1",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

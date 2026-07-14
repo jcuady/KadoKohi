@@ -13,7 +13,7 @@ import { useLandingContentStore } from '../../store/landingContentStore';
 
 /** Partners & collaborators — default strip when CMS copy is absent. */
 export const KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
-  { label: 'Kado Kohi', imageUrl: '/logo/Logo1.png' },
+  { label: 'Kado Kohi', imageUrl: '/logo/Logo1-sm.png' },
   { label: 'Anytime Fitness', imageUrl: '' },
   { label: 'foodpanda', imageUrl: '' },
   { label: 'GrabFood', imageUrl: '' },

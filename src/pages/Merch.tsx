@@ -9,8 +9,9 @@ import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
 import CatalogPageSkeleton from '../components/catalog/CatalogPageSkeleton';
 import CatalogPageFrame from '../components/catalog/CatalogPageFrame';
+import { toWebpSrc } from '../lib/toWebpSrc';
 
-const DEFAULT_IMAGE = '/social/coffee-series.png';
+const DEFAULT_IMAGE = '/social/coffee-series.webp';
 
 export default function Merch() {
   const categories = useMerchStore((s) => s.categories);
@@ -118,15 +119,24 @@ export default function Merch() {
                       >
                         <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-kado-dark/5">
                           <img
-                            src={product.image ?? DEFAULT_IMAGE}
+                            src={toWebpSrc(product.image ?? DEFAULT_IMAGE) || product.image || DEFAULT_IMAGE}
                             alt={product.name}
                             loading="lazy"
                             decoding="async"
+                            width={800}
+                            height={600}
+                            sizes="(max-width: 640px) 50vw, 25vw"
                             className="h-full w-full object-cover transition-transform duration-500 ease-out md:group-hover:scale-105"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               const img = e.currentTarget;
-                              if (img.src !== DEFAULT_IMAGE) img.src = DEFAULT_IMAGE;
+                              const raw = product.image ?? DEFAULT_IMAGE;
+                              if (img.getAttribute('data-fallback') !== '1' && toWebpSrc(raw) !== raw) {
+                                img.setAttribute('data-fallback', '1');
+                                img.src = raw;
+                                return;
+                              }
+                              if (!img.src.endsWith(DEFAULT_IMAGE)) img.src = toWebpSrc(DEFAULT_IMAGE) || DEFAULT_IMAGE;
                             }}
                           />
                         </div>

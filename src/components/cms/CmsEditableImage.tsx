@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { toWebpSrc } from '../../lib/toWebpSrc';
 import { useLandingCmsEditOptional } from '../../contexts/LandingCmsEditContext';
 
 type Props = {
@@ -50,8 +51,21 @@ export default function CmsEditableImage({
     document.getElementById(inputId)?.click();
   };
 
+  const displaySrc = toWebpSrc(src) || src;
+
   if (!editable) {
-    return <img src={src} alt={alt} className={className} />;
+    return (
+      <img
+        src={displaySrc}
+        alt={alt}
+        className={className}
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (displaySrc !== src) e.currentTarget.src = src;
+        }}
+      />
+    );
   }
 
   return (
@@ -65,7 +79,16 @@ export default function CmsEditableImage({
       )}
       aria-label={`Edit image: ${fieldLabel}`}
     >
-      <img src={src} alt={alt} className="h-full w-full object-cover" />
+      <img
+        src={displaySrc}
+        alt={alt}
+        className="h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (displaySrc !== src) e.currentTarget.src = src;
+        }}
+      />
       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/35">
         <span className="flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white opacity-0 transition-opacity group-hover:opacity-100">
           <ImagePlus className="h-3.5 w-3.5" />

@@ -77,7 +77,7 @@ function TestimonialAvatar({
       <CmsEditableImage
         cmsField={`testimonials.item.${index}.avatar`}
         cmsLabel={`Avatar ${index + 1}`}
-        src="/logo/Logo1.png"
+        src="/logo/Logo1-sm.png"
         alt={cmsTextPlain(testimonial.name)}
         className={cn(size, 'rounded-full')}
         onImageChange={(url) => updateTestimonialItem(index, { avatar: url })}

@@ -98,7 +98,11 @@ export default function Navbar() {
                   <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
                   <span>Join</span>
                 </Link>
-                <Link to="/auth/login" className="public-nav-ghost hidden xl:inline-flex">
+                <Link
+                  to="/auth/login"
+                  className="public-nav-ghost hidden xl:inline-flex"
+                  aria-label="Sign in"
+                >
                   <User className="h-5 w-5 shrink-0" aria-hidden />
                   <span className="hidden xl:inline max-w-[7rem] truncate">Sign in</span>
                 </Link>

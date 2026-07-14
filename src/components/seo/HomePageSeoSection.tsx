@@ -233,21 +233,36 @@ export default function HomePageSeoSection({ copy, cmsEditMode }: Props) {
           </ul>
         </nav>
 
-        <p className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-wider text-kado-cream/35">
-          <a href={SEO_SOCIAL.instagram} target="_blank" rel="noopener noreferrer me" className="hover:text-kado-red">
+        <p className="mt-6 flex flex-wrap gap-x-3 gap-y-2 text-[10px] font-semibold uppercase tracking-wider text-kado-cream/35">
+          <a
+            href={SEO_SOCIAL.instagram}
+            target="_blank"
+            rel="noopener noreferrer me"
+            className="inline-flex min-h-11 items-center px-1 hover:text-kado-red touch-manipulation"
+          >
             @kadocoffeeph
           </a>
-          <a href={SEO_SOCIAL.facebook} target="_blank" rel="noopener noreferrer me" className="hover:text-kado-red">
+          <a
+            href={SEO_SOCIAL.facebook}
+            target="_blank"
+            rel="noopener noreferrer me"
+            className="inline-flex min-h-11 items-center px-1 hover:text-kado-red touch-manipulation"
+          >
             KadoKohi
           </a>
-          <a href={SEO_SOCIAL.tiktok} target="_blank" rel="noopener noreferrer me" className="hover:text-kado-red">
+          <a
+            href={SEO_SOCIAL.tiktok}
+            target="_blank"
+            rel="noopener noreferrer me"
+            className="inline-flex min-h-11 items-center px-1 hover:text-kado-red touch-manipulation"
+          >
             @kadokohiph
           </a>
           <a
             href={KADO_GOOGLE_LISTING.reviewsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-kado-red"
+            className="inline-flex min-h-11 items-center px-1 hover:text-kado-red touch-manipulation"
           >
             Google reviews
           </a>

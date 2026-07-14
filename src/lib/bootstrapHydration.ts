@@ -25,15 +25,13 @@ import {
   stopCustomerAccountRealtime,
 } from './supabase/customerAccountRealtime';
 
-/** ponytail: idempotent once-guards — concurrent callers share the same in-flight promise. */
+/** ponytail: keep completed promises — StrictMode remounts must not re-fetch. */
 const once = new Map<string, Promise<void>>();
 
 function runOnce(key: string, fn: () => Promise<void>): Promise<void> {
   const existing = once.get(key);
   if (existing) return existing;
-  const promise = fn().finally(() => {
-    once.delete(key);
-  });
+  const promise = fn();
   once.set(key, promise);
   return promise;
 }
@@ -46,13 +44,18 @@ export function hydrateGlobalMinimal(): Promise<void> {
 
 export function hydratePublicShell(): Promise<void> {
   return runOnce('public-shell', async () => {
+    // Critical for above-the-fold copy (hero/CMS). Catalog waits until after first paint.
     await Promise.all([
-      useBranchStore.getState().hydrateFromRemote(),
-      useMenuStore.getState().hydrateFromRemote(),
       useSettingsStore.getState().hydrateFromRemote(),
       useLandingContentStore.getState().hydrateFromRemote(),
-      useEventStore.getState().hydrateFromRemote(),
     ]);
+    void runOnce('public-shell-deferred', async () => {
+      await Promise.all([
+        useBranchStore.getState().hydrateFromRemote(),
+        useMenuStore.getState().hydrateFromRemote(),
+        useEventStore.getState().hydrateFromRemote(),
+      ]);
+    });
   });
 }
 

@@ -11,7 +11,7 @@ export default function CookieConsentBanner({ open, onDecide }: Props) {
   return (
     <AnimatePresence>
       {open ? (
-        <motion.aside
+        <motion.div
           key="cookie-consent"
           role="dialog"
           aria-modal="false"
@@ -55,7 +55,7 @@ export default function CookieConsentBanner({ open, onDecide }: Props) {
               </button>
             </div>
           </div>
-        </motion.aside>
+        </motion.div>
       ) : null}
     </AnimatePresence>
   );

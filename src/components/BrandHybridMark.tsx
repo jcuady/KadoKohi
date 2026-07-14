@@ -17,11 +17,17 @@ const SIZE = {
 /** Official hybrid mark — prefer this over a typed 角 box (BRANDING §1 / §5). */
 export default function BrandHybridMark({ size = 'md', className, alt = 'Kado Kohi' }: Props) {
   return (
-    <img
-      src={LOGO.hybridMark}
-      alt={alt}
-      decoding="async"
-      className={cn('block shrink-0 object-contain', SIZE[size], className)}
-    />
+    <picture>
+      <source srcSet={LOGO.hybridMarkWebp} type="image/webp" />
+      <img
+        src={LOGO.hybridMark}
+        alt={alt}
+        width={128}
+        height={128}
+        decoding="async"
+        fetchPriority="low"
+        className={cn('block shrink-0 object-contain', SIZE[size], className)}
+      />
+    </picture>
   );
 }

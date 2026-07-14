@@ -20,6 +20,7 @@ import CmsEditableImage from '../cms/CmsEditableImage';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
+import { toWebpSrc } from '../../lib/toWebpSrc';
 
 const FALLBACK_EVENT_IMG = '/featuredmarikina/kadom2.jpg';
 
@@ -145,11 +146,17 @@ export default function EventsSection({ copy, cmsEditMode }: Props) {
                 />
               ) : (
                 <motion.img
-                  src={heroImage}
+                  src={toWebpSrc(heroImage) || heroImage}
                   alt={ev.title}
                   className="h-full w-full object-cover brightness-[0.7] contrast-[1.1]"
+                  loading="lazy"
+                  decoding="async"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 2, ease: 'easeOut' }}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== heroImage) e.currentTarget.src = heroImage;
+                  }}
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-kado-dark/50 via-kado-dark/30 to-kado-dark/95 opacity-90" />

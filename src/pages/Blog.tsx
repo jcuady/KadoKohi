@@ -5,6 +5,7 @@ import { useBlogStore } from '../store/blogStore';
 import BlogGridSkeleton from '../components/catalog/BlogGridSkeleton';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import PublicPageBanner from '../components/seo/PublicPageBanner';
+import { toWebpSrc } from '../lib/toWebpSrc';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', {
@@ -57,10 +58,19 @@ export default function Blog() {
                 <Link to={`/blog/${post.slug}`} className="relative block aspect-[4/3] overflow-hidden">
                   {post.imageUrl ? (
                     <img
-                      src={post.imageUrl}
+                      src={toWebpSrc(post.imageUrl) || post.imageUrl}
                       alt={post.imageAlt}
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
+                      decoding="async"
+                      width={800}
+                      height={600}
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      onError={(e) => {
+                        if (post.imageUrl && e.currentTarget.src !== post.imageUrl) {
+                          e.currentTarget.src = post.imageUrl;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="h-full w-full bg-kado-cream" />

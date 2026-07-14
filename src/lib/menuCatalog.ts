@@ -3,15 +3,15 @@ import { normalizeExternalMenuImageUrl } from './menuProductImage';
 
 /** Bundled fallbacks — avoid external URLs that 404 in production. */
 const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
-  cat_classics: '/social/cafe-latte.png',
-  cat_signatures: '/social/coffee-series.png',
-  cat_matcha: '/social/matcha-series.png',
-  cat_yuzu: '/social/matcha-latte.png',
+  cat_classics: '/social/cafe-latte.webp',
+  cat_signatures: '/social/coffee-series.webp',
+  cat_matcha: '/social/matcha-series.webp',
+  cat_yuzu: '/social/matcha-latte.webp',
 };
 
-const PASTRY_FALLBACK_IMAGE = '/social/cafe-latte.png';
+const PASTRY_FALLBACK_IMAGE = '/social/cafe-latte.webp';
 
-export const DEFAULT_MENU_PRODUCT_IMAGE = '/social/cafe-latte.png';
+export const DEFAULT_MENU_PRODUCT_IMAGE = '/social/cafe-latte.webp';
 
 export function isMerchCategoryName(name: string | undefined): boolean {
   return Boolean(name?.toLowerCase().includes('merch'));

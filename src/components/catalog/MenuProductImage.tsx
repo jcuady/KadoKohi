@@ -4,6 +4,7 @@ import {
   DEFAULT_MENU_PRODUCT_IMAGE,
   getMenuProductImageFallbackChain,
 } from '../../lib/menuCatalog';
+import { toWebpSrc } from '../../lib/toWebpSrc';
 
 type Props = {
   product: Pick<Product, 'image' | 'categoryId'>;
@@ -20,10 +21,16 @@ export default function MenuProductImage({
   loading = 'lazy',
   pastriesCategoryId,
 }: Props) {
-  const chain = useMemo(
-    () => getMenuProductImageFallbackChain(product, { pastriesCategoryId }),
-    [product.image, product.categoryId, pastriesCategoryId],
-  );
+  const chain = useMemo(() => {
+    const base = getMenuProductImageFallbackChain(product, { pastriesCategoryId });
+    const expanded: string[] = [];
+    for (const url of base) {
+      const webp = toWebpSrc(url);
+      if (webp && webp !== url) expanded.push(webp);
+      expanded.push(url);
+    }
+    return [...new Set(expanded)];
+  }, [product.image, product.categoryId, pastriesCategoryId]);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -39,6 +46,10 @@ export default function MenuProductImage({
       className={className}
       loading={loading}
       decoding="async"
+      fetchPriority={loading === 'eager' ? 'high' : 'auto'}
+      width={800}
+      height={600}
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
       referrerPolicy="no-referrer"
       onError={() => {
         setIndex((i) => (i + 1 < chain.length ? i + 1 : i));

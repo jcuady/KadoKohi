@@ -19,6 +19,7 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
 import CmsStyledText from '../cms/CmsStyledText';
 import CmsEditableImage from '../cms/CmsEditableImage';
+import { toWebpSrc } from '../../lib/toWebpSrc';
 
 interface Props {
   slides: HomeHeroSlide[];
@@ -45,6 +46,23 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
   useEffect(() => {
     setIndex(0);
   }, [safeSlides.length]);
+
+  // LCP: preload first hero WebP so mobile PageSpeed sees an early image fetch.
+  useEffect(() => {
+    const first = safeSlides[0]?.image;
+    if (!first) return;
+    const href = toWebpSrc(first) || first;
+    let link = document.querySelector<HTMLLinkElement>('link[data-kado-lcp-hero]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.setAttribute('data-kado-lcp-hero', '1');
+      document.head.appendChild(link);
+    }
+    link.href = href;
+    link.setAttribute('fetchpriority', 'high');
+  }, [safeSlides]);
 
   if (safeSlides.length === 0) return null;
 
@@ -98,13 +116,26 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
         ) : (
           <motion.img
             key={current.id}
-            src={current.image}
+            src={toWebpSrc(current.image) || current.image}
+            srcSet={
+              current.image.includes('Copy of 3')
+                ? '/Social%20Media%20References/Copy%20of%203-sm.webp 828w, /Social%20Media%20References/Copy%20of%203.webp 1400w'
+                : undefined
+            }
+            sizes="100vw"
             alt={current.imageAlt}
             className="absolute inset-0 h-full w-full object-cover object-[center_35%] lg:object-center"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             initial={{ opacity: 0.32, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0.2, scale: 1.02 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
+            onError={(e) => {
+              const el = e.currentTarget;
+              if (el.src !== current.image) el.src = current.image;
+            }}
           />
         )}
       </AnimatePresence>
@@ -244,10 +275,16 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               {current.cards.slice(0, 2).map((card) => (
                 <img
                   key={card.id}
-                  src={card.src}
+                  src={toWebpSrc(card.src) || card.src}
                   alt={card.alt}
                   className="h-12 w-9 rounded-md border border-white/30 object-cover shadow-lg sm:h-14 sm:w-10"
                   loading="lazy"
+                  decoding="async"
+                  width={40}
+                  height={56}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== card.src) e.currentTarget.src = card.src;
+                  }}
                 />
               ))}
             </div>
@@ -296,10 +333,17 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
                   />
                 ) : (
                   <img
-                    src={card.src}
+                    src={toWebpSrc(card.src) || card.src}
                     alt={card.alt}
                     className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-105"
                     loading="lazy"
+                    decoding="async"
+                    width={360}
+                    height={480}
+                    sizes="(max-width: 1024px) 0px, 11rem"
+                    onError={(e) => {
+                      if (e.currentTarget.src !== card.src) e.currentTarget.src = card.src;
+                    }}
                   />
                 )}
               </div>
