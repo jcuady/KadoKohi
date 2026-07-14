@@ -126,6 +126,7 @@ export default function AdminSettings() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupError, setBackupError] = useState('');
   const [backupSuccess, setBackupSuccess] = useState('');
+  const [backupProgress, setBackupProgress] = useState('');
 
   useEffect(() => {
     void hydrateFromRemote().finally(() => setHydrating(false));
@@ -218,16 +219,24 @@ export default function AdminSettings() {
   const handleDownloadBackup = async () => {
     setBackupError('');
     setBackupSuccess('');
+    setBackupProgress('Checking admin session…');
     setBackupBusy(true);
     try {
-      const result = await downloadAdminDataBackup();
+      const result = await downloadAdminDataBackup((p) => {
+        setBackupProgress(p.detail ?? p.stage);
+      });
+      const warn =
+        result.warnings.length > 0
+          ? ` Notes: ${result.warnings.length} optional sheet(s) skipped (${result.warnings.join('; ')}).`
+          : '';
       setBackupSuccess(
-        `Downloaded ${result.filename} (${result.sheetCount} sheets: sales, orders, catalog, profiles, bookings…).`,
+        `Downloaded ${result.filename} — ${result.sheetCount} sheets, ${result.orderCount} orders, ${result.itemCount} line items.${warn}`,
       );
     } catch (err) {
       setBackupError(err instanceof Error ? err.message : 'Could not build the backup workbook.');
     } finally {
       setBackupBusy(false);
+      setBackupProgress('');
     }
   };
 
@@ -646,7 +655,8 @@ export default function AdminSettings() {
                 <p className="text-xs dash-muted mt-1 leading-relaxed">
                   Download a formatted Excel workbook with sales summaries, orders, line items, payments,
                   branches, tables, menu/merch catalog, profiles, booth bookings, events, loyalty, promos,
-                  audit logs, and more. Recommended before any danger-zone reset.
+                  audit logs, and more. Pages large order history safely (admin session required). Recommended
+                  before any danger-zone reset.
                 </p>
               </div>
             </div>
@@ -655,6 +665,9 @@ export default function AdminSettings() {
                 <Check className="w-4 h-4 shrink-0 mt-0.5" />
                 {backupSuccess}
               </div>
+            )}
+            {backupBusy && backupProgress && (
+              <p className="text-xs dash-muted font-medium">{backupProgress}</p>
             )}
             {backupError && (
               <p className="text-xs text-red-600 font-medium">{backupError}</p>

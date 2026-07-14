@@ -38,10 +38,46 @@ import { blogRepo } from './supabase/repositories/blog';
 
 export type SheetRows = { name: string; rows: Record<string, unknown>[] };
 
-const PAGE = 1000;
+const PAGE = 500;
+const MAX_RETRIES = 3;
+
+export type BackupProgress = {
+  stage: string;
+  detail?: string;
+  loaded?: number;
+};
+
+export type BackupDownloadResult = {
+  filename: string;
+  sheetCount: number;
+  orderCount: number;
+  itemCount: number;
+  warnings: string[];
+};
 
 function money(n: number): number {
   return Math.round((Number(n) || 0) * 100) / 100;
+}
+
+function yieldUi(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 0);
+  });
+}
+
+async function withRetry<T>(label: string, run: () => Promise<T>): Promise<T> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+    try {
+      return await run();
+    } catch (err) {
+      last = err;
+      if (attempt >= MAX_RETRIES) break;
+      await new Promise((r) => window.setTimeout(r, 250 * attempt));
+    }
+  }
+  const message = last instanceof Error ? last.message : String(last);
+  throw new Error(`${label} failed after ${MAX_RETRIES} attempts: ${message}`);
 }
 
 function isoDay(iso: string): string {
@@ -112,21 +148,69 @@ async function fetchAll(
   table: string,
   select: string,
   orderCol: string,
+  onProgress?: (loaded: number) => void,
 ): Promise<Record<string, unknown>[]> {
   if (!supabase) throw new Error('Supabase is not configured.');
   const out: Record<string, unknown>[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select(select)
-      .order(orderCol, { ascending: false })
-      .range(from, from + PAGE - 1);
-    if (error) throw error;
-    const batch = (data ?? []) as unknown as Record<string, unknown>[];
+    const batch = await withRetry(`${table} page ${from}`, async () => {
+      const { data, error } = await supabase!
+        .from(table)
+        .select(select)
+        // Stable multi-key order avoids duplicate/skip when timestamps collide.
+        .order(orderCol, { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      return (data ?? []) as unknown as Record<string, unknown>[];
+    });
     out.push(...batch);
+    onProgress?.(out.length);
+    if (typeof window !== 'undefined') await yieldUi();
     if (batch.length < PAGE) break;
   }
   return out;
+}
+
+/** Attach line items to parent orders without a nested PostgREST join (safer at scale). */
+export function mergeOrdersWithItems(
+  orderRows: Record<string, unknown>[],
+  itemRows: Record<string, unknown>[],
+): Array<Order & { promoCode?: string; promoDiscountTotal?: number }> {
+  const byOrder = new Map<string, Record<string, unknown>[]>();
+  for (const item of itemRows) {
+    const orderId = String(item.order_id ?? '');
+    if (!orderId) continue;
+    const list = byOrder.get(orderId);
+    if (list) list.push(item);
+    else byOrder.set(orderId, [item]);
+  }
+  return orderRows.map((row) =>
+    mapOrderRow({
+      ...row,
+      kk_order_items: byOrder.get(String(row.id)) ?? [],
+    }),
+  );
+}
+
+async function assertAdminSession(): Promise<void> {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error('Sign in as an admin to download the backup.');
+
+  const { data: profile, error } = await supabase
+    .from('kk_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Admin role required. Only administrators can download the full data backup.');
+  }
 }
 
 export type AdminBackupInput = {
@@ -540,83 +624,141 @@ export function buildAdminBackupSheets(input: AdminBackupInput): SheetRows[] {
   ];
 }
 
-export async function fetchAdminBackupBundle(): Promise<AdminBackupInput> {
+export async function fetchAdminBackupBundle(
+  onProgress?: (progress: BackupProgress) => void,
+): Promise<{ bundle: AdminBackupInput; warnings: string[] }> {
   if (!supabase) throw new Error('Supabase is not configured.');
+  await assertAdminSession();
 
-  const [
-    branches,
-    menu,
-    tables,
-    merch,
-    events,
-    users,
-    bookings,
-    rewards,
-    vouchers,
-    promoCodes,
-    orderRows,
-    payments,
-    promoClaims,
-    eventRegistrations,
-    careers,
-    auditLogs,
-    blogPosts,
-  ] = await Promise.all([
-    orderingRepo.fetchBranches(),
-    orderingRepo.fetchMenu(),
-    orderingRepo.fetchTables(),
-    orderingRepo.fetchMerch(),
-    orderingRepo.fetchEvents(),
-    orderingRepo.fetchUsers(),
-    orderingRepo.fetchBookings(),
-    loyaltyRepo.fetchRewards(),
-    loyaltyRepo.fetchAllVouchers(),
-    promoRepo.fetchAll(),
-    fetchAll('kk_orders', '*, kk_order_items(*)', 'created_at'),
-    fetchAll('kk_payment_transactions', '*', 'created_at').catch(() => [] as Record<string, unknown>[]),
-    fetchAll('kk_promo_claims', '*', 'claimed_at').catch(() => [] as Record<string, unknown>[]),
-    fetchAll('kk_event_registrations', '*', 'created_at').catch(() => [] as Record<string, unknown>[]),
-    fetchAll(
-      'kk_career_applications',
-      'id, listing_id, listing_title, contact_name, contact_email, contact_phone, created_at',
-      'created_at',
-    ).catch(() => [] as Record<string, unknown>[]),
-    auditRepo.fetch(5000),
-    blogRepo.fetchAll(),
-  ]);
+  const warnings: string[] = [];
+  const report = (stage: string, detail?: string, loaded?: number) => {
+    onProgress?.({ stage, detail, loaded });
+  };
+
+  report('catalog', 'Loading branches, menu, tables…');
+  const [branches, menu, tables, merch, events, users, bookings, rewards, vouchers, promoCodes, blogPosts] =
+    await Promise.all([
+      orderingRepo.fetchBranches(),
+      orderingRepo.fetchMenu(),
+      orderingRepo.fetchTables(),
+      orderingRepo.fetchMerch(),
+      orderingRepo.fetchEvents(),
+      orderingRepo.fetchUsers(),
+      orderingRepo.fetchBookings(),
+      loyaltyRepo.fetchRewards(),
+      loyaltyRepo.fetchAllVouchers(),
+      promoRepo.fetchAll(),
+      blogRepo.fetchAll(),
+    ]);
+
+  report('orders', 'Paging orders…');
+  const orderRows = await fetchAll('kk_orders', '*', 'created_at', (loaded) =>
+    report('orders', `Loaded ${loaded} orders…`, loaded),
+  );
+
+  report('order_items', 'Paging order line items…');
+  const itemRows = await fetchAll('kk_order_items', '*', 'created_at', (loaded) =>
+    report('order_items', `Loaded ${loaded} line items…`, loaded),
+  );
+  const orders = mergeOrdersWithItems(orderRows, itemRows);
+
+  const softFetch = async (label: string, table: string, select: string, orderCol: string) => {
+    try {
+      report(label, `Paging ${label}…`);
+      return await fetchAll(table, select, orderCol, (loaded) =>
+        report(label, `Loaded ${loaded} ${label}…`, loaded),
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      warnings.push(`${label}: ${message}`);
+      return [] as Record<string, unknown>[];
+    }
+  };
+
+  const payments = await softFetch('payments', 'kk_payment_transactions', '*', 'created_at');
+  const promoClaims = await softFetch('promo_claims', 'kk_promo_claims', '*', 'claimed_at');
+  const eventRegistrations = await softFetch('event_registrations', 'kk_event_registrations', '*', 'created_at');
+  const careers = await softFetch(
+    'career_applications',
+    'kk_career_applications',
+    'id, listing_id, listing_title, contact_name, contact_email, contact_phone, created_at',
+    'created_at',
+  );
+
+  report('audit', 'Paging audit logs…');
+  let auditLogs: AdminBackupInput['auditLogs'] = [];
+  try {
+    const auditRows = await fetchAll('kk_audit_logs', '*', 'created_at', (loaded) =>
+      report('audit', `Loaded ${loaded} audit rows…`, loaded),
+    );
+    auditLogs = auditRows.map((r) => ({
+      id: String(r.id),
+      actorId: (r.actor_id as string) ?? null,
+      actorEmail: (r.actor_email as string) ?? null,
+      actorRole: (r.actor_role as string) ?? null,
+      action: String(r.action ?? ''),
+      entityType: String(r.entity_type ?? ''),
+      entityId: (r.entity_id as string) ?? null,
+      branchId: (r.branch_id as string) ?? null,
+      summary: (r.summary as string) ?? null,
+      metadata: (r.metadata as Record<string, unknown>) ?? {},
+      createdAt: String(r.created_at ?? ''),
+    }));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    warnings.push(`audit_logs: ${message}`);
+    auditLogs = await auditRepo.fetch(5000).catch(() => []);
+  }
+
+  report('assemble', `Assembling ${orders.length} orders and ${itemRows.length} line items…`);
 
   return {
-    generatedAt: new Date().toISOString(),
-    branches,
-    categories: menu.categories,
-    products: menu.products,
-    tables,
-    merchCategories: merch.categories,
-    merchProducts: merch.products,
-    events,
-    users,
-    bookings,
-    loyaltyRewards: rewards,
-    loyaltyVouchers: vouchers,
-    promoCodes,
-    orders: orderRows.map(mapOrderRow),
-    payments,
-    promoClaims,
-    eventRegistrations,
-    careers,
-    auditLogs,
-    blogPosts,
+    warnings,
+    bundle: {
+      generatedAt: new Date().toISOString(),
+      branches,
+      categories: menu.categories,
+      products: menu.products,
+      tables,
+      merchCategories: merch.categories,
+      merchProducts: merch.products,
+      events,
+      users,
+      bookings,
+      loyaltyRewards: rewards,
+      loyaltyVouchers: vouchers,
+      promoCodes,
+      orders,
+      payments,
+      promoClaims,
+      eventRegistrations,
+      careers,
+      auditLogs,
+      blogPosts,
+    },
   };
 }
 
-export async function buildAdminBackupWorkbookBlob(sheets: SheetRows[]): Promise<Blob> {
+export async function buildAdminBackupWorkbookBlob(
+  sheets: SheetRows[],
+  onProgress?: (progress: BackupProgress) => void,
+): Promise<Blob> {
+  onProgress?.({ stage: 'excel', detail: 'Loading Excel engine…' });
   const ExcelJS = (await import('exceljs')).default;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Kado Kohi Admin';
   workbook.created = new Date();
   workbook.modified = new Date();
 
-  for (const sheet of sheets) {
+  for (let s = 0; s < sheets.length; s += 1) {
+    const sheet = sheets[s]!;
+    onProgress?.({
+      stage: 'excel',
+      detail: `Writing sheet ${s + 1}/${sheets.length}: ${sheet.name}`,
+      loaded: s + 1,
+    });
+    if (typeof window !== 'undefined') await yieldUi();
+
     const ws = workbook.addWorksheet(sheet.name.slice(0, 31), {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
@@ -634,9 +776,9 @@ export async function buildAdminBackupWorkbookBlob(sheets: SheetRows[]): Promise
     };
     header.alignment = { vertical: 'middle' };
 
-    for (const row of sheet.rows) {
-      ws.addRow(keys.map((k) => row[k] ?? ''));
-    }
+    // Batch add rows — much faster than one-by-one for large order history.
+    const values = sheet.rows.map((row) => keys.map((k) => row[k] ?? ''));
+    ws.addRows(values);
 
     keys.forEach((key, i) => {
       const col = ws.getColumn(i + 1);
@@ -648,6 +790,7 @@ export async function buildAdminBackupWorkbookBlob(sheets: SheetRows[]): Promise
     });
   }
 
+  onProgress?.({ stage: 'excel', detail: 'Encoding .xlsx file…' });
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -659,12 +802,16 @@ export function adminBackupFilename(generatedAt = new Date()): string {
   return `kado-kohi-admin-backup-${stamp}.xlsx`;
 }
 
-export async function downloadAdminDataBackup(): Promise<{ filename: string; sheetCount: number }> {
-  const bundle = await fetchAdminBackupBundle();
+export async function downloadAdminDataBackup(
+  onProgress?: (progress: BackupProgress) => void,
+): Promise<BackupDownloadResult> {
+  const { bundle, warnings } = await fetchAdminBackupBundle(onProgress);
+  onProgress?.({ stage: 'sheets', detail: 'Computing sales summaries…' });
   const sheets = buildAdminBackupSheets(bundle);
-  const blob = await buildAdminBackupWorkbookBlob(sheets);
+  const blob = await buildAdminBackupWorkbookBlob(sheets, onProgress);
   const filename = adminBackupFilename(new Date(bundle.generatedAt));
 
+  onProgress?.({ stage: 'download', detail: `Saving ${filename}…` });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -675,5 +822,11 @@ export async function downloadAdminDataBackup(): Promise<{ filename: string; she
   a.remove();
   URL.revokeObjectURL(url);
 
-  return { filename, sheetCount: sheets.length };
+  return {
+    filename,
+    sheetCount: sheets.length,
+    orderCount: bundle.orders.length,
+    itemCount: bundle.orders.reduce((n, o) => n + o.items.length, 0),
+    warnings,
+  };
 }
