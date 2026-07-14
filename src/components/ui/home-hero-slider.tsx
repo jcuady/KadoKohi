@@ -297,7 +297,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               })}
             </div>
             <p className="max-w-[9.5rem] text-[9px] font-semibold uppercase leading-tight tracking-[0.1em] text-kado-cream/70 drop-shadow-md sm:max-w-[10.5rem] sm:text-[10px] sm:tracking-[0.12em]">
-              {c?.imageCredit ?? 'Images: Kado Kohi Social + InsideMarikina'}
+              {c?.imageCredit ?? 'Images: Kado Kohi Social'}
             </p>
           </div>
 

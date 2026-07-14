@@ -26,7 +26,7 @@ export const SIGNUP_EMAIL_NEXT_STEPS = [
 ] as const;
 
 export const PASSWORD_RESET_SENT_STEPS = [
-  'Open the reset email from Kado Kohi (check spam if you do not see it)',
+  'Open the reset email from Kado Kohi (check spam; sender is often notifications@kadokohi.com)',
   'Choose a new password on the secure page',
   'Return here and sign in with your new password',
 ] as const;
