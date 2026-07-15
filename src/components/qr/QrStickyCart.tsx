@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PaymentMethod, Product } from '../../types/domain';
 import type { QrCartLine } from '../../lib/qrOrderCart';
 import { formatPhp } from '../../lib/money';
+import { resolvePosUnitPrice } from '../../lib/posPricing';
 import QrPaymentSelector from './QrPaymentSelector';
 import MenuProductImage from '../catalog/MenuProductImage';
 import {
@@ -127,7 +128,11 @@ export default function QrStickyCart({
                     const p = products.find((x) => x.id === line.productId);
                     if (!p) return null;
                     const milk = p.milks?.find((m) => m.id === line.milkId);
-                    const unit = p.basePrice + (milk?.priceDelta ?? 0);
+                    const { unit } = resolvePosUnitPrice(p, {
+                      milkId: line.milkId,
+                      sizeId: line.sizeId,
+                      customizations: line.customizations ?? [],
+                    });
                     return (
                       <li
                         key={line.key}
@@ -142,7 +147,7 @@ export default function QrStickyCart({
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold qr-text truncate">{p.name}</p>
                           <p className="qr-text-subtle text-[10px] truncate">
-                            {[line.milkLabel, line.temperature].filter(Boolean).join(' · ')}
+                            {[line.milkLabel ?? milk?.label, line.temperature].filter(Boolean).join(' · ')}
                           </p>
                           <p className="text-xs font-bold text-kado-red mt-0.5">{formatPhp(unit * line.qty)}</p>
                         </div>

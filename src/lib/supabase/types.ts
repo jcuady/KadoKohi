@@ -80,6 +80,8 @@ export interface Database {
           name: string;
           description: string | null;
           base_price: number;
+          discount_type: 'fixed' | 'percent' | null;
+          discount_value: number | null;
           image: string | null;
           temperature: string;
           sizes: Json;
@@ -87,6 +89,7 @@ export interface Database {
           tags: Json;
           custom_fields: Json;
           visible: boolean;
+          in_stock?: boolean;
           sort_order: number;
           created_at: string;
           updated_at: string;
@@ -98,6 +101,8 @@ export interface Database {
           name: string;
           description?: string | null;
           base_price: number;
+          discount_type?: 'fixed' | 'percent' | null;
+          discount_value?: number | null;
           image?: string | null;
           temperature: string;
           sizes?: Json;
@@ -105,6 +110,7 @@ export interface Database {
           tags?: Json;
           custom_fields?: Json;
           visible?: boolean;
+          in_stock?: boolean;
           sort_order?: number;
         };
         Update: Partial<Database['public']['Tables']['kk_products']['Insert']>;

@@ -49,6 +49,8 @@ const emptyProductForm: ProductFormData = {
   name: '',
   description: '',
   basePrice: '',
+  discountType: '',
+  discountValue: '',
   image: '',
   temperature: 'both',
   visible: true,
@@ -63,6 +65,8 @@ const pastryProductForm: ProductFormData = {
   name: '',
   description: '',
   basePrice: '',
+  discountType: '',
+  discountValue: '',
   image: '',
   temperature: 'both',
   visible: true,
@@ -201,6 +205,8 @@ export default function AdminMenu() {
         isPastriesCategoryId(categories, p.categoryId) && !pastryHasPrice(p)
           ? ''
           : String(p.basePrice),
+      discountType: p.discountType ?? '',
+      discountValue: p.discountValue != null ? String(p.discountValue) : '',
       image: p.image ?? '',
       temperature: p.temperature,
       visible: p.visible,
@@ -401,6 +407,23 @@ export default function AdminMenu() {
       return;
     }
 
+    const discountValue = form.discountType ? Number(form.discountValue) : null;
+    if (
+      form.discountType &&
+      (!Number.isFinite(discountValue) ||
+        discountValue == null ||
+        discountValue <= 0 ||
+        (form.discountType === 'percent' && discountValue >= 100) ||
+        (form.discountType === 'fixed' && discountValue >= basePrice))
+    ) {
+      setProductFormError(
+        form.discountType === 'percent'
+          ? 'Percentage discount must be greater than 0 and less than 100.'
+          : 'Fixed discount must be greater than 0 and less than the base price.',
+      );
+      return;
+    }
+
     const productId = editingProduct ?? newId();
     const imageIntentInput = {
       source: imageSource,
@@ -423,12 +446,19 @@ export default function AdminMenu() {
       name: clampText(form.name, 120),
       description: clampText(form.description, 500) || undefined,
       basePrice,
+      discountType: form.discountType || null,
+      discountValue,
       temperature: isPastryForm ? ('both' as const) : form.temperature,
       visible: form.visible,
-      tags: form.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
+      tags: (() => {
+        const tags = form.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .filter((t) => t.toLowerCase() !== 'promo');
+        if (form.discountType) tags.unshift('promo');
+        return tags;
+      })(),
       milks: form.milks.filter((m) => m.label.trim()),
       sizes: form.sizes.filter((s) => s.label.trim()),
       customFields: form.customFields.filter(

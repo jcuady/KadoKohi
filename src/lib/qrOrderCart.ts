@@ -3,6 +3,7 @@ import type { QrCartPayload } from '../components/qr/QrProductSheet';
 import { computeOrderTotals } from './money';
 import { newId } from './id';
 import { resolvePosUnitPrice } from './posPricing';
+import { discountedBasePrice, productDiscountAmount } from './productPricing';
 
 export type QrCartLine = QrCartPayload & { key: string };
 
@@ -40,9 +41,11 @@ export function buildQrCartTotals(
       sizeId: line.sizeId,
       customizations: line.customizations ?? [],
     });
+    const saleBase = discountedBasePrice(p);
+    const itemDiscount = productDiscountAmount(p) * line.qty;
     const lineTotal = unit * line.qty;
-    subtotal += p.basePrice * line.qty;
-    modifiers += (unit - p.basePrice) * line.qty;
+    subtotal += saleBase * line.qty;
+    modifiers += (unit - saleBase) * line.qty;
 
     lines.push({
       id: newId(),
@@ -55,6 +58,8 @@ export function buildQrCartTotals(
       sizeLabelSnapshot: sizeLabel ?? line.sizeLabel,
       temperature: line.temperature,
       merchVariants: line.customizations?.length ? line.customizations : undefined,
+      originalUnitPrice: unit + productDiscountAmount(p),
+      itemDiscountTotal: itemDiscount > 0 ? itemDiscount : undefined,
       unitPrice: unit,
       qty: line.qty,
       lineTotal,

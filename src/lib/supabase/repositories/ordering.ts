@@ -170,6 +170,8 @@ function mapProduct(row: any): Product {
     name: row.name,
     description: row.description ?? undefined,
     basePrice: Number(row.base_price ?? 0),
+    discountType: row.discount_type ?? null,
+    discountValue: row.discount_value != null ? Number(row.discount_value) : null,
     image: row.image ?? undefined,
     temperature: row.temperature,
     sizes: row.sizes ?? [],
@@ -338,6 +340,8 @@ function mapOrderItem(row: any): OrderItem {
     temperature: row.temperature ?? undefined,
     merchVariants: row.merch_variants ?? [],
     notes: row.notes ?? undefined,
+    originalUnitPrice: row.original_unit_price != null ? Number(row.original_unit_price) : undefined,
+    itemDiscountTotal: row.item_discount_total != null ? Number(row.item_discount_total) : undefined,
     unitPrice: Number(row.unit_price ?? 0),
     qty: row.qty ?? 0,
     lineTotal: Number(row.line_total ?? 0),
@@ -362,6 +366,8 @@ function mapOrder(row: any): Order {
     items: (row.kk_order_items ?? []).map(mapOrderItem),
     subtotal: Number(row.subtotal ?? 0),
     modifiersTotal: Number(row.modifiers_total ?? 0),
+    productDiscountTotal:
+      row.product_discount_total != null ? Number(row.product_discount_total) : undefined,
     tax: Number(row.tax ?? 0),
     total: Number(row.total ?? 0),
     loyaltyStampsAwarded: row.loyalty_stamps_awarded ?? undefined,
@@ -535,6 +541,8 @@ export const orderingRepo = {
       name: p.name,
       description: p.description ?? null,
       base_price: p.basePrice,
+      discount_type: p.discountType ?? null,
+      discount_value: p.discountValue ?? null,
       image: p.image ?? null,
       temperature: p.temperature,
       sizes: p.sizes ?? [],
@@ -984,6 +992,10 @@ export const orderingRepo = {
       shortCode: String(row.short_code ?? o.shortCode),
       subtotal: Number(row.subtotal ?? o.subtotal),
       modifiersTotal: Number(row.modifiers_total ?? o.modifiersTotal),
+      productDiscountTotal:
+        row.product_discount_total != null
+          ? Number(row.product_discount_total)
+          : o.productDiscountTotal,
       tax: Number(row.tax ?? o.tax ?? 0),
       total: Number(row.total ?? o.total),
       loyaltyDiscountTotal:

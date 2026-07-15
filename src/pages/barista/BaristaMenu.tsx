@@ -3,6 +3,7 @@ import { useMenuStore } from '../../store/menuStore';
 import { formatPhp } from '../../lib/money';
 import MenuProductStockButton from '../../components/menu/MenuProductStockButton';
 import { isProductInStock } from '../../lib/productStock';
+import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 
 export default function BaristaMenu() {
   const categories = useMenuStore((s) => s.categories);
@@ -88,8 +89,15 @@ export default function BaristaMenu() {
                     </span>
                   )}
                 </div>
-                <span className="font-display font-bold text-sm text-kado-red shrink-0">
-                  {formatPhp(p.basePrice)}
+                <span className="flex shrink-0 flex-col items-end leading-none">
+                  {productPromoTag(p) ? (
+                    <span className="text-[9px] font-semibold dash-muted line-through">
+                      {formatPhp(p.basePrice)}
+                    </span>
+                  ) : null}
+                  <span className="font-display font-bold text-sm text-kado-red">
+                    {formatPhp(discountedBasePrice(p))}
+                  </span>
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 text-[10px] dash-muted">

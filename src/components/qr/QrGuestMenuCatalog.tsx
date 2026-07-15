@@ -7,6 +7,7 @@ import { getProductDescription } from '../../lib/productImage';
 import { isIcedOnlyDrink } from '../../lib/menuProductModifiers';
 import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
+import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 
 type Props = {
   sections: QrGuestMenuSection[];
@@ -97,7 +98,7 @@ export default function QrGuestMenuCatalog({
           </div>
           <div className="guest-order-product-grid">
             {section.products.map((p) => {
-              const tag = isIcedOnlyDrink(p) ? 'Iced only' : p.tags?.[0];
+              const tag = productPromoTag(p) ?? (isIcedOnlyDrink(p) ? 'Iced only' : p.tags?.[0]);
               const inStock = isProductInStock(p);
               const i = itemIndex++;
               return (
@@ -139,8 +140,15 @@ export default function QrGuestMenuCatalog({
                       <h3 className="font-display font-bold text-[10px] sm:text-xs qr-text line-clamp-2 leading-tight">
                         {p.name}
                       </h3>
-                      <span className="font-black text-[10px] sm:text-xs text-kado-red shrink-0">
-                        {formatPhp(p.basePrice)}
+                      <span className="flex shrink-0 flex-col items-end leading-none">
+                        {productPromoTag(p) ? (
+                          <span className="text-[7px] font-semibold qr-text-subtle line-through sm:text-[8px]">
+                            {formatPhp(p.basePrice)}
+                          </span>
+                        ) : null}
+                        <span className="text-[10px] font-black text-kado-red sm:text-xs">
+                          {formatPhp(discountedBasePrice(p))}
+                        </span>
                       </span>
                     </div>
                     <p className="hidden sm:block qr-text-subtle text-[9px] line-clamp-1 leading-snug mt-0.5">

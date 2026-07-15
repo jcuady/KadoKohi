@@ -6,6 +6,7 @@ import { isIcedOnlyDrink, productFallbackDescription } from '../../lib/menuProdu
 import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../ProductGridPagination';
+import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 
 type Props = {
   products: Product[];
@@ -41,7 +42,7 @@ export default function QrGuestFilteredCatalog({
     <div className="space-y-4">
       <div className="guest-order-product-grid">
         {pageItems.map((p, i) => {
-          const tag = isIcedOnlyDrink(p) ? 'Iced only' : p.tags?.[0];
+          const tag = productPromoTag(p) ?? (isIcedOnlyDrink(p) ? 'Iced only' : p.tags?.[0]);
           const inStock = isProductInStock(p);
           const desc = showDescriptions
             ? getProductDescription(p) || productFallbackDescription(p)
@@ -84,7 +85,16 @@ export default function QrGuestFilteredCatalog({
                   <h3 className="line-clamp-2 font-display text-[10px] font-black leading-tight qr-text sm:text-[11px]">
                     {p.name}
                   </h3>
-                  <span className="shrink-0 text-[10px] font-black text-kado-red">{formatPhp(p.basePrice)}</span>
+                  <span className="flex shrink-0 flex-col items-end leading-none">
+                    {productPromoTag(p) ? (
+                      <span className="text-[7px] font-semibold qr-text-subtle line-through">
+                        {formatPhp(p.basePrice)}
+                      </span>
+                    ) : null}
+                    <span className="text-[10px] font-black text-kado-red">
+                      {formatPhp(discountedBasePrice(p))}
+                    </span>
+                  </span>
                 </div>
                 {desc ? (
                   <p className="qr-text-muted mt-0.5 line-clamp-2 text-[9px] font-medium leading-snug">

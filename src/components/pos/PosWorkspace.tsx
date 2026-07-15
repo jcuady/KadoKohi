@@ -18,6 +18,7 @@ import {
 import { CheckCircle2, Minus, Pencil, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import PosVariantModal from './PosVariantModal';
 import { resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
+import { discountedBasePrice, productDiscountAmount, productPromoTag } from '../../lib/productPricing';
 
 type CartLine = {
   key: string;
@@ -142,9 +143,10 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
       const p = products.find((x) => x.id === line.productId);
       if (!p) continue;
       const { unit, milkLabel, sizeLabel } = resolvePosUnitPrice(p, line);
-      const base = p.basePrice;
-      const mod = unit - base;
-      subtotal += base * line.qty;
+      const saleBase = discountedBasePrice(p);
+      const itemDiscount = productDiscountAmount(p) * line.qty;
+      const mod = unit - saleBase;
+      subtotal += saleBase * line.qty;
       modifiers += mod * line.qty;
       lines.push({
         id: newId(),
@@ -156,6 +158,8 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
         sizeLabelSnapshot: sizeLabel,
         temperature: line.temperature,
         merchVariants: line.customizations.length ? line.customizations : undefined,
+        originalUnitPrice: unit + productDiscountAmount(p),
+        itemDiscountTotal: itemDiscount > 0 ? itemDiscount : undefined,
         unitPrice: unit,
         qty: line.qty,
         lineTotal: unit * line.qty,
@@ -381,11 +385,18 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
                   >
                     <div className="flex justify-between gap-2">
                       <span className="font-display font-bold text-kado-dark dash-heading">{p.name}</span>
-                      <span className="text-kado-red font-bold shrink-0">{formatPhp(p.basePrice)}</span>
+                      <span className="flex shrink-0 flex-col items-end leading-none">
+                        {productPromoTag(p) ? (
+                          <span className="text-[9px] font-semibold dash-muted line-through">
+                            {formatPhp(p.basePrice)}
+                          </span>
+                        ) : null}
+                        <span className="text-kado-red font-bold">{formatPhp(discountedBasePrice(p))}</span>
+                      </span>
                     </div>
-                    {p.tags?.includes('iced-only') && (
+                    {(productPromoTag(p) || p.tags?.includes('iced-only')) && (
                       <span className="mt-2 inline-block text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/10 px-2 py-0.5 rounded">
-                        Iced only
+                        {productPromoTag(p) ?? 'Iced only'}
                       </span>
                     )}
                   </button>

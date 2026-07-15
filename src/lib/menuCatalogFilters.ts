@@ -1,4 +1,5 @@
 import type { MenuCategory, Product } from '../types/domain';
+import { discountedBasePrice } from './productPricing';
 import { isIcedOnlyDrink, productFallbackDescription } from './menuProductModifiers';
 import {
   isPastriesCategory,
@@ -83,9 +84,13 @@ function sortProducts(products: Product[], sort: MenuSortKey): Product[] {
     case 'name':
       return list.sort((a, b) => a.name.localeCompare(b.name));
     case 'price_asc':
-      return list.sort((a, b) => a.basePrice - b.basePrice || a.order - b.order);
+      return list.sort(
+        (a, b) => discountedBasePrice(a) - discountedBasePrice(b) || a.order - b.order,
+      );
     case 'price_desc':
-      return list.sort((a, b) => b.basePrice - a.basePrice || a.order - b.order);
+      return list.sort(
+        (a, b) => discountedBasePrice(b) - discountedBasePrice(a) || a.order - b.order,
+      );
     case 'order':
     default:
       return list.sort((a, b) => a.order - b.order);

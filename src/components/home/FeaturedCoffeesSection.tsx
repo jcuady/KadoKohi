@@ -15,6 +15,7 @@ import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import ResilientImage from '../ui/ResilientImage';
 import BrandHybridMark from '../BrandHybridMark';
+import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 import {
   getMenuProductImageUrl,
   listVisibleCoffeeProducts,
@@ -74,7 +75,7 @@ function DrinkCard({
 }: CardProps) {
   const menuImage = getMenuProductImageUrl(drink);
   const image = imageOverride?.trim() || menuImage;
-  const tag = drinkTag(drink, categoryLabel);
+  const tag = productPromoTag(drink) ?? drinkTag(drink, categoryLabel);
 
   return (
     <TimelineContent
@@ -137,8 +138,15 @@ function DrinkCard({
             )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
-            <span className="kado-h3 text-kado-cream">
-              {formatPhp(drink.basePrice)}
+            <span className="flex flex-col items-end leading-none">
+              {productPromoTag(drink) ? (
+                <span className="mb-1 text-[10px] font-semibold text-kado-cream/55 line-through">
+                  {formatPhp(drink.basePrice)}
+                </span>
+              ) : null}
+              <span className="kado-h3 text-kado-cream">
+                {formatPhp(discountedBasePrice(drink))}
+              </span>
             </span>
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-kado-cream backdrop-blur-sm transition-colors group-hover:bg-kado-red group-hover:border-kado-red sm:h-9 sm:w-9">
               <Plus className="h-4 w-4" aria-hidden />

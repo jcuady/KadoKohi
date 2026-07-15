@@ -5,6 +5,7 @@ import { isIcedOnlyDrink, productFallbackDescription } from '../../lib/menuProdu
 import { isProductInStock } from '../../lib/productStock';
 import { menuProductDomId } from '../../lib/menuDeepLink';
 import MenuProductImage from './MenuProductImage';
+import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 
 type Props = {
   product: Product;
@@ -15,7 +16,7 @@ type Props = {
 };
 
 function MenuProductCard({ product, highlight, imagePriority, onSelect, pastriesCategoryId }: Props) {
-  const tag = isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0];
+  const tag = productPromoTag(product) ?? (isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0]);
   const inStock = isProductInStock(product);
   const desc = productFallbackDescription(product);
 
@@ -69,8 +70,15 @@ function MenuProductCard({ product, highlight, imagePriority, onSelect, pastries
           <h3 className="line-clamp-2 font-display text-xs font-black leading-snug text-kado-dark transition-colors group-hover:text-kado-red sm:text-[0.95rem]">
             {product.name}
           </h3>
-          <span className="shrink-0 font-sans text-xs font-black text-kado-dark sm:text-base">
-            {formatPhp(product.basePrice)}
+          <span className="flex shrink-0 flex-col items-end font-sans leading-none">
+            {productPromoTag(product) ? (
+              <span className="text-[9px] font-semibold text-kado-dark/45 line-through sm:text-[10px]">
+                {formatPhp(product.basePrice)}
+              </span>
+            ) : null}
+            <span className="text-xs font-black text-kado-dark sm:text-base">
+              {formatPhp(discountedBasePrice(product))}
+            </span>
           </span>
         </div>
         <p className="mt-auto line-clamp-2 pt-1 text-[10px] font-medium leading-relaxed text-kado-dark/60 sm:text-xs">
@@ -91,5 +99,7 @@ export default memo(
     prev.product.inStock === next.product.inStock &&
     prev.product.image === next.product.image &&
     prev.product.basePrice === next.product.basePrice &&
+    prev.product.discountType === next.product.discountType &&
+    prev.product.discountValue === next.product.discountValue &&
     prev.product.name === next.product.name,
 );

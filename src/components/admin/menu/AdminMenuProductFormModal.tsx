@@ -14,6 +14,8 @@ export type ProductFormData = {
   name: string;
   description: string;
   basePrice: string;
+  discountType: '' | 'fixed' | 'percent';
+  discountValue: string;
   image: string;
   temperature: ProductTemperature;
   visible: boolean;
@@ -210,6 +212,59 @@ export default function AdminMenuProductFormModal({
             </div>
           </FormSection>
 
+          <FormSection title="Promotional price">
+            <p className="text-xs leading-relaxed dash-muted">
+              Optional. The sale price is applied before a checkout voucher or promo code. Modifiers remain full price.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <FieldLabel>Discount type</FieldLabel>
+                <select
+                  value={form.discountType}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      discountType: e.target.value as ProductFormData['discountType'],
+                      discountValue: e.target.value ? f.discountValue : '',
+                    }))
+                  }
+                  className={inputClass}
+                >
+                  <option value="">No discount</option>
+                  <option value="percent">Percentage off</option>
+                  <option value="fixed">Fixed amount off</option>
+                </select>
+              </div>
+              <div>
+                <FieldLabel>
+                  {form.discountType === 'percent' ? 'Percent off (%)' : 'Amount off (₱)'}
+                </FieldLabel>
+                <input
+                  type="number"
+                  min={form.discountType ? 0.01 : 0}
+                  max={form.discountType === 'percent' ? 99.99 : undefined}
+                  step="0.01"
+                  value={form.discountValue}
+                  onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+                  disabled={!form.discountType}
+                  required={Boolean(form.discountType)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            {form.discountType && form.discountValue && form.basePrice ? (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                Customer price: ₱
+                {Math.max(
+                  0,
+                  form.discountType === 'percent'
+                    ? Number(form.basePrice) * (1 - Number(form.discountValue) / 100)
+                    : Number(form.basePrice) - Number(form.discountValue),
+                ).toFixed(2)}
+              </p>
+            ) : null}
+          </FormSection>
+
           <FormSection title={`Product image${isPastryForm ? ' (optional)' : ''}`}>
             <p className="text-xs leading-relaxed dash-muted">
               {isPastryForm
@@ -345,7 +400,7 @@ export default function AdminMenuProductFormModal({
               <input
                 value={form.tags}
                 onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                placeholder={isPastryForm ? 'bestseller, seasonal' : 'bestseller, new'}
+                placeholder={isPastryForm ? 'bestseller, seasonal (promo auto-added with discount)' : 'bestseller, new (promo auto-added with discount)'}
                 className={inputClass}
               />
             </div>

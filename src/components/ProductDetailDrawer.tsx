@@ -15,6 +15,7 @@ import { useMenuStore } from '../store/menuStore';
 import { productFallbackDescription, resolveOrderTemperature } from '../lib/menuProductModifiers';
 import ProductVariantSections from './menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../lib/posPricing';
+import { originalUnitPrice, productPromoTag } from '../lib/productPricing';
 
 import {
   DEFAULT_MENU_PRODUCT_IMAGE,
@@ -131,6 +132,8 @@ export default function ProductDetailDrawer({
       ? resolvedCoffee.unit
       : (product?.basePrice ?? 0) + variantsDelta;
   const lineTotal = unitPrice * qty;
+  const promoTag = coffeeProduct ? productPromoTag(coffeeProduct) : null;
+  const regularUnitPrice = coffeeProduct ? originalUnitPrice(coffeeProduct, unitPrice) : unitPrice;
 
   const desc = product
     ? isMerch
@@ -263,9 +266,9 @@ export default function ProductDetailDrawer({
                   <X className="w-4 h-4" />
                 </button>
 
-                {product.tags?.length ? (
+                {promoTag || product.tags?.length ? (
                   <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                    {product.tags.map((tag) => (
+                    {[promoTag, ...(product.tags ?? [])].filter((tag): tag is string => Boolean(tag)).map((tag) => (
                       <span
                         key={tag}
                         className="text-[9px] font-black uppercase tracking-widest bg-white text-kado-dark px-3 py-1 rounded-full shadow-lg"
@@ -288,8 +291,15 @@ export default function ProductDetailDrawer({
                   <h2 className="font-display font-black text-3xl text-kado-dark leading-tight tracking-tight">
                     {product.name}
                   </h2>
-                  <span className="font-display font-black text-2xl text-kado-red shrink-0 pt-1">
-                    {formatPhp(unitPrice)}
+                  <span className="flex shrink-0 flex-col items-end pt-1 font-display leading-none">
+                    {promoTag ? (
+                      <span className="mb-1 text-sm font-bold text-kado-dark/40 line-through">
+                        {formatPhp(regularUnitPrice)}
+                      </span>
+                    ) : null}
+                    <span className="text-2xl font-black text-kado-red">
+                      {formatPhp(unitPrice)}
+                    </span>
                   </span>
                 </div>
 

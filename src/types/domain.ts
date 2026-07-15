@@ -63,6 +63,8 @@ export interface Product {
   name: string;
   description?: string;
   basePrice: number;
+  discountType?: 'fixed' | 'percent' | null;
+  discountValue?: number | null;
   image?: string;
   temperature: ProductTemperature;
   sizes: ProductSize[];
@@ -113,6 +115,10 @@ export interface OrderItem {
   temperature?: 'hot' | 'iced';
   merchVariants?: OrderItemVariantSnapshot[];
   notes?: string;
+  /** Price before the product-level sale, including selected modifiers. */
+  originalUnitPrice?: number;
+  /** Product-level sale savings for the full line quantity. */
+  itemDiscountTotal?: number;
   unitPrice: number;
   qty: number;
   lineTotal: number;
@@ -136,6 +142,8 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   modifiersTotal: number;
+  /** Total automatic per-product savings before voucher or promo-code discounts. */
+  productDiscountTotal?: number;
   /** Sales tax amount (PHP), from admin settings tax rate */
   tax?: number;
   total: number;

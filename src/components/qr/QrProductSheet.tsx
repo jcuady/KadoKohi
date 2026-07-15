@@ -12,6 +12,7 @@ import { isPastriesCategoryId } from '../../lib/pastriesCategory';
 import { useMenuStore } from '../../store/menuStore';
 import ProductVariantSections from '../menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
+import { originalUnitPrice, productPromoTag } from '../../lib/productPricing';
 
 export type QrCartPayload = {
   productId: string;
@@ -85,6 +86,8 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
   if (!product) return null;
 
   const inStock = isProductInStock(product);
+  const promoTag = productPromoTag(product);
+  const regularUnitPrice = originalUnitPrice(product, unitPrice);
 
   const handleAdd = () => {
     if (!inStock || !lineConfig || !resolved) return;
@@ -159,7 +162,14 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                       {getProductDescription(product)}
                     </p>
                   </div>
-                  <span className="font-display font-black text-lg text-kado-red shrink-0">{formatPhp(unitPrice)}</span>
+                  <span className="flex shrink-0 flex-col items-end font-display leading-none">
+                    {promoTag ? (
+                      <span className="mb-1 text-xs font-bold qr-text-subtle line-through">
+                        {formatPhp(regularUnitPrice)}
+                      </span>
+                    ) : null}
+                    <span className="text-lg font-black text-kado-red">{formatPhp(unitPrice)}</span>
+                  </span>
                 </div>
 
                 {lineConfig ? (

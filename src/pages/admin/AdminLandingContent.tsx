@@ -11,6 +11,7 @@ import LandingCmsSectionCard from '../../components/admin/LandingCmsSectionCard'
 import CmsReorderList from '../../components/admin/CmsReorderList';
 import { useMenuStore } from '../../store/menuStore';
 import { listVisibleCoffeeProducts } from '../../lib/menuCatalog';
+import { discountedBasePrice } from '../../lib/productPricing';
 import { LANDING_CMS_TABS, type LandingTabId } from '../../lib/landingCmsTabs';
 import CmsTextField from '../../components/admin/CmsTextField';
 import type { CmsText } from '../../lib/cmsTypography';
@@ -481,7 +482,7 @@ export default function AdminLandingContent() {
                   <option value="">Auto-select best available</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} - ₱{p.basePrice}
+                      {p.name} - ₱{discountedBasePrice(p)}
                     </option>
                   ))}
                 </select>

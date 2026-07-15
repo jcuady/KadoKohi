@@ -201,6 +201,8 @@ export const useMenuStore = create<MenuStore>()((set, get) => ({
           name: input.name,
           description: input.description,
           basePrice: input.basePrice,
+          discountType: input.discountType ?? null,
+          discountValue: input.discountValue ?? null,
           image: input.image,
           temperature: input.temperature,
           sizes: input.sizes ?? [],

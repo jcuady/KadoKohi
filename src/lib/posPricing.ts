@@ -1,4 +1,5 @@
 import type { OrderItemVariantSnapshot, Product } from '../types/domain';
+import { discountedBasePrice } from './productPricing';
 import {
   defaultMilkId,
   defaultOrderTemperature,
@@ -46,7 +47,7 @@ export function resolvePosUnitPrice(
   product: Product,
   config: Pick<PosLineConfig, 'milkId' | 'sizeId' | 'customizations'>,
 ): { unit: number; milkLabel?: string; sizeLabel?: string } {
-  let unit = product.basePrice;
+  let unit = discountedBasePrice(product);
   let milkLabel: string | undefined;
   let sizeLabel: string | undefined;
 

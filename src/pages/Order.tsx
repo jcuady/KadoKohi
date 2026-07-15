@@ -18,8 +18,6 @@ import {
   defaultMilkId,
   defaultOrderTemperature,
   getOrderableMilks,
-  resolveMilkLabel,
-  resolveMilkPriceDelta,
   showMilkChoice,
 } from '../lib/menuProductModifiers';
 import { ensureOrderReadiness } from '../lib/orderReadiness';
@@ -31,14 +29,14 @@ import {
   filterMenuProducts,
   type MenuCatalogFilters,
 } from '../lib/menuCatalogFilters';
+import { resolvePosUnitPrice } from '../lib/posPricing';
+import { discountedBasePrice, productPromoTag } from '../lib/productPricing';
 
 type CartLine = { key: string; productId: string; qty: number; milkId?: string; temperature?: 'hot' | 'iced' };
 
 function resolveUnit(product: Product, milkId?: string): { unit: number; milkLabel?: string } {
-  return {
-    unit: product.basePrice + resolveMilkPriceDelta(product, milkId),
-    milkLabel: resolveMilkLabel(product, milkId),
-  };
+  const resolved = resolvePosUnitPrice(product, { milkId, customizations: [] });
+  return { unit: resolved.unit, milkLabel: resolved.milkLabel };
 }
 
 export default function Order() {
@@ -125,8 +123,9 @@ export default function Order() {
       const p = products.find((x) => x.id === line.productId);
       if (!p) continue;
       const { unit, milkLabel } = resolveUnit(p, line.milkId);
-      subtotal += p.basePrice * line.qty;
-      modifiers += (unit - p.basePrice) * line.qty;
+      const saleBase = discountedBasePrice(p);
+      subtotal += saleBase * line.qty;
+      modifiers += (unit - saleBase) * line.qty;
       lines.push({
         id: newId(),
         productId: p.id,
@@ -431,8 +430,15 @@ export default function Order() {
                             <span className="font-display font-bold text-xs sm:text-sm text-kado-dark group-hover:text-kado-red transition-colors line-clamp-2">
                               {p.name}
                             </span>
-                            <span className="font-display font-bold text-kado-red shrink-0 text-xs sm:text-sm">
-                              {formatPhp(p.basePrice)}
+                            <span className="flex shrink-0 flex-col items-end leading-none">
+                              {productPromoTag(p) ? (
+                                <span className="text-[9px] font-semibold text-kado-dark/40 line-through">
+                                  {formatPhp(p.basePrice)}
+                                </span>
+                              ) : null}
+                              <span className="font-display font-bold text-kado-red text-xs sm:text-sm">
+                                {formatPhp(discountedBasePrice(p))}
+                              </span>
                             </span>
                           </div>
                           {p.tags?.length ? (

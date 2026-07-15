@@ -7,6 +7,7 @@ import { isPastriesCategory, pastryHasPrice } from '../../../lib/pastriesCategor
 import { isProductInStock } from '../../../lib/productStock';
 import MenuProductStockButton from '../../menu/MenuProductStockButton';
 import { Badge } from '../../ui/badge';
+import { discountedBasePrice, productPromoTag } from '../../../lib/productPricing';
 
 type Props = {
   product: Product;
@@ -72,12 +73,20 @@ export default function AdminMenuProductRow({
                 Out of stock
               </Badge>
             ) : null}
+            {productPromoTag(product) ? <Badge variant="success">{productPromoTag(product)}</Badge> : null}
           </div>
           <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] dash-muted">
             {catIsPastry && !pastryHasPrice(product) ? (
               <span>No listed price</span>
             ) : (
-              <span className="font-display font-bold tabular-nums text-kado-red">{formatPhp(product.basePrice)}</span>
+              <span className="flex items-center gap-1.5 font-display font-bold tabular-nums text-kado-red">
+                {productPromoTag(product) ? (
+                  <span className="font-sans font-medium text-[10px] dash-muted line-through">
+                    {formatPhp(product.basePrice)}
+                  </span>
+                ) : null}
+                {formatPhp(discountedBasePrice(product))}
+              </span>
             )}
             {product.sizes?.length > 0 ? <span>{product.sizes.length} sizes</span> : null}
             {product.milks?.length > 0 ? <span>{product.milks.length} milks</span> : null}

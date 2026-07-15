@@ -14,6 +14,8 @@ import {
   type SeoRouteMeta,
 } from '../content/seo';
 import { getSiteOrigin } from '../lib/siteUrl';
+import { discountedBasePrice } from '../lib/productPricing';
+import type { Product } from '../types/domain';
 import { useEventStore } from '../store/eventStore';
 import { useMenuStore } from '../store/menuStore';
 import { useMerchStore } from '../store/merchStore';
@@ -235,7 +237,13 @@ export default function RouteSeo() {
             offers: {
               '@type': 'Offer',
               priceCurrency: 'PHP',
-              price: Number(product.basePrice).toFixed(2),
+              price: Number(
+                discountedBasePrice({
+                  basePrice: product.basePrice ?? 0,
+                  discountType: (product as { discountType?: Product['discountType'] }).discountType,
+                  discountValue: (product as { discountValue?: Product['discountValue'] }).discountValue,
+                }),
+              ).toFixed(2),
               availability: 'https://schema.org/InStock',
               url: `${origin}/menu`,
             },
