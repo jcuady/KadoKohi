@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import type { Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
@@ -45,6 +45,7 @@ import {
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const table = useTableStore((s) => s.getByCode(code ?? ''));
@@ -233,7 +234,9 @@ export default function OrderQR() {
       setTrackedOrderId(order.id);
       setCart([]);
       setCartExpanded(false);
-      navigate(checkoutPath(order.id));
+      navigate(checkoutPath(order.id), {
+        state: { from: `${location.pathname}${location.search}` },
+      });
     } catch (err) {
       setOrderError(formatOrderError(err));
     } finally {

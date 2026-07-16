@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -39,7 +39,30 @@ import { useBranchStore } from '../store/branchStore';
 import type { Order } from '../types/domain';
 import { formatOrderError } from '../lib/validation';
 import { subscribeGuestOrderTracking } from '../lib/supabase/guestOrderTracking';
+import {
+  consolidateOrderItemsForDisplay,
+  type ConsolidatedOrderLine,
+} from '../lib/orderLineDisplay';
 
+function OrderLinesList({ lines }: { lines: ConsolidatedOrderLine[] }) {
+  return (
+    <ul className="divide-y divide-kado-dark/8">
+      {lines.map((it) => (
+        <li key={it.key} className="flex justify-between gap-3 py-2.5 text-sm">
+          <span className="min-w-0">
+            <span className="block truncate font-medium text-kado-dark">
+              {it.qty}× {it.name}
+            </span>
+            {it.detail ? (
+              <span className="mt-0.5 block truncate text-[11px] text-kado-dark/45">{it.detail}</span>
+            ) : null}
+          </span>
+          <span className="shrink-0 font-semibold text-kado-dark/65">{formatPhp(it.lineTotal)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 function trackedToOrder(tracked: TrackedOrderStatus, branchId = ''): Order {
   return {
     id: tracked.id,
@@ -131,6 +154,11 @@ export default function Checkout() {
   const { orderId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo =
+    typeof (location.state as { from?: unknown } | null)?.from === 'string'
+      ? (location.state as { from: string }).from
+      : null;
   const user = useAuthStore((s) => s.user);
   const hydrateForCustomer = useOrderStore((s) => s.hydrateForCustomer);
   const storeOrders = useOrderStore((s) => s.orders);
@@ -143,17 +171,19 @@ export default function Checkout() {
   const [qrOpen, setQrOpen] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [openMethodPicker, setOpenMethodPicker] = useState(false);
+  const [redirectSeconds, setRedirectSeconds] = useState<number | null>(null);
   const orderActionsRef = useRef<HTMLDivElement>(null);
   const payPanelRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const paymongoFlag = searchParams.get('paymongo');
   const pendingLocal = orderId ? getPendingPayment(orderId) : null;
 
   const branchLabel = useMemo(() => {
-    const fromStore = storeOrders.find((o) => o.id === orderId)?.branchId;
-    if (!fromStore) return '';
-    return branches.find((b) => b.id === fromStore)?.name ?? '';
-  }, [branches, storeOrders, orderId]);
+    const branchId = tracked?.branchId ?? storeOrders.find((o) => o.id === orderId)?.branchId;
+    if (!branchId) return '';
+    return branches.find((b) => b.id === branchId)?.name ?? '';
+  }, [branches, storeOrders, orderId, tracked?.branchId]);
 
   const refresh = useCallback(async () => {
     if (!orderId) return;
@@ -168,7 +198,7 @@ export default function Checkout() {
         channel: next.channel,
         placedAt: next.createdAt,
       });
-    } else if (next && next.paymentStatus === 'paid') {
+    } else if (next && (next.paymentStatus === 'paid' || next.status === 'cancelled')) {
       clearPendingPayment(next.id);
     }
   }, [orderId]);
@@ -200,7 +230,7 @@ export default function Checkout() {
     if (!orderId) return;
     const handle = subscribeGuestOrderTracking(orderId, (next) => {
       setTracked(next);
-      if (next.paymentStatus === 'paid') clearPendingPayment(orderId);
+      if (next.paymentStatus === 'paid' || next.status === 'cancelled') clearPendingPayment(orderId);
     });
     return () => handle.stop();
   }, [orderId]);
@@ -217,6 +247,7 @@ export default function Checkout() {
   }, [tracked?.shortCode, pendingLocal?.shortCode]);
 
   useEffect(() => {
+    if (paymongoFlag === 'success') return;
     if (!orderId || !tracked || !isPaymongoOrder(tracked) || tracked.paymentStatus !== 'unpaid') return;
     let cancelled = false;
     (async () => {
@@ -230,7 +261,7 @@ export default function Checkout() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, tracked?.paymentMethod, tracked?.paymentStatus, tracked?.shortCode]);
+  }, [orderId, tracked?.paymentMethod, tracked?.paymentStatus, tracked?.shortCode, paymongoFlag]);
 
   useEffect(() => {
     if (!paymongoFlag) return;
@@ -251,7 +282,14 @@ export default function Checkout() {
     }
   }, [paymongoFlag, setSearchParams]);
 
-  const order = useMemo(() => (tracked ? trackedToOrder(tracked) : null), [tracked]);
+  const order = useMemo(
+    () => (tracked ? trackedToOrder(tracked, tracked.branchId ?? '') : null),
+    [tracked],
+  );
+  const displayLines = useMemo(
+    () => (tracked ? consolidateOrderItemsForDisplay(tracked.items) : []),
+    [tracked],
+  );
   const isCancelled = tracked?.status === 'cancelled';
   const unpaidGateway =
     tracked != null &&
@@ -269,6 +307,7 @@ export default function Checkout() {
     awaitsGatewayPayment(tracked) &&
     (tracked.paymentStatus === 'unpaid' || tracked.paymentStatus === 'proof_submitted');
   const shortCode = tracked?.shortCode ?? pendingLocal?.shortCode ?? '';
+  const syncReady = Boolean(tracked?.shortCode) || Boolean(user?.id);
 
   const checkoutReturn = `${window.location.origin}/checkout/${encodeURIComponent(orderId)}`;
 
@@ -288,9 +327,10 @@ export default function Checkout() {
 
   const { syncState, syncError, retrySync } = usePaymongoReturnSync(
     orderId,
-    shortCode,
+    shortCode || undefined,
     paymongoFlag,
     onPaidSync,
+    { ready: syncReady },
   );
 
   const paymentConfirmed = tracked?.paymentStatus === 'paid' || syncState === 'paid';
@@ -305,25 +345,49 @@ export default function Checkout() {
       : 'pay';
 
   const showStickyPay = Boolean(
-    order && isPaymongoOrder(order) && canPay && !paymentConfirmed && unpaidGateway,
+    order && isPaymongoOrder(order) && canPay && !paymentConfirmed && unpaidGateway && !confirming,
   );
+
+  useEffect(() => {
+    if (!confirming && !paymentConfirmed && paymongoFlag !== 'cancel') return;
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [confirming, paymentConfirmed, paymongoFlag]);
+
+  useEffect(() => {
+    if (!paymentConfirmed || user?.role !== 'customer') {
+      setRedirectSeconds(null);
+      return;
+    }
+    let left = 3;
+    setRedirectSeconds(left);
+    const tick = window.setInterval(() => {
+      left -= 1;
+      setRedirectSeconds(left);
+      if (left <= 0) {
+        window.clearInterval(tick);
+        navigate(`/account/orders?placed=${encodeURIComponent(orderId)}`, { replace: true });
+      }
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [paymentConfirmed, user?.role, navigate, orderId]);
+
+  const guestHome =
+    returnTo ||
+    (tracked?.channel === 'takeout'
+      ? '/order/takeout'
+      : tracked?.channel === 'dine-in'
+        ? '/menu'
+        : '/menu');
 
   const handleOrderCancelled = useCallback(
     async (action: GuestOrderAction) => {
       await refresh();
       clearPendingPayment(orderId);
       if (action !== 'change_order') return;
-      if (tracked?.channel === 'takeout') {
-        navigate('/order/takeout');
-        return;
-      }
-      if (tracked?.channel === 'dine-in') {
-        navigate('/menu');
-        return;
-      }
-      navigate('/menu');
+      navigate(returnTo || (tracked?.channel === 'takeout' ? '/order/takeout' : '/menu'));
     },
-    [orderId, refresh, navigate, tracked?.channel],
+    [orderId, refresh, navigate, tracked?.channel, returnTo],
   );
 
   const scrollToOrderActions = useCallback(() => {
@@ -339,6 +403,19 @@ export default function Checkout() {
       payPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 50);
   }, []);
+
+  const retryPayment = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('paymongo');
+        return next;
+      },
+      { replace: true },
+    );
+    setSessionExpired(false);
+    scrollToPayPanel();
+  }, [setSearchParams, scrollToPayPanel]);
 
   if (loading) {
     return (
@@ -398,15 +475,20 @@ export default function Checkout() {
 
   return (
     <div
+      ref={topRef}
       className={[
-        'min-h-[calc(100dvh-3.5rem)] bg-white',
+        'min-h-[calc(100dvh-var(--public-nav-height,3.5rem))] bg-kado-offwhite',
         showStickyPay ? 'pb-[max(9.5rem,calc(8.5rem+env(safe-area-inset-bottom)))]' : 'pb-safe',
       ].join(' ')}
     >
-      <div className="mx-auto max-w-lg px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] py-6 sm:py-10">
+      <div className="mx-auto max-w-lg px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] py-5 sm:py-10">
         <button
           type="button"
-          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/menu'))}
+          onClick={() => {
+            if (returnTo) navigate(returnTo);
+            else if (window.history.length > 1) navigate(-1);
+            else navigate(guestHome);
+          }}
           className="mb-4 inline-flex min-h-[44px] items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-kado-dark/55 hover:text-kado-dark touch-manipulation cursor-pointer"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
@@ -440,11 +522,16 @@ export default function Checkout() {
                 Order <span className="font-mono font-bold text-kado-cream">{tracked.shortCode}</span> is paid and
                 queued. We’ll brew it next.
               </p>
+              {redirectSeconds != null && redirectSeconds > 0 ? (
+                <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-kado-cream/50">
+                  Opening your orders in {redirectSeconds}…
+                </p>
+              ) : null}
             </div>
 
             <CheckoutSteps active="done" />
 
-            <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-4 sm:p-5 space-y-3">
+            <div className="rounded-2xl border border-kado-dark/10 bg-white p-4 sm:p-5 space-y-3">
               <div className="flex justify-between items-baseline gap-3">
                 <span className="text-sm text-kado-dark/55">Amount paid</span>
                 <span className="font-display font-bold text-xl text-kado-red">{formatPhp(tracked.total)}</span>
@@ -453,25 +540,16 @@ export default function Checkout() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-800">
                   <CheckCircle2 className="h-3 w-3" aria-hidden /> Paid
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
+                <span className="inline-flex items-center gap-1 rounded-full bg-kado-offwhite border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
                   <Coffee className="h-3 w-3" aria-hidden /> {ORDER_STATUS_LABELS[tracked.status] ?? tracked.status}
                 </span>
                 {branchLabel ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-kado-offwhite border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
                     <MapPin className="h-3 w-3" aria-hidden /> {branchLabel}
                   </span>
                 ) : null}
               </div>
-              <ul className="divide-y divide-kado-dark/8 pt-1">
-                {tracked.items.map((it) => (
-                  <li key={it.id} className="flex justify-between gap-3 py-2.5 text-sm">
-                    <span className="min-w-0 truncate text-kado-dark">
-                      {it.qty}× {it.productNameSnapshot}
-                    </span>
-                    <span className="shrink-0 font-semibold text-kado-dark/65">{formatPhp(it.lineTotal)}</span>
-                  </li>
-                ))}
-              </ul>
+              <OrderLinesList lines={displayLines} />
             </div>
 
             <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-4 space-y-2">
@@ -489,24 +567,25 @@ export default function Checkout() {
             <div className="flex flex-col gap-2.5 sm:flex-row">
               {user?.role === 'customer' ? (
                 <Link
-                  to="/account/orders"
+                  to={`/account/orders?placed=${encodeURIComponent(orderId)}`}
+                  replace
                   className="flex-1 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[11px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-dark transition-colors"
                 >
                   Track my order
                 </Link>
               ) : (
-                <p className="flex-1 rounded-2xl border border-kado-dark/10 bg-kado-offwhite px-4 py-3 text-center text-xs text-kado-dark/60 leading-relaxed">
+                <p className="flex-1 rounded-2xl border border-kado-dark/10 bg-white px-4 py-3 text-center text-xs text-kado-dark/60 leading-relaxed">
                   Keep this page open or save order{' '}
                   <span className="font-mono font-bold text-kado-dark">{tracked.shortCode}</span> — status updates
                   live here.
                 </p>
               )}
               <Link
-                to="/menu"
+                to={returnTo || '/menu'}
                 className="flex-1 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border-2 border-kado-dark/15 bg-white px-5 text-[11px] font-black uppercase tracking-wider text-kado-dark hover:border-kado-red/40 transition-colors"
               >
                 <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
-                Continue shopping
+                {returnTo?.includes('/order/') ? 'Back to ordering' : 'Continue shopping'}
               </Link>
             </div>
           </motion.section>
@@ -550,13 +629,24 @@ export default function Checkout() {
                   PayMongo reported success. We’re updating your order — this usually takes a few seconds.
                 </p>
                 {(syncState === 'pending' || syncState === 'error') && (
-                  <button
-                    type="button"
-                    onClick={() => void retrySync()}
-                    className="min-h-[44px] rounded-full bg-sky-800 px-4 text-[10px] font-black uppercase tracking-wider text-white touch-manipulation cursor-pointer"
-                  >
-                    {syncState === 'error' ? 'Retry confirmation' : 'Check payment status'}
-                  </button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => void retrySync()}
+                      className="min-h-[48px] rounded-full bg-sky-800 px-4 text-[10px] font-black uppercase tracking-wider text-white touch-manipulation cursor-pointer"
+                    >
+                      {syncState === 'error' ? 'Retry confirmation' : 'Check payment status'}
+                    </button>
+                    {unpaidGateway ? (
+                      <button
+                        type="button"
+                        onClick={retryPayment}
+                        className="min-h-[48px] rounded-full border border-sky-300 bg-white px-4 text-[10px] font-black uppercase tracking-wider text-sky-950 touch-manipulation cursor-pointer"
+                      >
+                        Retry payment
+                      </button>
+                    ) : null}
+                  </div>
                 )}
                 {syncError ? <p className="text-xs font-semibold text-red-700">{syncError}</p> : null}
               </div>
@@ -568,21 +658,23 @@ export default function Checkout() {
                 message={syncError || undefined}
                 onTryAgain={() => void retrySync()}
                 onChangePayment={scrollToOrderActions}
+                tryAgainLabel="Retry confirmation"
               />
             )}
 
             {paymongoFlag === 'cancel' && !paymentConfirmed && !confirming && (
               <CheckoutPaymentIssueCard
-                issue="cancel"
-                onTryAgain={isPaymongoOrder(tracked) ? scrollToPayPanel : scrollToOrderActions}
+                issue="failed"
+                onTryAgain={isPaymongoOrder(tracked) ? retryPayment : scrollToOrderActions}
                 onChangePayment={scrollToOrderActions}
+                tryAgainLabel="Retry payment"
               />
             )}
 
             {sessionExpired && !paymentConfirmed && !confirming && paymongoFlag !== 'cancel' && (
               <CheckoutPaymentIssueCard
                 issue="expired"
-                onTryAgain={scrollToPayPanel}
+                onTryAgain={retryPayment}
                 onChangePayment={scrollToOrderActions}
               />
             )}
@@ -608,21 +700,12 @@ export default function Checkout() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-4 sm:p-5 space-y-3">
+            <div className="rounded-2xl border border-kado-dark/10 bg-white p-4 sm:p-5 space-y-3">
               <div className="flex justify-between text-sm items-baseline">
                 <span className="text-kado-dark/55">Total due</span>
                 <span className="font-display font-bold text-xl text-kado-red">{formatPhp(tracked.total)}</span>
               </div>
-              <ul className="divide-y divide-kado-dark/10">
-                {tracked.items.map((it) => (
-                  <li key={it.id} className="flex justify-between gap-3 py-2.5 text-sm">
-                    <span className="min-w-0 truncate text-kado-dark">
-                      {it.qty}× {it.productNameSnapshot}
-                    </span>
-                    <span className="shrink-0 font-semibold text-kado-dark/65">{formatPhp(it.lineTotal)}</span>
-                  </li>
-                ))}
-              </ul>
+              <OrderLinesList lines={displayLines} />
             </div>
 
             {isPaymongoOrder(tracked) && unpaidGateway && !confirming && (
@@ -653,6 +736,7 @@ export default function Checkout() {
                 shortCode={tracked.shortCode}
                 total={tracked.total}
                 channel={tracked.channel}
+                branchId={tracked.branchId}
                 paymentMethod={tracked.paymentMethod}
                 paymentStatus={tracked.paymentStatus}
                 onViewQr={() => setQrOpen(true)}
@@ -683,7 +767,7 @@ export default function Checkout() {
               </div>
             )}
 
-            {unpaidGateway && !paymentConfirmed && !confirming && (
+            {unpaidGateway && !paymentConfirmed && !confirming && user?.role === 'customer' && (
               <div className="rounded-2xl border border-kado-dark/10 bg-white p-4 sm:p-5 space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/50 flex items-center gap-1.5">
                   <BellRing className="h-3.5 w-3.5 text-kado-red" aria-hidden />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import type { Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
@@ -42,6 +42,7 @@ import {
 
 export default function OrderTakeout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const [searchParams] = useSearchParams();
@@ -68,7 +69,7 @@ export default function OrderTakeout() {
     [categories, products],
   );
 
-  const sessionKey = `takeout.${branch?.slug ?? branchSlug ?? 'default'}`;
+  const sessionKey = branch ? `takeout.${branch.slug}` : `takeout.${branchSlug || 'pending'}`;
 
   const [activeCat, setActiveCat] = useState('');
   const [cart, setCart] = useState<QrCartLine[]>([]);
@@ -86,12 +87,13 @@ export default function OrderTakeout() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paymongo');
 
   useEffect(() => {
-    const ref = getTrackedOrder(sessionKey);
+    if (!branch) return;
+    const ref = getTrackedOrder(`takeout.${branch.slug}`);
     if (ref) {
       setTrackedOrderId(ref.orderId);
       setTrackedLabel(ref.label);
     }
-  }, [sessionKey]);
+  }, [branch]);
 
   useEffect(() => {
     startGuestPageRealtime();
@@ -236,7 +238,9 @@ export default function OrderTakeout() {
       setTrackedLabel(pickupName.trim());
       setCart([]);
       setCartExpanded(false);
-      navigate(checkoutPath(order.id));
+      navigate(checkoutPath(order.id), {
+        state: { from: `${location.pathname}${location.search}` },
+      });
     } catch (err) {
       setOrderError(formatOrderError(err));
     } finally {

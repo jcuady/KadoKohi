@@ -23,7 +23,7 @@ import GuestOrderActionSheet from './GuestOrderActionSheet';
 import { formatOrderError } from '../../lib/validation';
 import { useSettingsStore } from '../../store/settingsStore';
 import BrandHybridMark from '../BrandHybridMark';
-import { checkoutPath } from '../../lib/pendingPayments';
+import { checkoutPath, clearPendingPayment } from '../../lib/pendingPayments';
 
 type Channel = 'dine-in' | 'takeout';
 
@@ -175,6 +175,7 @@ export default function OrderTrackingPanel({
     setActionError('');
     try {
       await orderingRepo.cancelGuestOrder(orderId, { action, reason, note });
+      clearPendingPayment(orderId);
       void broadcastGuestOrderUpdate(orderId, {
         status: 'cancelled',
         paymentStatus: tracked?.paymentStatus ?? 'unpaid',
@@ -263,6 +264,7 @@ export default function OrderTrackingPanel({
               shortCode={tracked.shortCode}
               total={tracked.total}
               channel={flowChannel}
+              branchId={tracked.branchId}
               paymentMethod={tracked.paymentMethod}
               paymentStatus={paymentStatus}
               onViewQr={() => setGcashModalOpen(true)}

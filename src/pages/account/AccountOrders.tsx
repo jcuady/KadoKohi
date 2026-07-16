@@ -96,7 +96,7 @@ export default function AccountOrders() {
           if (result.paid) {
             await hydrateForCustomer(user.id);
             setPaymongoSync('paid');
-            navigate(checkoutPath(paymongoOrderId) + '?paymongo=success', { replace: true });
+            navigate(checkoutPath(paymongoOrderId), { replace: true });
             return;
           }
           if (attempt < 5) await new Promise((r) => window.setTimeout(r, 1500));

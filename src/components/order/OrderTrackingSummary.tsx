@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import MenuProductImage from '../catalog/MenuProductImage';
 import { formatPhp } from '../../lib/money';
-import type { TrackedOrderLine, TrackedOrderSnapshot } from '../../lib/guestOrderSnapshot';
+import type { TrackedOrderSnapshot } from '../../lib/guestOrderSnapshot';
 import type { TrackedOrderStatus } from '../../lib/supabase/repositories/ordering';
+import { consolidateOrderItemsForDisplay } from '../../lib/orderLineDisplay';
 
 type Props = {
   tracked: TrackedOrderStatus | null;
@@ -10,14 +11,14 @@ type Props = {
   taxRate: number;
 };
 
-function lineDetail(line: TrackedOrderLine): string {
-  return [line.sizeLabelSnapshot, line.milkLabelSnapshot, line.temperature]
-    .filter(Boolean)
-    .join(' · ');
-}
-
 export default function OrderTrackingSummary({ tracked, snapshot, taxRate }: Props) {
-  const items = tracked?.items?.length ? tracked.items : snapshot?.items ?? [];
+  const items = useMemo(
+    () =>
+      consolidateOrderItemsForDisplay(
+        tracked?.items?.length ? tracked.items : snapshot?.items ?? [],
+      ),
+    [tracked?.items, snapshot?.items],
+  );
   const subtotal = tracked?.subtotal ?? snapshot?.subtotal ?? 0;
   const modifiers = tracked?.modifiersTotal ?? snapshot?.modifiersTotal ?? 0;
   const tax = tracked?.tax ?? snapshot?.tax ?? 0;
@@ -40,14 +41,14 @@ export default function OrderTrackingSummary({ tracked, snapshot, taxRate }: Pro
 
       <ul className="divide-y divide-kado-dark/6">
         {items.map((line) => (
-          <li key={line.id} className="flex gap-3 px-4 py-3">
+          <li key={line.key} className="flex gap-3 px-4 py-3">
             <div className="w-14 h-14 rounded-xl overflow-hidden bg-kado-dark/5 shrink-0 border border-kado-dark/6">
               <MenuProductImage
                 product={{
                   image: line.productImage,
                   categoryId: '',
                 }}
-                alt={line.productNameSnapshot}
+                alt={line.name}
                 loading="lazy"
                 className="w-full h-full object-cover"
               />
@@ -55,17 +56,17 @@ export default function OrderTrackingSummary({ tracked, snapshot, taxRate }: Pro
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-display font-bold text-sm text-kado-dark leading-snug line-clamp-2">
-                  {line.productNameSnapshot}
+                  {line.name}
                 </p>
                 <span className="font-black text-sm text-kado-red shrink-0">
                   {formatPhp(line.lineTotal)}
                 </span>
               </div>
-              {lineDetail(line) ? (
-                <p className="text-[10px] text-kado-dark/45 mt-0.5 truncate">{lineDetail(line)}</p>
+              {line.detail ? (
+                <p className="text-[10px] text-kado-dark/45 mt-0.5 truncate">{line.detail}</p>
               ) : null}
               <p className="text-[10px] text-kado-dark/35 mt-0.5">
-                {line.qty > 1 ? `${line.qty} × ${formatPhp(line.unitPrice)}` : 'Qty 1'}
+                {line.qty > 1 ? `${line.qty} ×` : 'Qty 1'}
               </p>
             </div>
           </li>
@@ -80,16 +81,16 @@ export default function OrderTrackingSummary({ tracked, snapshot, taxRate }: Pro
         {modifiers > 0 && (
           <div className="flex justify-between">
             <span>Modifiers</span>
-            <span>+{formatPhp(modifiers)}</span>
+            <span>{formatPhp(modifiers)}</span>
           </div>
         )}
         {tax > 0 && (
           <div className="flex justify-between">
-            <span>Tax ({taxRate}%)</span>
+            <span>Tax{taxRate > 0 ? ` (${Math.round(taxRate * 100)}%)` : ''}</span>
             <span>{formatPhp(tax)}</span>
           </div>
         )}
-        <div className="flex justify-between font-display font-black text-kado-dark text-sm pt-1 border-t border-kado-dark/8 mt-1">
+        <div className="flex justify-between font-bold text-kado-dark pt-1 border-t border-kado-dark/8">
           <span>Total</span>
           <span className="text-kado-red">{formatPhp(total)}</span>
         </div>

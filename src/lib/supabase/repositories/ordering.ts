@@ -128,6 +128,7 @@ export type TrackedOrderStatus = {
   id: string;
   shortCode: string;
   channel: Order['channel'];
+  branchId?: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod?: Order['paymentMethod'];
@@ -1045,6 +1046,7 @@ export const orderingRepo = {
         id: row.id,
         shortCode: row.short_code,
         channel: row.channel,
+        branchId: row.branch_id ? String(row.branch_id) : undefined,
         status: row.status,
         paymentStatus: row.payment_status,
         paymentMethod: row.payment_method ?? undefined,

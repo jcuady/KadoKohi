@@ -4,6 +4,11 @@ import { clearPendingPayment } from '../lib/pendingPayments';
 
 type SyncState = 'idle' | 'syncing' | 'paid' | 'pending' | 'error';
 
+type Options = {
+  /** Guest verify needs shortCode; wait until tracked order loads. */
+  ready?: boolean;
+};
+
 /**
  * After PayMongo redirects back with ?paymongo=success, poll verify until paid.
  * Longer window on mobile where webhooks / Safari resume can lag.
@@ -13,10 +18,12 @@ export function usePaymongoReturnSync(
   shortCode: string | undefined,
   paymongoFlag: string | null,
   onPaid?: () => void | Promise<void>,
+  options?: Options,
 ) {
+  const ready = options?.ready ?? true;
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [syncError, setSyncError] = useState('');
-  const ranForFlagRef = useRef<string | null>(null);
+  const ranForKeyRef = useRef<string | null>(null);
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
 
@@ -25,7 +32,6 @@ export function usePaymongoReturnSync(
     setSyncState('syncing');
     setSyncError('');
     try {
-      // ~20s total — covers mobile app-switch + webhook lag
       for (let attempt = 0; attempt < 12; attempt++) {
         const result = await verifyPaymongoCheckout({ orderId, shortCode });
         if (result.paid) {
@@ -48,15 +54,16 @@ export function usePaymongoReturnSync(
   }, [orderId, shortCode]);
 
   useEffect(() => {
-    if (paymongoFlag !== 'success' || !orderId) return;
-    const runKey = `${orderId}:success`;
-    if (ranForFlagRef.current === runKey) return;
-    ranForFlagRef.current = runKey;
+    if (paymongoFlag !== 'success' || !orderId || !ready) return;
+    // Include shortCode so guest verify re-runs once tracked order loads.
+    const runKey = `${orderId}:success:${shortCode ?? ''}`;
+    if (ranForKeyRef.current === runKey) return;
+    ranForKeyRef.current = runKey;
     void runSync();
-  }, [paymongoFlag, orderId, runSync]);
+  }, [paymongoFlag, orderId, shortCode, ready, runSync]);
 
   const retrySync = useCallback(async () => {
-    ranForFlagRef.current = null;
+    ranForKeyRef.current = null;
     return runSync();
   }, [runSync]);
 

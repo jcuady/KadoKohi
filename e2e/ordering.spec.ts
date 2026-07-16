@@ -90,6 +90,8 @@ test.describe('Guest ordering surfaces', () => {
     await page.getByPlaceholder(/e\.g\. juan/i).fill('E2E Guest');
     await addFirstGuestMenuItem(page);
 
+    // Sticky cart collapses place CTA until guest reviews the bag.
+    await page.getByRole('button', { name: /review cart/i }).click();
     await expect(placeBtn).toBeEnabled();
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
