@@ -147,6 +147,10 @@ export interface Order {
   /** Sales tax amount (PHP), from admin settings tax rate */
   tax?: number;
   total: number;
+  /** PayMongo hosted checkout session id (cs_…). */
+  paymongoCheckoutSessionId?: string;
+  /** PayMongo payment id once paid (pay_…). */
+  paymongoPaymentId?: string;
   /** Drink stamps granted when status became completed (undefined = not processed yet). */
   loyaltyStampsAwarded?: number;
   /** Redeemed Kado Circle voucher at checkout. */
@@ -265,6 +269,8 @@ export interface MerchProduct {
   name: string;
   description?: string;
   basePrice: number;
+  discountType?: 'fixed' | 'percent' | null;
+  discountValue?: number | null;
   image?: string;
   variants: MerchVariantGroup[];
   tags?: string[];

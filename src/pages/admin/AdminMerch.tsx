@@ -9,6 +9,8 @@ type ProductFormData = {
   name: string;
   description: string;
   basePrice: string;
+  discountType: '' | 'fixed' | 'percent';
+  discountValue: string;
   image: string;
   visible: boolean;
   tags: string;
@@ -19,6 +21,8 @@ const emptyProductForm: ProductFormData = {
   name: '',
   description: '',
   basePrice: '',
+  discountType: '',
+  discountValue: '',
   image: '',
   visible: true,
   tags: '',
@@ -81,6 +85,8 @@ export default function AdminMerch() {
       name: p.name,
       description: p.description ?? '',
       basePrice: String(p.basePrice),
+      discountType: p.discountType ?? '',
+      discountValue: p.discountValue != null ? String(p.discountValue) : '',
       image: p.image ?? '',
       visible: p.visible,
       tags: (p.tags ?? []).join(', '),
@@ -163,16 +169,40 @@ export default function AdminMerch() {
     e.preventDefault();
     if (!form.name.trim() || !form.basePrice) return;
 
+    const basePrice = Number(form.basePrice);
+    const discountValue = form.discountType ? Number(form.discountValue) : null;
+    if (
+      form.discountType &&
+      (!Number.isFinite(discountValue) ||
+        discountValue == null ||
+        discountValue <= 0 ||
+        (form.discountType === 'percent' && discountValue >= 100) ||
+        (form.discountType === 'fixed' && discountValue >= basePrice))
+    ) {
+      setSaveError(
+        form.discountType === 'percent'
+          ? 'Percent discount must be greater than 0 and less than 100.'
+          : 'Fixed discount must be greater than 0 and less than the base price.',
+      );
+      return;
+    }
+
+    let tags = form.tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .filter((t) => t.toLowerCase() !== 'promo');
+    if (form.discountType) tags = ['promo', ...tags];
+
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      basePrice: Number(form.basePrice),
+      basePrice,
+      discountType: form.discountType || null,
+      discountValue: form.discountType ? discountValue : null,
       image: form.image.trim() || undefined,
       visible: form.visible,
-      tags: form.tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags,
       variants: form.variants
         .filter((g) => g.name.trim())
         .map((g) => ({ ...g, options: g.options.filter((o) => o.label.trim()) })),
@@ -438,12 +468,48 @@ export default function AdminMerch() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Discount type</label>
+                  <select
+                    value={form.discountType}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        discountType: e.target.value as ProductFormData['discountType'],
+                        discountValue: e.target.value ? f.discountValue : '',
+                      }))
+                    }
+                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                  >
+                    <option value="">No discount</option>
+                    <option value="percent">Percentage off</option>
+                    <option value="fixed">Fixed amount off</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                    {form.discountType === 'percent' ? 'Percent off (%)' : 'Amount off (₱)'}
+                  </label>
+                  <input
+                    type="number"
+                    min={form.discountType ? 0.01 : 0}
+                    max={form.discountType === 'percent' ? 99.99 : undefined}
+                    step="0.01"
+                    value={form.discountValue}
+                    onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+                    disabled={!form.discountType}
+                    className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Tags (comma-separated)</label>
                 <input
                   value={form.tags}
                   onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                  placeholder="bestseller, new, limited"
+                  placeholder="bestseller, new (promo auto-added with discount)"
                   className="w-full rounded-xl dash-input border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 />
               </div>

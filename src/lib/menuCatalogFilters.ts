@@ -1,5 +1,5 @@
 import type { MenuCategory, Product } from '../types/domain';
-import { discountedBasePrice } from './productPricing';
+import { discountedBasePrice, hasProductDiscount } from './productPricing';
 import { isIcedOnlyDrink, productFallbackDescription } from './menuProductModifiers';
 import {
   isPastriesCategory,
@@ -8,6 +8,9 @@ import {
   pastryHasPrice,
 } from './pastriesCategory';
 import { isProductInStock } from './productStock';
+
+/** Special category-rail id — discounted drinks / pastries (not a real menu category). */
+export const MENU_PROMO_FILTER_ID = 'promo';
 
 export type MenuTemperatureFilter = 'all' | 'hot' | 'iced' | 'both';
 export type MenuSortKey = 'order' | 'name' | 'price_asc' | 'price_desc';
@@ -19,6 +22,10 @@ export type MenuCatalogFilters = {
   inStockOnly: boolean;
   sort: MenuSortKey;
 };
+
+export function isPromoFilterId(categoryId: string): boolean {
+  return categoryId === MENU_PROMO_FILTER_ID;
+}
 
 export const DEFAULT_MENU_CATALOG_FILTERS: MenuCatalogFilters = {
   query: '',
@@ -129,6 +136,9 @@ export function baseProductsForFilters(
   ctx: MenuCatalogFilterContext,
 ): Product[] {
   if (filters.categoryId === 'all') return flattenMenuProducts(ctx);
+  if (isPromoFilterId(filters.categoryId)) {
+    return flattenMenuProducts(ctx).filter((p) => hasProductDiscount(p));
+  }
   if (isPastriesCategoryId(ctx.categories, filters.categoryId)) {
     const pastryItems: Product[] = [];
     for (const id of pastryCategoryIds(ctx.categories)) {

@@ -2,14 +2,16 @@ import { create } from 'zustand';
 import type { Order, OrderStatus, PaymentStatus } from '../types/domain';
 import { newId } from '../lib/id';
 import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
-import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS } from '../lib/orderStatus';
+import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS, awaitsGatewayPayment } from '../lib/orderStatus';
 import { orderingRepo, formatBaristaOrderError } from '../lib/supabase/repositories/ordering';
 import { logAudit } from '../lib/audit';
 import {
   notifyCustomerOrderStatus,
   notifyBaristasNewOrder,
   notifyBaristasProofSubmitted,
+  notifyCustomerPendingPayment,
 } from '../lib/notify';
+import { rememberPendingPayment } from '../lib/pendingPayments';
 import { broadcastGuestOrderUpdate } from '../lib/supabase/guestOrderTracking';
 import {
   assertProductsOrderable,
@@ -171,6 +173,20 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         });
         notifyBaristasNewOrder(persisted);
         if (persisted.customerId) notifyCustomerOrderStatus(persisted, persisted.status);
+        if (
+          awaitsGatewayPayment(persisted) &&
+          persisted.paymentStatus === 'unpaid'
+        ) {
+          rememberPendingPayment({
+            orderId: persisted.id,
+            shortCode: persisted.shortCode,
+            paymentMethod: persisted.paymentMethod,
+            total: persisted.total,
+            channel: persisted.channel,
+            placedAt: persisted.createdAt,
+          });
+          if (persisted.customerId) notifyCustomerPendingPayment(persisted);
+        }
         return persisted;
       },
 

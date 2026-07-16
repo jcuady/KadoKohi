@@ -14,6 +14,7 @@ type Props = {
   onPageChange: (page: number) => void;
   onSelectProduct: (product: Product) => void;
   showDescriptions?: boolean;
+  emptyMessage?: string;
 };
 
 export default function QrGuestFilteredCatalog({
@@ -22,6 +23,7 @@ export default function QrGuestFilteredCatalog({
   onPageChange,
   onSelectProduct,
   showDescriptions = true,
+  emptyMessage = 'No drinks match your search. Try another term or clear filters.',
 }: Props) {
   const totalPages = products.length === 0 ? 1 : Math.ceil(products.length / PRODUCT_GRID_PAGE_SIZE);
   const safePage = products.length === 0 ? 1 : Math.min(Math.max(1, page), totalPages);
@@ -31,9 +33,7 @@ export default function QrGuestFilteredCatalog({
   if (products.length === 0) {
     return (
       <div className="qr-surface-card rounded-2xl border-2 border-dashed py-12 text-center">
-        <p className="qr-text-muted text-sm font-semibold">
-          No drinks match your search. Try another term or clear filters.
-        </p>
+        <p className="qr-text-muted text-sm font-semibold">{emptyMessage}</p>
       </div>
     );
   }

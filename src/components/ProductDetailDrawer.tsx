@@ -15,7 +15,7 @@ import { useMenuStore } from '../store/menuStore';
 import { productFallbackDescription, resolveOrderTemperature } from '../lib/menuProductModifiers';
 import ProductVariantSections from './menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../lib/posPricing';
-import { originalUnitPrice, productPromoTag } from '../lib/productPricing';
+import { discountedBasePrice, originalUnitPrice, productPromoTag } from '../lib/productPricing';
 import { OVERLAY_CTA, OVERLAY_SCRIM } from '../lib/overlayTheme';
 import OptionChip from './ui/OptionChip';
 
@@ -104,13 +104,17 @@ export default function ProductDetailDrawer({
     return resolvePosUnitPrice(coffeeProduct, lineConfig);
   }, [coffeeProduct, lineConfig]);
 
+  const merchSaleBase =
+    product && isMerchProduct(product) ? discountedBasePrice(product) : 0;
   const unitPrice =
     coffeeProduct && resolvedCoffee
       ? resolvedCoffee.unit
-      : (product?.basePrice ?? 0) + variantsDelta;
+      : merchSaleBase + variantsDelta;
   const lineTotal = unitPrice * qty;
-  const promoTag = coffeeProduct ? productPromoTag(coffeeProduct) : null;
-  const regularUnitPrice = coffeeProduct ? originalUnitPrice(coffeeProduct, unitPrice) : unitPrice;
+  const promoTag = product ? productPromoTag(product) : null;
+  const regularUnitPrice = product
+    ? originalUnitPrice(product, unitPrice)
+    : unitPrice;
 
   const desc = product
     ? isMerch

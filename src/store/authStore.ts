@@ -37,30 +37,10 @@ async function resolveSessionProfile(
   const metaName =
     (typeof sessionUser.user_metadata?.name === 'string' ? sessionUser.user_metadata.name : undefined) ??
     fallbackName;
-  try {
-    const ensured = await orderingRepo.ensureMyProfile(metaName);
-    useUserStore.getState().setLocalUser(ensured);
-    return normalizeProfile(ensured);
-  } catch {
-    const metaRole = sessionUser.user_metadata?.role;
-    const role =
-      metaRole === 'admin' || metaRole === 'barista' || metaRole === 'staff' || metaRole === 'customer'
-        ? metaRole
-        : 'customer';
-    const metaBranch =
-      typeof sessionUser.user_metadata?.branch_id === 'string'
-        ? sessionUser.user_metadata.branch_id
-        : undefined;
-    return normalizeProfile({
-      id: sessionUser.id,
-      email: sessionUser.email ?? '',
-      name: metaName ?? 'User',
-      role,
-      branchId: role === 'admin' || role === 'customer' ? undefined : metaBranch,
-      loyaltyStamps: role === 'customer' ? 0 : undefined,
-      createdAt: new Date().toISOString(),
-    } as User);
-  }
+  // Never invent a synthetic profile id — kk_place_order FKs customer_id to kk_profiles.
+  const ensured = await orderingRepo.ensureMyProfile(metaName);
+  useUserStore.getState().setLocalUser(ensured);
+  return normalizeProfile(ensured);
 }
 
 /** After JWT is available, wire live sync for staff surfaces. */

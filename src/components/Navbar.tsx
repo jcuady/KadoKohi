@@ -8,6 +8,7 @@ import { useCartToggle } from '../hooks/useCartToggle';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import BrandWordmark from './BrandWordmark';
 import { PublicSiteNavDesktop, PublicSiteNavMobile } from './nav/PublicSiteNavMenu';
+import PendingPaymentsBell from './PendingPaymentsBell';
 
 function useAuthLink(): { label: string; path: string; icon: typeof User } {
   const user = useAuthStore((s) => s.user);
@@ -69,6 +70,7 @@ export default function Navbar() {
           <PublicSiteNavDesktop />
 
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+            <PendingPaymentsBell />
             <button
               type="button"
               onClick={toggleCart}

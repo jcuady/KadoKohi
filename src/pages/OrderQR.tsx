@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { Product, PaymentMethod } from '../types/domain';
 import { useMenuStore } from '../store/menuStore';
 import { useAuthStore } from '../store/authStore';
@@ -30,17 +30,21 @@ import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/g
 import { QrCode } from 'lucide-react';
 import BrandHybridMark from '../components/BrandHybridMark';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
-import { qrGuestCategoryTabs, qrGuestMenuSections } from '../lib/qrGuestMenu';
+import { checkoutPath } from '../lib/pendingPayments';
+import { qrGuestCategoryTabs, qrGuestDefaultCategoryId, qrGuestMenuSections } from '../lib/qrGuestMenu';
 import {
+  baseProductsForFilters,
   DEFAULT_MENU_CATALOG_FILTERS,
   filterMenuProducts,
-  flattenMenuProducts,
   hasQrFilteredBrowse,
+  isPromoFilterId,
+  MENU_PROMO_FILTER_ID,
   type MenuCatalogFilters,
 } from '../lib/menuCatalogFilters';
 
 export default function OrderQR() {
   const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const taxRate = useSettingsStore((s) => s.settings.taxRate);
   const table = useTableStore((s) => s.getByCode(code ?? ''));
@@ -76,7 +80,7 @@ export default function OrderQR() {
   const [syncing, setSyncing] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [orderError, setOrderError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash-qr');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paymongo');
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
   const [catalogFilters, setCatalogFilters] = useState<MenuCatalogFilters>(DEFAULT_MENU_CATALOG_FILTERS);
   const [filterPage, setFilterPage] = useState(1);
@@ -111,7 +115,7 @@ export default function OrderQR() {
   useEffect(() => {
     if (!categoryTabs.length) return;
     if (!activeCat || !categoryTabs.some((c) => c.id === activeCat)) {
-      setActiveCat(categoryTabs[0].id);
+      setActiveCat(qrGuestDefaultCategoryId(categoryTabs));
     }
   }, [categoryTabs, activeCat]);
 
@@ -125,16 +129,23 @@ export default function OrderQR() {
     [categories, productsByCategory],
   );
 
+  const promoBrowse = isPromoFilterId(activeCat);
+
   const filteredProducts = useMemo(() => {
-    const base = flattenMenuProducts(filterCtx);
-    return filterMenuProducts(base, catalogFilters, filterCtx);
-  }, [catalogFilters, filterCtx]);
+    const filters: MenuCatalogFilters = {
+      ...catalogFilters,
+      categoryId: promoBrowse ? MENU_PROMO_FILTER_ID : 'all',
+    };
+    const base = baseProductsForFilters(filters, filterCtx);
+    return filterMenuProducts(base, filters, filterCtx);
+  }, [catalogFilters, filterCtx, promoBrowse]);
 
   const qrFilteredMode = hasQrFilteredBrowse(catalogFilters);
+  const showPromoCatalog = promoBrowse || qrFilteredMode;
 
   useEffect(() => {
     setFilterPage(1);
-  }, [catalogFilters]);
+  }, [catalogFilters, activeCat]);
 
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
   const cartTotals = useMemo(
@@ -222,6 +233,7 @@ export default function OrderQR() {
       setTrackedOrderId(order.id);
       setCart([]);
       setCartExpanded(false);
+      navigate(checkoutPath(order.id));
     } catch (err) {
       setOrderError(formatOrderError(err));
     } finally {
@@ -291,9 +303,11 @@ export default function OrderQR() {
   }
 
   const placeLabel =
-    paymentMethod === 'gcash-qr'
-      ? 'Place order · pay with GCash'
-      : 'Place order · pay cash at counter';
+    paymentMethod === 'paymongo'
+      ? 'Place order · pay with QR Ph'
+      : paymentMethod === 'gcash-qr'
+        ? 'Place order · pay with GCash'
+        : 'Place order · pay cash at counter';
 
   return (
     <div className="qr-root customer-surface guest-order-page bg-[var(--qr-bg)] text-[var(--qr-text)] font-sans flex flex-col">
@@ -345,15 +359,22 @@ export default function OrderQR() {
           filters={catalogFilters}
           categoryTabs={categoryTabs}
           activeCategoryId={activeCat}
-          resultCount={qrFilteredMode ? filteredProducts.length : menuSections.reduce((n, s) => n + s.products.length, 0)}
+          resultCount={
+            showPromoCatalog
+              ? filteredProducts.length
+              : menuSections.reduce((n, s) => n + s.products.length, 0)
+          }
           onFiltersChange={(patch) => setCatalogFilters((f) => ({ ...f, ...patch }))}
           onClearFilters={() => setCatalogFilters(DEFAULT_MENU_CATALOG_FILTERS)}
           onCategoryPillClick={(id) => {
             setActiveCat(id);
-            document.getElementById(`qr-cat-${id}`)?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
+            if (isPromoFilterId(id)) return;
+            window.setTimeout(() => {
+              document.getElementById(`qr-cat-${id}`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }, 50);
           }}
         />
       </header>
@@ -361,12 +382,17 @@ export default function OrderQR() {
       <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-2 sm:py-4 [@media(orientation:landscape)_and_(max-height:30rem)]:py-1.5 ${mainPaddingBottom}`}>
         {!menuReady ? (
           <QrMenuSkeleton />
-        ) : qrFilteredMode ? (
+        ) : showPromoCatalog ? (
           <QrGuestFilteredCatalog
             products={filteredProducts}
             page={filterPage}
             onPageChange={setFilterPage}
             onSelectProduct={setSelectedProduct}
+            emptyMessage={
+              promoBrowse && !qrFilteredMode
+                ? 'No discounted drinks right now. Pick another category or check back soon.'
+                : undefined
+            }
           />
         ) : (
           <QrGuestMenuCatalog

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Croissant, MapPin } from 'lucide-react';
+import { ArrowRight, Croissant, MapPin, Tag } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
 import {
   findPastriesCategory,
@@ -23,12 +23,15 @@ import {
   DEFAULT_MENU_CATALOG_FILTERS,
   filterMenuProducts,
   hasActiveBrowseFilters,
+  isPromoFilterId,
+  MENU_PROMO_FILTER_ID,
   parseMenuCatalogFilters,
   parseMenuPage,
   shouldPaginateMenuCatalog,
   writeMenuCatalogFilters,
   type MenuCatalogFilters,
 } from '../lib/menuCatalogFilters';
+import { hasProductDiscount } from '../lib/productPricing';
 
 export default function Pastries() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,13 +55,16 @@ export default function Pastries() {
   );
 
   const rawFilters = useMemo(() => parseMenuCatalogFilters(searchParams), [searchParams]);
+  const pastryCategoryId = pastriesCategory?.id ?? 'all';
   const filters: MenuCatalogFilters = useMemo(
     () => ({
       ...rawFilters,
-      categoryId: pastriesCategory?.id ?? 'all',
+      categoryId: isPromoFilterId(rawFilters.categoryId)
+        ? MENU_PROMO_FILTER_ID
+        : pastryCategoryId,
       temperature: 'all',
     }),
-    [rawFilters, pastriesCategory?.id],
+    [rawFilters, pastryCategoryId],
   );
   const page = parseMenuPage(searchParams);
 
@@ -71,9 +77,22 @@ export default function Pastries() {
     [categories, products],
   );
 
+  const pastryBaseForRail = useMemo(
+    () =>
+      isPromoFilterId(filters.categoryId)
+        ? pastryBase.filter((p) => hasProductDiscount(p))
+        : pastryBase,
+    [pastryBase, filters.categoryId],
+  );
+
   const filteredItems = useMemo(
-    () => filterMenuProducts(pastryBase, filters, filterCtx),
-    [pastryBase, filters, filterCtx],
+    () =>
+      filterMenuProducts(
+        pastryBaseForRail,
+        { ...filters, categoryId: pastryCategoryId },
+        filterCtx,
+      ),
+    [pastryBaseForRail, filters, pastryCategoryId, filterCtx],
   );
 
   const shouldPaginate = shouldPaginateMenuCatalog(
@@ -102,9 +121,11 @@ export default function Pastries() {
     const next = {
       ...filters,
       ...patch,
-      categoryId: pastriesCategory?.id ?? 'all',
       temperature: 'all' as const,
     };
+    if (patch.categoryId === undefined && !isPromoFilterId(next.categoryId)) {
+      next.categoryId = pastryCategoryId;
+    }
     const params = writeMenuCatalogFilters(searchParams, next, 1);
     setSearchParams(params, { replace: true });
   };
@@ -112,7 +133,7 @@ export default function Pastries() {
   const clearFilters = () => {
     const next = {
       ...DEFAULT_MENU_CATALOG_FILTERS,
-      categoryId: pastriesCategory?.id ?? 'all',
+      categoryId: pastryCategoryId,
     };
     const params = writeMenuCatalogFilters(searchParams, next, 1);
     setSearchParams(params, { replace: true });
@@ -130,8 +151,7 @@ export default function Pastries() {
   const catalogLoading = !remoteLoaded;
   const showPoster = Boolean(poster.primaryImage?.trim() || poster.secondaryImage?.trim());
 
-  const pastryFiltersActive = hasActiveBrowseFilters(filters);
-  const pastryCategoryId = pastriesCategory?.id ?? 'all';
+  const pastryFiltersActive = hasActiveBrowseFilters(filters) || isPromoFilterId(filters.categoryId);
   const pastryCategoryItems = useMemo(
     () => [
       {
@@ -139,6 +159,12 @@ export default function Pastries() {
         label: 'All pastries',
         shortLabel: 'All',
         icon: <Croissant className="h-4 w-4 shrink-0" aria-hidden />,
+      },
+      {
+        id: MENU_PROMO_FILTER_ID,
+        label: 'On promo',
+        shortLabel: 'Promo',
+        icon: <Tag className="h-4 w-4 shrink-0" aria-hidden />,
       },
     ],
     [pastryCategoryId],
@@ -160,8 +186,8 @@ export default function Pastries() {
                   <div className="min-w-0 flex-1">
                     <CatalogCategoryRail
                       items={pastryCategoryItems}
-                      value={pastryCategoryId}
-                      onChange={() => undefined}
+                      value={filters.categoryId}
+                      onChange={(id) => updateFilters({ categoryId: id })}
                       ariaLabel="Pastries catalog"
                     />
                   </div>
@@ -195,14 +221,20 @@ export default function Pastries() {
                     {filteredItems.length}{' '}
                     {filteredItems.length === 1 ? 'pastry' : 'pastries'} · {cta.title}
                   </p>
+                ) : isPromoFilterId(filters.categoryId) && filteredItems.length > 0 ? (
+                  <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-kado-dark/45 sm:mb-5">
+                    {filteredItems.length} on promo
+                  </p>
                 ) : null}
 
                 {paginatedItems.length === 0 ? (
                   <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-cream/40 px-6 py-12 text-center sm:py-14">
                     <p className="text-sm font-semibold text-kado-dark/50">
-                      {pastryFiltersActive
-                        ? 'No pastries match your search or filters.'
-                        : 'Pastries will appear here once added in Menu Manager.'}
+                      {isPromoFilterId(filters.categoryId)
+                        ? 'No discounted pastries right now. Check back soon or browse all pastries.'
+                        : pastryFiltersActive
+                          ? 'No pastries match your search or filters.'
+                          : 'Pastries will appear here once added in Menu Manager.'}
                     </p>
                     {pastryFiltersActive ? (
                       <button

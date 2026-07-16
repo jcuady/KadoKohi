@@ -1,5 +1,7 @@
 import type { MenuCategory, Product } from '../types/domain';
 import { findPastriesCategory, isPastriesCategory, isPastriesCategoryId, pastryHasPrice, pastriesProducts } from './pastriesCategory';
+import { hasProductDiscount } from './productPricing';
+import { isPromoFilterId, MENU_PROMO_FILTER_ID } from './menuCatalogFilters';
 
 export type QrGuestCategoryTab = { id: string; name: string };
 
@@ -9,8 +11,8 @@ export type QrGuestMenuSection = {
   products: Product[];
 };
 
-/** Category pills for guest QR menus. */
-export function qrGuestCategoryTabs(
+/** Real menu category pills (no special rails). */
+function qrGuestRealCategoryTabs(
   categories: MenuCategory[],
   products: Product[],
 ): QrGuestCategoryTab[] {
@@ -29,12 +31,38 @@ export function qrGuestCategoryTabs(
     .map((c) => ({ id: c.id, name: c.name }));
 }
 
+/** Category pills for guest QR menus — On promo first, then real categories. */
+export function qrGuestCategoryTabs(
+  categories: MenuCategory[],
+  products: Product[],
+): QrGuestCategoryTab[] {
+  return [
+    { id: MENU_PROMO_FILTER_ID, name: 'On promo' },
+    ...qrGuestRealCategoryTabs(categories, products),
+  ];
+}
+
+/** Default pill when tabs load — first real category, not On promo. */
+export function qrGuestDefaultCategoryId(tabs: QrGuestCategoryTab[]): string {
+  return tabs.find((t) => !isPromoFilterId(t.id))?.id ?? tabs[0]?.id ?? '';
+}
+
 /** Products for a category tab. */
 export function qrGuestProductsInCategory(
   categoryId: string,
   categories: MenuCategory[],
   productsByCategory: (id: string) => Product[],
+  allProducts?: Product[],
 ): Product[] {
+  if (isPromoFilterId(categoryId)) {
+    const source =
+      allProducts ??
+      categories.flatMap((c) => productsByCategory(c.id));
+    return source
+      .filter((p) => p.visible && hasProductDiscount(p))
+      .filter((p) => !isPastriesCategoryId(categories, p.categoryId) || pastryHasPrice(p))
+      .sort((a, b) => a.order - b.order);
+  }
   const list = productsByCategory(categoryId);
   if (isPastriesCategoryId(categories, categoryId)) {
     return list.filter((p) => pastryHasPrice(p));
@@ -42,13 +70,13 @@ export function qrGuestProductsInCategory(
   return list;
 }
 
-/** All visible guest menu sections (every category on one scroll). */
+/** Scroll sections for full-menu browse — excludes the On promo rail (shown as a filtered grid). */
 export function qrGuestMenuSections(
   categories: MenuCategory[],
   products: Product[],
   productsByCategory: (id: string) => Product[],
 ): QrGuestMenuSection[] {
-  return qrGuestCategoryTabs(categories, products)
+  return qrGuestRealCategoryTabs(categories, products)
     .map((tab) => ({
       id: tab.id,
       name: tab.name,

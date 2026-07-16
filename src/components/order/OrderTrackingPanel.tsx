@@ -5,15 +5,19 @@ import { Check, Clock, Coffee, CookingPot, PackageCheck, Pencil, RotateCcw, Spar
 import type { OrderStatus } from '../../types/domain';
 import { useGuestOrderTracking } from '../../hooks/useGuestOrderTracking';
 import {
+  awaitsGatewayPayment,
   canGuestModifyOrder,
   canGuestSwitchToCash,
   guestModifyBlockedMessage,
+  isGcashOrder,
+  isPaymongoOrder,
 } from '../../lib/orderStatus';
 import type { GuestOrderAction, GuestOrderActionReason } from '../../lib/guestOrderActions';
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 import { getTrackedOrder } from '../../lib/guestOrders';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
+import PaymongoPaymentPanel from '../PaymongoPaymentPanel';
 import GcashQrModal from '../GcashQrModal';
 import OrderTrackingSummary from './OrderTrackingSummary';
 import GuestOrderActionSheet from './GuestOrderActionSheet';
@@ -108,14 +112,16 @@ export default function OrderTrackingPanel({
     setActionError('');
   };
 
-  const gcash = tracked?.paymentMethod === 'gcash-qr';
+  const gcash = tracked ? isGcashOrder(tracked) : false;
+  const paymongo = tracked ? isPaymongoOrder(tracked) : false;
+  const gateway = tracked ? awaitsGatewayPayment(tracked) : false;
   const flowChannel = (tracked?.channel === 'takeout' ? 'takeout' : channel) as Channel;
   const steps =
     flowChannel === 'takeout'
-      ? gcash
+      ? gateway
         ? GCASH_TAKEOUT_STEPS
         : TAKEOUT_STEPS
-      : gcash
+      : gateway
         ? GCASH_DINE_IN_STEPS
         : DINE_IN_STEPS;
 
@@ -124,7 +130,7 @@ export default function OrderTrackingPanel({
   const isCancelled = status === 'cancelled';
   const isCompleted = status === 'completed';
   const currentRank = ORDER_RANK[status];
-  const awaitingGcash = gcash && paymentStatus === 'unpaid';
+  const awaitingGcash = gateway && paymentStatus === 'unpaid';
   const modifyCtx =
     tracked != null
       ? {
@@ -278,6 +284,72 @@ export default function OrderTrackingPanel({
           </>
         )}
 
+        {paymongo && tracked && !isCancelled && (
+          <div className="mb-4">
+            <PaymongoPaymentPanel
+              order={{
+                id: orderId,
+                shortCode: tracked.shortCode,
+                channel: flowChannel,
+                branchId: '',
+                paymentMethod: 'paymongo',
+                paymentStatus,
+                status: tracked.status,
+                items: [],
+                subtotal: tracked.subtotal,
+                modifiersTotal: tracked.modifiersTotal,
+                tax: tracked.tax,
+                total: tracked.total,
+                createdAt: tracked.createdAt,
+                updatedAt: tracked.updatedAt,
+              }}
+              shortCode={tracked.shortCode}
+              successUrl={`${window.location.origin}${window.location.pathname}?paymongo=success`}
+              cancelUrl={`${window.location.origin}${window.location.pathname}?paymongo=cancel`}
+            />
+            {(canSwitchToCash || canModify) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {canSwitchToCash ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleSwitchToCash()}
+                    className="qr-field min-h-[44px] rounded-xl px-4 text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    Switch to cash
+                  </button>
+                ) : null}
+                {canModify && !actionPanel ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openAction('change_order')}
+                      className="qr-field min-h-[44px] rounded-xl px-4 text-[10px] font-bold uppercase tracking-wider"
+                    >
+                      Change order
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAction('cancel')}
+                      className="qr-field min-h-[44px] rounded-xl px-4 text-[10px] font-bold uppercase tracking-wider"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            )}
+            {actionPanel && canModify ? (
+              <GuestOrderActionSheet
+                action={actionPanel}
+                busy={actionBusy}
+                error={actionError}
+                onClose={closeAction}
+                onConfirm={(reason, note) => void handleGuestAction(actionPanel, reason, note)}
+              />
+            ) : null}
+          </div>
+        )}
+
         {!isCancelled && (
           <div className="qr-surface-card rounded-2xl p-5 sm:p-6 mb-4">
             <div className="flex items-center justify-between mb-4">
@@ -384,7 +456,7 @@ export default function OrderTrackingPanel({
           </div>
         )}
 
-        {(canModify || modifyBlocked) && !isCancelled && !isCompleted && !gcash && (
+        {(canModify || modifyBlocked) && !isCancelled && !isCompleted && !gateway && (
           <div className="mb-3">
             {actionPanel ? (
               <GuestOrderActionSheet

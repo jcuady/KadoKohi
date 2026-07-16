@@ -14,6 +14,7 @@ import {
 } from '../../lib/orderStatus';
 import GcashQrModal from '../../components/GcashQrModal';
 import OrderPaymentPanel from '../../components/OrderPaymentPanel';
+import PaymongoPaymentPanel from '../../components/PaymongoPaymentPanel';
 import OrderTableBadge from '../../components/OrderTableBadge';
 import { countDrinkStampsForOrder } from '../../lib/loyaltyStamps';
 import {
@@ -60,6 +61,8 @@ export default function AccountOrders() {
   const [qrModalOrderId, setQrModalOrderId] = useState<string | null>(null);
 
   const placedId = searchParams.get('placed');
+  const paymongoStatus = searchParams.get('paymongo');
+  const paymongoOrderId = searchParams.get('order');
 
   useEffect(() => {
     if (placedId) {
@@ -70,6 +73,11 @@ export default function AccountOrders() {
       setSearchParams(next, { replace: true });
     }
   }, [placedId, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!paymongoStatus) return;
+    if (paymongoOrderId) setExpandedId(paymongoOrderId);
+  }, [paymongoStatus, paymongoOrderId]);
 
   const branchName = useMemo(() => {
     const m = new Map(branches.map((b) => [b.id, b.name]));
@@ -106,9 +114,20 @@ export default function AccountOrders() {
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Order History</p>
         <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">My Orders</h1>
         <p className="text-sm text-kado-dark/50 mt-1 font-medium">
-          Pay via GCash, upload proof, and track preparation status.
+          Pay with QR Ph or GCash, then track preparation status.
         </p>
       </div>
+
+      {paymongoStatus === 'success' ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Payment submitted. If the status still says unpaid, wait a few seconds — PayMongo is confirming.
+        </div>
+      ) : null}
+      {paymongoStatus === 'cancel' ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Checkout was cancelled. Open the order below and tap <strong>Pay with QR Ph</strong> to try again.
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5 sm:mx-0 sm:px-0 sm:pb-0">
@@ -255,6 +274,7 @@ export default function AccountOrders() {
                             if (err) throw new Error(err);
                           }}
                         />
+                        <PaymongoPaymentPanel order={o} />
 
                         <div className="mt-4 -mx-1 overflow-x-auto">
                         <table className="w-full min-w-[280px] text-xs">

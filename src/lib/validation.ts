@@ -77,5 +77,14 @@ export function formatOrderError(err: unknown): string {
   }
   if (/please select a reason/i.test(msg)) return 'Please tell us why you want to change or cancel.';
   if (/between 1 and 50 items/i.test(msg)) return 'Your cart is empty or too large.';
+  if (/kk_orders_customer_id_fkey|foreign key constraint.*customer_id/i.test(msg)) {
+    return 'Your account profile needs a refresh. Sign out, sign back in, then try placing the order again.';
+  }
+  if (/not authenticated|JWT|session|invalid.?refresh|email not confirmed/i.test(msg)) {
+    return 'Your session expired or sign-in failed. Sign in again, then place your order.';
+  }
+  if (/invalid login credentials|invalid.?email.?or.?password/i.test(msg)) {
+    return 'Incorrect email or password. Check your credentials and try again.';
+  }
   return msg.length < 120 ? msg : 'Could not place your order. Please try again.';
 }

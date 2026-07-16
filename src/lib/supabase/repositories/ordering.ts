@@ -202,6 +202,8 @@ function mapMerchProduct(row: any): MerchProduct {
     name: row.name,
     description: row.description ?? undefined,
     basePrice: Number(row.base_price ?? 0),
+    discountType: row.discount_type ?? null,
+    discountValue: row.discount_value != null ? Number(row.discount_value) : null,
     image: row.image ?? undefined,
     variants: row.variants ?? [],
     tags: row.tags ?? [],
@@ -370,6 +372,8 @@ function mapOrder(row: any): Order {
       row.product_discount_total != null ? Number(row.product_discount_total) : undefined,
     tax: Number(row.tax ?? 0),
     total: Number(row.total ?? 0),
+    paymongoCheckoutSessionId: row.paymongo_checkout_session_id ?? undefined,
+    paymongoPaymentId: row.paymongo_payment_id ?? undefined,
     loyaltyStampsAwarded: row.loyalty_stamps_awarded ?? undefined,
     loyaltyVoucherId: row.loyalty_voucher_id ?? undefined,
     loyaltyVoucherCode: row.loyalty_voucher_code ?? undefined,
@@ -600,6 +604,8 @@ export const orderingRepo = {
       name: p.name,
       description: p.description ?? null,
       base_price: p.basePrice,
+      discount_type: p.discountType ?? null,
+      discount_value: p.discountValue ?? null,
       image: p.image ?? null,
       variants: p.variants ?? [],
       tags: p.tags ?? [],
@@ -1189,9 +1195,12 @@ export const orderingRepo = {
   /** Fetch a single profile row by ID (used when the local store may not have it). */
   async fetchUserById(id: string): Promise<User | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('kk_profiles').select('*').eq('id', id).maybeSingle();
-    if (error || !data) return null;
-    return mapUser(data as Parameters<typeof mapUser>[0]);
+    const byId = await supabase.from('kk_profiles').select('*').eq('id', id).maybeSingle();
+    if (!byId.error && byId.data) return mapUser(byId.data as Parameters<typeof mapUser>[0]);
+    // Profile id may differ from auth uid; clerk_user_id stores the auth sub.
+    const byClerk = await supabase.from('kk_profiles').select('*').eq('clerk_user_id', id).maybeSingle();
+    if (byClerk.error || !byClerk.data) return null;
+    return mapUser(byClerk.data as Parameters<typeof mapUser>[0]);
   },
   /** Pure UPDATE of a customer's stamp balance — works for staff/barista (no INSERT needed). */
   async updateUserStamps(id: string, stamps: number) {

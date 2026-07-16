@@ -41,12 +41,30 @@ export function notifyCustomerOrderStatus(order: Order, status: OrderStatus): vo
   if (!order.customerId) return;
   const copy = CUSTOMER_STATUS_COPY[status];
   if (!copy) return;
+  const needsPay =
+    (order.paymentMethod === 'paymongo' || order.paymentMethod === 'gcash-qr') &&
+    (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted');
   void pushRepo.send({
     targets: [{ userId: order.customerId }],
     title: copy.title,
     body: copy.body(order),
-    url: '/account/orders',
+    url: needsPay ? `/checkout/${order.id}` : '/account/orders',
     tag: `order-${order.id}`,
+  });
+}
+
+/** Remind customer (or staff-linked profile) that payment is still due. */
+export function notifyCustomerPendingPayment(order: Order): void {
+  if (!order.customerId) return;
+  if (order.paymentMethod !== 'paymongo' && order.paymentMethod !== 'gcash-qr') return;
+  if (order.paymentStatus !== 'unpaid') return;
+  const method = order.paymentMethod === 'paymongo' ? 'QR Ph' : 'GCash';
+  void pushRepo.send({
+    targets: [{ userId: order.customerId }],
+    title: `Complete ${method} payment`,
+    body: `Order ${order.shortCode} is waiting — pay ₱${order.total.toFixed(2)} to confirm your order.`,
+    url: `/checkout/${order.id}`,
+    tag: `pay-${order.id}`,
   });
 }
 

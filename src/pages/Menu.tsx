@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Coffee, Leaf, IceCreamCone, Star, Croissant } from 'lucide-react';
+import { Coffee, Leaf, IceCreamCone, Star, Croissant, Tag } from 'lucide-react';
 import { useMenuStore } from '../store/menuStore';
 import ProductDetailDrawer from '../components/ProductDetailDrawer';
 import ProductGridPagination, { PRODUCT_GRID_PAGE_SIZE } from '../components/ProductGridPagination';
@@ -17,6 +17,8 @@ import {
   filterMenuProducts,
   hasActiveBrowseFilters,
   hasActiveMenuFilters,
+  isPromoFilterId,
+  MENU_PROMO_FILTER_ID,
   parseMenuCatalogFilters,
   parseMenuPage,
   shouldPaginateMenuCatalog,
@@ -227,9 +229,11 @@ export default function Menu() {
   const browseFiltersActive = hasActiveBrowseFilters(filters);
   const emptyMessage = browseFiltersActive
     ? 'No drinks match your search or filters. Try clearing filters or another category.'
-    : filters.categoryId === ALL_CATEGORY_ID
-      ? 'No drinks on the menu yet.'
-      : 'No drinks in this category yet.';
+    : isPromoFilterId(filters.categoryId)
+      ? 'No discounted drinks right now. Check back soon or browse all items.'
+      : filters.categoryId === ALL_CATEGORY_ID
+        ? 'No drinks on the menu yet.'
+        : 'No drinks in this category yet.';
 
   const categoryItems = useMemo(
     () => [
@@ -238,6 +242,12 @@ export default function Menu() {
         label: 'All items',
         shortLabel: 'All',
         icon: <Coffee className="h-4 w-4 shrink-0" aria-hidden />,
+      },
+      {
+        id: MENU_PROMO_FILTER_ID,
+        label: 'On promo',
+        shortLabel: 'Promo',
+        icon: <Tag className="h-4 w-4 shrink-0" aria-hidden />,
       },
       ...sortedCategories.map((cat) => ({
         id: cat.id,
@@ -253,6 +263,9 @@ export default function Menu() {
     if (browsingAllUnfiltered) {
       return `${filteredItems.length} drink${filteredItems.length === 1 ? '' : 's'} across ${sortedCategories.length} categor${sortedCategories.length === 1 ? 'y' : 'ies'}`;
     }
+    if (isPromoFilterId(filters.categoryId)) {
+      return `${filteredItems.length} on promo`;
+    }
     if (activeCategory) {
       return `${filteredItems.length} in ${activeCategory.name}`;
     }
@@ -262,6 +275,7 @@ export default function Menu() {
     filteredItems.length,
     sortedCategories.length,
     activeCategory,
+    filters.categoryId,
   ]);
 
   return (

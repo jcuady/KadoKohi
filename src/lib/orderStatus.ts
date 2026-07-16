@@ -70,8 +70,9 @@ export function normalizeOrderFields(
       paymentStatus = raw.paymentProofImage ? 'proof_submitted' : 'unpaid';
     } else if (legacyStatus === 'paid') {
       paymentStatus = 'paid';
-    } else if (raw.paymentMethod === 'gcash-qr') {
-      paymentStatus = raw.paymentProofImage ? 'proof_submitted' : 'unpaid';
+    } else if (raw.paymentMethod === 'gcash-qr' || raw.paymentMethod === 'paymongo') {
+      paymentStatus =
+        raw.paymentMethod === 'gcash-qr' && raw.paymentProofImage ? 'proof_submitted' : 'unpaid';
       if (legacyStatus && ['accepted', 'preparing', 'ready', 'served', 'completed'].includes(legacyStatus)) {
         paymentStatus = 'paid';
       }
@@ -102,8 +103,17 @@ export function isGcashOrder(order: Pick<Order, 'paymentMethod'>): boolean {
   return order.paymentMethod === 'gcash-qr';
 }
 
+export function isPaymongoOrder(order: Pick<Order, 'paymentMethod'>): boolean {
+  return order.paymentMethod === 'paymongo';
+}
+
+/** Online payment that must clear before kitchen advances (GCash proof or PayMongo QR Ph). */
+export function awaitsGatewayPayment(order: Pick<Order, 'paymentMethod'>): boolean {
+  return isGcashOrder(order) || isPaymongoOrder(order);
+}
+
 export function fulfillmentFlowForOrder(order: Pick<Order, 'paymentMethod'>): OrderStatus[] {
-  return isGcashOrder(order) ? GCASH_FULFILLMENT_FLOW : FULFILLMENT_FLOW;
+  return awaitsGatewayPayment(order) ? GCASH_FULFILLMENT_FLOW : FULFILLMENT_FLOW;
 }
 
 export function nextFulfillmentStatus(order: Pick<Order, 'status' | 'paymentMethod'>): OrderStatus | null {
@@ -116,7 +126,7 @@ export function nextFulfillmentStatus(order: Pick<Order, 'status' | 'paymentMeth
 /** Staff quick-advance: only when payment is settled (except cancelled path). */
 export function nextStatusInFlow(order: Order): OrderStatus | null {
   if (order.status === 'cancelled' || order.status === 'completed') return null;
-  if (isGcashOrder(order) && order.paymentStatus !== 'paid') return null;
+  if (awaitsGatewayPayment(order) && order.paymentStatus !== 'paid') return null;
   return nextFulfillmentStatus(order);
 }
 
@@ -168,7 +178,7 @@ export type KioskDisplayColumn = 'preparing' | 'pickup';
 export function kioskDisplayColumnKey(order: Order): KioskDisplayColumn | null {
   if (['completed', 'cancelled', 'served'].includes(order.status)) return null;
   if (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted') return null;
-  if (isGcashOrder(order) && order.paymentStatus !== 'paid') return null;
+  if (awaitsGatewayPayment(order) && order.paymentStatus !== 'paid') return null;
   if (order.status === 'preparing') return 'preparing';
   if (order.status === 'ready') return 'pickup';
   return null;
@@ -179,7 +189,7 @@ export function formatPaymentMethod(method?: PaymentMethod): string {
     case 'gcash-qr':
       return 'GCash QR';
     case 'paymongo':
-      return 'PayMongo';
+      return 'QR Ph';
     case 'pay-at-store':
       return 'Pay at store';
     default:
@@ -191,7 +201,7 @@ export function defaultFieldsForNewOrder(paymentMethod?: PaymentMethod): {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
 } {
-  if (paymentMethod === 'gcash-qr') {
+  if (paymentMethod === 'gcash-qr' || paymentMethod === 'paymongo') {
     return { status: 'pending', paymentStatus: 'unpaid' };
   }
   return { status: 'pending', paymentStatus: 'paid' };
@@ -223,9 +233,9 @@ export function canGuestModifyOrder(
 ): boolean {
   if (order.channel !== 'dine-in' && order.channel !== 'takeout') return false;
   if (order.status !== 'pending') return false;
-  if (order.paymentMethod === 'gcash-qr') {
+  if (order.paymentMethod === 'gcash-qr' || order.paymentMethod === 'paymongo') {
     if (order.paymentStatus !== 'unpaid') return false;
-    if (order.hasPaymentProof) return false;
+    if (order.paymentMethod === 'gcash-qr' && order.hasPaymentProof) return false;
   }
   return true;
 }
@@ -240,10 +250,10 @@ export function guestModifyBlockedMessage(
     return 'Your order is already being prepared and can no longer be changed online.';
   }
   if (
-    order.paymentMethod === 'gcash-qr' &&
-    (order.paymentStatus !== 'unpaid' || order.hasPaymentProof)
+    (order.paymentMethod === 'gcash-qr' || order.paymentMethod === 'paymongo') &&
+    (order.paymentStatus !== 'unpaid' || Boolean(order.hasPaymentProof))
   ) {
-    return 'GCash payment has been submitted or confirmed — ask staff at the counter if you need help.';
+    return 'Payment has been submitted or confirmed — ask staff at the counter if you need help.';
   }
   return 'This order can no longer be changed online.';
 }
@@ -263,7 +273,7 @@ export function canGuestSwitchToCash(
 ): boolean {
   return (
     canGuestCancelOrder(order) &&
-    order.paymentMethod === 'gcash-qr' &&
+    (order.paymentMethod === 'gcash-qr' || order.paymentMethod === 'paymongo') &&
     order.paymentStatus !== 'paid'
   );
 }

@@ -18,6 +18,7 @@ import Events from './pages/Events';
 import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
+import Checkout from './pages/Checkout';
 import Merch from './pages/Merch';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
@@ -114,6 +115,7 @@ export default function App() {
           <Route path="/branches" element={<Branches />} />
           <Route path="/events" element={<Events />} />
           <Route path="/order" element={<Order />} />
+          <Route path="/checkout/:orderId" element={<Checkout />} />
           <Route path="/merch" element={<Merch />} />
           <Route path="/pastries" element={<Pastries />} />
           <Route path="/blog" element={<Blog />} />

@@ -30,6 +30,8 @@ import { computeVoucherDiscount, computeCartTotalsWithDiscount } from '../lib/vo
 import { newId } from '../lib/id';
 import { formatOrderError } from '../lib/validation';
 import { ensureOrderReadiness } from '../lib/orderReadiness';
+import { orderingRepo } from '../lib/supabase/repositories/ordering';
+import { checkoutPath } from '../lib/pendingPayments';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
@@ -77,7 +79,8 @@ export default function CartDrawer() {
 
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
-  const paymentMethod: PaymentMethod = 'gcash-qr';
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paymongo');
+  const [guestName, setGuestName] = useState('');
 
   const selectedBranch = useMemo(
     () => activeBranches.find((b) => b.id === branchId),
@@ -145,8 +148,16 @@ export default function CartDrawer() {
     (i) => i.itemType === 'coffee' || i.itemType === 'mix-match' || !i.itemType,
   );
   const hasMixedCart = hasMerch && hasCoffee;
+  const qrPhNeedsAccount = paymentMethod === 'paymongo' && !isCustomer;
+  const guestGcashOk =
+    !isCustomer && paymentMethod === 'gcash-qr' && guestName.trim().length >= 2;
   const canOrder =
-    items.length > 0 && !!branchId && isCustomer && orderHours.isOpen && !voucherBlocksCheckout && !hasMixedCart;
+    items.length > 0 &&
+    !!branchId &&
+    orderHours.isOpen &&
+    !voucherBlocksCheckout &&
+    !hasMixedCart &&
+    (isCustomer || guestGcashOk);
 
   const handleClose = () => {
     closeCart();
@@ -164,6 +175,12 @@ export default function CartDrawer() {
   }, [isOpen]);
 
   const placeOrder = async () => {
+    if (qrPhNeedsAccount) {
+      setCheckoutError('QR Ph checkout needs an account so we can confirm payment securely. Your cart is saved — create an account or sign in, then place the order.');
+      closeCart();
+      navigate('/auth/signup');
+      return;
+    }
     if (!canOrder) return;
     if (hasMixedCart) {
       setCheckoutError('Please checkout coffee and merch in separate orders.');
@@ -197,10 +214,14 @@ export default function CartDrawer() {
 
     try {
       await ensureOrderReadiness();
+      if (isCustomer) {
+        await orderingRepo.ensureMyProfile(user?.name);
+      }
       const order = await createOrder({
         channel,
         branchId,
-        customerId: user!.id,
+        customerId: isCustomer ? user!.id : undefined,
+        guestName: isCustomer ? undefined : guestName.trim(),
         paymentMethod,
         status: 'pending',
         paymentStatus: 'unpaid',
@@ -209,23 +230,23 @@ export default function CartDrawer() {
         modifiersTotal: 0,
         tax: totals.tax,
         total: totals.total,
-        loyaltyVoucherId: appliedPromoCode ? undefined : selectedVoucher?.id,
-        loyaltyVoucherCode: appliedPromoCode ? undefined : selectedVoucher?.code,
+        loyaltyVoucherId: isCustomer && !appliedPromoCode ? selectedVoucher?.id : undefined,
+        loyaltyVoucherCode: isCustomer && !appliedPromoCode ? selectedVoucher?.code : undefined,
         loyaltyDiscountTotal:
-          !appliedPromoCode && selectedVoucher && voucherCalc.discount > 0
+          isCustomer && !appliedPromoCode && selectedVoucher && voucherCalc.discount > 0
             ? voucherCalc.discount
             : undefined,
-        promoCode: appliedPromoCode?.code,
+        promoCode: isCustomer ? appliedPromoCode?.code : undefined,
       });
 
-      if (!appliedPromoCode && selectedVoucher) {
+      if (isCustomer && !appliedPromoCode && selectedVoucher) {
         redeemVoucher(selectedVoucher.id, order.id);
       }
 
       clear();
       clearAll();
       closeCart();
-      navigate(`/account/orders?placed=${order.id}`);
+      navigate(checkoutPath(order.id));
     } catch (err) {
       setCheckoutError(formatOrderError(err));
     } finally {
@@ -334,86 +355,85 @@ export default function CartDrawer() {
               </div>
             ) : (
               <>
-                {/* Item list */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
-                  {items.map((line) => (
-                    <motion.div
-                      key={line.key}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="flex gap-4 rounded-2xl bg-white border border-kado-dark/8 p-4 shadow-sm"
-                    >
-                      {line.image && (
-                        <img src={line.image} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display font-bold text-kado-dark text-sm leading-snug">
-                          {line.productNameSnapshot}
-                        </p>
-                        <div className="flex flex-wrap gap-x-2 mt-0.5">
-                          {line.itemType === 'merch' && line.selectedVariants?.map((v) => (
-                            <span key={v.optionId} className="text-[10px] text-kado-dark/48">
-                              {v.groupName}: {v.optionLabel}
-                            </span>
-                          ))}
-                          {line.milkLabelSnapshot && (
-                            <span className="text-[10px] text-kado-dark/48">
-                              {line.milkLabelSnapshot} milk
-                            </span>
-                          )}
-                          {line.sizeLabelSnapshot && (
-                            <span className="text-[10px] text-kado-dark/48">
-                              {line.sizeLabelSnapshot}
-                            </span>
-                          )}
-                          {line.temperature && (
-                            <span className="text-[10px] text-kado-dark/48 capitalize">
-                              {line.temperature}
-                            </span>
-                          )}
+                {/* Scrollable: items + options (sticky footer keeps total/CTA visible) */}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
+                  <div className="space-y-2.5">
+                    {items.map((line) => (
+                      <motion.div
+                        key={line.key}
+                        layout
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="flex gap-4 rounded-2xl bg-white border border-kado-dark/8 p-4 shadow-sm"
+                      >
+                        {line.image && (
+                          <img src={line.image} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-bold text-kado-dark text-sm leading-snug">
+                            {line.productNameSnapshot}
+                          </p>
+                          <div className="flex flex-wrap gap-x-2 mt-0.5">
+                            {line.itemType === 'merch' && line.selectedVariants?.map((v) => (
+                              <span key={v.optionId} className="text-[10px] text-kado-dark/48">
+                                {v.groupName}: {v.optionLabel}
+                              </span>
+                            ))}
+                            {line.milkLabelSnapshot && (
+                              <span className="text-[10px] text-kado-dark/48">
+                                {line.milkLabelSnapshot} milk
+                              </span>
+                            )}
+                            {line.sizeLabelSnapshot && (
+                              <span className="text-[10px] text-kado-dark/48">
+                                {line.sizeLabelSnapshot}
+                              </span>
+                            )}
+                            {line.temperature && (
+                              <span className="text-[10px] text-kado-dark/48 capitalize">
+                                {line.temperature}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-bold text-kado-red text-sm mt-2">
+                            {formatPhp(line.lineTotal)}
+                          </p>
                         </div>
-                        <p className="font-bold text-kado-red text-sm mt-2">
-                          {formatPhp(line.lineTotal)}
-                        </p>
-                      </div>
 
-                      <div className="flex flex-col items-end justify-between gap-2 shrink-0">
-                        <button
-                          onClick={() => removeItem(line.key)}
-                          className="text-kado-dark/35 hover:text-kado-red transition-colors p-0.5"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex flex-col items-end justify-between gap-2 shrink-0">
+                          <button
+                            onClick={() => removeItem(line.key)}
+                            className="text-kado-dark/35 hover:text-kado-red transition-colors p-0.5"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
 
-                        <div className="flex items-center gap-1 bg-kado-cream-deep rounded-full px-1.5 py-1">
-                          <button
-                            onClick={() => updateQty(line.key, line.qty - 1)}
-                            className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
-                            aria-label="Decrease"
-                          >
-                            <Minus className="w-2.5 h-2.5" />
-                          </button>
-                          <span className="text-xs font-bold text-kado-dark min-w-[1ch] text-center select-none">
-                            {line.qty}
-                          </span>
-                          <button
-                            onClick={() => updateQty(line.key, line.qty + 1)}
-                            className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
-                            aria-label="Increase"
-                          >
-                            <Plus className="w-2.5 h-2.5" />
-                          </button>
+                          <div className="flex items-center gap-1 bg-kado-cream-deep rounded-full px-1.5 py-1">
+                            <button
+                              onClick={() => updateQty(line.key, line.qty - 1)}
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
+                              aria-label="Decrease"
+                            >
+                              <Minus className="w-2.5 h-2.5" />
+                            </button>
+                            <span className="text-xs font-bold text-kado-dark min-w-[1ch] text-center select-none">
+                              {line.qty}
+                            </span>
+                            <button
+                              onClick={() => updateQty(line.key, line.qty + 1)}
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-kado-red transition-colors"
+                              aria-label="Increase"
+                            >
+                              <Plus className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
 
-                {/* Checkout footer */}
-                <div className="shrink-0 border-t border-kado-dark/10 px-5 py-5 space-y-4 bg-kado-offwhite pb-safe">
                   <OnlineOrderHoursNotice status={orderHours} variant="compact" />
 
                   {hasMerch && (
@@ -427,7 +447,6 @@ export default function CartDrawer() {
                     </div>
                   )}
 
-                  {/* Branch selector */}
                   <div>
                     <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
                       {hasMerch && !hasCoffee ? 'Claim / pick up at' : 'Pickup at'}
@@ -454,7 +473,6 @@ export default function CartDrawer() {
                     )}
                   </div>
 
-                  {/* Order type selector */}
                   <div>
                     <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
                       Order type
@@ -481,7 +499,6 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Payment method selector */}
                   <div>
                     <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
                       Payment
@@ -489,41 +506,83 @@ export default function CartDrawer() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider bg-kado-red text-white"
+                        onClick={() => setPaymentMethod('paymongo')}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                          paymentMethod === 'paymongo'
+                            ? 'bg-kado-red text-white'
+                            : 'border border-kado-dark/10 text-kado-dark/70 hover:border-kado-red/40'
+                        }`}
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        QR Ph
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('gcash-qr')}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                          paymentMethod === 'gcash-qr'
+                            ? 'bg-kado-red text-white'
+                            : 'border border-kado-dark/10 text-kado-dark/70 hover:border-kado-red/40'
+                        }`}
                       >
                         <QrCode className="w-3.5 h-3.5" />
                         GCash QR
                       </button>
-                      <button
-                        type="button"
-                        disabled
-                        className="relative flex items-center justify-center gap-1.5 rounded-xl border border-kado-dark/10 text-kado-dark/35 px-3 py-2.5 text-xs font-bold uppercase tracking-wider cursor-not-allowed"
-                      >
-                        <CreditCard className="w-3.5 h-3.5" />
-                        PayMongo
-                        <span className="absolute -top-2 -right-1 text-[8px] font-bold uppercase tracking-wider bg-kado-dark/8 text-kado-dark/45 px-1.5 py-0.5 rounded-full leading-none">
-                          Soon
-                        </span>
-                      </button>
                     </div>
+                    {paymentMethod === 'paymongo' ? (
+                      <p className="mt-1.5 text-[10px] leading-snug text-kado-dark/50">
+                        Pay with any QR Ph bank or e-wallet. Fees are on us — you pay the order total only.
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 text-[10px] leading-snug text-kado-dark/50">
+                        Pay via our GCash QR, then upload a screenshot on your orders page.
+                      </p>
+                    )}
                   </div>
 
-                  {!isCustomer && (
+                  {!isCustomer && paymentMethod === 'paymongo' && (
                     <div className="rounded-xl border border-kado-red/20 bg-kado-red/5 px-4 py-3 text-xs text-kado-dark/65">
                       <p className="font-bold text-kado-dark mb-1 flex items-center gap-1.5">
                         <LogIn className="w-3.5 h-3.5 text-kado-red" />
-                        Sign in to place order
+                        Account needed for QR Ph
                       </p>
                       <p className="leading-relaxed">
-                        GCash checkout requires an account so you can pay and upload proof of payment.
+                        Your cart stays saved on this device. Create an account or sign in, then place the order —
+                        we&apos;ll take you to checkout to finish QR Ph payment.
                       </p>
-                      <Link
-                        to="/auth/login"
-                        onClick={handleClose}
-                        className="inline-flex items-center gap-1 mt-2 font-bold uppercase tracking-wider text-[10px] text-kado-red hover:underline"
-                      >
-                        Sign in <ArrowRight className="w-3 h-3" />
-                      </Link>
+                      <div className="mt-2 flex flex-wrap gap-3">
+                        <Link
+                          to="/auth/signup"
+                          onClick={handleClose}
+                          className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-[10px] text-kado-red hover:underline"
+                        >
+                          Create account <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <Link
+                          to="/auth/login"
+                          onClick={handleClose}
+                          className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-[10px] text-kado-dark/70 hover:underline"
+                        >
+                          Sign in
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isCustomer && paymentMethod === 'gcash-qr' && (
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5">
+                        Name for pickup
+                      </label>
+                      <input
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value.slice(0, 80))}
+                        placeholder="Your name"
+                        className="w-full rounded-xl border border-kado-dark/15 bg-white px-4 py-2.5 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/25"
+                      />
+                      <p className="mt-1.5 text-[10px] leading-snug text-kado-dark/50">
+                        No account needed for GCash QR — we&apos;ll save your order and open checkout to pay.
+                      </p>
                     </div>
                   )}
 
@@ -564,7 +623,6 @@ export default function CartDrawer() {
                     </div>
                   )}
 
-                  {/* Promo code input */}
                   {isCustomer && (
                     <div>
                       <label className="block text-[9px] font-bold uppercase tracking-[0.18em] text-kado-dark/55 mb-1.5 flex items-center gap-1.5">
@@ -611,9 +669,11 @@ export default function CartDrawer() {
                       )}
                     </div>
                   )}
+                </div>
 
-                  {/* Totals */}
-                  <div className="space-y-1.5 text-sm">
+                {/* Sticky checkout bar — always visible */}
+                <div className="shrink-0 border-t border-kado-dark/10 px-5 pt-4 pb-safe space-y-3 bg-kado-offwhite">
+                  <div className="space-y-1 text-sm">
                     <div className="flex justify-between text-kado-dark/58">
                       <span>Subtotal</span>
                       <span>{formatPhp(totals.subtotal)}</span>
@@ -645,17 +705,20 @@ export default function CartDrawer() {
                   )}
 
                   {checkoutError && (
-                    <p className="text-xs text-red-600 font-medium text-center">{checkoutError}</p>
+                    <p className="text-xs text-red-600 font-medium text-center leading-snug">{checkoutError}</p>
                   )}
 
-                  {/* Place order */}
                   <button
                     type="button"
                     onClick={placeOrder}
-                    disabled={!canOrder || loading}
+                    disabled={(!canOrder && !qrPhNeedsAccount) || loading}
                     className={OVERLAY_CTA}
                   >
-                    {loading ? 'Placing…' : 'Place order'}
+                    {loading
+                      ? 'Placing…'
+                      : qrPhNeedsAccount
+                        ? 'Sign in to place order'
+                        : 'Place order'}
                     {!loading && <ChevronRight className="w-4 h-4" />}
                   </button>
                 </div>
