@@ -1007,6 +1007,67 @@ html.dash-dark {
   overflow-x: clip;
 }
 
+/* Account app shell — room for fixed bottom tab bar on mobile.
+   Header matches public Navbar (--public-nav-height). */
+.account-app {
+  --account-app-bar-height: var(--public-nav-height);
+  --account-bottom-nav-height: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  --account-content-pad-x: max(1rem, env(safe-area-inset-left, 0px));
+  --account-content-pad-x-end: max(1rem, env(safe-area-inset-right, 0px));
+  --account-content-pad-y: 1rem;
+  --account-section-gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .account-app {
+    --account-content-pad-x: max(1.5rem, env(safe-area-inset-left, 0px));
+    --account-content-pad-x-end: max(1.5rem, env(safe-area-inset-right, 0px));
+    --account-content-pad-y: 1.5rem;
+    --account-section-gap: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .account-app {
+    --account-bottom-nav-height: 0px;
+    --account-content-pad-y: 2rem;
+  }
+}
+
+/* Short landscape phones: tighten chrome so content fits */
+@media (orientation: landscape) and (max-height: 480px) {
+  .account-app {
+    --account-bottom-nav-height: calc(2.75rem + env(safe-area-inset-bottom, 0px));
+    --account-content-pad-y: 0.75rem;
+    --account-section-gap: 0.75rem;
+  }
+}
+
+.account-app-main {
+  padding-bottom: calc(var(--account-bottom-nav-height) + 0.75rem);
+}
+
+.account-app-content {
+  padding-top: var(--account-content-pad-y);
+  padding-bottom: var(--account-content-pad-y);
+  padding-left: var(--account-content-pad-x);
+  padding-right: var(--account-content-pad-x-end);
+}
+
+@media (orientation: landscape) and (max-height: 480px) {
+  .account-bottom-nav-link {
+    min-height: 2.5rem !important;
+    gap: 0 !important;
+  }
+  .account-bottom-nav-label {
+    display: none;
+  }
+  .account-bottom-nav-icon {
+    height: 2rem !important;
+    width: 2rem !important;
+  }
+}
+
 /* Clerk embed — full-width on narrow screens */
 .clerk-auth-root {
   width: 100%;

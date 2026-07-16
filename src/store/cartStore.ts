@@ -27,6 +27,24 @@ export interface CartLine {
   image?: string;
 }
 
+/** Same catalog config → one line with summed qty (avoids redundant 1× rows). */
+export function cartLineMergeKey(line: Omit<CartLine, 'key' | 'qty' | 'lineTotal' | 'image'>): string {
+  const variants = (line.selectedVariants ?? [])
+    .map((v) => `${v.groupName}:${v.optionId}:${v.optionLabel}:${v.priceDelta}`)
+    .sort()
+    .join('|');
+  return [
+    line.itemType,
+    line.productId,
+    line.mixMatchCookieId ?? '',
+    line.milkId ?? '',
+    line.sizeId ?? '',
+    line.temperature ?? '',
+    variants,
+    String(line.unitPrice),
+  ].join('::');
+}
+
 interface CartStore {
   items: CartLine[];
   isOpen: boolean;
@@ -52,8 +70,22 @@ export const useCartStore = create<CartStore>()(
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
 
       addItem: (input, options) => {
-        const line: CartLine = { ...input, key: newId() };
         const openCart = options?.openCart ?? true;
+        const identity = cartLineMergeKey(input);
+        const existing = get().items.find((i) => cartLineMergeKey(i) === identity);
+        if (existing) {
+          const qty = existing.qty + input.qty;
+          set({
+            items: get().items.map((i) =>
+              i.key === existing.key
+                ? { ...i, qty, lineTotal: i.unitPrice * qty, image: i.image ?? input.image }
+                : i,
+            ),
+            ...(openCart ? { isOpen: true } : {}),
+          });
+          return;
+        }
+        const line: CartLine = { ...input, key: newId() };
         set({
           items: [...get().items, line],
           ...(openCart ? { isOpen: true } : {}),

@@ -10,8 +10,9 @@ import {
   notifyBaristasNewOrder,
   notifyBaristasProofSubmitted,
   notifyCustomerPendingPayment,
+  notifyCustomerProofSubmitted,
 } from '../lib/notify';
-import { rememberPendingPayment } from '../lib/pendingPayments';
+import { rememberPendingPayment, clearPendingPayment } from '../lib/pendingPayments';
 import { broadcastGuestOrderUpdate } from '../lib/supabase/guestOrderTracking';
 import {
   assertProductsOrderable,
@@ -172,11 +173,9 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           orders: get().orders.map((row) => (row.id === o.id ? persisted : row)),
         });
         notifyBaristasNewOrder(persisted);
-        if (persisted.customerId) notifyCustomerOrderStatus(persisted, persisted.status);
-        if (
-          awaitsGatewayPayment(persisted) &&
-          persisted.paymentStatus === 'unpaid'
-        ) {
+        const needsPayment =
+          awaitsGatewayPayment(persisted) && persisted.paymentStatus === 'unpaid';
+        if (needsPayment) {
           rememberPendingPayment({
             orderId: persisted.id,
             shortCode: persisted.shortCode,
@@ -186,6 +185,8 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
             placedAt: persisted.createdAt,
           });
           if (persisted.customerId) notifyCustomerPendingPayment(persisted);
+        } else if (persisted.customerId) {
+          notifyCustomerOrderStatus(persisted, persisted.status);
         }
         return persisted;
       },
@@ -272,6 +273,9 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         if (paymentStatus === 'paid' && prev.status === 'pending') {
           notifyCustomerOrderStatus(next, 'accepted');
         }
+        if (paymentStatus === 'paid') {
+          clearPendingPayment(id);
+        }
         if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
           void broadcastGuestOrderUpdate(id, {
             status: next.status,
@@ -335,6 +339,9 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           if (patch.paymentStatus === 'paid' && prev.status === 'pending') {
             notifyCustomerOrderStatus(next, 'accepted');
           }
+          if (patch.paymentStatus === 'paid') {
+            clearPendingPayment(id);
+          }
         }
         if (['dine-in', 'takeout', 'online'].includes(next.channel)) {
           void broadcastGuestOrderUpdate(id, {
@@ -386,6 +393,7 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           await orderingRepo.submitGuestPaymentProof(id, proofImage);
           if (paymentStatus === 'proof_submitted') {
             notifyBaristasProofSubmitted(updated);
+            notifyCustomerProofSubmitted(updated);
           }
           return null;
         } catch (err) {

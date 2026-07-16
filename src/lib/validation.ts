@@ -48,6 +48,9 @@ export function formatOrderError(err: unknown): string {
       ? String((err as { message: string }).message)
       : '';
   if (!msg) return 'Could not place your order. Please check your connection and try again.';
+  if (/connection lost|failed to fetch|network|name_not_resolved|timed_out|load failed/i.test(msg)) {
+    return 'Connection problem — check your internet and try again.';
+  }
   if (/guest name/i.test(msg)) return msg;
   if (/product is not available at this branch/i.test(msg)) {
     return 'An item is not sold at this branch. Remove it from your cart and try again.';

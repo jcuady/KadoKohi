@@ -24,6 +24,12 @@ import { usePastriesContentStore } from '../../store/pastriesContentStore';
 import { useAuthStore } from '../../store/authStore';
 import { orderScopeForUser } from '../orderFetchScope';
 import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
+import {
+  isBrowserOnline,
+  isSupabaseCircuitOpen,
+  recordSupabaseFailure,
+  recordSupabaseSuccess,
+} from './networkGuard';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -49,6 +55,7 @@ type OpsTable = (typeof OPS_TABLES)[number];
 
 let channel: RealtimeChannel | null = null;
 let started = false;
+let wantActive = false;
 let connecting = false;
 
 function disposeChannel(): void {
@@ -218,6 +225,8 @@ export async function refreshOperationsData(): Promise<void> {
  */
 export function startOperationsRealtime(): void {
   if (!supabase || started || connecting) return;
+  wantActive = true;
+  if (!isBrowserOnline() || isSupabaseCircuitOpen()) return;
   cancelDeferredRealtimeStop();
   connecting = true;
 
@@ -244,7 +253,14 @@ export function startOperationsRealtime(): void {
           onTableChange(table, payload as { new?: Record<string, unknown>; old?: Record<string, unknown> }),
       );
     }
-    ch.subscribe();
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') recordSupabaseSuccess();
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        recordSupabaseFailure();
+        started = false;
+        disposeChannel();
+      }
+    });
     started = true;
   } catch (err) {
     console.error('startOperationsRealtime failed', err);
@@ -255,7 +271,12 @@ export function startOperationsRealtime(): void {
   }
 }
 
-export function stopOperationsRealtime(): void {
+export function restartOperationsRealtimeIfWanted(): void {
+  if (wantActive) startOperationsRealtime();
+}
+
+export function stopOperationsRealtime(opts?: { keepWanted?: boolean }): void {
+  if (!opts?.keepWanted) wantActive = false;
   if (!started && !channel) return;
   started = false;
   connecting = false;

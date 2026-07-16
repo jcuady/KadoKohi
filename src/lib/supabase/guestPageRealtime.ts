@@ -13,6 +13,12 @@ import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useCareersStore } from '../../store/careersStore';
 import { usePastriesContentStore } from '../../store/pastriesContentStore';
 import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
+import {
+  isBrowserOnline,
+  isSupabaseCircuitOpen,
+  recordSupabaseFailure,
+  recordSupabaseSuccess,
+} from './networkGuard';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -106,11 +112,9 @@ function onTableChange(table: GuestTable) {
 }
 
 /** Live menu / branch / table sync for guest ordering surfaces. */
-export function startGuestPageRealtime(): void {
-  if (!supabase) return;
-  cancelDeferredRealtimeStop();
-  refCount += 1;
-  if (channel || connecting) return;
+function connectGuestPageRealtime(): void {
+  if (!supabase || channel || connecting) return;
+  if (!isBrowserOnline() || isSupabaseCircuitOpen()) return;
 
   connecting = true;
   try {
@@ -125,24 +129,41 @@ export function startGuestPageRealtime(): void {
         () => onTableChange(table),
       );
     }
-    ch.subscribe();
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') recordSupabaseSuccess();
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        recordSupabaseFailure();
+        disposeGuestChannel();
+      }
+    });
   } catch (err) {
-    console.error('startGuestPageRealtime failed', err);
-    refCount = Math.max(0, refCount - 1);
+    console.error('connectGuestPageRealtime failed', err);
     disposeGuestChannel();
   } finally {
     connecting = false;
   }
 }
 
-export function stopGuestPageRealtime(): void {
-  refCount = Math.max(0, refCount - 1);
-  if (refCount > 0) return;
-  connecting = false;
-  const ch = channel;
-  channel = null;
-  if (!ch || !supabase) return;
-  deferRealtimeStop(() => {
-    void supabase.removeChannel(ch);
-  });
+export function startGuestPageRealtime(): void {
+  if (!supabase) return;
+  cancelDeferredRealtimeStop();
+  refCount += 1;
+  connectGuestPageRealtime();
+}
+
+export function restartGuestPageRealtimeIfWanted(): void {
+  if (refCount > 0) connectGuestPageRealtime();
+}
+
+export function stopGuestPageRealtime(opts?: { keepWanted?: boolean }): void {
+  if (!opts?.keepWanted) refCount = Math.max(0, refCount - 1);
+  if (opts?.keepWanted || refCount === 0) {
+    connecting = false;
+    const ch = channel;
+    channel = null;
+    if (!ch || !supabase) return;
+    deferRealtimeStop(() => {
+      void supabase.removeChannel(ch);
+    });
+  }
 }

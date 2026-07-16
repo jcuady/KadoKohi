@@ -1,12 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { markPaymongoOrderPaid } from "../_shared/paymongoPaid.ts";
 
 /**
  * PayMongo webhook — marks orders paid when checkout_session.payment.paid fires.
  * verify_JWT must be false (PayMongo cannot send a Supabase JWT).
  *
- * Required: PAYMONGO_WEBHOOK_SECRET + Basic auth in PayMongo dashboard
- * (username = secret, empty password).
+ * Auth: Paymongo-Signature HMAC-SHA256 (primary) or Basic username = webhook secret (legacy).
  */
 
 function json(body: Record<string, unknown>, status = 200) {
@@ -14,6 +14,25 @@ function json(body: Record<string, unknown>, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
+async function hmacSha256Hex(secret: string, body: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function basicUser(authHeader: string | null): string | null {
@@ -26,19 +45,28 @@ function basicUser(authHeader: string | null): string | null {
   }
 }
 
+async function isAuthorized(req: Request, rawBody: string, webhookSecret: string): Promise<boolean> {
+  const signature = req.headers.get("paymongo-signature")?.trim();
+  if (signature) {
+    const expected = await hmacSha256Hex(webhookSecret, rawBody);
+    if (timingSafeEqual(expected, signature)) return true;
+  }
+  const user = basicUser(req.headers.get("Authorization"));
+  return user === webhookSecret;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
   if (req.method !== "POST") return json({ ok: false, message: "Method not allowed" }, 405);
 
-  // Require Basic auth when PAYMONGO_WEBHOOK_SECRET is configured.
-  // Without a secret, refuse all events — never mark orders paid from anonymous POSTs.
   const webhookSecret = Deno.env.get("PAYMONGO_WEBHOOK_SECRET")?.trim();
   if (!webhookSecret) {
     console.error("PAYMONGO_WEBHOOK_SECRET is not set");
     return json({ ok: false, message: "Webhook is not configured." }, 503);
   }
-  const user = basicUser(req.headers.get("Authorization"));
-  if (user !== webhookSecret) {
+
+  const rawBody = await req.text();
+  if (!(await isAuthorized(req, rawBody, webhookSecret))) {
     return json({ ok: false, message: "Unauthorized" }, 401);
   }
 
@@ -50,22 +78,27 @@ Deno.serve(async (req) => {
 
   let payload: any;
   try {
-    payload = await req.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return json({ ok: false, message: "Invalid JSON" }, 400);
   }
 
-  const eventType = payload?.data?.attributes?.type ?? payload?.type;
-  // Hosted checkout paid event (v2) + payment.paid fallback
-  const allowed = new Set([
-    "checkout_session.payment.paid",
-    "payment.paid",
-  ]);
+  // PayMongo v2: data.type = checkout_session.payment.paid, nested session at data.data
+  const eventType =
+    payload?.data?.type ??
+    payload?.data?.attributes?.type ??
+    payload?.type ??
+    null;
+  const allowed = new Set(["checkout_session.payment.paid", "payment.paid"]);
   if (!allowed.has(eventType)) {
-    return json({ ok: true, ignored: true, eventType: eventType ?? null });
+    return json({ ok: true, ignored: true, eventType });
   }
 
-  const eventData = payload?.data?.attributes?.data ?? payload?.data;
+  const eventData =
+    payload?.data?.data ??
+    payload?.data?.attributes?.data ??
+    payload?.data ??
+    null;
   const attrs = eventData?.attributes ?? {};
   const sessionId =
     eventData?.id?.startsWith?.("cs_")
@@ -75,10 +108,14 @@ Deno.serve(async (req) => {
     (attrs.reference_number as string | undefined) ||
     (attrs.metadata?.order_id as string | undefined) ||
     null;
+  const payments = attrs.payments as Array<{ id?: string; attributes?: { status?: string } }> | undefined;
+  const paidPayment = Array.isArray(payments)
+    ? payments.find((p) => p?.attributes?.status === "paid")
+    : undefined;
   const paymentId =
-    (attrs.payments?.[0]?.id as string | undefined) ||
-    (eventData?.id?.startsWith?.("pay_") ? (eventData.id as string) : null) ||
-    null;
+    paidPayment?.id ??
+    (attrs.payments?.[0]?.id as string | undefined) ??
+    (eventData?.id?.startsWith?.("pay_") ? (eventData.id as string) : null);
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -107,26 +144,8 @@ Deno.serve(async (req) => {
     return json({ ok: true, skipped: "not_paymongo" });
   }
 
-  if (order.payment_status === "paid") {
-    return json({ ok: true, alreadyPaid: true });
-  }
+  const result = await markPaymongoOrderPaid(admin, order, sessionId, paymentId);
+  if (!result.ok) return json({ ok: false, message: "Failed to mark paid" }, 500);
 
-  const patch: Record<string, unknown> = {
-    payment_status: "paid",
-    updated_at: new Date().toISOString(),
-  };
-  if (sessionId) patch.paymongo_checkout_session_id = sessionId;
-  if (paymentId) patch.paymongo_payment_id = paymentId;
-  // Move pending → accepted once paid (matches staff GCash verify behavior).
-  if (order.status === "pending") {
-    patch.status = "accepted";
-  }
-
-  const { error: updErr } = await admin.from("kk_orders").update(patch).eq("id", order.id);
-  if (updErr) {
-    console.error("paymongo webhook update failed", updErr);
-    return json({ ok: false, message: "Failed to mark paid" }, 500);
-  }
-
-  return json({ ok: true, orderId: order.id, paymentId });
+  return json({ ok: true, orderId: order.id, paymentId, alreadyPaid: result.alreadyPaid ?? false });
 });

@@ -112,6 +112,17 @@ export function awaitsGatewayPayment(order: Pick<Order, 'paymentMethod'>): boole
   return isGcashOrder(order) || isPaymongoOrder(order);
 }
 
+/** Customer still needs to pay or finish payment on checkout. */
+export function orderNeedsCustomerPayment(
+  order: Pick<Order, 'status' | 'paymentMethod' | 'paymentStatus'>,
+): boolean {
+  return (
+    order.status !== 'cancelled' &&
+    awaitsGatewayPayment(order) &&
+    (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted')
+  );
+}
+
 export function fulfillmentFlowForOrder(order: Pick<Order, 'paymentMethod'>): OrderStatus[] {
   return awaitsGatewayPayment(order) ? GCASH_FULFILLMENT_FLOW : FULFILLMENT_FLOW;
 }
@@ -231,13 +242,37 @@ export function canGuestModifyOrder(
     hasPaymentProof?: boolean;
   },
 ): boolean {
-  if (order.channel !== 'dine-in' && order.channel !== 'takeout') return false;
+  return canModifyUnpaidOrder(order);
+}
+
+/** Unpaid gateway or pending pay-at-store orders the customer/guest may still cancel or change payment on. */
+export function canModifyUnpaidOrder(
+  order: Pick<Order, 'status' | 'channel' | 'paymentMethod' | 'paymentStatus'> & {
+    hasPaymentProof?: boolean;
+  },
+): boolean {
   if (order.status !== 'pending') return false;
   if (order.paymentMethod === 'gcash-qr' || order.paymentMethod === 'paymongo') {
     if (order.paymentStatus !== 'unpaid') return false;
     if (order.paymentMethod === 'gcash-qr' && order.hasPaymentProof) return false;
+    return true;
   }
-  return true;
+  if (order.paymentMethod === 'pay-at-store') {
+    return order.channel === 'dine-in' || order.channel === 'takeout';
+  }
+  return false;
+}
+
+/** Payment methods available when changing payment on an unpaid order. */
+export function paymentMethodsForOrderChange(
+  channel: Order['channel'],
+  isCustomer: boolean,
+): PaymentMethod[] {
+  if (channel === 'dine-in' || channel === 'takeout') {
+    return ['paymongo', 'gcash-qr', 'pay-at-store'];
+  }
+  if (isCustomer) return ['paymongo', 'gcash-qr'];
+  return ['gcash-qr'];
 }
 
 export function guestModifyBlockedMessage(
@@ -245,7 +280,7 @@ export function guestModifyBlockedMessage(
     hasPaymentProof?: boolean;
   },
 ): string | null {
-  if (canGuestModifyOrder(order)) return null;
+  if (canModifyUnpaidOrder(order)) return null;
   if (order.status !== 'pending') {
     return 'Your order is already being prepared and can no longer be changed online.';
   }

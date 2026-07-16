@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { clearSupabaseAuthStorageSync, prepareAuthStorageSync } from './authStorage';
+import { realtimeReconnectDelayMs } from './networkGuard';
 
 function trimEnv(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -36,6 +37,9 @@ export const supabase = isSupabaseConfigured
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
+      realtime: {
+        reconnectAfterMs: realtimeReconnectDelayMs,
+      },
     })
   : null;
 
@@ -47,6 +51,9 @@ export const guestSupabase = isSupabaseConfigured
         autoRefreshToken: false,
         detectSessionInUrl: false,
         storageKey: `sb-${KADO_SUPABASE_PROJECT_REF}-guest-auth-token`,
+      },
+      realtime: {
+        reconnectAfterMs: realtimeReconnectDelayMs,
       },
     })
   : null;

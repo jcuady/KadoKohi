@@ -13,6 +13,8 @@ import { clearChunkReloadFlag } from './lib/lazyWithRetry';
 import { registerSW } from 'virtual:pwa-register';
 
 import { ensurePublishedCms } from './lib/cmsBootstrap';
+import { initSupabaseNetworkLifecycle } from './lib/supabase/networkGuard';
+import { initSupabaseRealtimeNetworkLifecycle } from './lib/supabase/networkLifecycle';
 
 const pendingAuthRedirect = redirectAuthCallbackToHandler();
 
@@ -20,6 +22,8 @@ function Bootstrap() {
   const initAuth = useAuthStore((s) => s.initFromSupabase);
 
   useEffect(() => {
+    initSupabaseNetworkLifecycle();
+    initSupabaseRealtimeNetworkLifecycle();
     void recoverStaleAuthSession().then(() => initAuth());
     // Homepage critical path: don't block FCP/LCP on CMS seed probes.
     void hydrateGlobalMinimal();

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 import OnboardingBanner from '../../components/customer/OnboardingBanner';
+import AccountEmptyState from '../../components/account/AccountEmptyState';
 import { useOrderStore } from '../../store/orderStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
@@ -12,14 +13,20 @@ import {
   ArrowRight,
   ShoppingBag,
   Clock,
-  CheckCircle2,
   Gift,
-  TrendingUp,
   MapPin,
   CalendarHeart,
+  ChevronRight,
 } from 'lucide-react';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useVoucherStore } from '../../store/voucherStore';
+import { ORDER_STATUS_LABELS, orderNeedsCustomerPayment } from '../../lib/orderStatus';
+import { checkoutPath } from '../../lib/pendingPayments';
+
+function firstName(full?: string) {
+  if (!full) return 'there';
+  return full.trim().split(/\s+/)[0] || full;
+}
 
 export default function AccountDashboard() {
   const user = useAuthStore((s) => s.user);
@@ -34,9 +41,10 @@ export default function AccountDashboard() {
   }, [branches]);
 
   const myOrders = useMemo(() => orders.filter((o) => o.customerId === user?.id), [orders, user?.id]);
-  const activeOrders = useMemo(() => myOrders.filter((o) => !['completed', 'cancelled'].includes(o.status)), [myOrders]);
-  const completedCount = useMemo(() => myOrders.filter((o) => o.status === 'completed').length, [myOrders]);
-  const totalSpent = useMemo(() => myOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + o.total, 0), [myOrders]);
+  const activeOrders = useMemo(
+    () => myOrders.filter((o) => !['completed', 'cancelled'].includes(o.status)),
+    [myOrders],
+  );
   const stamps = user?.loyaltyStamps ?? 0;
   const boothBookings = useBoothBookingStore((s) => s.bookingsForCustomer);
   const myBoothCount = useMemo(
@@ -49,220 +57,186 @@ export default function AccountDashboard() {
     [activeVouchersForCustomer, user?.id],
   );
 
-  const statCards = [
-    { icon: ShoppingBag, label: 'Total Orders', value: myOrders.length.toString(), color: 'text-kado-dark' },
-    { icon: CheckCircle2, label: 'Completed', value: completedCount.toString(), color: 'text-emerald-600' },
-    { icon: TrendingUp, label: 'Total Spent', value: formatPhp(totalSpent), color: 'text-kado-red' },
-    { icon: Clock, label: 'Active Now', value: activeOrders.length.toString(), color: 'text-amber-600' },
-  ];
+  const stampPct = Math.min(100, (stamps / 10) * 100);
 
   return (
-    <div className="space-y-8">
-      {/* ─── ONBOARDING BANNER (notifications + install) ─── */}
+    <div className="space-y-[var(--account-section-gap,1rem)]">
       <OnboardingBanner isNewUser={isNewUser} />
 
-      {/* ─── WELCOME HEADER ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Dashboard</p>
-          <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-            {isNewUser ? `Welcome, ${user?.name}` : `Welcome back, ${user?.name}`}
-          </h1>
-          <p className="text-sm text-kado-dark/50 mt-1 font-medium">
-            {isNewUser
-              ? 'Your account is ready — enable notifications and install the app below to stay connected.'
-              : 'Your Kado Kohi account overview.'}
-          </p>
-        </div>
+      {/* Welcome + primary CTA */}
+      <section className="rounded-2xl bg-kado-dark px-4 py-5 text-kado-cream relative overflow-hidden sm:px-7 sm:py-7 [@media(orientation:landscape)_and_(max-height:480px)]:py-4">
+        <span
+          className="pointer-events-none absolute -right-1 top-0 font-display text-[4.5rem] leading-none text-kado-cream/[0.06] select-none sm:text-[5rem]"
+          aria-hidden
+        >
+          角
+        </span>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-cream/50">
+          {isNewUser ? 'Welcome' : 'Good to see you'}
+        </p>
+        <h1 className="mt-1 font-display text-2xl font-black tracking-tight sm:text-3xl [@media(orientation:landscape)_and_(max-height:480px)]:text-xl">
+          {firstName(user?.name)}
+        </h1>
+        <p className="mt-1.5 text-sm text-kado-cream/65 max-w-sm leading-relaxed line-clamp-2 sm:line-clamp-none">
+          {isNewUser
+            ? 'Your account is ready — order a drink and start earning stamps.'
+            : 'Order, track pickup, and redeem Kado Circle rewards.'}
+        </p>
         <Link
           to="/menu"
-          className="inline-flex items-center gap-2 bg-kado-dark text-white px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors shadow-lg self-start sm:self-auto"
+          className="mt-4 inline-flex min-h-[48px] w-full sm:mt-5 sm:w-auto items-center justify-center gap-2 rounded-full bg-kado-red px-6 text-[11px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-cream hover:text-kado-dark transition-colors touch-manipulation [@media(orientation:landscape)_and_(max-height:480px)]:mt-3 [@media(orientation:landscape)_and_(max-height:480px)]:min-h-[44px]"
         >
-          <Coffee className="w-4 h-4" /> Order Now <ArrowRight className="w-3.5 h-3.5" />
+          <Coffee className="h-4 w-4" aria-hidden />
+          Order now
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
-      </div>
+      </section>
 
-      {/* ─── STAT CARDS ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {statCards.map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="bg-white border border-kado-dark/8 rounded-2xl p-5 md:p-6 hover:shadow-[0_12px_32px_rgba(158,24,29,0.06)] hover:border-kado-red/15 transition-all duration-300 group"
+      {/* Quick links */}
+      <section className="grid grid-cols-3 gap-2 sm:gap-3">
+        {[
+          {
+            to: '/account/orders',
+            label: 'Orders',
+            hint: activeOrders.length ? `${activeOrders.length} active` : 'History',
+            Icon: ShoppingBag,
+          },
+          {
+            to: '/account/vouchers',
+            label: 'Rewards',
+            hint: activeVoucherCount ? `${activeVoucherCount} ready` : `${stamps}/10`,
+            Icon: Gift,
+          },
+          {
+            to: '/account/booth',
+            label: 'Events',
+            hint: myBoothCount ? `${myBoothCount} booking${myBoothCount === 1 ? '' : 's'}` : 'Book',
+            Icon: CalendarHeart,
+          },
+        ].map(({ to, label, hint, Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-kado-dark/8 bg-white px-2 py-4 text-center hover:border-kado-red/25 transition-colors touch-manipulation min-h-[96px]"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-kado-offwhite flex items-center justify-center group-hover:bg-kado-red/10 transition-colors">
-                <card.icon className={`w-4 h-4 ${card.color} group-hover:text-kado-red transition-colors`} />
-              </div>
-            </div>
-            <p className="font-display text-2xl md:text-3xl font-black text-kado-dark tracking-tight">{card.value}</p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-kado-dark/40 mt-1">{card.label}</p>
-          </motion.div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-kado-cream text-kado-red">
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="text-[11px] font-black uppercase tracking-wider text-kado-dark">{label}</span>
+            <span className="text-[10px] font-medium text-kado-dark/40 leading-none">{hint}</span>
+          </Link>
         ))}
-      </div>
+      </section>
 
-      {/* ─── LOYALTY CARD ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="rounded-2xl bg-kado-dark p-6 md:p-8 text-white relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-kado-red/8 rounded-full blur-[80px] pointer-events-none" />
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <Star className="w-5 h-5 text-kado-red fill-kado-red" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Kado Circle — Loyalty</span>
-            </div>
-            {stamps >= 10 && (
-              <span className="flex items-center gap-1.5 bg-kado-red text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                <Gift className="w-3 h-3" /> Free Cup!
-              </span>
-            )}
+      {/* Loyalty */}
+      <section className="rounded-2xl border border-kado-dark/8 bg-white p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-kado-red fill-kado-red" aria-hidden />
+            <h2 className="text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/50">
+              Kado Circle
+            </h2>
           </div>
-
-          <p className="font-display text-3xl md:text-4xl font-black mb-1 tracking-tight">
-            {stamps} <span className="text-white/40">/</span> 10
-          </p>
-          <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-5">
-            Drink stamps · 1 per completed drink
-          </p>
-
-          {/* Stamp grid */}
-          <div className="flex gap-2 flex-wrap">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  i < stamps
-                    ? 'bg-kado-red/20 border-2 border-kado-red text-kado-red shadow-[0_0_12px_rgba(158,24,29,0.2)]'
-                    : 'bg-white/5 border border-white/10 text-white/15'
-                }`}
-              >
-                <Coffee className="w-4 h-4" />
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-white/35 mt-4 font-medium">
-            {stamps >= 5
-              ? 'You can claim stamp rewards as vouchers — apply them at checkout.'
-              : `${5 - stamps} more stamp${5 - stamps !== 1 ? 's' : ''} until your first reward unlocks.`}
-          </p>
           <Link
             to="/account/vouchers"
-            className="inline-flex items-center gap-2 mt-4 rounded-xl bg-kado-red text-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-kado-dark transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-kado-red touch-manipulation"
           >
-            <Gift className="w-3.5 h-3.5" />
-            {activeVoucherCount > 0 ? `${activeVoucherCount} voucher${activeVoucherCount !== 1 ? 's' : ''} ready` : 'View vouchers'}
-            <ArrowRight className="w-3 h-3" />
+            Rewards <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
-      </motion.div>
-
-      {/* ─── VOUCHERS ─── */}
-      <div className="rounded-2xl border border-kado-red/15 bg-gradient-to-r from-kado-cream/50 to-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-kado-red/10 flex items-center justify-center shrink-0">
-          <Gift className="w-6 h-6 text-kado-red" />
-        </div>
-        <div className="flex-1">
-          <h2 className="font-display text-lg font-black text-kado-dark">Stamp vouchers</h2>
-          <p className="text-xs text-kado-dark/50 mt-0.5">
-            {activeVoucherCount > 0
-              ? `${activeVoucherCount} active voucher${activeVoucherCount !== 1 ? 's' : ''} — select one in your cart at checkout`
-              : 'Claim rewards when you have enough stamps, then use them on your next order'}
+        <div className="flex items-end justify-between gap-3 mb-3">
+          <p className="font-display text-3xl font-black text-kado-dark tracking-tight">
+            {stamps}
+            <span className="text-kado-dark/25"> / 10</span>
           </p>
+          <p className="text-xs text-kado-dark/45 pb-1">1 stamp per drink</p>
         </div>
-        <Link
-          to="/account/vouchers"
-          className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-kado-cream px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-kado-dark transition-colors shrink-0"
-        >
-          {activeVoucherCount > 0 ? 'Use vouchers' : 'Claim rewards'} <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
+        <div className="h-2.5 rounded-full bg-kado-offwhite overflow-hidden" role="progressbar" aria-valuenow={stamps} aria-valuemin={0} aria-valuemax={10}>
+          <motion.div
+            className="h-full rounded-full bg-kado-red"
+            initial={{ width: 0 }}
+            animate={{ width: `${stampPct}%` }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+          />
+        </div>
+        <p className="mt-3 text-xs text-kado-dark/50 leading-relaxed">
+          {stamps >= 10
+            ? 'You can claim a free cup reward — open Rewards.'
+            : `${10 - stamps} more stamp${10 - stamps === 1 ? '' : 's'} to a free cup.`}
+        </p>
+      </section>
 
-      {/* ─── EVENT BOOKING ─── */}
-      <div className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-kado-red/10 flex items-center justify-center shrink-0">
-          <CalendarHeart className="w-6 h-6 text-kado-red" />
-        </div>
-        <div className="flex-1">
-          <h2 className="font-display text-lg font-black text-kado-dark">Event Booking</h2>
-          <p className="text-xs text-kado-dark/50 mt-0.5">
-            {myBoothCount > 0
-              ? `${myBoothCount} event request${myBoothCount !== 1 ? 's' : ''} — view estimates and official quotes`
-              : 'Plan a celebration — submit a request and we will send a quote'}
-          </p>
-        </div>
-        <Link
-          to="/account/booth"
-          className="inline-flex items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-kado-red transition-colors shrink-0"
-        >
-          {myBoothCount > 0 ? 'View bookings' : 'Book an event'} <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
-
-      {/* ─── ACTIVE ORDERS ─── */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl md:text-2xl font-black text-kado-dark tracking-tight">Active Orders</h2>
-          {myOrders.length > 0 && (
-            <Link to="/account/orders" className="text-[10px] font-black uppercase tracking-widest text-kado-red hover:text-kado-dark transition-colors flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+      {/* Active orders */}
+      <section>
+        <div className="flex items-center justify-between mb-3 px-0.5">
+          <h2 className="font-display text-lg font-black text-kado-dark">Active orders</h2>
+          {myOrders.length > 0 ? (
+            <Link
+              to="/account/orders"
+              className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-kado-red touch-manipulation"
+            >
+              See all <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
-          )}
+          ) : null}
         </div>
 
         {activeOrders.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-kado-dark/10 bg-kado-offwhite p-10 md:p-14 text-center">
-            <ShoppingBag className="w-10 h-10 text-kado-dark/15 mx-auto mb-4" />
-            <p className="text-sm font-bold text-kado-dark/50 mb-1">No active orders</p>
-            <p className="text-xs text-kado-dark/35 mb-5">Place an order from the menu to get started.</p>
-            <Link
-              to="/menu"
-              className="inline-flex items-center gap-2 bg-kado-red text-white px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-kado-dark transition-colors"
-            >
-              Browse Menu <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+          <AccountEmptyState
+            icon={ShoppingBag}
+            title="No active orders"
+            description="Place an order from the menu — we’ll track it here."
+            actionLabel="Browse menu"
+            actionTo="/menu"
+          />
         ) : (
-          <ul className="space-y-3">
-            {activeOrders.map((o, i) => (
-              <motion.li
-                key={o.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="rounded-2xl border border-kado-dark/8 bg-white p-5 flex items-center gap-4 hover:shadow-[0_8px_24px_rgba(158,24,29,0.05)] hover:border-kado-red/15 transition-all duration-300 group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-kado-offwhite flex items-center justify-center shrink-0 group-hover:bg-kado-red/10 transition-colors">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-display font-black text-kado-dark">{o.shortCode}</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                      {o.status}
-                    </span>
+          <ul className="space-y-2.5">
+            {activeOrders.map((o) => (
+              <li key={o.id}>
+                <div className="rounded-2xl border border-kado-dark/8 bg-white p-4 flex gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                    <Clock className="h-5 w-5" aria-hidden />
                   </div>
-                  <p className="text-xs text-kado-dark/45 truncate font-medium">
-                    {o.items.map((item) => `${item.qty}× ${item.productNameSnapshot}`).join(', ')}
-                  </p>
-                  {branchName(o.branchId) && (
-                    <p className="text-[10px] text-kado-dark/35 flex items-center gap-0.5 mt-0.5 font-medium">
-                      <MapPin className="w-3 h-3" /> {branchName(o.branchId)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display font-black text-kado-dark">{o.shortCode}</span>
+                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800">
+                        {ORDER_STATUS_LABELS[o.status] ?? o.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-kado-dark/50 truncate">
+                      {o.items.map((item) => `${item.qty}× ${item.productNameSnapshot}`).join(', ')}
                     </p>
-                  )}
+                    {branchName(o.branchId) ? (
+                      <p className="mt-0.5 flex items-center gap-0.5 text-[11px] text-kado-dark/40">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        {branchName(o.branchId)}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="font-display font-black text-kado-red">{formatPhp(o.total)}</span>
+                      {orderNeedsCustomerPayment(o) ? (
+                        <Link
+                          to={checkoutPath(o.id)}
+                          className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-kado-red px-4 text-[10px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-dark touch-manipulation"
+                        >
+                          {o.paymentStatus === 'unpaid' ? 'Pay now' : 'View payment'}
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/account/orders"
+                          className="inline-flex min-h-[40px] items-center gap-1 text-[10px] font-black uppercase tracking-wider text-kado-dark/50 hover:text-kado-red touch-manipulation"
+                        >
+                          Details <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <span className="font-display font-black text-kado-red text-lg shrink-0">{formatPhp(o.total)}</span>
-              </motion.li>
+              </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }

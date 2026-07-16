@@ -5,6 +5,8 @@ import { CalendarHeart, ChevronDown, ChevronUp, Plus, MapPin } from 'lucide-reac
 import { useAuthStore } from '../../store/authStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useBranchStore } from '../../store/branchStore';
+import AccountPageHeader from '../../components/account/AccountPageHeader';
+import AccountEmptyState from '../../components/account/AccountEmptyState';
 import {
   BOOTH_BOOKING_STATUS_CUSTOMER,
   BOOTH_BOOKING_STATUS_LABELS,
@@ -51,51 +53,46 @@ export default function AccountBoothBookings() {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Events</p>
-          <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-            Event Booking
-          </h1>
-          <p className="text-sm text-kado-dark/55 mt-2 max-w-xl">
-            Track event proposals you submitted. Our team will email you to discuss pricing — nothing is final until you
-            agree together.
-          </p>
-        </div>
-        <Link
-          to="/book/coffee-cart"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-5 py-3 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          New booking
-        </Link>
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <AccountPageHeader
+        eyebrow="Events"
+        title="Event booking"
+        subtitle="Track proposals — pricing is final only after you agree with our team."
+        action={
+          <Link
+            to="/book/coffee-cart"
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-kado-dark px-4 text-[10px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-red transition-colors touch-manipulation"
+          >
+            <Plus className="w-4 h-4" aria-hidden />
+            New
+          </Link>
+        }
+      />
 
       {myBookings.length === 0 ? (
-        <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-12 text-center">
-          <CalendarHeart className="w-10 h-10 text-kado-red/40 mx-auto mb-4" />
-          <p className="font-display font-bold text-kado-dark text-lg mb-2">No booth bookings yet</p>
-          <p className="text-sm text-kado-dark/55 mb-6 max-w-sm mx-auto">
-            Plan a celebration at Kado Kohi — submit a proposal and we will follow up by email.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="space-y-3">
+          <AccountEmptyState
+            icon={CalendarHeart}
+            title="No event bookings yet"
+            description="Plan a celebration — submit a proposal and we’ll follow up by email."
+          />
+          <div className="grid grid-cols-2 gap-2">
             <Link
               to="/book/coffee-cart"
-              className="inline-flex items-center gap-2 rounded-xl bg-kado-red text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-kado-red px-4 text-[10px] font-black uppercase tracking-wider text-kado-cream touch-manipulation"
             >
               Coffee cart
             </Link>
             <Link
               to="/book/matcha-bar"
-              className="inline-flex items-center gap-2 rounded-xl border border-kado-dark/15 text-kado-dark px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-kado-dark/12 bg-white px-4 text-[10px] font-black uppercase tracking-wider text-kado-dark touch-manipulation"
             >
               Matcha bar
             </Link>
           </div>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-2.5">
           {myBookings.map((booking, i) => {
             const isExpanded = expandedId === booking.id;
             const displayEstimate = getBookingDisplayEstimate(booking);

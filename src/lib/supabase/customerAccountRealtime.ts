@@ -5,8 +5,15 @@ import { useOrderStore } from '../../store/orderStore';
 import { useAuthStore } from '../../store/authStore';
 import { useEventCalendarStore } from '../../store/eventCalendarStore';
 import { cancelDeferredRealtimeStop, deferRealtimeStop } from './realtimeLifecycle';
+import {
+  isBrowserOnline,
+  isSupabaseCircuitOpen,
+  recordSupabaseFailure,
+  recordSupabaseSuccess,
+} from './networkGuard';
 
 let channel: RealtimeChannel | null = null;
+let wantActive = false;
 
 function debounce(fn: () => void, ms: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -33,9 +40,20 @@ const refreshOrders = debounce(() => {
   }
 }, 300);
 
+function disposeChannel(): void {
+  if (!channel || !supabase) return;
+  const ch = channel;
+  channel = null;
+  deferRealtimeStop(() => {
+    if (supabase) void supabase.removeChannel(ch);
+  });
+}
+
 /** Live booth booking + order sync for signed-in customers (RLS-scoped). */
 export function startCustomerAccountRealtime(): void {
-  if (!supabase || channel) return;
+  if (!supabase) return;
+  wantActive = true;
+  if (channel || !isBrowserOnline() || isSupabaseCircuitOpen()) return;
   cancelDeferredRealtimeStop();
 
   channel = supabase
@@ -53,14 +71,21 @@ export function startCustomerAccountRealtime(): void {
       { event: '*', schema: 'public', table: 'kk_orders' },
       () => refreshOrders(),
     )
-    .subscribe();
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') recordSupabaseSuccess();
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        recordSupabaseFailure();
+        disposeChannel();
+      }
+    });
 }
 
-export function stopCustomerAccountRealtime(): void {
-  if (!channel || !supabase) return;
-  const ch = channel;
-  channel = null;
-  deferRealtimeStop(() => {
-    if (supabase) void supabase.removeChannel(ch);
-  });
+export function restartCustomerAccountRealtimeIfWanted(): void {
+  if (wantActive) startCustomerAccountRealtime();
+}
+
+export function stopCustomerAccountRealtime(opts?: { keepWanted?: boolean }): void {
+  if (!opts?.keepWanted) wantActive = false;
+  if (!channel) return;
+  disposeChannel();
 }

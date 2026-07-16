@@ -44,6 +44,8 @@ export const pushRepo = {
     body: string;
     url?: string;
     tag?: string;
+    /** Stored in customer inbox when targeting a userId. */
+    kind?: 'order' | 'payment' | 'marketing' | 'system';
   }): Promise<void> {
     if (!supabase) return;
     try {

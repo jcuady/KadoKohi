@@ -20,7 +20,8 @@ const REASON_MESSAGES: Record<string, string> = {
 
 const SUCCESS_OFF = 'Notifications turned off for this device.';
 const BARISTA_SUCCESS_ON = "Order alerts enabled — we'll notify you for new orders and payment proofs.";
-const CUSTOMER_SUCCESS_ON = "You're all set — we'll notify you when your order status changes.";
+const CUSTOMER_SUCCESS_ON =
+  "You're all set — order updates, payments, and Kado news will reach this device.";
 
 export function usePushToggle(audience: 'customer' | 'staff' = 'customer') {
   const [status, setStatus] = useState<PushUiStatus>('loading');

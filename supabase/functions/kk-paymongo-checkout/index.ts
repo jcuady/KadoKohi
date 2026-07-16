@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
     return json({ ok: false, message: "Order total is too low for PayMongo (min ₱1.00)." }, 400);
   }
 
-  const defaultSuccess = `${base}/account/orders?paymongo=success&order=${encodeURIComponent(order.id)}`;
-  const defaultCancel = `${base}/account/orders?paymongo=cancel&order=${encodeURIComponent(order.id)}`;
+  const defaultSuccess = `${base}/checkout/${encodeURIComponent(order.id)}?paymongo=success`;
+  const defaultCancel = `${base}/checkout/${encodeURIComponent(order.id)}?paymongo=cancel`;
   const successUrl = allowUrl(body.successUrl, defaultSuccess);
   const cancelUrl = allowUrl(body.cancelUrl, defaultCancel);
 

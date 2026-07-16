@@ -17,13 +17,13 @@ import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { broadcastGuestOrderUpdate } from '../../lib/supabase/guestOrderTracking';
 import { getTrackedOrder } from '../../lib/guestOrders';
 import GuestOrderPaymentBlock from '../qr/GuestOrderPaymentBlock';
-import PaymongoPaymentPanel from '../PaymongoPaymentPanel';
 import GcashQrModal from '../GcashQrModal';
 import OrderTrackingSummary from './OrderTrackingSummary';
 import GuestOrderActionSheet from './GuestOrderActionSheet';
 import { formatOrderError } from '../../lib/validation';
 import { useSettingsStore } from '../../store/settingsStore';
 import BrandHybridMark from '../BrandHybridMark';
+import { checkoutPath } from '../../lib/pendingPayments';
 
 type Channel = 'dine-in' | 'takeout';
 
@@ -284,29 +284,19 @@ export default function OrderTrackingPanel({
           </>
         )}
 
-        {paymongo && tracked && !isCancelled && (
-          <div className="mb-4">
-            <PaymongoPaymentPanel
-              order={{
-                id: orderId,
-                shortCode: tracked.shortCode,
-                channel: flowChannel,
-                branchId: '',
-                paymentMethod: 'paymongo',
-                paymentStatus,
-                status: tracked.status,
-                items: [],
-                subtotal: tracked.subtotal,
-                modifiersTotal: tracked.modifiersTotal,
-                tax: tracked.tax,
-                total: tracked.total,
-                createdAt: tracked.createdAt,
-                updatedAt: tracked.updatedAt,
-              }}
-              shortCode={tracked.shortCode}
-              successUrl={`${window.location.origin}${window.location.pathname}?paymongo=success`}
-              cancelUrl={`${window.location.origin}${window.location.pathname}?paymongo=cancel`}
-            />
+        {paymongo && tracked && !isCancelled && paymentStatus === 'unpaid' && (
+          <div className="mb-4 rounded-2xl border border-kado-red/20 bg-white p-4 space-y-3">
+            <p className="text-sm font-bold text-kado-dark">QR Ph payment pending</p>
+            <p className="text-xs text-kado-dark/55 leading-relaxed">
+              Complete payment on our secure checkout page. You can also change payment method or cancel there
+              while unpaid.
+            </p>
+            <Link
+              to={checkoutPath(orderId)}
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-kado-red px-4 text-[11px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-dark"
+            >
+              Continue to checkout
+            </Link>
             {(canSwitchToCash || canModify) && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {canSwitchToCash ? (

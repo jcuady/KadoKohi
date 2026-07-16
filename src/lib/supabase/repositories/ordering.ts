@@ -12,6 +12,7 @@ import type {
   Order,
   OrderItem,
   OrderStatus,
+  PaymentMethod,
   PaymentStatus,
   Product,
   Table,
@@ -37,6 +38,12 @@ import {
 } from '../../paymentProofStorage';
 import { supabase, guestSupabase } from '../client';
 import { profileBranchId } from '../../roles';
+import {
+  isNetworkError,
+  isSupabaseCircuitOpen,
+  recordSupabaseFailure,
+  recordSupabaseSuccess,
+} from '../networkGuard';
 
 function pgErrorFields(err: unknown): { message: string; code: string; details: string } {
   if (err && typeof err === 'object') {
@@ -1021,31 +1028,40 @@ export const orderingRepo = {
    */
   async trackOrder(id: string): Promise<TrackedOrderStatus | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.rpc('kk_track_order', { order_id: id });
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) return null;
-    const rawItems = row.items;
-    const items = Array.isArray(rawItems)
-      ? rawItems.map((it) => mapTrackedOrderLineFromRpc(it as Record<string, unknown>))
-      : [];
-    return {
-      id: row.id,
-      shortCode: row.short_code,
-      channel: row.channel,
-      status: row.status,
-      paymentStatus: row.payment_status,
-      paymentMethod: row.payment_method ?? undefined,
-      guestName: row.guest_name ?? undefined,
-      subtotal: Number(row.subtotal ?? 0),
-      modifiersTotal: Number(row.modifiers_total ?? 0),
-      tax: Number(row.tax ?? 0),
-      total: Number(row.total ?? 0),
-      items,
-      hasPaymentProof: Boolean(row.has_payment_proof),
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
+    if (isSupabaseCircuitOpen()) {
+      throw new Error('Connection lost. Check your internet and try again.');
+    }
+    try {
+      const { data, error } = await supabase.rpc('kk_track_order', { order_id: id });
+      if (error) throw error;
+      recordSupabaseSuccess();
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return null;
+      const rawItems = row.items;
+      const items = Array.isArray(rawItems)
+        ? rawItems.map((it) => mapTrackedOrderLineFromRpc(it as Record<string, unknown>))
+        : [];
+      return {
+        id: row.id,
+        shortCode: row.short_code,
+        channel: row.channel,
+        status: row.status,
+        paymentStatus: row.payment_status,
+        paymentMethod: row.payment_method ?? undefined,
+        guestName: row.guest_name ?? undefined,
+        subtotal: Number(row.subtotal ?? 0),
+        modifiersTotal: Number(row.modifiers_total ?? 0),
+        tax: Number(row.tax ?? 0),
+        total: Number(row.total ?? 0),
+        items,
+        hasPaymentProof: Boolean(row.has_payment_proof),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    } catch (err) {
+      if (isNetworkError(err)) recordSupabaseFailure();
+      throw err;
+    }
   },
   async submitGuestPaymentProof(orderId: string, proofDataUrl: string): Promise<void> {
     if (!supabase) throw new Error('Supabase is not configured.');
@@ -1085,6 +1101,25 @@ export const orderingRepo = {
       const code = (error as { code?: string }).code;
       if (code === 'PGRST202') {
         throw new Error('Pay-at-counter is not available yet. Please ask staff for help.');
+      }
+      throw error;
+    }
+  },
+  async changeOrderPaymentMethod(
+    orderId: string,
+    paymentMethod: PaymentMethod,
+    shortCode?: string,
+  ): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.rpc('kk_change_order_payment_method', {
+      p_order_id: orderId,
+      p_payment_method: paymentMethod,
+      p_short_code: shortCode ?? null,
+    });
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'PGRST202') {
+        throw new Error('Payment method change is not available yet. Please ask staff for help.');
       }
       throw error;
     }

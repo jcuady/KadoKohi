@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Gift, Star, Copy, Check, Sparkles, Coffee, ShoppingBag } from 'lucide-react';
+import AccountPageHeader from '../../components/account/AccountPageHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useLoyaltyStore } from '../../store/loyaltyStore';
 import { useVoucherStore } from '../../store/voucherStore';
@@ -107,26 +108,28 @@ export default function AccountVouchers() {
   };
 
   return (
-    <div className="space-y-10">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-kado-red mb-2">Kado Circle</p>
-        <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">Vouchers</h1>
-        <p className="text-sm text-kado-dark/55 mt-2 max-w-xl leading-relaxed">
-          Earn drink stamps when orders complete. Claim rewards here, then apply a voucher from your cart when you
-          order.
-        </p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <AccountPageHeader
+        eyebrow="Kado Circle"
+        title="Rewards"
+        subtitle="Earn stamps on completed drinks. Claim here, then apply in your cart."
+      />
 
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl bg-gradient-to-br from-kado-dark via-kado-dark to-kado-red/90 text-kado-cream p-6 md:p-8 shadow-xl overflow-hidden relative"
+        className="rounded-2xl bg-kado-dark text-kado-cream p-5 sm:p-7 overflow-hidden relative"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-kado-red/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <span
+          className="pointer-events-none absolute -right-1 top-0 font-display text-[5rem] leading-none text-kado-cream/[0.06] select-none"
+          aria-hidden
+        >
+          角
+        </span>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Star className="w-5 h-5 text-kado-cream fill-kado-cream/30" />
+              <Star className="w-5 h-5 text-kado-red fill-kado-red" aria-hidden />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-cream/70">
                 Your stamps
               </span>

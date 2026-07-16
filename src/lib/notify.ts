@@ -1,4 +1,5 @@
 import type { Order, OrderStatus } from '../types/domain';
+import { orderNeedsCustomerPayment } from './orderStatus';
 import { pushRepo } from './supabase/repositories/push';
 
 /** Customer-facing copy for each fulfillment status. Professional + on-brand. */
@@ -41,15 +42,28 @@ export function notifyCustomerOrderStatus(order: Order, status: OrderStatus): vo
   if (!order.customerId) return;
   const copy = CUSTOMER_STATUS_COPY[status];
   if (!copy) return;
-  const needsPay =
-    (order.paymentMethod === 'paymongo' || order.paymentMethod === 'gcash-qr') &&
-    (order.paymentStatus === 'unpaid' || order.paymentStatus === 'proof_submitted');
+  const needsPay = orderNeedsCustomerPayment(order);
   void pushRepo.send({
     targets: [{ userId: order.customerId }],
     title: copy.title,
     body: copy.body(order),
     url: needsPay ? `/checkout/${order.id}` : '/account/orders',
     tag: `order-${order.id}`,
+    kind: 'order',
+  });
+}
+
+/** Confirm GCash proof upload to the customer who placed the order. */
+export function notifyCustomerProofSubmitted(order: Order): void {
+  if (!order.customerId) return;
+  if (order.paymentMethod !== 'gcash-qr') return;
+  void pushRepo.send({
+    targets: [{ userId: order.customerId }],
+    title: 'Payment proof received',
+    body: `We received your GCash proof for order ${order.shortCode}. We'll verify it shortly.`,
+    url: `/checkout/${order.id}`,
+    tag: `proof-customer-${order.id}`,
+    kind: 'payment',
   });
 }
 
@@ -65,6 +79,7 @@ export function notifyCustomerPendingPayment(order: Order): void {
     body: `Order ${order.shortCode} is waiting — pay ₱${order.total.toFixed(2)} to confirm your order.`,
     url: `/checkout/${order.id}`,
     tag: `pay-${order.id}`,
+    kind: 'payment',
   });
 }
 

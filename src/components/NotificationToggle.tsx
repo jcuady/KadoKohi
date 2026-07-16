@@ -48,26 +48,30 @@ function ToggleSwitch({
       aria-checked={checked}
       aria-busy={busy}
       disabled={disabled || busy}
-      onClick={onToggle}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
       className={[
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
+        'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors duration-200',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red/40 focus-visible:ring-offset-2',
+        'min-h-[44px] min-w-[56px] touch-manipulation',
         disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
         checked ? 'bg-emerald-500' : 'bg-kado-dark/20',
       ].join(' ')}
     >
       <span
         className={[
-          'inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200',
-          checked ? 'translate-x-[1.35rem]' : 'translate-x-0.5',
+          'inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200',
+          checked ? 'translate-x-[1.65rem]' : 'translate-x-1',
         ].join(' ')}
       >
         {busy ? (
-          <Loader2 className="w-3 h-3 animate-spin text-kado-dark/50" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-kado-dark/50" />
         ) : checked ? (
-          <BellRing className="w-3 h-3 text-emerald-600" />
+          <BellRing className="w-3.5 h-3.5 text-emerald-600" />
         ) : (
-          <Bell className="w-3 h-3 text-kado-dark/35" />
+          <Bell className="w-3.5 h-3.5 text-kado-dark/35" />
         )}
       </span>
     </button>
@@ -84,13 +88,13 @@ export default function NotificationToggle({
 
   const title =
     label ??
-    (audience === 'staff' ? 'Order alerts' : 'Push notifications');
+    (audience === 'staff' ? 'Order alerts' : 'Notifications');
 
   const subtitle =
     description ??
     (audience === 'staff'
       ? 'New orders, payment proofs, and status changes — delivered to this device.'
-      : 'Get notified when your order is confirmed, brewing, and ready for pickup.');
+      : 'Order updates, payment reminders, and Kado news — on this device.');
 
   const switchDisabled = status === 'unsupported' || status === 'loading' || status === 'denied';
   const switchId = `kado-notif-toggle-${variant}`;
@@ -175,10 +179,28 @@ export default function NotificationToggle({
   }
 
   const isProfile = variant === 'profile';
+  const canTapCard = isProfile && !switchDisabled && !busy;
 
   return (
     <div className={`rounded-2xl border overflow-hidden ${isProfile ? 'border-kado-dark/8 bg-white' : 'border-kado-dark/10 bg-white'}`}>
-      <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
+      <div
+        role={canTapCard ? 'button' : undefined}
+        tabIndex={canTapCard ? 0 : undefined}
+        onClick={canTapCard ? () => void toggle() : undefined}
+        onKeyDown={
+          canTapCard
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  void toggle();
+                }
+              }
+            : undefined
+        }
+        className={`flex items-start justify-between gap-4 p-5 sm:p-6 ${
+          canTapCard ? 'cursor-pointer touch-manipulation active:bg-kado-offwhite/80' : ''
+        }`}
+      >
         <div className="flex items-start gap-3 min-w-0">
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
@@ -232,8 +254,8 @@ export default function NotificationToggle({
       {isProfile && (
         <div className="border-t border-kado-dark/5 bg-kado-offwhite px-5 sm:px-6 py-3">
           <p className="text-[10px] text-kado-dark/45 leading-relaxed">
-            You'll receive professional updates for each step — received, confirmed, brewing, ready, and complete.
-            Stamps are included when your order finishes.
+            Covers order status, payment reminders, loyalty stamps, and occasional Kado news. Manage delivery on this
+            device anytime.
           </p>
         </div>
       )}

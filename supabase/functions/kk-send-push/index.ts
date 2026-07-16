@@ -29,6 +29,7 @@ interface Payload {
   body: string;
   url?: string;
   tag?: string;
+  kind?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -73,6 +74,31 @@ Deno.serve(async (req: Request) => {
       status: 400,
       headers: { ...cors, "Content-Type": "application/json" },
     });
+  }
+
+  // Persist customer inbox rows for targeted userIds (orders, marketing, etc.).
+  const inboxUserIds = [
+    ...new Set(
+      payload.targets
+        .map((t) => (typeof t.userId === "string" ? t.userId.trim() : ""))
+        .filter(Boolean),
+    ),
+  ];
+  if (inboxUserIds.length > 0) {
+    const kindRaw = (payload.kind ?? "system").toLowerCase();
+    const kind = ["order", "payment", "marketing", "system"].includes(kindRaw)
+      ? kindRaw
+      : "system";
+    const rows = inboxUserIds.map((customerId) => ({
+      customer_id: customerId,
+      kind,
+      title: payload.title.slice(0, 120),
+      body: payload.body.slice(0, 500),
+      url: payload.url ?? "/account",
+      tag: payload.tag ?? null,
+    }));
+    const { error: inboxErr } = await admin.from("kk_customer_notifications").insert(rows);
+    if (inboxErr) console.error("inbox insert failed", inboxErr);
   }
 
   // Resolve target subscriptions (dedupe by endpoint).

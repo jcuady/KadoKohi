@@ -44,3 +44,53 @@ export async function createPaymongoCheckout(input: {
     checkoutSessionId: payload.checkoutSessionId,
   };
 }
+
+export type PaymongoVerifyResult = {
+  paid: boolean;
+  status?: string;
+  paymentId?: string | null;
+  alreadyPaid?: boolean;
+  reconciled?: boolean;
+  sessionStatus?: string;
+};
+
+/** Poll PayMongo for session payment and reconcile order if webhook lagged. */
+export async function verifyPaymongoCheckout(input: {
+  orderId: string;
+  shortCode?: string;
+}): Promise<PaymongoVerifyResult> {
+  if (!supabase) throw new Error('Supabase is not configured.');
+
+  const { data, error } = await supabase.functions.invoke('kk-paymongo-verify', {
+    body: {
+      orderId: input.orderId,
+      shortCode: input.shortCode ?? null,
+    },
+  });
+
+  if (error) throw new Error(error.message || 'Could not verify PayMongo payment.');
+
+  const payload = data as {
+    ok?: boolean;
+    paid?: boolean;
+    status?: string;
+    paymentId?: string | null;
+    alreadyPaid?: boolean;
+    reconciled?: boolean;
+    sessionStatus?: string;
+    message?: string;
+  } | null;
+
+  if (!payload?.ok) {
+    throw new Error(payload?.message || 'PayMongo verify failed.');
+  }
+
+  return {
+    paid: Boolean(payload.paid),
+    status: payload.status,
+    paymentId: payload.paymentId,
+    alreadyPaid: payload.alreadyPaid,
+    reconciled: payload.reconciled,
+    sessionStatus: payload.sessionStatus,
+  };
+}

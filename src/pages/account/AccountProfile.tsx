@@ -23,6 +23,7 @@ import {
   Smartphone,
   ArrowRight,
 } from 'lucide-react';
+import AccountPageHeader from '../../components/account/AccountPageHeader';
 
 export default function AccountProfile() {
   const user = useAuthStore((s) => s.user);
@@ -68,17 +69,14 @@ export default function AccountProfile() {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* ─── HEADER ─── */}
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">Account</p>
-        <h1 className="font-display text-3xl md:text-4xl font-black text-kado-dark tracking-tight">
-          Profile
-        </h1>
-        <p className="text-sm text-kado-dark/50 mt-1 font-medium">Manage your account details and preferences.</p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <AccountPageHeader
+        eyebrow="Account"
+        title="Profile"
+        subtitle="Name, phone, notifications, and password."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* ─── PROFILE CARD ─── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -117,7 +115,7 @@ export default function AccountProfile() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12, duration: 0.4 }}
           >
-            <NotificationToggle variant="profile" audience="customer" label="Order notifications" />
+            <NotificationToggle variant="profile" audience="customer" />
           </motion.div>
 
           {/* Install app shortcut */}
