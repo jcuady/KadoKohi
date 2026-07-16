@@ -121,10 +121,10 @@ export default function AdminMenuProductFormModal({
       : 'Add product';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-kado-dark/55 backdrop-blur-[3px] p-0 sm:items-center sm:p-4">
       <form
         onSubmit={onSubmit}
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border dash-border bg-[var(--color-dash-surface)] shadow-2xl sm:rounded-2xl"
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[2.5rem] border dash-border bg-[var(--color-dash-surface)] shadow-[0_30px_60px_rgba(158,24,29,0.12)] sm:rounded-[2rem]"
       >
         <div className="flex items-start justify-between gap-3 border-b dash-border px-4 py-3.5 sm:px-5">
           <div>

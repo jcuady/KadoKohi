@@ -8,6 +8,7 @@ import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import { qrChipClass } from '../../lib/qrGuestTheme';
 import { resolveOrderTemperature } from '../../lib/menuProductModifiers';
+import { OVERLAY_CTA, OVERLAY_SCRIM } from '../../lib/overlayTheme';
 import { isPastriesCategoryId } from '../../lib/pastriesCategory';
 import { useMenuStore } from '../../store/menuStore';
 import ProductVariantSections from '../menu/ProductVariantSections';
@@ -118,7 +119,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[180] bg-kado-dark/55 backdrop-blur-[2px]"
+            className={`fixed inset-0 z-[180] ${OVERLAY_SCRIM}`}
             onClick={onClose}
           />
           <motion.div
@@ -127,7 +128,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="fixed inset-x-0 bottom-0 z-[181] max-h-[min(92dvh,640px)] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[min(96dvh,520px)] flex flex-col rounded-t-[1.75rem] bg-[var(--qr-sheet-bg)] text-[var(--qr-text)] shadow-2xl overflow-hidden mx-[max(0px,env(safe-area-inset-left))] mr-[max(0px,env(safe-area-inset-right))]"
+            className="fixed inset-x-0 bottom-0 z-[181] max-h-[min(92dvh,640px)] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[min(96dvh,520px)] flex flex-col rounded-t-[2.5rem] bg-[var(--qr-sheet-bg)] text-[var(--qr-text)] shadow-[0_30px_60px_rgba(158,24,29,0.15)] overflow-hidden mx-[max(0px,env(safe-area-inset-left))] mr-[max(0px,env(safe-area-inset-right))]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--qr-border)]">
@@ -220,7 +221,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
                 type="button"
                 onClick={handleAdd}
                 disabled={!inStock}
-                className="w-full min-h-[52px] rounded-2xl bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors touch-manipulation disabled:opacity-40 disabled:cursor-not-allowed"
+                className={OVERLAY_CTA}
               >
                 <ShoppingBag className="w-4 h-4" />
                 {inStock ? `${ctaLabel} — ${formatPhp(unitPrice * qty)}` : 'Out of stock'}

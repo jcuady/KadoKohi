@@ -571,7 +571,7 @@ export default function AdminMenu() {
         <Card>
           <CardHeader className="p-4">
             <CardTitle className="text-xl">Menu</CardTitle>
-            <CardDescription className="text-xs">Loading catalog from Supabaseâ€¦</CardDescription>
+            <CardDescription className="text-xs">Loading catalog from Supabase…</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -586,8 +586,8 @@ export default function AdminMenu() {
             <CardTitle className="text-xl md:text-2xl">Menu</CardTitle>
             <CardDescription className="text-xs">
               {tabCategoryCount} {menuTab === 'pastries' ? 'category' : 'categor'}
-              {tabCategoryCount === 1 ? 'y' : 'ies'} Â· {tabProductCount} product
-              {tabProductCount === 1 ? '' : 's'} Â·{' '}
+              {tabCategoryCount === 1 ? 'y' : 'ies'} · {tabProductCount} product
+              {tabProductCount === 1 ? '' : 's'} ·{' '}
               {dataSource === 'remote' ? (
                 <span className="text-emerald-700 dark:text-emerald-400">Live sync</span>
               ) : (
@@ -663,7 +663,7 @@ export default function AdminMenu() {
             No coffee categories yet. Initialize the flyer catalog (4 categories, 19 drinks) or add your own below.
           </p>
           <Button disabled={initializingCatalog} onClick={() => void handleInitializeCatalog()}>
-            {initializingCatalog ? 'Initializingâ€¦' : 'Initialize KADO MENU V2'}
+            {initializingCatalog ? 'Initializing…' : 'Initialize KADO MENU V2'}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </Card>
@@ -676,7 +676,7 @@ export default function AdminMenu() {
             here.
           </p>
           <Button disabled={addingCategory} onClick={() => void createCategoryByName(PASTRIES_CATEGORY_NAME)}>
-            {addingCategory ? 'Creatingâ€¦' : `Create ${PASTRIES_CATEGORY_NAME}`}
+            {addingCategory ? 'Creating…' : `Create ${PASTRIES_CATEGORY_NAME}`}
           </Button>
         </Card>
       )}
@@ -688,7 +688,7 @@ export default function AdminMenu() {
             ? pastriesCategory
               ? `${pastryItemCount} items on /pastries and the public menu`
               : 'Pastries tab needs a Pastries category'
-            : 'Drag categories and products to reorder â€” changes save automatically'
+            : 'Drag categories and products to reorder — changes save automatically'
         }
         action={
           menuTab === 'coffee' ? (
@@ -696,13 +696,13 @@ export default function AdminMenu() {
         <input
           value={newCatName}
           onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="New categoryâ€¦"
+                placeholder="New category…"
           disabled={addingCategory}
                 className="min-w-0 flex-1 rounded-lg border dash-border dash-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30 disabled:opacity-60"
               />
               <Button type="submit" size="sm" disabled={addingCategory || !newCatName.trim()}>
                 <Plus className="h-3.5 w-3.5" />
-                {addingCategory ? 'â€¦' : 'Add'}
+                {addingCategory ? '…' : 'Add'}
               </Button>
       </form>
           ) : null
@@ -712,7 +712,7 @@ export default function AdminMenu() {
 
         {menuTab === 'pastries' && pastriesCategory ? (
           <p className="text-xs dash-muted">
-            Only the name is required. Price, photo, sizes, and tags are optional â€” same controls as drinks.
+            Only the name is required. Price, photo, sizes, and tags are optional — same controls as drinks.
           </p>
         ) : null}
 

@@ -15,6 +15,14 @@ import OrderPaymentProofPreview from '../admin/OrderPaymentProofPreview';
 import OrderTableBadge from '../OrderTableBadge';
 import GuestOrderActionNote from '../order/GuestOrderActionNote';
 import { formatOrderDbLabel } from '../../lib/orderTime';
+import {
+  OVERLAY_CTA,
+  OVERLAY_CTA_SECONDARY,
+  OVERLAY_FOOTER,
+  OVERLAY_HEADER,
+  OVERLAY_HOST_CENTER,
+  OVERLAY_PANEL_LG,
+} from '../../lib/overlayTheme';
 
 type Props = {
   order: Order | null;
@@ -63,22 +71,24 @@ export default function OrderStatusModal({
   if (!open || !order) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/45 p-4 flex items-center justify-center">
-      <div className="w-full max-w-lg rounded-[1.75rem] border border-kado-dark/10 bg-white shadow-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-kado-dark/10">
-          <h3 className="font-display text-xl font-bold text-kado-dark">
-            {adminMode ? 'Edit order' : 'Update order'}
-          </h3>
-          <p className="text-xs text-kado-dark/60 mt-1 flex flex-wrap items-center gap-2">
-            <span>{order.shortCode} · {order.items.length} item(s)</span>
-            <OrderTableBadge order={order} />
-          </p>
-          <p className="text-[10px] text-kado-dark/50 mt-1 font-mono">
-            Placed {formatOrderDbLabel(order.createdAt)}
-            {order.updatedAt !== order.createdAt && (
-              <> · Updated {formatOrderDbLabel(order.updatedAt)}</>
-            )}
-          </p>
+    <div className={`${OVERLAY_HOST_CENTER} z-[120]`}>
+      <div className={OVERLAY_PANEL_LG}>
+        <div className={OVERLAY_HEADER}>
+          <div className="min-w-0">
+            <h3 className="font-display text-xl font-bold text-kado-dark">
+              {adminMode ? 'Edit order' : 'Update order'}
+            </h3>
+            <p className="text-xs text-kado-dark/60 mt-1 flex flex-wrap items-center gap-2">
+              <span>{order.shortCode} · {order.items.length} item(s)</span>
+              <OrderTableBadge order={order} />
+            </p>
+            <p className="text-[10px] text-kado-dark/50 mt-1 font-mono">
+              Placed {formatOrderDbLabel(order.createdAt)}
+              {order.updatedAt !== order.createdAt && (
+                <> · Updated {formatOrderDbLabel(order.updatedAt)}</>
+              )}
+            </p>
+          </div>
         </div>
 
         <div className="px-6 py-4 space-y-4">
@@ -145,9 +155,9 @@ export default function OrderStatusModal({
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-kado-dark/10 flex flex-wrap items-center justify-between gap-2">
+        <div className={`${OVERLAY_FOOTER} flex flex-wrap items-center justify-between gap-2`}>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onClose} className="rounded-xl border border-kado-dark/15 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-dark/60">
+            <button type="button" onClick={onClose} className={`${OVERLAY_CTA_SECONDARY} !w-auto px-5`}>
               Close
             </button>
             {adminMode && onDelete ? (
@@ -155,7 +165,7 @@ export default function OrderStatusModal({
                 type="button"
                 disabled={deleteBusy}
                 onClick={onDelete}
-                className="rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 disabled:opacity-50"
+                className="rounded-full border border-red-200 text-red-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest hover:bg-red-50 disabled:opacity-50"
               >
                 {deleteBusy ? 'Deleting…' : 'Delete'}
               </button>
@@ -166,7 +176,7 @@ export default function OrderStatusModal({
               <button
                 type="button"
                 onClick={() => onApply({ status: 'cancelled' })}
-                className="rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50"
+                className="rounded-full border border-red-200 text-red-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest hover:bg-red-50"
               >
                 Cancel order
               </button>
@@ -180,7 +190,7 @@ export default function OrderStatusModal({
                   ...(showPaymentField ? { paymentStatus: paymentValue } : {}),
                 })
               }
-              className="rounded-xl bg-kado-red text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`${OVERLAY_CTA} !w-auto px-6`}
             >
               Save
             </button>

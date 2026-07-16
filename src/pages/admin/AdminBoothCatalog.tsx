@@ -333,8 +333,8 @@ export default function AdminBoothCatalog() {
       </section>
 
       {showPkgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={submitPackage} className="w-full max-w-xl dash-card rounded-[2rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
+          <form onSubmit={submitPackage} className="w-full max-w-xl dash-card rounded-[2rem] shadow-[0_30px_60px_rgba(158,24,29,0.12)] max-h-[90vh] overflow-hidden flex flex-col">
             <div className="px-5 md:px-7 pt-5 md:pt-6 pb-3 border-b dash-border">
               <h3 className="font-display text-xl font-bold dash-heading">{editingPkgId ? 'Edit Package' : 'New Package'}</h3>
             </div>
@@ -367,8 +367,8 @@ export default function AdminBoothCatalog() {
       )}
 
       {showAddonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={(e) => void submitAddon(e)} className="w-full max-w-lg dash-card rounded-[2rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
+          <form onSubmit={(e) => void submitAddon(e)} className="w-full max-w-lg dash-card rounded-[2rem] shadow-[0_30px_60px_rgba(158,24,29,0.12)] max-h-[90vh] overflow-hidden flex flex-col">
             <div className="px-5 md:px-7 pt-5 md:pt-6 pb-3 border-b dash-border">
               <h3 className="font-display text-xl font-bold dash-heading">{editingAddonId ? 'Edit Add-on' : 'New Add-on'}</h3>
               <p className="text-xs dash-muted mt-1">Per-hour add-ons apply to all branches and use customer-entered hours.</p>

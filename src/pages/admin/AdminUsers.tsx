@@ -358,8 +358,8 @@ export default function AdminUsers() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <form onSubmit={submit} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
+          <form onSubmit={submit} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <h2 className="font-display font-bold text-xl dash-heading mb-4">{editingId ? 'Edit user' : 'New user'}</h2>
             <div className="space-y-4">
               <div>
@@ -443,8 +443,8 @@ export default function AdminUsers() {
         </div>
       )}
       {resetUserId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <form onSubmit={submitResetPassword} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
+          <form onSubmit={submitResetPassword} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <h2 className="font-display font-bold text-xl dash-heading mb-4">Reset password</h2>
             <p className="text-xs dash-muted mb-3">
               Instant admin set — use this when a customer or teammate cannot receive the reset email. Share the temporary password with them securely.
@@ -467,8 +467,8 @@ export default function AdminUsers() {
         </div>
       )}
       {stampUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
+          <div className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <h2 className="font-display font-bold text-xl dash-heading mb-1 flex items-center gap-2">
               <Stamp className="w-5 h-5 text-kado-red" /> Kado Circle stamps
             </h2>

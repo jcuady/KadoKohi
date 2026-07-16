@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn, Check } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, CheckCircle2, LogIn } from 'lucide-react';
 import type { Product, MerchProduct } from '../types/domain';
 import { useCartStore, type CartLineVariant } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
@@ -16,6 +16,8 @@ import { productFallbackDescription, resolveOrderTemperature } from '../lib/menu
 import ProductVariantSections from './menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../lib/posPricing';
 import { originalUnitPrice, productPromoTag } from '../lib/productPricing';
+import { OVERLAY_CTA, OVERLAY_SCRIM } from '../lib/overlayTheme';
+import OptionChip from './ui/OptionChip';
 
 import {
   DEFAULT_MENU_PRODUCT_IMAGE,
@@ -24,31 +26,6 @@ import {
 
 function isMerchProduct(p: Product | MerchProduct): p is MerchProduct {
   return !('temperature' in p);
-}
-
-function DetailChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
-        active
-          ? 'bg-kado-red text-white border-kado-red shadow-md shadow-kado-red/20'
-          : 'bg-white border-kado-dark/10 text-kado-dark/65 hover:border-kado-red/50 hover:text-kado-red'
-      }`}
-    >
-      {active ? <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" aria-hidden /> : null}
-      {children}
-    </button>
-  );
 }
 
 interface Props {
@@ -222,7 +199,7 @@ export default function ProductDetailDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[150] bg-kado-dark/55 backdrop-blur-[3px]"
+            className={`fixed inset-0 z-[150] ${OVERLAY_SCRIM}`}
             onClick={onClose}
           />
 
@@ -311,7 +288,7 @@ export default function ProductDetailDrawer({
                     config={lineConfig}
                     onChange={patchLineConfig}
                     showTemperature={!isPastryProduct}
-                    Chip={DetailChip as ComponentType<{ active: boolean; onClick: () => void; children: ReactNode }>}
+                    Chip={OptionChip as ComponentType<{ active: boolean; onClick: () => void; children: ReactNode }>}
                   />
                 ) : null}
 
@@ -323,21 +300,16 @@ export default function ProductDetailDrawer({
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {group.options.map((opt) => (
-                        <button
+                        <OptionChip
                           key={opt.id}
-                          type="button"
+                          active={selectedVariants[group.id] === opt.id}
                           onClick={() => setSelectedVariants((prev) => ({ ...prev, [group.id]: opt.id }))}
-                          className={`px-5 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all duration-200 ${
-                            selectedVariants[group.id] === opt.id
-                              ? 'bg-kado-red text-white border-kado-red shadow-md shadow-kado-red/20'
-                              : 'bg-white border-kado-dark/10 text-kado-dark/65 hover:border-kado-red/50 hover:text-kado-red'
-                          }`}
                         >
                           {opt.label}
                           {opt.priceDelta > 0 && (
                             <span className="ml-1.5 font-bold text-[10px] opacity-80">+₱{opt.priceDelta}</span>
                           )}
-                        </button>
+                        </OptionChip>
                       ))}
                     </div>
                   </div>
@@ -374,10 +346,8 @@ export default function ProductDetailDrawer({
                       onClick={handleAdd}
                       disabled={added}
                       whileTap={{ scale: 0.97 }}
-                      className={`flex-1 rounded-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300 shadow-lg ${
-                        added
-                          ? 'bg-kado-dark text-white shadow-kado-dark/20'
-                          : 'bg-kado-red text-white shadow-kado-red/30 hover:bg-kado-red-hover hover:shadow-kado-red/40'
+                      className={`flex-1 ${OVERLAY_CTA} ${
+                        added ? '!bg-kado-dark !shadow-kado-dark/20 hover:!bg-kado-dark' : ''
                       }`}
                     >
                       {added ? (
@@ -406,7 +376,7 @@ export default function ProductDetailDrawer({
                       to="/auth/login"
                       state={{ from: '/' }}
                       onClick={onClose}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-kado-red py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
+                      className={OVERLAY_CTA}
                     >
                       <LogIn className="w-4 h-4" />
                       Sign in to order

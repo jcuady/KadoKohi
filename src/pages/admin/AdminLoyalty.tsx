@@ -262,8 +262,8 @@ export default function AdminLoyalty() {
       </Tabs>
 
       {deleteRewardId ? (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4">
-          <Card className="w-full max-w-md p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
+          <Card className="w-full max-w-md rounded-[2rem] p-6 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <CardTitle>Delete reward?</CardTitle>
             <CardDescription className="mt-2">
               This removes the reward from the catalog. Existing vouchers already claimed are not affected.
@@ -288,7 +288,7 @@ export default function AdminLoyalty() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
           <form
             onSubmit={handleSubmit}
             className="dash-card rounded-2xl border p-6 w-full max-w-md space-y-4 shadow-2xl"

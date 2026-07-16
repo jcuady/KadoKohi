@@ -35,6 +35,7 @@ import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
 import { usePromoStore } from '../store/promoStore';
 import { Tag, X as XIcon } from 'lucide-react';
+import { OVERLAY_CTA, OVERLAY_SCRIM } from '../lib/overlayTheme';
 
 export default function CartDrawer() {
   const navigate = useNavigate();
@@ -243,7 +244,7 @@ export default function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 z-[200] bg-kado-dark/55 backdrop-blur-[3px]"
+            className={`fixed inset-0 z-[200] ${OVERLAY_SCRIM}`}
             onClick={handleClose}
           />
 
@@ -257,7 +258,7 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 z-[201] w-full max-w-[420px] flex flex-col bg-kado-offwhite shadow-2xl pt-safe-nav"
+            className="fixed right-0 top-0 bottom-0 z-[201] w-full max-w-[420px] flex flex-col bg-white border-l border-kado-dark/10 sm:border-kado-red/10 shadow-[0_30px_60px_rgba(158,24,29,0.15)] sm:rounded-l-[2rem] pt-safe-nav"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-kado-dark/10 shrink-0">
@@ -652,7 +653,7 @@ export default function CartDrawer() {
                     type="button"
                     onClick={placeOrder}
                     disabled={!canOrder || loading}
-                    className="w-full rounded-2xl bg-kado-red text-kado-cream py-4 text-sm font-bold uppercase tracking-wider disabled:opacity-40 hover:bg-kado-dark transition-colors flex items-center justify-center gap-2"
+                    className={OVERLAY_CTA}
                   >
                     {loading ? 'Placing…' : 'Place order'}
                     {!loading && <ChevronRight className="w-4 h-4" />}

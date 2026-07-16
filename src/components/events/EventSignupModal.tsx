@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { X, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import type { Event } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useEventFormStore } from '../../store/eventFormStore';
@@ -13,6 +13,8 @@ import {
 import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { newId } from '../../lib/id';
 import EventSignupFields from './EventSignupFields';
+import OverlayShell from '../ui/OverlayShell';
+import { OVERLAY_CTA, OVERLAY_CTA_DARK } from '../../lib/overlayTheme';
 
 interface Props {
   event: Event;
@@ -75,20 +77,20 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
 
   if (!isCustomer) {
     return (
-      <ModalShell event={event} onClose={onClose}>
-        <div className="text-center py-4">
+      <OverlayShell open onClose={onClose} title={event.title} centered zClass="z-[300]" labelledBy="event-signup-title">
+        <div className="text-center py-2">
           <p className="text-sm text-kado-dark/65 mb-6 leading-relaxed">
             Sign in to register for <strong>{event.title}</strong>. We need your account to confirm your spot.
           </p>
           <Link
             to="/auth/login"
             state={{ from: '/events', notice: `Sign in to register for ${event.title}.` }}
-            className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] bg-kado-red text-white text-xs font-bold uppercase tracking-wider rounded-full hover:bg-kado-dark"
+            className={OVERLAY_CTA}
           >
             <LogIn className="w-4 h-4" /> Sign in to register
           </Link>
         </div>
-      </ModalShell>
+      </OverlayShell>
     );
   }
 
@@ -127,18 +129,14 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
   };
 
   return (
-    <ModalShell event={event} onClose={onClose}>
+    <OverlayShell open onClose={onClose} title={event.title} centered zClass="z-[300]" labelledBy="event-signup-title">
       {done ? (
-        <div className="text-center py-4">
+        <div className="text-center py-2">
           <p className="font-display text-xl font-bold text-kado-dark mb-2">You&apos;re registered!</p>
           <p className="text-sm text-kado-dark/60 mb-6">
             We&apos;ve saved your spot for <strong>{event.title}</strong>. See you there!
           </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full min-h-[48px] rounded-full bg-kado-dark text-kado-cream text-xs font-bold uppercase tracking-wider"
-          >
+          <button type="button" onClick={onClose} className={OVERLAY_CTA_DARK}>
             Done
           </button>
         </div>
@@ -154,42 +152,11 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
           {error && (
             <p className="text-sm text-red-600 rounded-lg border border-red-200 bg-red-50 px-3 py-2">{error}</p>
           )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full min-h-[48px] rounded-full bg-kado-red text-white text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-60"
-          >
+          <button type="submit" disabled={submitting} className={OVERLAY_CTA}>
             {submitting ? 'Submitting…' : 'Confirm registration'}
           </button>
         </form>
       )}
-    </ModalShell>
-  );
-}
-
-function ModalShell({
-  event,
-  onClose,
-  children,
-}: {
-  event: Event;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/45 px-4" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-2xl bg-white border border-kado-dark/10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <h2 className="font-display text-xl font-bold text-kado-dark pr-4">{event.title}</h2>
-          <button type="button" onClick={onClose} className="text-kado-dark/40 hover:text-kado-dark p-1" aria-label="Close">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
+    </OverlayShell>
   );
 }

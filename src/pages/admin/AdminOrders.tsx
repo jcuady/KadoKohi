@@ -469,8 +469,8 @@ export default function AdminOrders() {
       />
 
       {deleteTarget ? (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4">
-          <Card className="w-full max-w-md p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
+          <Card className="w-full max-w-md rounded-[2rem] p-6 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <CardTitle>Delete order?</CardTitle>
             <CardDescription className="mt-2">
               Permanently remove <strong className="dash-heading">{deleteTarget.shortCode}</strong> (

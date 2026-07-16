@@ -81,14 +81,14 @@ export default function QrDownloadModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-kado-dark/55 backdrop-blur-[3px]"
           onClick={onClose}
         >
           <motion.div
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
-            className="w-full max-w-md rounded-t-2xl sm:rounded-2xl dash-card border shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+            className="w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2rem] dash-card border shadow-[0_30px_60px_rgba(158,24,29,0.12)] overflow-hidden max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b dash-border shrink-0">
@@ -124,7 +124,7 @@ export default function QrDownloadModal({
                   type="button"
                   disabled={downloading}
                   onClick={() => void handleDownload()}
-                  className="w-full min-h-[48px] rounded-xl bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark disabled:opacity-50"
+                  className="w-full min-h-[48px] rounded-full bg-kado-red text-kado-cream flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
                   {downloading ? 'Preparing…' : 'Download branded QR'}
@@ -133,7 +133,7 @@ export default function QrDownloadModal({
                   type="button"
                   disabled={printing}
                   onClick={() => void handlePrint()}
-                  className="w-full min-h-[44px] rounded-xl bg-kado-dark text-kado-cream flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider hover:bg-kado-red disabled:opacity-50"
+                  className="w-full min-h-[44px] rounded-full bg-kado-dark text-kado-cream flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest hover:bg-kado-red disabled:opacity-50"
                 >
                   <Printer className="w-4 h-4" />
                   {printing ? 'Preparing print…' : isTakeout ? 'Print takeout stand' : 'Print table tent'}
@@ -141,7 +141,7 @@ export default function QrDownloadModal({
                 <button
                   type="button"
                   onClick={() => void handleCopy()}
-                  className="w-full min-h-[44px] rounded-xl border dash-border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40"
+                  className="w-full min-h-[44px] rounded-full border dash-border flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest dash-heading hover:border-kado-red/40"
                 >
                   {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   {copied ? 'Copied' : 'Copy link'}
@@ -150,7 +150,7 @@ export default function QrDownloadModal({
                   href={productionUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full min-h-[44px] rounded-xl border dash-border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider dash-muted hover:text-kado-red"
+                  className="w-full min-h-[44px] rounded-full border dash-border flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest dash-muted hover:text-kado-red"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Open menu page

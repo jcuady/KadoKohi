@@ -37,9 +37,9 @@ export default function AdminKioskBranchModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4" onClick={onClose}>
       <div
-        className="w-full max-w-md dash-card rounded-2xl border p-6 shadow-2xl"
+        className="w-full max-w-md dash-card rounded-[2rem] border p-6 shadow-[0_30px_60px_rgba(158,24,29,0.12)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 mb-4">
@@ -79,7 +79,7 @@ export default function AdminKioskBranchModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl dash-border border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream"
+                className="rounded-full dash-border border px-4 py-2.5 text-xs font-black uppercase tracking-widest dash-muted hover:bg-kado-cream"
               >
                 Cancel
               </button>
@@ -87,7 +87,7 @@ export default function AdminKioskBranchModal({
                 type="button"
                 disabled={!selected}
                 onClick={() => selected && onConfirm(selected)}
-                className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red disabled:opacity-50"
+                className="rounded-full bg-kado-red text-white px-5 py-2.5 text-xs font-black uppercase tracking-widest shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover disabled:opacity-50"
               >
                 Open kiosk
               </button>

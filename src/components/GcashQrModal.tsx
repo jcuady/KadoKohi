@@ -4,6 +4,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, QrCode, AlertCircle } from 'lucide-react';
 import { formatPhp } from '../lib/money';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import {
+  OVERLAY_CLOSE,
+  OVERLAY_CTA,
+  OVERLAY_FOOTER,
+  OVERLAY_HEADER,
+  OVERLAY_HOST,
+  OVERLAY_PANEL_MD,
+} from '../lib/overlayTheme';
 
 type Props = {
   open: boolean;
@@ -47,7 +55,7 @@ export default function GcashQrModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[400] flex items-end justify-center sm:items-center p-0 sm:p-4 bg-kado-dark/60 backdrop-blur-sm"
+          className={`${OVERLAY_HOST} z-[400]`}
           onClick={onClose}
         >
           <motion.div
@@ -55,27 +63,22 @@ export default function GcashQrModal({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="w-full max-w-md max-h-[min(92dvh,720px)] flex flex-col rounded-t-[1.75rem] sm:rounded-[1.75rem] bg-kado-offwhite border border-kado-dark/10 shadow-2xl overflow-hidden"
+            className={OVERLAY_PANEL_MD}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-kado-dark/10 shrink-0">
+            <div className={OVERLAY_HEADER}>
               <div className="flex items-center gap-2 min-w-0">
                 <QrCode className="w-5 h-5 text-kado-red shrink-0" />
                 <h2 id="gcash-qr-title" className="font-display font-bold text-base sm:text-lg text-kado-dark truncate">
                   Pay with GCash
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-kado-dark/50 hover:bg-kado-dark/8 hover:text-kado-dark touch-manipulation"
-                aria-label="Close"
-              >
+              <button type="button" onClick={onClose} className={OVERLAY_CLOSE} aria-label="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 sm:py-6 text-center space-y-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 sm:py-6 text-center space-y-4">
               <p className="text-sm text-kado-dark/60 leading-relaxed">
                 Order <span className="font-bold text-kado-dark">{shortCode}</span>
                 <br className="sm:hidden" />
@@ -107,12 +110,8 @@ export default function GcashQrModal({
               </ol>
             </div>
 
-            <div className="shrink-0 px-4 sm:px-6 py-4 border-t border-kado-dark/10 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full min-h-[48px] rounded-2xl bg-kado-red text-kado-cream py-3.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors touch-manipulation"
-              >
+            <div className={OVERLAY_FOOTER}>
+              <button type="button" onClick={onClose} className={OVERLAY_CTA}>
                 {actionLabel}
               </button>
             </div>

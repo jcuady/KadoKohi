@@ -169,8 +169,8 @@ export default function BoothPageContentForm({
       </section>
 
       {showMediaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={submitMedia} className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4">
+          <form onSubmit={submitMedia} className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 space-y-4 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
             <h3 className="font-display text-xl font-bold dash-heading">{editingMediaId ? 'Edit Media' : 'New Media'}</h3>
             <Field label="Title" value={mediaForm.title} onChange={(v) => setMediaForm((s) => ({ ...s, title: v }))} required />
             <Field label="Caption" value={mediaForm.caption} onChange={(v) => setMediaForm((s) => ({ ...s, caption: v }))} />

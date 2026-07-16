@@ -328,10 +328,10 @@ export default function AdminVouchers() {
 
       {/* Create / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-kado-dark/55 backdrop-blur-[3px] p-4 overflow-y-auto">
           <form
             onSubmit={(e) => void handleSubmit(e)}
-            className="dash-card rounded-2xl border p-6 w-full max-w-lg space-y-4 shadow-2xl my-8"
+            className="dash-card rounded-[2rem] border p-6 w-full max-w-lg space-y-4 shadow-[0_30px_60px_rgba(158,24,29,0.12)] my-8"
           >
             <h2 className="font-display font-bold text-lg dash-heading">
               {editingId ? 'Edit Promo Code' : 'New Promo Code'}

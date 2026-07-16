@@ -8,6 +8,7 @@ import {
 } from '../../lib/careersPageContent';
 import type { Branch } from '../../types/domain';
 import { LOGO } from '../../lib/brandTokens';
+import { OVERLAY_CLOSE, OVERLAY_CTA, OVERLAY_SCRIM } from '../../lib/overlayTheme';
 
 type Props = {
   listing: CareerListing;
@@ -32,7 +33,7 @@ export default function CareerJobDetailPanel({ listing, branches, onClose, onApp
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-kado-dark/40 p-0 sm:p-4" role="presentation">
+    <div className={`fixed inset-0 z-50 flex justify-end p-0 sm:p-4 ${OVERLAY_SCRIM}`} role="presentation">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Close job details" onClick={onClose} />
       <div
         ref={panelRef}
@@ -40,7 +41,7 @@ export default function CareerJobDetailPanel({ listing, branches, onClose, onApp
         role="dialog"
         aria-modal="true"
         aria-labelledby="career-job-detail-title"
-        className="relative flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-2xl"
+        className="relative flex h-full w-full max-w-lg flex-col overflow-hidden bg-white border border-kado-dark/10 sm:border-kado-red/10 shadow-[0_30px_60px_rgba(158,24,29,0.15)] sm:max-h-[92vh] sm:rounded-[2rem]"
       >
         <div className="flex items-start justify-between gap-4 border-b border-kado-dark/10 px-5 py-4 md:px-6">
           <div className="flex min-w-0 items-start gap-3">
@@ -54,12 +55,7 @@ export default function CareerJobDetailPanel({ listing, branches, onClose, onApp
               <p className="text-sm font-semibold text-kado-dark/55">Kado Kohi</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-kado-dark/50 hover:bg-kado-offwhite"
-            aria-label="Close"
-          >
+          <button type="button" onClick={onClose} className={OVERLAY_CLOSE} aria-label="Close">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -88,23 +84,14 @@ export default function CareerJobDetailPanel({ listing, branches, onClose, onApp
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-kado-dark/75">{listing.description}</div>
         </div>
 
-        <div className="border-t border-kado-dark/10 p-5 md:p-6">
+        <div className="border-t border-kado-dark/5 bg-gray-50/50 p-5 backdrop-blur-md md:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {useForm ? (
-            <button
-              type="button"
-              onClick={onApply}
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-kado-dark"
-            >
+            <button type="button" onClick={onApply} className={OVERLAY_CTA}>
               {listing.applyLabel}
               <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
             </button>
           ) : (
-            <a
-              href={listing.applyHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-kado-dark"
-            >
+            <a href={listing.applyHref} target="_blank" rel="noopener noreferrer" className={OVERLAY_CTA}>
               {listing.applyLabel}
               <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
             </a>

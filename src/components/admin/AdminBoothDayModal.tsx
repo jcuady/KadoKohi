@@ -331,14 +331,14 @@ export default function AdminBoothDayModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50"
+        className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-kado-dark/55 backdrop-blur-[3px]"
         onClick={onClose}
       >
         <motion.div
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 24, opacity: 0 }}
-          className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl dash-card border shadow-2xl"
+          className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-[2.5rem] sm:rounded-[2rem] dash-card border shadow-[0_30px_60px_rgba(158,24,29,0.12)]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b dash-border sticky top-0 bg-[var(--color-dash-surface)] z-10">

@@ -386,10 +386,10 @@ export default function AdminMerch() {
 
       {/* Product form modal */}
       {(editingProduct || addingToCat) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
           <form
             onSubmit={submitProduct}
-            className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)] max-h-[90vh] overflow-y-auto"
           >
             <h2 className="font-display font-bold text-xl dash-heading mb-4">
               {editingProduct ? 'Edit product' : 'Add product'}
