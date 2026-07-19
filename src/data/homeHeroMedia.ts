@@ -1,7 +1,4 @@
 import type { CmsText } from '../lib/cmsTypography';
-import { SEO_PREMIUM_MATCHA_MARIKINA } from '../content/seo';
-
-const PREMIUM_MATCHA_ALT = SEO_PREMIUM_MATCHA_MARIKINA;
 
 export type HomeMediaSource = 'KadoKohi Social' | 'InsideMarikina';
 
@@ -18,140 +15,97 @@ export interface HomeHeroSlide {
   id: string;
   title: CmsText;
   subtitle: CmsText;
+  /** Desktop / landscape banner (wide cream campaign art). */
   image: string;
+  /** Portrait art from Heroes/Mobile — used below lg. */
+  imageMobile: string;
   imageAlt: string;
   source: HomeMediaSource;
   cards: HomeHeroCardMedia[];
 }
 
-const SOCIAL = '/Social Media References';
-const FEATURED = '/featuredmarikina';
+/** Figma desktop Heroes — cream full-bleed banners (product lives in the art). */
+const HERO = '/heroes';
+const HERO_MOBILE = '/heroes/mobile';
+
+/** True for pre-Figma seed/CMS paths so clamp can adopt the new banners. */
+export function isLegacyHeroImage(src: string | undefined): boolean {
+  if (!src) return true;
+  return (
+    src.includes('Social Media References') ||
+    src.includes('featuredmarikina') ||
+    src.startsWith('/social/')
+  );
+}
+
+/** Missing or non-mobile path → adopt seed portrait assets. */
+export function isLegacyOrMissingMobileHero(src: string | undefined): boolean {
+  if (!src) return true;
+  if (isLegacyHeroImage(src)) return true;
+  return !src.includes('/heroes/mobile/');
+}
+
+function bannerCards(
+  slideId: string,
+  image: string,
+  alt: string,
+  source: HomeMediaSource,
+): HomeHeroCardMedia[] {
+  // Collage is hidden in the public hero; CMS still expects four card slots.
+  return [0, 1, 2, 3].map((i) => ({
+    id: `${slideId}-card-${i + 1}`,
+    src: image,
+    alt,
+    title: i === 0 ? 'Hero banner' : `Frame ${i + 1}`,
+    tag: 'Banner',
+    source,
+  }));
+}
 
 export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
   {
-    id: 'matcha-series',
-    title: 'Matcha Series',
-    subtitle: 'Bold Japanese-inspired visuals, premium matcha, and modern cafe craft in every cup.',
-    image: `${SOCIAL}/Copy of 3.webp`,
-    imageAlt: 'Kado Kohi matcha latte poster from social media campaign',
+    id: 'handcrafted-espresso',
+    title: 'Handcrafted With Care',
+    subtitle: 'Every cup tells a story of dedicated craftsmanship and rich local heritage.',
+    image: `${HERO}/espresso.webp`,
+    imageMobile: `${HERO_MOBILE}/espresso.webp`,
+    imageAlt: 'Kado Kohi iced specialty latte with coffee splash and floating beans',
     source: 'KadoKohi Social',
-    cards: [
-      {
-        id: 'social-10',
-        src: `${SOCIAL}/Copy of 10.webp`,
-        alt: 'Kado Kohi story campaign',
-        title: 'Story Campaign',
-        tag: 'Story',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-5',
-        src: '/social/matcha-latte.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-4',
-        src: '/social/matcha-series.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-8',
-        src: `${SOCIAL}/Copy of 8.webp`,
-        alt: 'Kado Kohi coffee series square campaign art',
-        title: 'Coffee Series',
-        tag: 'Square',
-        source: 'KadoKohi Social',
-      },
-    ],
+    cards: bannerCards(
+      'handcrafted-espresso',
+      `${HERO}/espresso.webp`,
+      'Kado Kohi iced specialty latte with coffee splash',
+      'KadoKohi Social',
+    ),
   },
   {
-    id: 'coffee-culture',
-    title: 'Coffee Culture In Marikina',
-    subtitle: 'Rooted in local culture, featured in community stories, and built for modern coffee rituals.',
-    image: `${FEATURED}/kadom1.webp`,
-    imageAlt: 'Kado Kohi featured photo from InsideMarikina',
+    id: 'kado-kohi-social',
+    title: 'Kado Kohi Social',
+    subtitle: 'Follow our journey and stay updated with our latest community stories and offerings.',
+    image: `${HERO}/social.webp`,
+    imageMobile: `${HERO_MOBILE}/social.webp`,
+    imageAlt: 'Kado Kohi café Polaroid collage with Live Laugh Love Coffee sticker',
     source: 'InsideMarikina',
-    cards: [
-      {
-        id: 'featured-1',
-        src: `${FEATURED}/kadom1.webp`,
-        alt: 'InsideMarikina featured photo of Kado Kohi',
-        title: 'Featured Marikina',
-        tag: 'Community',
-        source: 'InsideMarikina',
-      },
-      {
-        id: 'featured-2',
-        src: '/social/matcha-latte.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-6',
-        src: '/social/matcha-series.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-2',
-        src: `${SOCIAL}/Copy of 2.webp`,
-        alt: 'Kado Kohi cafe latte social card',
-        title: 'Cafe Latte',
-        tag: 'Portrait',
-        source: 'KadoKohi Social',
-      },
-    ],
+    cards: bannerCards(
+      'kado-kohi-social',
+      `${HERO}/social.webp`,
+      'Kado Kohi café Polaroid collage',
+      'InsideMarikina',
+    ),
   },
   {
-    id: 'campaign-grid',
-    title: 'Designed For Social-First Moments',
-    subtitle: 'Campaign-driven aesthetics with strong typography, elevated drink styling, and clear brand identity.',
-    image: `${SOCIAL}/Copy of 9.webp`,
-    imageAlt: 'Kado Kohi portrait campaign board',
+    id: 'premium-matcha-rituals',
+    title: 'Premium Matcha Rituals',
+    subtitle: 'Carefully sourced and traditionally prepared, our matcha brings balance to your day.',
+    image: `${HERO}/matcha.webp`,
+    imageMobile: `${HERO_MOBILE}/matcha.webp`,
+    imageAlt: 'Kado Kohi iced matcha oat lattes with matcha leaves',
     source: 'KadoKohi Social',
-    cards: [
-      {
-        id: 'social-10b',
-        src: `${SOCIAL}/Copy of 10.webp`,
-        alt: 'Kado Kohi story format campaign visual',
-        title: 'Story Campaign',
-        tag: 'Story',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-5b',
-        src: '/social/matcha-latte.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-2square',
-        src: '/social/matcha-series.webp',
-        alt: PREMIUM_MATCHA_ALT,
-        title: 'Premium Matcha',
-        tag: 'Marikina',
-        source: 'KadoKohi Social',
-      },
-      {
-        id: 'social-4b',
-        src: `${SOCIAL}/Copy of 4.webp`,
-        alt: 'Kado Kohi matcha portrait',
-        title: 'Matcha Visual',
-        tag: 'Portrait',
-        source: 'KadoKohi Social',
-      },
-    ],
+    cards: bannerCards(
+      'premium-matcha-rituals',
+      `${HERO}/matcha.webp`,
+      'Kado Kohi iced matcha oat lattes',
+      'KadoKohi Social',
+    ),
   },
 ];

@@ -1,11 +1,14 @@
+/**
+ * Signature Sips — homepage section 2.
+ * Layout mirrors Figma strictly: cream stage, thick red frame, red price bar.
+ */
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import ProductDetailDrawer from '../ProductDetailDrawer';
 import { TimelineContent } from '../ui/timeline-animation';
 import { useMenuStore } from '../../store/menuStore';
-import { useAuthStore } from '../../store/authStore';
 import type { Product } from '../../types/domain';
 import type { FeaturedCopy } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
@@ -26,56 +29,55 @@ const cardReveal: Variants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { delay: i * 0.1, duration: 0.55, ease: 'easeOut' as const },
+    transition: { delay: i * 0.1, duration: 0.5, ease: 'easeOut' as const },
   }),
-  hidden: { opacity: 0, y: 28, scale: 0.98 },
+  hidden: { opacity: 0, y: 24 },
 };
 
-function drinkTag(drink: Product, categoryLabel: string): string {
-  if (drink.tags?.[0]) return drink.tags[0];
-  if (drink.temperature === 'iced') return 'Iced';
-  if (drink.temperature === 'hot') return 'Hot';
-  return categoryLabel;
+/** Figma cards always lead with iced presentation; promo still wins when on sale. */
+function cardBadge(drink: Product): string {
+  const promo = productPromoTag(drink);
+  if (promo) return promo;
+  return 'Iced-Only';
 }
 
 function drinkBlurb(drink: Product): string {
-  if (drink.description) return drink.description;
-  if (drink.temperature === 'iced') return 'Served iced — crisp and refreshing.';
-  if (drink.temperature === 'both') return 'Available hot or iced.';
-  return 'Hand-crafted in-house.';
+  if (drink.description?.trim()) return drink.description;
+  return 'Served iced — crisp and refreshing.';
+}
+
+/** Display name shortened to match Figma labels where DB uses the long oat title. */
+function displayName(drink: Product): string {
+  if (drink.id === 'prod_matcha_straw') return 'Matcha Strawberry Latte';
+  return drink.name;
 }
 
 type CardProps = {
   drink: Product;
-  categoryLabel: string;
   index: number;
-  hero?: boolean;
   imageOverride?: string;
   cmsEditMode?: boolean;
   cardIndex?: number;
   onImageOverride?: (url: string) => void;
   sectionRef: RefObject<HTMLElement | null>;
   onSelect: (p: Product) => void;
-  orderHint: string;
 };
 
 function DrinkCard({
   drink,
-  categoryLabel,
   index,
-  hero,
   imageOverride,
   cmsEditMode,
   cardIndex,
   onImageOverride,
   sectionRef,
   onSelect,
-  orderHint,
 }: CardProps) {
   const menuImage = getMenuProductImageUrl(drink);
   const image = imageOverride?.trim() || menuImage;
-  const tag = productPromoTag(drink) ?? drinkTag(drink, categoryLabel);
+  const promo = productPromoTag(drink);
+  const name = displayName(drink);
+  const price = formatPhp(discountedBasePrice(drink));
 
   return (
     <TimelineContent
@@ -85,82 +87,75 @@ function DrinkCard({
       timelineRef={sectionRef}
       customVariants={cardReveal}
       onClick={() => onSelect(drink)}
+      aria-label={`${name}, ${price}. Add to cart`}
       className={[
-        'group relative w-full touch-manipulation overflow-hidden rounded-2xl text-left',
-        'border border-kado-dark/10 bg-kado-dark',
-        'shadow-[0_18px_48px_rgba(25,25,25,0.12)]',
-        'transition-[transform,box-shadow] duration-500',
-        'hover:-translate-y-1 hover:shadow-[0_28px_56px_rgba(158,24,29,0.18)]',
-        'active:scale-[0.99]',
+        'group flex w-full touch-manipulation flex-col overflow-hidden text-left',
+        'rounded-[1.75rem] border-[6px] border-kado-red bg-[#F3E6C9]',
+        'transition-transform duration-300 hover:-translate-y-0.5 active:scale-[0.99]',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2 focus-visible:ring-offset-kado-cream',
-        hero
-          ? 'aspect-[3/4] max-h-[26rem] lg:aspect-auto lg:max-h-none lg:min-h-full lg:row-span-2'
-          : 'aspect-[4/5] max-h-[20rem] lg:aspect-auto lg:max-h-none lg:min-h-[18rem]',
       ].join(' ')}
     >
-      {cmsEditMode && cardIndex !== undefined && onImageOverride ? (
-        <CmsEditableImage
-          cmsField={`featured.card.${cardIndex}.image`}
-          cmsLabel={`Featured card ${cardIndex + 1} image`}
-          src={image}
-          alt={drink.name}
-          className="absolute inset-0 h-full w-full"
-          onImageChange={onImageOverride}
-        />
-      ) : (
-        <ResilientImage
-          src={image}
-          fallbackSrc={image !== menuImage ? menuImage : undefined}
-          alt={drink.name}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-        />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/50 to-kado-dark/15" />
-      <div className="absolute inset-0 bg-gradient-to-br from-kado-red/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      {/* Cream product stage */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#F3E6C9]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-[22%] z-0 text-center font-sans text-[clamp(1.85rem,6.5vw,2.85rem)] font-black uppercase tracking-[0.12em] text-[#D9C8A4]/70 select-none"
+        >
+          Kado Kōhī
+        </span>
 
-      <span className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-white/20 bg-kado-red/90 px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-kado-cream backdrop-blur-sm sm:left-4 sm:top-4 sm:px-3 sm:text-[10px]">
-        {tag}
-      </span>
+        {cmsEditMode && cardIndex !== undefined && onImageOverride ? (
+          <CmsEditableImage
+            cmsField={`featured.card.${cardIndex}.image`}
+            cmsLabel={`Featured card ${cardIndex + 1} image`}
+            src={image}
+            alt={name}
+            className="absolute inset-0 z-10 h-full w-full object-contain object-[center_42%] p-5 pb-28 sm:p-7 sm:pb-32"
+            onImageChange={onImageOverride}
+          />
+        ) : (
+          <ResilientImage
+            src={image}
+            fallbackSrc={image !== menuImage ? menuImage : undefined}
+            alt={name}
+            className="absolute inset-0 z-10 h-full w-full object-contain object-[center_42%] p-5 pb-28 transition-transform duration-500 ease-out group-hover:scale-[1.03] sm:p-7 sm:pb-32"
+          />
+        )}
 
-      <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-5">
-        <p className="mb-1 kado-label text-kado-cream/55">
-          {categoryLabel}
-        </p>
-        <div className="flex items-end justify-between gap-2 sm:gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="kado-h3 text-kado-offwhite line-clamp-2">
-              {drink.name}
-            </h3>
-            {!hero && (
-              <p className="mt-1 line-clamp-2 kado-body-sm text-kado-cream/70">
-                {drinkBlurb(drink)}
-              </p>
-            )}
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
-            <span className="flex flex-col items-end leading-none">
-              {productPromoTag(drink) ? (
-                <span className="mb-1 text-[10px] font-semibold text-kado-cream/55 line-through">
-                  {formatPhp(drink.basePrice)}
-                </span>
-              ) : null}
-              <span className="kado-h3 text-kado-cream">
-                {formatPhp(discountedBasePrice(drink))}
-              </span>
-            </span>
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-kado-cream backdrop-blur-sm transition-colors group-hover:bg-kado-red group-hover:border-kado-red sm:h-9 sm:w-9">
-              <Plus className="h-4 w-4" aria-hidden />
-            </span>
-          </div>
-        </div>
-        {hero && (
-          <p className="mt-2 line-clamp-3 kado-body-sm text-kado-cream/75 sm:mt-3 sm:line-clamp-none">
+        <span className="absolute left-3.5 top-3.5 z-20 rounded-full bg-kado-red px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-kado-cream sm:left-4 sm:top-4">
+          {cardBadge(drink)}
+        </span>
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42%] bg-gradient-to-t from-kado-dark/90 via-kado-dark/45 to-transparent"
+        />
+
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 sm:px-5 sm:pb-5">
+          <h3 className="font-sans text-[1.05rem] font-bold leading-tight text-white sm:text-[1.15rem]">
+            {name}
+          </h3>
+          <p className="mt-1 line-clamp-2 font-sans text-[0.8rem] leading-snug text-white/85 sm:text-[0.85rem]">
             {drinkBlurb(drink)}
           </p>
-        )}
-        <p className="mt-2 kado-subtext font-semibold uppercase tracking-[0.12em] text-kado-cream/45 transition-colors group-hover:text-kado-cream/80 sm:mt-3">
-          {orderHint}
-        </p>
+        </div>
+      </div>
+
+      {/* Solid red price bar — matches Figma frame */}
+      <div className="flex items-center justify-between gap-3 bg-kado-red px-4 py-3.5 sm:px-5 sm:py-4">
+        <span className="flex flex-col leading-none">
+          {promo ? (
+            <span className="mb-1 text-[10px] font-semibold text-kado-cream/55 line-through">
+              {formatPhp(drink.basePrice)}
+            </span>
+          ) : null}
+          <span className="font-sans text-[1.35rem] font-bold tracking-tight text-white sm:text-[1.5rem]">
+            {price.replace('₱', '₱ ')}
+          </span>
+        </span>
+        <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#F3E6C9] px-3.5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-kado-red transition-colors group-hover:bg-kado-offwhite sm:px-4 sm:text-[11px]">
+          + Add to cart
+        </span>
       </div>
     </TimelineContent>
   );
@@ -181,7 +176,6 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
   const menuDataSource = useMenuStore((s) => s.dataSource);
   const menuRemoteLoaded = useMenuStore((s) => s.remoteLoaded);
   const hydrateMenu = useMenuStore((s) => s.hydrateFromRemote);
-  const user = useAuthStore((s) => s.user);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
@@ -204,8 +198,6 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
   );
 
   const menuReady = menuRemoteLoaded && menuDataSource === 'remote';
-  const orderHint =
-    user?.role === 'customer' ? 'Tap to order' : 'Tap to view · sign in to order';
 
   return (
     <section
@@ -213,15 +205,22 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
       aria-labelledby="featured-coffees-heading"
       className="landing-section relative w-full overflow-x-clip bg-kado-cream"
     >
+      {/* Faint tan kanji — matching Figma atmosphere */}
       <div
         aria-hidden
-        className="kado-kanji-watermark -right-4 top-6 text-[clamp(7rem,20vw,18rem)] text-kado-red/[0.05] sm:-right-6 sm:top-8 md:right-8 md:top-4"
+        className="pointer-events-none absolute -right-2 top-4 select-none font-display text-[clamp(8rem,22vw,17rem)] font-black leading-none text-[#CDB892]/35 sm:right-4 sm:top-2"
+      >
+        角
+      </div>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-4 bottom-6 select-none font-display text-[clamp(6rem,16vw,13rem)] font-black leading-none text-[#CDB892]/28 sm:left-0 sm:bottom-10"
       >
         角
       </div>
 
-      <div className="relative mx-auto max-w-[1400px] min-w-0 pr-[max(0px,env(safe-area-inset-right))]">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-14">
+      <div className="relative mx-auto max-w-[1400px] min-w-0 px-[max(0px,env(safe-area-inset-left))] pr-[max(0px,env(safe-area-inset-right))]">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
           <div className="min-w-0 max-w-2xl">
             <TimelineContent
               as="div"
@@ -229,11 +228,11 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               timelineRef={sectionRef}
               className="mb-3 flex flex-wrap items-center gap-2.5 sm:mb-4 sm:gap-3"
             >
-              <BrandHybridMark size="md" className="h-9 w-9 shadow-md sm:h-11 sm:w-11" />
+              <BrandHybridMark size="md" className="h-9 w-9 sm:h-10 sm:w-10" />
               <CmsStyledText
                 value={copy.badge}
                 as="span"
-                className="max-w-full truncate rounded-full border border-kado-red/25 bg-kado-offwhite/80 px-3 py-1 kado-label"
+                className="max-w-full truncate rounded-full border border-kado-red bg-transparent px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.16em]"
                 defaultColorClass="text-kado-red"
                 {...cmsTextProps(cmsEditMode, 'featured.badge', 'Badge', (v) => updateFeatured({ badge: v }))}
               />
@@ -244,12 +243,12 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               id="featured-coffees-heading"
               animationNum={1}
               timelineRef={sectionRef}
-              className="kado-h2 text-kado-dark"
+              className="font-sans text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold leading-[1.15] tracking-tight text-kado-dark"
             >
               <CmsStyledText
                 value={copy.title}
                 as="span"
-                className="kado-h2 text-kado-dark"
+                className="font-sans text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold leading-[1.15] tracking-tight text-kado-dark"
                 {...cmsTextProps(cmsEditMode, 'featured.title', 'Title', (v) => updateFeatured({ title: v }))}
               />
             </TimelineContent>
@@ -258,7 +257,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               as="p"
               animationNum={2}
               timelineRef={sectionRef}
-              className="mt-3 max-w-xl kado-body text-kado-dark/70 sm:mt-4"
+              className="mt-3 max-w-xl font-sans text-[0.95rem] leading-relaxed text-kado-dark/75 sm:mt-3.5 sm:text-base"
             >
               <span className="hidden md:inline">
                 <CmsStyledText
@@ -285,11 +284,11 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
             as="div"
             animationNum={3}
             timelineRef={sectionRef}
-            className="flex w-full min-w-0 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 lg:w-auto"
+            className="flex w-full min-w-0 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 lg:w-auto lg:shrink-0"
           >
             <Link
               to={copy.shopCtaPath || '/menu'}
-              className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-kado-red px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-cream shadow-lg shadow-kado-red/20 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
+              className="inline-flex h-11 w-full min-h-[44px] items-center justify-center rounded-full bg-kado-red px-6 font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-kado-cream transition-transform hover:scale-[1.02] active:scale-[0.98] sm:h-12 sm:w-auto"
             >
               <CmsStyledText
                 value={copy.shopCtaLabel || 'View Shop'}
@@ -298,11 +297,10 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
                   updateFeatured({ shopCtaLabel: v }),
                 )}
               />
-              <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
             <Link
               to="/menu"
-              className="inline-flex h-11 w-full min-h-[44px] items-center justify-center gap-2 rounded-full border border-kado-dark/15 bg-kado-offwhite/90 px-5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-kado-dark transition-colors hover:border-kado-red/40 hover:text-kado-red sm:h-12 sm:w-auto sm:px-6 sm:text-xs sm:tracking-[0.14em]"
+              className="inline-flex h-11 w-full min-h-[44px] items-center justify-center rounded-full border border-kado-dark bg-white px-6 font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-kado-dark transition-colors hover:border-kado-red hover:text-kado-red sm:h-12 sm:w-auto"
             >
               <CmsStyledText
                 value={copy.menuCtaLabel}
@@ -315,54 +313,44 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
           </TimelineContent>
         </div>
 
-        <div className="mt-8 min-w-0 md:mt-10">
+        <div className="mt-9 min-w-0 md:mt-11">
           <div className="relative lg:hidden">
             {!menuReady ? (
               <div className="flex gap-3 overflow-hidden">
-                <div className="aspect-[3/4] w-[min(85vw,20rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10" />
-                <div className="aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10" />
+                <div className="aspect-[3/4] w-[min(78vw,18rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]" />
+                <div className="aspect-[3/4] w-[min(72vw,16rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]" />
               </div>
             ) : showcaseDrinks.length === 0 ? (
-              <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 sm:px-6 sm:py-8">
+              <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 font-sans text-kado-dark/60 sm:px-6 sm:py-8">
                 No coffee items are available on the menu yet. Add products in Admin → Menu, then select
                 them in Homepage content.
               </p>
             ) : (
               <div
-                className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-2 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x"
+                className="scrollbar-hide -mx-[max(1rem,env(safe-area-inset-left))] flex snap-x snap-mandatory gap-3.5 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1rem,env(safe-area-inset-left))] pb-2 scroll-pl-[max(1rem,env(safe-area-inset-left))] scroll-pr-10 touch-pan-x"
                 aria-label="Featured drinks carousel"
               >
                 {showcaseDrinks.map((drink, i) => (
-                  <div
-                    key={drink.id}
-                    className={[
-                      'shrink-0 snap-center',
-                      i === 0 ? 'w-[min(84vw,20rem)]' : 'w-[min(72vw,17rem)]',
-                    ].join(' ')}
-                  >
+                  <div key={drink.id} className="w-[min(78vw,18rem)] shrink-0 snap-center">
                     <DrinkCard
                       drink={drink}
-                      categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
                       index={i}
-                      hero={i === 0}
                       imageOverride={copy.cardImageOverrides[i]}
                       cmsEditMode={cmsEditMode}
                       cardIndex={i}
                       onImageOverride={(url) => setCardImage(i, url)}
                       sectionRef={sectionRef}
                       onSelect={setSelectedProduct}
-                      orderHint={orderHint}
                     />
                   </div>
                 ))}
               </div>
             )}
-            {/* Reserved row — prevents CLS 0.29 when “Swipe for more” mounts after menu hydrate */}
             <div className="mt-4 flex h-5 items-center justify-center gap-1.5" aria-hidden={showcaseDrinks.length <= 1}>
               {menuReady && showcaseDrinks.length > 1 ? (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 text-kado-dark/35" aria-hidden />
-                  <p className="kado-subtext font-semibold uppercase tracking-[0.18em] text-kado-dark/55">
+                  <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-kado-dark/55">
                     Swipe for more
                   </p>
                 </>
@@ -371,55 +359,36 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
           </div>
 
           {!menuReady ? (
-            <div className="hidden lg:grid lg:grid-cols-12 lg:grid-rows-2 lg:gap-5">
-              <div className="aspect-[3/4] w-[min(85vw,20rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 lg:col-span-7 lg:row-span-2 lg:aspect-auto lg:min-h-[22rem] lg:w-auto" />
-              <div className="aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 lg:col-span-5 lg:aspect-auto lg:min-h-[16rem] lg:w-auto" />
-              <div className="hidden aspect-[4/5] w-[min(72vw,17rem)] shrink-0 animate-pulse rounded-2xl bg-kado-dark/10 sm:block lg:col-span-5 lg:aspect-auto lg:min-h-[16rem] lg:w-auto" />
+            <div className="hidden gap-5 lg:grid lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="aspect-[3/4] animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]"
+                />
+              ))}
             </div>
           ) : showcaseDrinks.length === 0 ? (
-            <p className="hidden rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 kado-body text-kado-dark/60 lg:block sm:px-6 sm:py-8">
+            <p className="hidden rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 font-sans text-kado-dark/60 lg:block sm:px-6 sm:py-8">
               No coffee items are available on the menu yet. Add products in Admin → Menu, then select
               them in Homepage content.
             </p>
           ) : (
-            <>
-              {/* Desktop: bento grid */}
-              <div className="hidden lg:grid lg:grid-cols-12 lg:grid-rows-2 lg:gap-5 lg:min-h-[28rem]">
-                {showcaseDrinks[0] && (
-                  <div className="lg:col-span-7 lg:row-span-2">
-                    <DrinkCard
-                      drink={showcaseDrinks[0]}
-                      categoryLabel={categoryById.get(showcaseDrinks[0].categoryId) ?? 'Coffee'}
-                      index={0}
-                      hero
-                      imageOverride={copy.cardImageOverrides[0]}
-                      cmsEditMode={cmsEditMode}
-                      cardIndex={0}
-                      onImageOverride={(url) => setCardImage(0, url)}
-                      sectionRef={sectionRef}
-                      onSelect={setSelectedProduct}
-                      orderHint={orderHint}
-                    />
-                  </div>
-                )}
-                {showcaseDrinks.slice(1).map((drink, i) => (
-                  <div key={drink.id} className="lg:col-span-5">
-                    <DrinkCard
-                      drink={drink}
-                      categoryLabel={categoryById.get(drink.categoryId) ?? 'Coffee'}
-                      index={i + 1}
-                      imageOverride={copy.cardImageOverrides[i + 1]}
-                      cmsEditMode={cmsEditMode}
-                      cardIndex={i + 1}
-                      onImageOverride={(url) => setCardImage(i + 1, url)}
-                      sectionRef={sectionRef}
-                      onSelect={setSelectedProduct}
-                      orderHint={orderHint}
-                    />
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="hidden lg:grid lg:grid-cols-3 lg:gap-5 xl:gap-6">
+              {showcaseDrinks.map((drink, i) => (
+                <div key={drink.id}>
+                  <DrinkCard
+                    drink={drink}
+                    index={i}
+                    imageOverride={copy.cardImageOverrides[i]}
+                    cmsEditMode={cmsEditMode}
+                    cardIndex={i}
+                    onImageOverride={(url) => setCardImage(i, url)}
+                    sectionRef={sectionRef}
+                    onSelect={setSelectedProduct}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

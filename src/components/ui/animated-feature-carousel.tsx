@@ -8,7 +8,6 @@ import { useLandingContentStore } from '../../store/landingContentStore';
 import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
-import { LOGO } from '../../lib/brandTokens';
 import { toWebpSrc } from '../../lib/toWebpSrc';
 
 interface Step {
@@ -18,6 +17,14 @@ interface Step {
   description: CmsText;
   visual: ReactNode;
 }
+
+/** Figma Vector Arts — How it works step panels (Walk in / Online / Table / Loyalty). */
+const DEFAULT_STEP_ICONS = [
+  '/ordering/walk-in.webp',
+  '/ordering/online.webp',
+  '/ordering/table.webp',
+  '/ordering/loyalty.webp',
+] as const;
 
 function useStepIndex(total: number, interval = 7000, paused = false) {
   const [current, setCurrent] = useState(0);
@@ -32,241 +39,36 @@ function useStepIndex(total: number, interval = 7000, paused = false) {
   return { current, setStep };
 }
 
-function VisualInStore() {
+function StepArtVisual({ src, alt }: { src: string; alt: string }) {
+  const webp = toWebpSrc(src) || src;
+  const png = src.replace(/\.webp$/i, '.png');
+
   return (
-    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
-      <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-[2%] lg:w-[70%]">
+    <div className="flex h-full min-h-[220px] items-center justify-center sm:min-h-[260px] lg:min-h-full">
+      <picture>
+        <source type="image/webp" srcSet={webp} />
         <img
-          src={toWebpSrc('/images/hero-interior-sm.webp') || '/images/hero-interior-sm.webp'}
-          alt="Barista at the counter"
-          className="h-36 w-full object-cover sm:h-44 lg:h-52"
+          src={png}
+          alt={alt}
+          width={1080}
+          height={1080}
           loading="lazy"
           decoding="async"
-          width={720}
-          height={429}
+          className="h-auto max-h-[min(52svh,22rem)] w-full max-w-[22rem] object-contain select-none sm:max-h-[26rem] sm:max-w-[26rem] lg:max-h-none lg:max-w-[min(100%,28rem)]"
+          draggable={false}
           onError={(e) => {
-            e.currentTarget.src = '/images/hero-interior.webp';
+            const el = e.currentTarget;
+            if (el.src.endsWith('.webp') && png !== webp) {
+              el.src = png;
+              return;
+            }
+            if (el.src !== src) el.src = src;
           }}
         />
-        <div className="bg-kado-offwhite p-3 sm:p-4">
-          <div className="mb-2 flex items-center gap-2 sm:mb-3">
-            <img src={LOGO.hybridMark} alt="" className="h-5 w-5 object-contain" aria-hidden />
-            <span className="text-[11px] font-bold tracking-tight text-kado-dark">Kado Counter</span>
-          </div>
-          <div className="space-y-2">
-            {[
-              { name: 'Matcha Oat Latte', price: '₱185' },
-              { name: 'Iced Café Latte', price: '₱165' },
-            ].map((i) => (
-              <div
-                key={i.name}
-                className="flex items-center justify-between border-b border-kado-dark/8 py-1.5 last:border-0"
-              >
-                <span className="text-[10px] font-medium text-kado-dark">{i.name}</span>
-                <span className="text-[10px] font-bold text-kado-red">{i.price}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="rounded-xl border border-kado-cream/20 bg-kado-offwhite p-3 shadow-[0_16px_40px_rgba(0,0,0,0.35)] sm:p-4 lg:absolute lg:bottom-[6%] lg:left-0 lg:w-[44%]">
-        <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-kado-dark/40">Order #042</p>
-        <div className="mb-3 space-y-1">
-          <div className="flex justify-between text-[10px] text-kado-dark">
-            <span>Matcha Latte</span>
-            <span className="font-bold">₱185</span>
-          </div>
-          <div className="flex justify-between text-[10px] text-kado-dark">
-            <span>Ube Shio</span>
-            <span className="font-bold">₱195</span>
-          </div>
-        </div>
-        <div className="flex justify-between border-t border-dashed border-kado-dark/20 pt-2">
-          <span className="text-[9px] font-bold text-kado-dark/50">TOTAL</span>
-          <span className="text-[11px] font-black text-kado-red">₱380</span>
-        </div>
-      </div>
+      </picture>
     </div>
   );
 }
-
-function VisualOnlineOrder() {
-  return (
-    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
-      <div className="overflow-hidden rounded-2xl border border-kado-cream/15 shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-0 lg:top-0 lg:w-[74%]">
-        <div className="flex items-center gap-2 bg-kado-dark/95 px-3 py-2">
-          <div className="flex gap-1">
-            <div className="h-2 w-2 rounded-full bg-kado-red/80" />
-            <div className="h-2 w-2 rounded-full bg-yellow-500/80" />
-            <div className="h-2 w-2 rounded-full bg-green-500/80" />
-          </div>
-          <div className="flex-1 rounded-full bg-white/10 px-3 py-0.5">
-            <span className="font-mono text-[8px] text-white/45">kado-kohi.com/menu</span>
-          </div>
-        </div>
-        <div className="bg-kado-offwhite p-4">
-          <div className="mb-3 flex gap-1.5">
-            {['All', 'Hot', 'Iced', 'Matcha'].map((c, i) => (
-              <span
-                key={c}
-                className={clsx(
-                  'rounded-full px-2 py-0.5 text-[8px] font-bold',
-                  i === 0 ? 'bg-kado-red text-white' : 'bg-kado-cream text-kado-dark',
-                )}
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { n: 'Matcha Oat Latte', p: '₱185', img: '/social/matcha-latte.png' },
-              { n: 'Iced Café Latte', p: '₱165', img: '/social/cafe-latte.png' },
-            ].map((p) => (
-              <div key={p.n} className="overflow-hidden rounded-xl border border-kado-dark/5 bg-white shadow-sm">
-                <img src={p.img} alt={p.n} className="h-16 w-full object-cover" />
-                <div className="p-2">
-                  <p className="truncate text-[9px] font-bold text-kado-dark">{p.n}</p>
-                  <div className="mt-1 flex items-center justify-between">
-                    <p className="text-[9px] font-bold text-kado-red">{p.p}</p>
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-kado-red text-[10px] font-bold leading-none text-white">
-                      +
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 rounded-2xl border border-kado-cream/10 bg-kado-dark px-3 py-2.5 text-kado-cream shadow-[0_16px_40px_rgba(0,0,0,0.4)] sm:px-4 sm:py-3 lg:absolute lg:bottom-[8%] lg:left-0 lg:max-w-[90%]">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#007dfe] text-[8px] font-black">
-          GC
-        </div>
-        <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-kado-cream/50">GCash QR</p>
-          <p className="truncate text-[10px] font-black text-kado-cream">Pay · upload proof</p>
-        </div>
-        <div className="ml-auto shrink-0 rounded-lg bg-kado-red px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-white">
-          Checkout
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VisualQROrder() {
-  return (
-    <div className="flex h-full flex-col gap-3 sm:flex-row lg:relative lg:block lg:overflow-visible">
-      <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/15 bg-kado-offwhite shadow-[0_20px_48px_rgba(0,0,0,0.45)] lg:absolute lg:right-[2%] lg:top-[2%] lg:w-[58%]">
-        <div className="flex items-center gap-2 bg-kado-dark p-4">
-          <img
-            src={LOGO.hybridMark}
-            alt=""
-            className="h-6 w-6 object-contain brightness-0 invert"
-            aria-hidden
-          />
-          <div>
-            <p className="text-[10px] font-black tracking-tight text-kado-cream">TABLE 5</p>
-            <p className="text-[8px] text-kado-cream/40">Scan to order</p>
-          </div>
-        </div>
-        <div className="flex flex-col items-center p-4">
-          <div className="mb-2 h-28 w-28 rounded-xl border border-kado-dark/10 bg-white p-2 shadow-inner">
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='white'/%3E%3Crect x='4' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='60' y='4' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='68' y='12' width='16' height='16' fill='%239E181D'/%3E%3Crect x='4' y='60' width='32' height='32' fill='none' stroke='%23191919' stroke-width='4'/%3E%3Crect x='12' y='68' width='16' height='16' fill='%239E181D'/%3E%3C/svg%3E\")",
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-              }}
-            />
-          </div>
-          <p className="text-center text-[8px] font-medium text-kado-dark/40">Scan → menu → GCash QR</p>
-        </div>
-      </div>
-      <div className="flex-1 overflow-hidden rounded-2xl border border-kado-cream/10 bg-kado-dark shadow-[0_16px_40px_rgba(0,0,0,0.4)] lg:absolute lg:bottom-[4%] lg:left-0 lg:w-[52%]">
-        <img
-          src={toWebpSrc('/images/hero-coffee.png')}
-          alt="Coffee shop table"
-          className="h-16 w-full object-cover opacity-70"
-          loading="lazy"
-          decoding="async"
-        />
-        <div className="p-3">
-          <p className="mb-0.5 text-[8px] font-bold uppercase tracking-widest text-kado-red">Table 5 · Dine In</p>
-          <p className="text-[10px] font-bold text-kado-cream">Menu loaded!</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VisualLoyalty() {
-  return (
-    <div className="flex h-full flex-col gap-3 lg:relative lg:block lg:overflow-visible">
-      <div
-        className="relative overflow-hidden rounded-2xl border border-kado-cream/10 shadow-[0_24px_56px_rgba(0,0,0,0.5)] lg:absolute lg:right-0 lg:top-[0%] lg:w-[72%]"
-        style={{ background: 'linear-gradient(145deg,#9E181D 0%,#5c1014 48%,#2a0809 100%)' }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-kado-cream/10 blur-2xl"
-        />
-        <div className="relative p-5 sm:p-6">
-          <div className="mb-5 flex items-start justify-between">
-            <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.28em] text-kado-cream/55">Kado Circle</p>
-              <p className="font-display text-lg font-black tracking-tight text-kado-cream sm:text-xl">Juan Cruz</p>
-            </div>
-            <img
-              src={LOGO.hybridMark}
-              alt=""
-              className="h-9 w-9 rounded-xl object-contain brightness-0 invert"
-              aria-hidden
-            />
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            {Array(10)
-              .fill(0)
-              .map((_, i) => (
-                <div
-                  key={i}
-                  className={clsx(
-                    'flex aspect-square w-full items-center justify-center rounded-full border transition-transform',
-                    i < 8
-                      ? 'border-kado-cream/30 bg-kado-cream/95 shadow-sm'
-                      : 'border-kado-cream/15 bg-white/5',
-                  )}
-                >
-                  {i < 8 && <span className="text-[9px] font-black text-kado-red">角</span>}
-                </div>
-              ))}
-          </div>
-          <p className="mt-4 text-[9px] font-bold uppercase tracking-widest text-kado-cream/45">8 / 10 stamps</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 rounded-2xl border border-kado-cream/15 bg-kado-offwhite p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] sm:p-4 lg:absolute lg:bottom-[6%] lg:left-0 lg:w-[54%]">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kado-red shadow-md shadow-kado-red/30">
-          <span className="text-[9px] font-black uppercase tracking-wide text-kado-cream">+1</span>
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-kado-dark">Congrats! Free drink earned</p>
-          <p className="text-[8px] text-kado-dark/45">Redeem at any Kado branch</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const STEP_VISUALS = [
-  <VisualInStore key="walk-in" />,
-  <VisualOnlineOrder key="online" />,
-  <VisualQROrder key="qr" />,
-  <VisualLoyalty key="loyalty" />,
-] as const;
 
 const DEFAULT_STEP_COPY = [
   {
@@ -275,6 +77,7 @@ const DEFAULT_STEP_COPY = [
     title: 'Order at the counter.',
     description:
       'Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.',
+    icon: DEFAULT_STEP_ICONS[0],
   },
   {
     id: 'online-gcash',
@@ -282,6 +85,7 @@ const DEFAULT_STEP_COPY = [
     title: 'Menu, cart & GCash QR.',
     description:
       'Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order.',
+    icon: DEFAULT_STEP_ICONS[1],
   },
   {
     id: 'table-qr',
@@ -289,6 +93,7 @@ const DEFAULT_STEP_COPY = [
     title: 'Scan, order, pay with GCash.',
     description:
       'Scan the QR on your table to open the menu for your seat. Pay via GCash QR and upload proof — no app download required.',
+    icon: DEFAULT_STEP_ICONS[2],
   },
   {
     id: 'loyalty',
@@ -296,18 +101,26 @@ const DEFAULT_STEP_COPY = [
     title: 'Earn stamps & vouchers.',
     description:
       'Completed drink orders earn stamps. Claim voucher rewards in your account and apply them at checkout.',
+    icon: DEFAULT_STEP_ICONS[3],
   },
 ] as const;
 
 function buildSteps(copySteps?: OrderingCopy['steps']): Step[] {
   return DEFAULT_STEP_COPY.map((fallback, i) => {
     const cms = copySteps?.[i];
+    const icon = cms?.icon?.trim() || fallback.icon;
+    const eyebrow = cms?.eyebrow ?? fallback.eyebrow;
     return {
       id: fallback.id,
-      eyebrow: cms?.eyebrow ?? fallback.eyebrow,
+      eyebrow,
       title: cms?.title ?? fallback.title,
       description: cms?.description ?? fallback.description,
-      visual: STEP_VISUALS[i] ?? STEP_VISUALS[0],
+      visual: (
+        <StepArtVisual
+          src={icon}
+          alt={`${cmsTextPlain(eyebrow)} — how ordering works at Kado Kohi`}
+        />
+      ),
     };
   });
 }

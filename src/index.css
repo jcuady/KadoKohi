@@ -812,23 +812,20 @@ html.customer-facing {
   width: 100%;
 }
 
+/* Portrait Heroes/Mobile: keep product art readable under copy + CTAs */
+.landing-hero-media {
+  object-position: center 42%;
+}
+
+@media (min-width: 1024px) {
+  .landing-hero-media {
+    object-position: 68% center;
+  }
+}
+
 .landing-hero-mobile-bar {
   margin-top: auto;
   padding-top: 0.75rem;
-}
-
-@media (min-width: 64rem) {
-  .landing-hero-inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1.08fr) minmax(220px, 22rem);
-    align-items: center;
-    justify-content: unset;
-  }
-
-  .landing-hero-mobile-bar {
-    margin-top: 0;
-    padding-top: 0;
-  }
 }
 
 @media (orientation: landscape) and (max-height: 32rem) {
@@ -843,23 +840,8 @@ html.customer-facing {
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  .landing-hero-cards {
-    display: none !important;
-  }
-
   .landing-section {
     padding-block: clamp(1.75rem, 3vw + 0.75rem, 2.75rem);
-  }
-}
-
-@media (orientation: landscape) and (min-width: 64rem) and (max-height: 40rem) {
-  .landing-hero-inner {
-    grid-template-columns: minmax(0, 1fr) !important;
-    align-items: center !important;
-  }
-
-  .landing-hero-cards {
-    display: none !important;
   }
 }
 
@@ -874,11 +856,11 @@ html.customer-facing {
   z-index: 1;
 }
 
-/* Ordering section — dark visual stage with subtle grain (Frontend editorial) */
+/* Ordering section — maroon visual stage for Vector Arts step panels */
 .ordering-visual-stage {
   position: relative;
   isolation: isolate;
-  background-color: var(--color-kado-dark, #191919);
+  background-color: var(--color-kado-red, #9E181D);
 }
 
 .ordering-visual-stage::before {
@@ -887,8 +869,8 @@ html.customer-facing {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 72% 28%, rgba(158, 24, 29, 0.42), transparent 58%),
-    radial-gradient(ellipse 50% 40% at 12% 88%, rgba(241, 223, 186, 0.08), transparent 52%);
+    radial-gradient(ellipse 70% 55% at 70% 30%, rgba(241, 223, 186, 0.1), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 15% 85%, rgba(0, 0, 0, 0.18), transparent 50%);
   z-index: 0;
 }
 

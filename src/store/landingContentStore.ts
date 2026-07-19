@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { clampCmsTextField, cmsTextPlain, type CmsText } from '../lib/cmsTypography';
-import { HOME_HERO_SLIDES, type HomeHeroSlide, type HomeHeroCardMedia } from '../data/homeHeroMedia';
+import {
+  HOME_HERO_SLIDES,
+  isLegacyHeroImage,
+  isLegacyOrMissingMobileHero,
+  type HomeHeroSlide,
+  type HomeHeroCardMedia,
+} from '../data/homeHeroMedia';
 import { SEO_PREMIUM_MATCHA_MARIKINA } from '../content/seo';
 import { googleReviewsToTestimonials } from '../content/kadoGoogleReviews';
 import { clearLandingPreviewDraft, writeLandingPreviewDraft } from '../lib/landingPreviewSession';
@@ -277,7 +283,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Order at the counter.',
     description:
       'Pull up, pick your drink. Walk in to any branch, browse the board, and tell your barista how you want it — every cup pulled fresh.',
-    icon: '',
+    icon: '/ordering/walk-in.webp',
   },
   {
     id: 'online-gcash',
@@ -285,7 +291,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Menu, cart & GCash QR.',
     description:
       'Sign in, browse the full menu, and checkout with GCash QR. Upload your payment screenshot — we confirm and queue your order for pickup or delivery.',
-    icon: '',
+    icon: '/ordering/online.webp',
   },
   {
     id: 'table-qr',
@@ -293,7 +299,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Scan, order, pay with GCash.',
     description:
       'Scan the QR on your table to open the menu for your seat. Add drinks, pay via GCash QR, and upload proof — no app download, no waiting to flag staff.',
-    icon: '',
+    icon: '/ordering/table.webp',
   },
   {
     id: 'loyalty',
@@ -301,7 +307,7 @@ const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
     title: 'Earn stamps & vouchers.',
     description:
       'Completed drink orders earn stamps on your card. Claim rewards in your account, then apply vouchers at checkout for free drinks and merch perks.',
-    icon: '',
+    icon: '/ordering/loyalty.webp',
   },
 ];
 
@@ -368,9 +374,9 @@ const SEED_MENU_SEO_PILLARS: [
 export const SEED_CONTENT: LandingContentState = {
   heroSlides: HOME_HERO_SLIDES,
   heroChrome: {
-    mainHeadline: 'Kado Coffee — Ceremonial Grade Matcha & Specialty Coffee',
-    locationBadge: 'Kado Coffee · Metro Manila',
-    imageCredit: 'Images: Kado Kohi Social',
+    mainHeadline: 'Kado Coffee — Matcha & Specialty Coffee in Marikina',
+    locationBadge: 'Kado Coffee — Marikina',
+    imageCredit: 'Images: Kado Kohi Social + InsideMarikina',
     primaryCtaLabel: 'Explore Menu',
     primaryCtaPath: '/menu',
     secondaryCtaLabel: 'Shop Merch',
@@ -424,7 +430,7 @@ export const SEED_CONTENT: LandingContentState = {
     menuCtaLabel: 'View Full Menu',
     shopCtaLabel: 'View Shop',
     shopCtaPath: '/menu',
-    productIds: ['', '', ''],
+    productIds: ['prod_matcha_straw', 'prod_dirty_matcha', 'prod_matcha_oat'],
     cardImageOverrides: ['', '', ''],
   },
   events: {
@@ -516,8 +522,14 @@ function clampCardOverrides(tuple: [string, string, string] | undefined): [strin
 }
 
 function clampFeaturedProducts(tuple: [string, string, string] | undefined): [string, string, string] {
-  if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return ['', '', ''];
-  return [tuple[0] ?? '', tuple[1] ?? '', tuple[2] ?? ''];
+  const seed = SEED_CONTENT.featured.productIds;
+  if (!tuple || !Array.isArray(tuple) || tuple.length < 3) return [...seed] as [string, string, string];
+  // Empty CMS slots → adopt Signature Sips seed trio (matcha showcase).
+  return [
+    tuple[0]?.trim() || seed[0],
+    tuple[1]?.trim() || seed[1],
+    tuple[2]?.trim() || seed[2],
+  ];
 }
 
 function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
@@ -526,19 +538,32 @@ function clampHeroSlides(slides: HomeHeroSlide[] | undefined): HomeHeroSlide[] {
   return seed.map((seedSlide, i) => {
     const saved = slides[i];
     if (!saved) return seedSlide;
-    const cards = seedSlide.cards.map((seedCard, ci) => ({
-      ...seedCard,
-      ...(saved.cards?.[ci] ?? {}),
-      id: seedCard.id,
-      title: clampCmsTextField(saved.cards?.[ci]?.title, seedCard.title),
-      tag: clampCmsTextField(saved.cards?.[ci]?.tag, seedCard.tag),
-    }));
+    const adoptedNewBanner = isLegacyHeroImage(saved.image);
+    const image = adoptedNewBanner ? seedSlide.image : saved.image || seedSlide.image;
+    const imageMobile = isLegacyOrMissingMobileHero(saved.imageMobile)
+      ? seedSlide.imageMobile
+      : saved.imageMobile || seedSlide.imageMobile;
+    const cards = seedSlide.cards.map((seedCard, ci) => {
+      const savedCard = saved.cards?.[ci];
+      const cardSrc = isLegacyHeroImage(savedCard?.src) ? seedCard.src : savedCard?.src || seedCard.src;
+      return {
+        ...seedCard,
+        ...(savedCard ?? {}),
+        id: seedCard.id,
+        src: cardSrc,
+        title: adoptedNewBanner ? seedCard.title : clampCmsTextField(savedCard?.title, seedCard.title),
+        tag: adoptedNewBanner ? seedCard.tag : clampCmsTextField(savedCard?.tag, seedCard.tag),
+      };
+    });
     return {
       ...seedSlide,
       ...saved,
       id: seedSlide.id,
-      title: clampCmsTextField(saved.title, seedSlide.title),
-      subtitle: clampCmsTextField(saved.subtitle, seedSlide.subtitle),
+      image,
+      imageMobile,
+      imageAlt: adoptedNewBanner || !saved.imageAlt?.trim() ? seedSlide.imageAlt : saved.imageAlt,
+      title: adoptedNewBanner ? seedSlide.title : clampCmsTextField(saved.title, seedSlide.title),
+      subtitle: adoptedNewBanner ? seedSlide.subtitle : clampCmsTextField(saved.subtitle, seedSlide.subtitle),
       cards,
     };
   });
@@ -680,7 +705,7 @@ function clampOrderingSteps(saved: OrderingStepCopy[] | undefined): OrderingStep
       eyebrow: clampCmsTextField(s.eyebrow, fallback.eyebrow),
       title: clampCmsTextField(s.title, fallback.title),
       description: clampCmsTextField(s.description, fallback.description),
-      icon: '',
+      icon: s.icon?.trim() || fallback.icon,
     };
   });
 }
@@ -717,15 +742,31 @@ function clampFaq(raw: Partial<FaqCopy> | undefined, seed: FaqCopy): FaqCopy {
 export function normalizeLandingContent(raw: Partial<LandingContentState> | undefined): LandingContentState {
   if (!raw || typeof raw !== 'object') return SEED_CONTENT;
 
-  return {
-    heroSlides: clampHeroSlides(raw.heroSlides),
-    heroChrome: clampCmsSection(SEED_CONTENT.heroChrome, raw.heroChrome, [
+  const heroSlides = clampHeroSlides(raw.heroSlides);
+  const adoptFigmaHeroChrome =
+    !Array.isArray(raw.heroSlides) ||
+    raw.heroSlides.length === 0 ||
+    raw.heroSlides.some((slide) => isLegacyHeroImage(slide?.image));
+  const heroChrome = {
+    ...clampCmsSection(SEED_CONTENT.heroChrome, raw.heroChrome, [
       'mainHeadline',
       'locationBadge',
       'imageCredit',
       'primaryCtaLabel',
       'secondaryCtaLabel',
     ]),
+    ...(adoptFigmaHeroChrome
+      ? {
+          mainHeadline: SEED_CONTENT.heroChrome.mainHeadline,
+          locationBadge: SEED_CONTENT.heroChrome.locationBadge,
+          imageCredit: SEED_CONTENT.heroChrome.imageCredit,
+        }
+      : {}),
+  };
+
+  return {
+    heroSlides,
+    heroChrome,
     storySeo: {
       ...clampCmsSection(SEED_CONTENT.storySeo, raw.storySeo, [
         'badge',

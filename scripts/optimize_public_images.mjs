@@ -17,6 +17,11 @@ const TARGETS = [
   { dir: 'Social Media References', maxW: 1400, quality: 68 },
   { dir: 'featuredmarikina', maxW: 1400, quality: 70 },
   { dir: 'booth-photos', maxW: 1200, quality: 70 },
+  { dir: 'heroes', maxW: 1600, quality: 72 },
+  // Portrait mobile heroes (1080×1920 sources → keep width ≤900 for LCP).
+  { dir: 'heroes/mobile', maxW: 900, quality: 70 },
+  // How-it-works step vectors (Walk in / Online / Table / Loyalty).
+  { dir: 'ordering', maxW: 1200, quality: 88 },
   { dir: 'images', maxW: 1400, quality: 70, filter: /^hero-/ },
   { dir: '.', maxW: 900, quality: 72, files: ['hero-cup.png'] },
 ];
