@@ -4,8 +4,12 @@ import { ArrowUpRight, CalendarDays, Clock } from 'lucide-react';
 import { useBlogStore } from '../store/blogStore';
 import BlogGridSkeleton from '../components/catalog/BlogGridSkeleton';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import PublicPageBanner from '../components/seo/PublicPageBanner';
+import CollagePageHero from '../components/seo/CollagePageHero';
 import { toWebpSrc } from '../lib/toWebpSrc';
+import {
+  FEATURES_HERO_POLAROIDS,
+  FEATURES_HERO_STICKERS,
+} from '../data/collageHeroMedia';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', {
@@ -36,10 +40,13 @@ export default function Blog() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-kado-offwhite font-sans">
-      <PublicPageBanner
+      <CollagePageHero
+        titleId="features-page-title"
         eyebrow="Stories from the corner"
         title="Kado Kohi Features"
         description="Community runs, tambayan nights, booth season notes, and what's brewing at our Marikina cafe."
+        polaroids={FEATURES_HERO_POLAROIDS}
+        stickers={FEATURES_HERO_STICKERS}
       />
 
       <section className="px-6 py-16 md:py-24">
@@ -60,7 +67,7 @@ export default function Blog() {
                 key={post.id}
                 className="group flex flex-col overflow-hidden rounded-[1.25rem] border border-kado-dark/10 bg-white shadow-[0_12px_32px_rgba(25,25,25,0.06)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(158,24,29,0.1)]"
               >
-                <Link to={`/blog/${post.slug}`} className="relative block aspect-[4/3] overflow-hidden">
+                <Link to={`/features/${post.slug}`} className="relative block aspect-[4/3] overflow-hidden">
                   {post.imageUrl ? (
                     <img
                       src={toWebpSrc(post.imageUrl) || post.imageUrl}
@@ -96,12 +103,12 @@ export default function Blog() {
                       {post.readMinutes} min read
                     </span>
                   </div>
-                  <h2 className="kado-h3 text-kado-dark group-hover:text-kado-red transition-colors">
-                    <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+                  <h2 className="kado-h3 text-kado-dark transition-colors group-hover:text-kado-red">
+                    <Link to={`/features/${post.slug}`}>{post.title}</Link>
                   </h2>
                   <p className="mt-2 flex-1 kado-body-sm text-kado-dark/65">{post.excerpt}</p>
                   <Link
-                    to={`/blog/${post.slug}`}
+                    to={`/features/${post.slug}`}
                     className="mt-4 inline-flex items-center gap-1.5 kado-label text-kado-red transition-colors hover:text-kado-red-hover"
                   >
                     Read story

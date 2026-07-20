@@ -452,8 +452,8 @@ export default function AdminMenu() {
       visible: form.visible,
       tags: (() => {
         const tags = form.tags
-          .split(',')
-          .map((t) => t.trim())
+            .split(',')
+            .map((t) => t.trim())
           .filter(Boolean)
           .filter((t) => t.toLowerCase() !== 'promo');
         if (form.discountType) tags.unshift('promo');

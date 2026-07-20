@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight, Check, Mail, PartyPopper } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Leaf, Mail, PartyPopper } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBoothBookingStore } from '../../store/boothBookingStore';
 import { useBoothShowcaseStore } from '../../store/boothShowcaseStore';
@@ -369,24 +369,34 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
     );
   }
 
+  const ProposalIcon = bookingKind === 'matcha-bar' ? Leaf : PartyPopper;
+
   return (
-    <section className="py-8 px-6" id="booking-form">
-      <div className="max-w-3xl mx-auto">
-        <div className="rounded-2xl bg-white border border-kado-dark/10 p-5 md:p-8 shadow-sm">
-          <div className="flex items-start gap-4 mb-6">
-            <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-kado-red/10 text-kado-red shrink-0">
-              <PartyPopper className="w-6 h-6" />
-            </span>
-            <div>
-              <CmsStyledText value={pageCopy.proposalTitle} as="h2" className="font-display text-2xl md:text-3xl font-bold" defaultColorClass="text-kado-dark" />
-              <CmsStyledText
-                value={pageCopy.proposalDescription}
-                as="p"
-                className="mt-1 max-w-2xl leading-relaxed"
-                defaultSizeClass="kado-body-sm"
-                defaultColorClass="text-kado-dark/60"
-              />
+    <section className="border-t border-kado-dark/10 bg-kado-cream-deep/40 px-6 py-10 sm:py-12" id="booking-form">
+      <div className="mx-auto max-w-3xl">
+        <div className="overflow-hidden rounded-xl border border-kado-dark/10 bg-kado-offwhite shadow-none">
+          <div className="h-1.5 bg-kado-red" aria-hidden />
+          <div className="p-5 md:p-8">
+          <div className="mb-8">
+            <div className="mb-3 inline-flex items-center gap-2 text-kado-red">
+              <ProposalIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              <span className="kado-label text-kado-red">
+                {bookingKind === 'matcha-bar' ? 'Matcha bar proposal' : 'Event proposal'}
+              </span>
             </div>
+            <CmsStyledText
+              value={pageCopy.proposalTitle}
+              as="h2"
+              className="font-display text-2xl font-black tracking-tight md:text-3xl"
+              defaultColorClass="text-kado-dark"
+            />
+            <CmsStyledText
+              value={pageCopy.proposalDescription}
+              as="p"
+              className="mt-2 max-w-2xl leading-relaxed"
+              defaultSizeClass="kado-body-sm"
+              defaultColorClass="text-kado-dark/60"
+            />
           </div>
 
           <nav aria-label="Booking progress" className="mb-8">
@@ -395,31 +405,36 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
                 const done = step > s.id;
                 const active = step === s.id;
                 return (
-                  <li key={s.id} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                  <li key={s.id} className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
                       <span
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                          done
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                          done || active
                             ? 'bg-kado-red text-white'
-                            : active
-                              ? 'bg-kado-red/15 text-kado-red ring-2 ring-kado-red/40'
-                              : 'bg-kado-dark/8 text-kado-dark/45'
+                            : 'bg-kado-dark/8 text-kado-dark/40'
                         }`}
                       >
-                        {done ? <Check className="w-4 h-4" /> : s.id}
+                        {done ? <Check className="h-4 w-4" aria-hidden /> : s.id}
                       </span>
-                      <span className={`hidden sm:block text-[10px] font-bold uppercase tracking-wider truncate w-full text-center ${active ? 'text-kado-dark' : 'text-kado-dark/45'}`}>
+                      <span
+                        className={`hidden w-full truncate text-center text-[10px] font-bold uppercase tracking-wider sm:block ${
+                          active ? 'text-kado-dark' : 'text-kado-dark/40'
+                        }`}
+                      >
                         {s.title}
                       </span>
                     </div>
                     {idx < WIZARD_STEPS.length - 1 && (
-                      <span className={`h-0.5 flex-1 rounded-full mb-5 sm:mb-6 ${done ? 'bg-kado-red' : 'bg-kado-dark/10'}`} />
+                      <span
+                        className={`mb-5 h-0.5 flex-1 rounded-full sm:mb-6 ${done ? 'bg-kado-red' : 'bg-kado-dark/10'}`}
+                        aria-hidden
+                      />
                     )}
                   </li>
                 );
               })}
             </ol>
-            <p className="sm:hidden text-center text-xs font-semibold text-kado-dark/60 mt-2">
+            <p className="mt-2 text-center text-xs font-semibold text-kado-dark/60 sm:hidden">
               Step {step} of {WIZARD_STEPS.length}: {WIZARD_STEPS[step - 1].subtitle}
             </p>
           </nav>
@@ -653,6 +668,7 @@ export default function BookingWizard({ onStageChange, bookingKind = 'coffee-car
               )}
             </div>
           </form>
+          </div>
         </div>
       </div>
     </section>

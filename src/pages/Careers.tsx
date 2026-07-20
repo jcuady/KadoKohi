@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import PublicPageBanner from '../components/seo/PublicPageBanner';
+import CollagePageHero from '../components/seo/CollagePageHero';
 import CareerApplyModal from '../components/careers/CareerApplyModal';
 import CareerJobCard from '../components/careers/CareerJobCard';
 import CareerJobDetailPanel from '../components/careers/CareerJobDetailPanel';
@@ -16,6 +16,10 @@ import {
   writeCareerCatalogFilters,
 } from '../lib/careerCatalogFilters';
 import type { CareerListing } from '../lib/careersPageContent';
+import {
+  CAREERS_HERO_POLAROIDS,
+  CAREERS_HERO_STICKERS,
+} from '../data/collageHeroMedia';
 
 export default function Careers() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,19 +89,20 @@ export default function Careers() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-kado-offwhite font-sans">
-      <PublicPageBanner
-        align="start"
-        wide
+      <CollagePageHero
+        titleId="careers-page-title"
         eyebrow={pageCopy.heroEyebrow}
         title={pageCopy.heroTitle}
         description={pageCopy.heroDescription}
+        polaroids={CAREERS_HERO_POLAROIDS}
+        stickers={CAREERS_HERO_STICKERS}
       >
         {openRolesCount > 0 ? (
-          <p className="inline-flex rounded-full border border-kado-dark/10 bg-kado-offwhite px-4 py-2 text-[10px] font-black uppercase tracking-wider text-kado-dark/70">
+          <p className="inline-flex rounded-full border border-kado-red/25 bg-kado-offwhite px-4 py-2 text-[10px] font-black uppercase tracking-wider text-kado-red">
             {openRolesCount} open {openRolesCount === 1 ? 'role' : 'roles'}
           </p>
         ) : null}
-      </PublicPageBanner>
+      </CollagePageHero>
 
       <div className="sticky top-[4.5rem] z-30">
         <div className="mx-auto max-w-6xl px-6">

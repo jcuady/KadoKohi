@@ -202,11 +202,11 @@ On app load (`src/main.tsx`):
 
 | Channel | How created | Required fields | Payment typical | Visible to |
 |---------|-------------|-----------------|-----------------|------------|
-| `dine-in` | Scan table QR → `/order/qr/:code` | `tableId`, `branchId` | GCash QR or pay-at-store | Barista (branch), Admin |
-| `takeout` | Scan takeout QR → `/order/takeout?b=` | `guestName` (pickup name), `branchId` | GCash QR or pay-at-store | Barista (branch), Admin |
-| `online` | CartDrawer on menu (logged-in customer) | `customerId`, `branchId` | GCash QR | Admin, Staff (all orders) |
+| `dine-in` | Scan table QR → `/order/qr/:code` | `tableId`, `branchId` | PayMongo QR Ph, GCash QR, or pay-at-store | Barista (branch), Admin |
+| `takeout` | Scan takeout QR → `/order/takeout?b=` | `guestName` (pickup name), `branchId` | PayMongo QR Ph, GCash QR, or pay-at-store | Barista (branch), Admin |
+| `online` | CartDrawer on menu | `branchId`; `customerId` for PayMongo, guest name for guest GCash | PayMongo QR Ph (customer) or GCash QR (customer/guest) | Barista (branch), Admin, Staff |
 | `pos` | Barista/Admin POS | `staffId`, `branchId` | Pay at counter (`paid` immediately) | Barista, Admin |
-| `merch` | CartDrawer with merch items only | `customerId`, `branchId` | GCash QR | Staff, Admin |
+| `merch` | CartDrawer with merch items only | `branchId`; `customerId` for PayMongo, guest name for guest GCash | PayMongo QR Ph (customer) or GCash QR (customer/guest) | Staff, Admin |
 
 **Barista board** shows all five channels for the branch (admin sees all branches).  
 **Online orders** do not use the legacy `/order` page for the primary logged-in flow — customers order via global **CartDrawer** from `/menu`.
@@ -234,6 +234,21 @@ All order inserts go through **`kk_place_order` RPC** (never direct client INSER
 
 **Guest order tracking:** `kk_track_order` RPC (unguessable order UUID). Used by `OrderTrackingPanel` after QR placement.
 
+### 7.1.1 Payment/channel support matrix (source of truth)
+
+| Channel | PayMongo QR Ph (automated) | GCash QR (manual) | Pay at store |
+|---------|-----------------------------|-------------------|--------------|
+| Online coffee | Signed-in customer only | Customer or guest | No |
+| Online merch | Signed-in customer only | Customer or guest | No |
+| QR dine-in | Customer or guest | Customer or guest | Yes |
+| QR takeout | Customer or guest | Customer or guest | Yes |
+
+**PayMongo lifecycle:** unpaid order → `kk-paymongo-checkout` creates hosted QR Ph session → same-tab PayMongo payment → webhook (`kk-paymongo-webhook`, HMAC verified) marks paid automatically. The return page also calls `kk-paymongo-verify` with bounded polling to reconcile webhook delay, then shows confirmation and routes signed-in customers to their order history. Cancelled, failed, and expired sessions remain unpaid and expose retry/change/cancel actions.
+
+**GCash lifecycle:** unpaid order → app displays the branch GCash QR → customer uploads a compressed screenshot → `proof_submitted` → branch staff manually verify → `paid`. Kitchen status cannot advance before manual verification.
+
+**Durable architecture memory:** this document, migrations, automated tests, and the GraphQL **documentation schema** under [`schema/`](./schema/) (`kado-system.graphql` + `SYSTEM_INVENTORY.md`). That GraphQL SDL is **not** a live API — production remains Supabase Auth + PostgREST + `kk_*` RPCs + Edge Functions. The SDL exists so agents permanently retain pages, roles, entities, mutations, and flow mapping in one typed catalog.
+
 ---
 
 ### 7.2 Dine-in (QR table) — full transaction flow
@@ -252,7 +267,7 @@ Browse menu (category tabs)
   → buildQrCartTotals() computes subtotal, modifiers, tax, total
 
 Checkout (QrStickyCart expanded)
-  → Select payment: gcash-qr (default) | pay-at-store
+  → Select payment: paymongo (QR Ph) | gcash-qr | pay-at-store
   → placeOrder():
       channel: 'dine-in'
       tableId, branchId
@@ -264,6 +279,13 @@ Checkout (QrStickyCart expanded)
   → kk_place_order RPC persists order
   → sessionStorage tracks order (guestOrders.setTrackedOrder)
   → UI switches to OrderTrackingPanel
+
+If paymentMethod = paymongo:
+  → paymentStatus: 'unpaid', status: 'pending'
+  → /checkout/:orderId opens a PayMongo hosted QR Ph session
+  → PayMongo webhook marks payment paid automatically
+  → Return-page verify reconciles webhook delay and confirms the order
+  → Failed/cancelled/expired sessions expose retry or payment-method change
 
 If paymentMethod = gcash-qr:
   → paymentStatus: 'unpaid', status: 'pending'
@@ -300,7 +322,7 @@ Guest scans branch takeout QR
       guestName: pickup name
       NO tableId
 
-Payment + tracking: identical to dine-in (GCash proof or pay-at-store)
+Payment + tracking: identical to dine-in (PayMongo QR Ph, GCash proof, or pay-at-store)
 OrderTrackingPanel shows pickup context instead of table label
 ```
 
@@ -316,7 +338,8 @@ Customer browses /menu (or featured products on home)
   → Open CartDrawer (global, slide-over)
 
 Preconditions (canOrder):
-  → User role = 'customer' (must be logged in)
+  → PayMongo QR Ph requires signed-in customer
+  → GCash QR allows signed-in customer or guest with pickup name
   → orderHours.isOpen (10 min before close cutoff — onlineOrderHours.ts)
   → branch selected (active branches only)
   → cart not empty
@@ -328,15 +351,16 @@ Optional discounts (mutually exclusive):
 
 placeOrder():
   → channel: 'online' if cart has coffee; 'merch' if merch-only
-  → customerId required
-  → paymentMethod: 'gcash-qr' (fixed in CartDrawer)
+  → customerId required for PayMongo; optional for guest GCash
+  → paymentMethod: 'paymongo' | 'gcash-qr'
   → paymentStatus: 'unpaid'
   → loyalty voucher fields if applied
   → promoCode passed to kk_place_order
 
   → redeemVoucher() if voucher used
-  → navigate to /account/orders?placed=<orderId>
-  → Customer uploads GCash proof from account orders view
+  → navigate to /checkout/<orderId>
+  → PayMongo: hosted QR Ph → automatic webhook/verify confirmation
+  → GCash: display QR → upload proof → staff verification
 ```
 
 **Online hours:** Controlled by admin settings (`openTime`/`closeTime`) with `ONLINE_ORDER_CUTOFF_MINUTES = 10`.
@@ -386,7 +410,16 @@ Customer browses /merch
 
 ---
 
-### 7.7 Payment proof upload (GCash)
+### 7.7 Payment processing
+
+#### PayMongo QR Ph (automated)
+
+- `kk-paymongo-checkout`: validates order ownership/capability, amount, payment method, and same-origin return URLs; creates hosted QR Ph checkout.
+- `kk-paymongo-webhook`: public endpoint with PayMongo HMAC verification; idempotently records `paymongo_payment_id`, sets `payment_status = paid`, and accepts the queued order.
+- `kk-paymongo-verify`: authenticated customer or guest short-code fallback; reconciles delayed/missed webhook state from the PayMongo checkout session.
+- Browser return: `/checkout/:orderId?paymongo=success|cancel`; the success flow polls for a bounded period and supports retry without creating duplicate paid records.
+
+#### GCash QR (manual)
 
 Two paths:
 
@@ -408,9 +441,9 @@ Images compressed client-side (`compressPaymentProof.ts`) before upload to avoid
 ### Payment status (`PaymentStatus`)
 | Value | Meaning |
 |-------|---------|
-| `unpaid` | GCash order placed, no proof yet |
+| `unpaid` | PayMongo/GCash order placed; payment not yet confirmed |
 | `proof_submitted` | Guest/customer uploaded screenshot; awaiting staff verification |
-| `paid` | Payment confirmed (staff action or pay-at-store/POS default) |
+| `paid` | Payment confirmed (PayMongo automation, staff GCash approval, or pay-at-store/POS default) |
 | `refunded` | Refund processed |
 
 ### Kitchen / fulfillment status (`OrderStatus`)
@@ -419,7 +452,7 @@ pending → accepted → preparing → ready → served → completed
                                               ↘ cancelled (any stage)
 ```
 
-**GCash orders** skip `served` in auto-advance flow (`GCASH_FULFILLMENT_FLOW`).  
+**Gateway-paid orders** use the paid fulfillment path; GCash proof remains blocked until staff approval.
 **Pay-at-store / POS** use full flow including `served` for dine-in.
 
 ### Barista board columns (`kioskColumnKey`)
@@ -629,7 +662,14 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 | `kk_compute_loyalty_discount` | Server-side voucher discount |
 | `kk_admin_delete_order` | Admin hard-delete order |
 | `kk_admin_delete_table` | Admin table delete |
+| `kk_change_order_payment_method` | Unpaid order payment method switch (guest/customer) |
+| `kk_notify_customers` | Admin broadcast → `kk_customer_notifications` inbox |
+| `kk_submit_career_application` | Careers form submit |
+| `kk_admin_patch_booth_booking` | Staff/admin booth booking pipeline patch |
+| `kk_submit_booth_payment_proof` | Booth booking payment proof |
 | `increment_promo_uses` | Promo redemption counter (called from `kk_place_order`) |
+
+Full RPC + route + store inventory: [`schema/SYSTEM_INVENTORY.md`](./schema/SYSTEM_INVENTORY.md). Typed GraphQL catalog: [`schema/kado-system.graphql`](./schema/kado-system.graphql).
 
 **Helper functions (internal):** `kk_compute_unit_price`, `kk_compute_promo_discount`, `kk_jsonb_option_delta`, `kk_merch_variant_delta`, `kk_is_mix_match_cookie`, `kk_handle_new_user` (auth trigger).
 
@@ -662,9 +702,12 @@ Proof refs stored as `proof-storage:` prefix in DB — resolved via `usePaymentP
 | Function | Trigger | Purpose |
 |----------|---------|---------|
 | `kk-customer-signup` | Customer signup form | Create auth user + profile; handle email confirmation |
-| `kk-admin-users` | Admin user management | Create users, reset passwords, role assignment |
+| `kk-admin-users` | Admin user management | Create users, reset passwords, role assignment, scoped data resets |
 | `kk-send-contact` | Contact / Kado Circle forms | Resend email to shop inbox |
-| `kk-send-push` | Order notifications | Push to subscribed staff devices |
+| `kk-send-push` | Order / marketing notifications | Web push + customer inbox rows |
+| `kk-paymongo-checkout` | Checkout “Pay with QR Ph” | Create PayMongo hosted checkout session |
+| `kk-paymongo-verify` | Return / poll after PayMongo | Reconcile session → mark order paid |
+| `kk-paymongo-webhook` | PayMongo webhook (HMAC) | Idempotent paid mark |
 
 ---
 
@@ -735,9 +778,9 @@ python scripts/probe_greenhills_branch.py # Greenhills order channels smoke test
 | 5 Admin SaaS | ✅ | ✅ + merch, booth, loyalty, audit |
 | 6 DB-readiness wrapper | Partial | Repos in use; `src/lib/api.ts` exists |
 
-**Shipped beyond original plan:** merch, booth booking, loyalty vouchers, promo codes, GCash payment proofs, event form builder, staff role, SEO, Resend email, legal pages, in-stock toggle, PWA.
+**Shipped beyond original plan:** PayMongo QR Ph, merch, booth booking, loyalty vouchers, promo codes, GCash payment proofs, event form builder, staff role, SEO, Resend email, legal pages, in-stock toggle, PWA.
 
-**Still not shipped (original non-goals):** PayMongo gateway integration, production email infra beyond Resend, full payment gateway.
+**Still not shipped (original non-goals):** production email infrastructure beyond Resend and additional payment gateways beyond PayMongo QR Ph/manual GCash.
 
 ---
 
@@ -795,6 +838,9 @@ Reference when adding features — types mirror Postgres tables:
 | File | Use when |
 |------|----------|
 | `PROJECT_CONTEXT.md` | **This file** — start here |
+| `schema/kado-system.graphql` | **Durable GraphQL system model** (docs only — not a live GraphQL server) |
+| `schema/SYSTEM_INVENTORY.md` | Routes, stores, RPCs, edge fns, payment matrix for agents |
+| `schema/README.md` | How to use / update the GraphQL memory |
 | `AGENTS.md` | Short pointer for AI agents — read `PROJECT_CONTEXT.md` |
 | `.cursor/rules/` | Cursor rules: `karpathy-guidelines.mdc`, `project-context.mdc` |
 | `PROJECT_PLAN.md` | Historical architecture blueprint (partially stale) |
@@ -814,7 +860,7 @@ Reference when adding features — types mirror Postgres tables:
 ## 20. Open Questions & Known Gaps
 
 1. **Hero viewport peek** — client revision not fully implemented.
-2. **PayMongo** — type exists in domain; not integrated as live gateway.
+2. **PayMongo live certification** — integration is shipped; production success/cancel/webhook should be smoke-tested after credential or webhook changes.
 3. **PROJECT_PLAN** — historical; superseded by this file for architecture.
 4. **E2E stability** — admin/barista tests intermittently fail in CI.
 5. **Online orders to barista board** — baristas see all channels including online for their branch; original plan debated whether online should be admin-only.
@@ -1058,9 +1104,12 @@ Core operational tables referenced across migrations:
 | `kk_landing_content` | Homepage CMS JSON |
 | `kk_blog_posts` | Blog |
 | `kk_audit_log` | Staff action audit trail |
+| `kk_customer_notifications` | Customer in-app notification inbox |
 
 Booth packages/addons and booth page content tables exist in earlier booth migrations (`0011`, `0040`).
 
+Storage also includes `kado-cms-images` (landing/events/booth/pastries CMS). See §11 and `schema/SYSTEM_INVENTORY.md`.
+
 ---
 
-*Update this file when adding roles, routes, order channels, payment methods, RPCs, or major schema changes.*
+*Update this file **and** `schema/kado-system.graphql` / `schema/SYSTEM_INVENTORY.md` when adding roles, routes, order channels, payment methods, RPCs, or major schema changes.*

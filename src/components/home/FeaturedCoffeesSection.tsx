@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import ProductDetailDrawer from '../ProductDetailDrawer';
 import { TimelineContent } from '../ui/timeline-animation';
@@ -37,13 +37,29 @@ const cardReveal: Variants = {
 /** Figma cards always lead with iced presentation; promo still wins when on sale. */
 function cardBadge(drink: Product): string {
   const promo = productPromoTag(drink);
-  if (promo) return promo;
-  return 'Iced-Only';
+  if (promo) return promo.toUpperCase();
+  return 'ICED-ONLY';
 }
 
 function drinkBlurb(drink: Product): string {
   if (drink.description?.trim()) return drink.description;
   return 'Served iced — crisp and refreshing.';
+}
+
+/** Local cutout fallbacks for Signature Sips — matches Figma product cards. */
+const FEATURED_CUTOUT_BY_ID: Partial<Record<string, string>> = {
+  prod_matcha_straw: '/featured/matcha-strawberry.webp',
+  prod_dirty_matcha: '/featured/dirty-matcha-oat.webp',
+  prod_matcha_oat: '/featured/matcha-oat.webp',
+};
+
+function featuredDrinkImage(drink: Product, override?: string): string {
+  const fromOverride = override?.trim();
+  if (fromOverride) return fromOverride;
+  const fromProduct = getMenuProductImageUrl(drink);
+  const generic = getMenuProductImageUrl({ image: undefined, categoryId: drink.categoryId });
+  if (fromProduct !== generic) return fromProduct;
+  return FEATURED_CUTOUT_BY_ID[drink.id] ?? fromProduct;
 }
 
 /** Display name shortened to match Figma labels where DB uses the long oat title. */
@@ -73,11 +89,14 @@ function DrinkCard({
   sectionRef,
   onSelect,
 }: CardProps) {
-  const menuImage = getMenuProductImageUrl(drink);
-  const image = imageOverride?.trim() || menuImage;
+  const menuImage = featuredDrinkImage(drink, imageOverride);
+  const image = menuImage;
   const promo = productPromoTag(drink);
   const name = displayName(drink);
   const price = formatPhp(discountedBasePrice(drink));
+
+  const imageClassName =
+    'h-full w-full max-w-none object-contain object-bottom drop-shadow-[0_20px_28px_rgba(25,25,25,0.28)] transition-transform duration-500 ease-out group-hover:scale-[1.04]';
 
   return (
     <TimelineContent
@@ -90,71 +109,74 @@ function DrinkCard({
       aria-label={`${name}, ${price}. Add to cart`}
       className={[
         'group flex w-full touch-manipulation flex-col overflow-hidden text-left',
-        'rounded-[1.75rem] border-[6px] border-kado-red bg-[#F3E6C9]',
+        'rounded-[1.75rem] border-[7px] border-kado-red bg-kado-cream',
         'transition-transform duration-300 hover:-translate-y-0.5 active:scale-[0.99]',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red focus-visible:ring-offset-2 focus-visible:ring-offset-kado-cream',
       ].join(' ')}
     >
-      {/* Cream product stage */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#F3E6C9]">
+      {/* Cream product stage — drink fills frame (Figma reference) */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-kado-cream">
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-[22%] z-0 text-center font-sans text-[clamp(1.85rem,6.5vw,2.85rem)] font-black uppercase tracking-[0.12em] text-[#D9C8A4]/70 select-none"
+          className="pointer-events-none absolute inset-x-2 top-[15%] z-[1] select-none text-center font-display text-[clamp(1.65rem,6.8vw,2.75rem)] font-black uppercase leading-none tracking-[0.08em] text-kado-dark/[0.08]"
         >
-          Kado Kōhī
+          KADO KŌHĪ
         </span>
 
-        {cmsEditMode && cardIndex !== undefined && onImageOverride ? (
-          <CmsEditableImage
-            cmsField={`featured.card.${cardIndex}.image`}
-            cmsLabel={`Featured card ${cardIndex + 1} image`}
-            src={image}
-            alt={name}
-            className="absolute inset-0 z-10 h-full w-full object-contain object-[center_42%] p-5 pb-28 sm:p-7 sm:pb-32"
-            onImageChange={onImageOverride}
-          />
-        ) : (
-          <ResilientImage
-            src={image}
-            fallbackSrc={image !== menuImage ? menuImage : undefined}
-            alt={name}
-            className="absolute inset-0 z-10 h-full w-full object-contain object-[center_42%] p-5 pb-28 transition-transform duration-500 ease-out group-hover:scale-[1.03] sm:p-7 sm:pb-32"
-          />
-        )}
+        <div className="absolute inset-x-0 bottom-[19%] top-[6%] z-[2] flex items-end justify-center px-1 sm:px-2">
+          {cmsEditMode && cardIndex !== undefined && onImageOverride ? (
+            <CmsEditableImage
+              cmsField={`featured.card.${cardIndex}.image`}
+              cmsLabel={`Featured card ${cardIndex + 1} image`}
+              src={image}
+              alt={name}
+              className={imageClassName}
+              onImageChange={onImageOverride}
+            />
+          ) : (
+            <ResilientImage
+              src={image}
+              fallbackSrc={FEATURED_CUTOUT_BY_ID[drink.id]}
+              alt={name}
+              className={imageClassName}
+            />
+          )}
+        </div>
 
-        <span className="absolute left-3.5 top-3.5 z-20 rounded-full bg-kado-red px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-kado-cream sm:left-4 sm:top-4">
+        <span className="absolute left-3.5 top-3.5 z-20 rounded-full bg-kado-red px-3 py-1 font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-kado-cream sm:left-4 sm:top-4 sm:text-[10px]">
           {cardBadge(drink)}
         </span>
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42%] bg-gradient-to-t from-kado-dark/90 via-kado-dark/45 to-transparent"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-[46%] bg-gradient-to-t from-kado-dark/92 via-kado-dark/50 to-transparent"
         />
 
-        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 sm:px-5 sm:pb-5">
-          <h3 className="font-sans text-[1.05rem] font-bold leading-tight text-white sm:text-[1.15rem]">
+        <div className="absolute inset-x-0 bottom-0 z-[4] px-4 pb-4 sm:px-5 sm:pb-5">
+          <h3 className="font-display text-[1.05rem] font-bold leading-tight tracking-tight text-white sm:text-[1.2rem]">
             {name}
           </h3>
-          <p className="mt-1 line-clamp-2 font-sans text-[0.8rem] leading-snug text-white/85 sm:text-[0.85rem]">
+          <p className="mt-1 line-clamp-2 font-sans text-[0.78rem] leading-snug text-white/88 sm:text-[0.85rem]">
             {drinkBlurb(drink)}
           </p>
         </div>
       </div>
 
-      {/* Solid red price bar — matches Figma frame */}
-      <div className="flex items-center justify-between gap-3 bg-kado-red px-4 py-3.5 sm:px-5 sm:py-4">
+      {/* Solid red price bar — Figma frame footer */}
+      <div className="flex items-center justify-between gap-2.5 bg-kado-red px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
         <span className="flex flex-col leading-none">
           {promo ? (
             <span className="mb-1 text-[10px] font-semibold text-kado-cream/55 line-through">
-              {formatPhp(drink.basePrice)}
+              {formatPhp(drink.basePrice).replace('₱', '₱ ')}
             </span>
           ) : null}
-          <span className="font-sans text-[1.35rem] font-bold tracking-tight text-white sm:text-[1.5rem]">
+          <span className="font-display text-[1.35rem] font-bold tracking-tight text-white sm:text-[1.55rem]">
             {price.replace('₱', '₱ ')}
           </span>
         </span>
-        <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#F3E6C9] px-3.5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-kado-red transition-colors group-hover:bg-kado-offwhite sm:px-4 sm:text-[11px]">
-          + Add to cart
+        <span className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-kado-cream px-3 py-2.5 font-sans text-[9px] font-bold uppercase tracking-[0.1em] text-kado-red transition-colors group-hover:bg-kado-offwhite sm:px-4 sm:py-3 sm:text-[10px]">
+          <Plus className="h-3.5 w-3.5 shrink-0 stroke-[3]" aria-hidden />
+          Add to cart
         </span>
       </div>
     </TimelineContent>
@@ -317,8 +339,8 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
           <div className="relative lg:hidden">
             {!menuReady ? (
               <div className="flex gap-3 overflow-hidden">
-                <div className="aspect-[3/4] w-[min(78vw,18rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]" />
-                <div className="aspect-[3/4] w-[min(72vw,16rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]" />
+                <div className="aspect-[3/4] w-[min(78vw,18rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[7px] border-kado-red/35 bg-kado-cream" />
+                <div className="aspect-[3/4] w-[min(72vw,16rem)] shrink-0 animate-pulse rounded-[1.75rem] border-[7px] border-kado-red/35 bg-kado-cream" />
               </div>
             ) : showcaseDrinks.length === 0 ? (
               <p className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite/80 px-5 py-6 font-sans text-kado-dark/60 sm:px-6 sm:py-8">
@@ -363,7 +385,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="aspect-[3/4] animate-pulse rounded-[1.75rem] border-[6px] border-kado-red/35 bg-[#F3E6C9]"
+                  className="aspect-[3/4] animate-pulse rounded-[1.75rem] border-[7px] border-kado-red/35 bg-kado-cream"
                 />
               ))}
             </div>

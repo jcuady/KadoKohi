@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import PublicLayout from './layouts/PublicLayout';
 import RoleGate from './components/RoleGate';
@@ -91,6 +91,12 @@ function LazyRoutes({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteChunkFallback />}>{children}</Suspense>;
 }
 
+/** Legacy /blog/:slug → /features/:slug */
+function BlogSlugRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={slug ? `/features/${slug}` : '/features'} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -118,8 +124,10 @@ export default function App() {
           <Route path="/checkout/:orderId" element={<Checkout />} />
           <Route path="/merch" element={<Merch />} />
           <Route path="/pastries" element={<Pastries />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/features" element={<Blog />} />
+          <Route path="/features/:slug" element={<BlogPost />} />
+          <Route path="/blog" element={<Navigate to="/features" replace />} />
+          <Route path="/blog/:slug" element={<BlogSlugRedirect />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/book/coffee-cart" element={<BookBooth />} />
           <Route path="/book/matcha-bar" element={<BookBooth kind="matcha-bar" />} />

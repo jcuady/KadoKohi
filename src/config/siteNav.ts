@@ -69,7 +69,7 @@ export const PUBLIC_SITE_NAV: NavItem[] = [
     ],
   },
   { kind: 'link', label: 'Contact Us', path: '/contact' },
-  { kind: 'link', label: 'Features', path: '/blog' },
+  { kind: 'link', label: 'Features', path: '/features' },
 ];
 
 export function navPathsForItem(item: NavItem): string[] {

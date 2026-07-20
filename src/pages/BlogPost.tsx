@@ -27,7 +27,7 @@ export default function BlogPost() {
     void hydrateFromRemote().finally(() => setReady(true));
   }, [hydrateFromRemote, slug]);
 
-  if (!slug) return <Navigate to="/blog" replace />;
+  if (!slug) return <Navigate to="/features" replace />;
   if (!ready) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center bg-kado-offwhite">
@@ -35,18 +35,18 @@ export default function BlogPost() {
       </div>
     );
   }
-  if (!post) return <Navigate to="/blog" replace />;
+  if (!post) return <Navigate to="/features" replace />;
 
   return (
     <article className="flex min-h-screen w-full flex-col bg-kado-offwhite font-sans">
       <section className="relative border-b border-kado-dark/5 bg-kado-cream">
         <div className="mx-auto max-w-3xl px-6 pb-12 pt-28">
           <Link
-            to="/blog"
+            to="/features"
             className="mb-6 inline-flex items-center gap-2 kado-label text-kado-red transition-colors hover:text-kado-red-hover"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
-            All blogs
+            All features
           </Link>
           <span className="mb-3 inline-block rounded-full bg-kado-red px-3 py-1 kado-label text-white">
             {post.category}

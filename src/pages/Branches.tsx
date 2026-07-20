@@ -3,7 +3,11 @@ import { MapPin, Clock } from 'lucide-react';
 import { useBranchStore } from '../store/branchStore';
 import { branchDirectionsUrl, branchHeroImageUrl } from '../lib/branchMaps';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import PublicPageBanner from '../components/seo/PublicPageBanner';
+import CollagePageHero from '../components/seo/CollagePageHero';
+import {
+  BRANCHES_HERO_POLAROIDS,
+  BRANCHES_HERO_STICKERS,
+} from '../data/collageHeroMedia';
 
 export default function Branches() {
   const branches = useBranchStore((s) => s.branches);
@@ -14,11 +18,14 @@ export default function Branches() {
   }, [hydrateBranches]);
 
   return (
-    <div className="flex flex-col w-full bg-white font-sans min-h-screen">
-      <PublicPageBanner
+    <div className="flex min-h-screen w-full flex-col bg-white font-sans">
+      <CollagePageHero
+        titleId="branches-page-title"
         eyebrow="Locations"
-        title="Kado Coffee — Marikina"
+        title="Kado Coffee Branches"
         description="Coffee near me in Marikina & Sta. Elena — J.P. Laurel corner Mt. Everest. Greenhills branch coming soon."
+        polaroids={BRANCHES_HERO_POLAROIDS}
+        stickers={BRANCHES_HERO_STICKERS}
       />
 
       <section className="px-6 py-16 md:py-24">

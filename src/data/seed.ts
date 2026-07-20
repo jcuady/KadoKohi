@@ -332,7 +332,7 @@ export const SEED_BOOKING_SHOWCASE_GALLERY: BookingShowcaseMedia[] = [
   },
   {
     id: 'booking_media_2',
-    title: 'Wedding Reception Corner',
+    title: 'Wedding Receptions',
     caption: 'Elegant private setup with premium coffee service.',
     image: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=900&auto=format&fit=crop',
     tags: ['wedding', 'premium'],

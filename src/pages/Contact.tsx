@@ -10,9 +10,13 @@ import {
 import { sendInboundEmail, validateContactForm } from '../lib/sendInboundEmail';
 import ContactSocialLinks from '../components/ContactSocialLinks';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import PublicPageBanner from '../components/seo/PublicPageBanner';
+import CollagePageHero from '../components/seo/CollagePageHero';
 import { cn } from '../lib/utils';
 import { kadoMapsSearchUrl, isStaleMapsEmbedUrl, kadoMapsEmbedUrl } from '../content/kadoLocation';
+import {
+  CONTACT_HERO_POLAROIDS,
+  CONTACT_HERO_STICKERS,
+} from '../data/collageHeroMedia';
 
 function hasSocialLinks(s: ReturnType<typeof useSettingsStore.getState>['settings']) {
   return !!(s.socialInstagram?.trim() || s.socialFacebook?.trim() || s.socialTiktok?.trim());
@@ -77,19 +81,22 @@ export default function Contact() {
     : contact.mapsEmbedUrl;
 
   return (
-    <div className="flex flex-col w-full bg-white font-sans min-h-screen">
-      <PublicPageBanner
+    <div className="flex min-h-screen w-full flex-col bg-white font-sans">
+      <CollagePageHero
+        titleId="contact-page-title"
         eyebrow="Contact"
         title="We'd Love to Hear From You"
         description={
           <>
             Choose why you&apos;re reaching out — your message goes to{' '}
-            <a href={mailHref} className="font-bold text-kado-red hover:underline">
+            <a href={mailHref} className="font-bold text-kado-red underline-offset-2 hover:underline">
               {inboundEmail}
             </a>
             .
           </>
         }
+        polaroids={CONTACT_HERO_POLAROIDS}
+        stickers={CONTACT_HERO_STICKERS}
       />
 
       <section className="px-6 py-16 md:py-24">

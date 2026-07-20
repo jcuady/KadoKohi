@@ -23,13 +23,9 @@ import { toWebpSrc } from '../../lib/toWebpSrc';
 import type { Event } from '../../types/domain';
 import { cmsTextPlain } from '../../lib/cmsTypography';
 import type { CmsText } from '../../lib/cmsTypography';
+import EmptyCalendarMark from '../events/EmptyCalendarMark';
 
 const FALLBACK_EVENT_IMG = '/featuredmarikina/kadom2.jpg';
-const EMPTY_CALENDAR_WEBP = '/events/calendar-icon.webp';
-const EMPTY_CALENDAR_PNG = '/events/calendar-icon.png';
-/** Intrinsic size of Vector Arts calendar export (keep crisp ≥2× display). */
-const CALENDAR_W = 589;
-const CALENDAR_H = 603;
 
 type Props = { copy: EventsCopy; cmsEditMode?: boolean };
 
@@ -139,44 +135,26 @@ function EmptyRight({
 
   return (
     <div className="relative flex min-h-[min(48svh,26rem)] flex-col items-center justify-center bg-kado-red px-6 py-14 text-center sm:min-h-[32rem] sm:px-10 lg:py-16">
-      <div className="mb-8 flex items-center justify-center sm:mb-10">
-        <picture>
-          <source
-            type="image/webp"
-            srcSet={`${EMPTY_CALENDAR_WEBP} ${CALENDAR_W}w`}
-            sizes="(max-width: 640px) 48vw, 240px"
-          />
-          <img
-            src={EMPTY_CALENDAR_PNG}
-            srcSet={`${EMPTY_CALENDAR_PNG} ${CALENDAR_W}w`}
-            sizes="(max-width: 640px) 48vw, 240px"
-            alt=""
-            width={CALENDAR_W}
-            height={CALENDAR_H}
-            decoding="async"
-            fetchPriority="low"
-            className="h-auto w-[min(52%,15rem)] max-w-[15rem] object-contain select-none sm:w-[16rem] sm:max-w-none"
-            draggable={false}
-          />
-        </picture>
-      </div>
-      {/* CMS binds full body; split visual for Figma two-line stack */}
-      <div className="max-w-sm">
-        {cmsEditMode ? (
-          <CmsStyledText
-            value={copy.noEventBody}
-            as="p"
-            className="font-sans text-base leading-snug text-white sm:text-lg"
-            {...cmsTextProps(cmsEditMode, 'events.noEventBody', 'No events message', (v) =>
-              updateEvents({ noEventBody: v }),
-            )}
-          />
-        ) : (
-          <>
-            <p className="font-sans text-base font-semibold leading-snug text-kado-cream sm:text-lg">{line1}</p>
-            <p className="mt-1.5 font-sans text-sm font-normal text-kado-cream/85 sm:text-base">{line2}</p>
-          </>
-        )}
+      <div className="mx-auto flex w-full max-w-md flex-col items-center">
+        <EmptyCalendarMark className="mb-8 sm:mb-10" />
+        {/* CMS binds full body; split visual for Figma two-line stack */}
+        <div className="max-w-sm">
+          {cmsEditMode ? (
+            <CmsStyledText
+              value={copy.noEventBody}
+              as="p"
+              className="font-sans text-base leading-snug text-white sm:text-lg"
+              {...cmsTextProps(cmsEditMode, 'events.noEventBody', 'No events message', (v) =>
+                updateEvents({ noEventBody: v }),
+              )}
+            />
+          ) : (
+            <>
+              <p className="font-sans text-base font-semibold leading-snug text-kado-cream sm:text-lg">{line1}</p>
+              <p className="mt-1.5 font-sans text-sm font-normal text-kado-cream/85 sm:text-base">{line2}</p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

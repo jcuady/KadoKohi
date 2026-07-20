@@ -6,8 +6,9 @@ This repo is a **full-stack café operations platform** (not just a landing page
 
 1. Read **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** — the system bible:
    - §4 routes · §6–8 orders & payments · §11 Supabase/RPCs · §23–30 repo reference
-2. Follow **[.cursor/rules/karpathy-guidelines.mdc](./.cursor/rules/karpathy-guidelines.mdc)** — think first, minimal diffs, verify with tests/build.
-3. For brand/UI work: **[BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md](./BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md)** §1–2 (identity) and §3–5 (implementation gaps).
+2. For durable typed system memory (pages, roles, mutations, flows): **[schema/](./schema/)** — `kado-system.graphql` + `SYSTEM_INVENTORY.md` (documentation GraphQL only; runtime is still Supabase RPCs).
+3. Follow **[.cursor/rules/karpathy-guidelines.mdc](./.cursor/rules/karpathy-guidelines.mdc)** — think first, minimal diffs, verify with tests/build.
+4. For brand/UI work: **[BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md](./BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md)** §1–2 (identity) and §3–5 (implementation gaps).
 
 Cursor loads `.cursor/rules/project-context.mdc` automatically in every chat.
 

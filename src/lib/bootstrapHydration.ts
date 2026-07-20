@@ -136,7 +136,7 @@ export function hydrateOpsPortal(): Promise<void> {
 /** Route-aware public bundles (call from PublicLayout on pathname change). */
 export function hydrateForPublicPath(pathname: string): void {
   if (pathname.startsWith('/merch')) void hydrateMerch();
-  if (pathname.startsWith('/blog')) void hydrateBlog();
+  if (pathname.startsWith('/features') || pathname.startsWith('/blog')) void hydrateBlog();
   if (pathname === '/careers') void hydrateCareers();
   if (pathname.startsWith('/pastries')) void hydratePastries();
   if (pathname.startsWith('/events')) void hydrateEvents();

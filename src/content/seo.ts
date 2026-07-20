@@ -262,7 +262,7 @@ export const SEO_PUBLIC_ROUTES: SeoRouteMeta[] = [
       'Daily pastries and bakes at Kado Kohi in Sta. Elena, Marikina — pair with matcha, hojicha, and specialty coffee in-store.',
   },
   {
-    path: '/blog',
+    path: '/features',
     title: 'Kado Kohi Features | Community Runs & Events',
     description:
       'Stories from Kado Kohi — Kado Run community mornings, tambayan nights, mobile booth season, and cafe updates in Marikina.',
@@ -309,7 +309,7 @@ export const SEO_BREADCRUMBS: Array<{ path: string; name: string }> = [
   { path: '/book/coffee-cart', name: 'Coffee Cart Bookings' },
   { path: '/book/matcha-bar', name: 'Matcha Bar Bookings' },
   { path: '/careers', name: 'Careers' },
-  { path: '/blog', name: 'Features' },
+  { path: '/features', name: 'Features' },
   { path: '/branches', name: 'Branches' },
   { path: '/about', name: 'About' },
   { path: '/contact', name: 'Contact' },
@@ -324,7 +324,7 @@ export const SEO_SITEMAP_PATHS: Array<{ path: string; changefreq: string; priori
   { path: '/careers', changefreq: 'weekly', priority: '0.75' },
   { path: '/merch', changefreq: 'weekly', priority: '0.8' },
   { path: '/pastries', changefreq: 'weekly', priority: '0.75' },
-  { path: '/blog', changefreq: 'weekly', priority: '0.75' },
+  { path: '/features', changefreq: 'weekly', priority: '0.75' },
   { path: '/branches', changefreq: 'weekly', priority: '0.8' },
   { path: '/about', changefreq: 'monthly', priority: '0.7' },
   { path: '/contact', changefreq: 'monthly', priority: '0.7' },

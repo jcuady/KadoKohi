@@ -1,30 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import { ArrowDown } from 'lucide-react';
 import BookingSteps from '../components/booking/BookingSteps';
+import BookingShowcaseSection from '../components/booking/BookingShowcaseSection';
 import BookingWizard, { type BookingWizardStage } from '../components/booking/BookingWizard';
+import CollagePageHero from '../components/seo/CollagePageHero';
+import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { useBoothShowcaseStore } from '../store/boothShowcaseStore';
 import { useMatchaShowcaseStore } from '../store/matchaShowcaseStore';
 import { useBoothCatalogStore } from '../store/boothCatalogStore';
-import PageSeoBlurb from '../components/seo/PageSeoBlurb';
-import CmsStyledText from '../components/cms/CmsStyledText';
 import { boothChipKey } from '../lib/boothPageContent';
+import { cmsTextPlain } from '../lib/cmsTypography';
 import { BOOKING_PAGE_LABELS, type BookingPageKind } from '../lib/bookingPageKinds';
-
-const BOOTH_HERO_IMAGES = [
-  { src: '/booth-photos/booth-1.jpg', alt: 'Kado Kohi coffee cart event' },
-  { src: '/booth-photos/booth-2.jpg', alt: 'Kado Kohi coffee cart setup' },
-  { src: '/booth-photos/booth-3.jpg', alt: 'Kado Kohi coffee cart guests' },
-  { src: '/booth-photos/booth-4.jpg', alt: 'Kado Kohi event drinks' },
-  { src: '/booth-photos/booth-5.jpg', alt: 'Kado Kohi event venue' },
-  { src: '/booth-photos/booth-1.jpg', alt: 'Kado Kohi coffee cart' },
-] as const;
-
-const MATCHA_HERO_IMAGES = [
-  { src: '/social/matcha-series.png', alt: 'Kado Kohi matcha bar setup' },
-  { src: '/social/matcha-latte.png', alt: 'Matcha drinks at Kado Kohi events' },
-  { src: '/booth-photos/booth-3.jpg', alt: 'Guests at a Kado Kohi event bar' },
-] as const;
+import {
+  COFFEE_CART_HERO_POLAROIDS,
+  COFFEE_CART_HERO_STICKERS,
+  MATCHA_BAR_HERO_POLAROIDS,
+  MATCHA_BAR_HERO_STICKERS,
+} from '../data/collageHeroMedia';
 
 type Props = { kind?: BookingPageKind };
 
@@ -56,142 +48,48 @@ export default function BookBoothPage({ kind = 'coffee-cart' }: Props) {
     [showcaseMediaRaw],
   );
 
-  const seedHero = isMatcha ? MATCHA_HERO_IMAGES : BOOTH_HERO_IMAGES;
-  const heroImages = useMemo(() => {
-    const fromCms = showcaseMedia.map((m) => ({ src: m.image, alt: m.title || m.caption || 'Kado Kohi event' }));
-    const slots = seedHero.length;
-    const merged = [...fromCms];
-    for (const pad of seedHero) {
-      if (merged.length >= slots) break;
-      if (merged.some((img) => img.src === pad.src)) continue;
-      merged.push({ src: pad.src, alt: pad.alt });
-    }
-    while (merged.length < slots) {
-      const pad = seedHero[merged.length % seedHero.length]!;
-      merged.push({ src: pad.src, alt: pad.alt });
-    }
-    return merged.slice(0, slots);
-  }, [showcaseMedia, seedHero]);
+  const eyebrow = cmsTextPlain(pageCopy.heroEyebrow);
+  const title = [cmsTextPlain(pageCopy.heroTitleLine1), cmsTextPlain(pageCopy.heroTitleLine2)]
+    .filter(Boolean)
+    .join(' ');
+  const description = cmsTextPlain(pageCopy.heroDescription);
+  const ctaLabel = cmsTextPlain(pageCopy.heroCtaLabel) || 'Submit a proposal';
 
   return (
     <div className="w-full min-h-screen bg-kado-cream">
-      <section
-        className="relative w-full overflow-hidden bg-kado-dark"
-        style={{ minHeight: 'min(calc(100dvh - var(--public-nav-height, 4rem)), 40rem)' }}
+      {isMatcha ? <p className="sr-only">{BOOKING_PAGE_LABELS[kind]}</p> : null}
+
+      <CollagePageHero
+        titleId={isMatcha ? 'matcha-bar-page-title' : 'coffee-cart-page-title'}
+        eyebrow={eyebrow || (isMatcha ? 'Matcha Bar Experiences' : 'Events & Celebrations')}
+        title={title || (isMatcha ? 'Premium Matcha, Your Event.' : 'Your Moment, Our Space.')}
+        description={description}
+        polaroids={isMatcha ? MATCHA_BAR_HERO_POLAROIDS : COFFEE_CART_HERO_POLAROIDS}
+        stickers={isMatcha ? MATCHA_BAR_HERO_STICKERS : COFFEE_CART_HERO_STICKERS}
       >
-        <div className={`absolute inset-0 gap-0.5 opacity-60 ${isMatcha ? 'grid grid-cols-2 lg:grid-cols-3' : 'grid grid-cols-12 grid-rows-6'}`}>
-          {isMatcha
-            ? heroImages.map((img) => (
-                <div key={img.src} className="overflow-hidden min-h-[12rem] lg:min-h-0">
-                  <img src={img.src} alt={img.alt} className="w-full h-full min-h-[inherit] object-cover hover:scale-105 transition-transform duration-[3s] ease-out" />
-                </div>
-              ))
-            : heroImages.map((img, i) => {
-                const gridClass =
-                  i === 0
-                    ? 'col-span-4 row-span-3'
-                    : i === 1
-                      ? 'col-span-5 row-span-4'
-                      : i === 2
-                        ? 'col-span-3 row-span-2'
-                        : i === 3
-                          ? 'col-span-4 row-span-3'
-                          : i === 4
-                            ? 'col-span-3 row-span-2'
-                            : 'col-span-5 row-span-2';
-                return (
-                  <div key={`${img.src}-${i}`} className={`${gridClass} overflow-hidden`}>
-                    <img
-                      src={img.src}
-                      alt={img.alt}
-                      className={`w-full h-full object-cover hover:scale-105 transition-transform duration-[3s] ease-out ${i === 5 ? 'object-top' : ''}`}
-                    />
-                  </div>
-                );
-              })}
+        <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+          {pageCopy.chips.map((label, i) => {
+            const plain = cmsTextPlain(label);
+            if (!plain) return null;
+            return (
+              <span
+                key={boothChipKey(label, i)}
+                className="inline-flex items-center rounded-full border border-kado-red/20 bg-kado-offwhite px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-kado-red sm:text-xs"
+              >
+                {plain}
+              </span>
+            );
+          })}
         </div>
+        <a
+          href="#booking-form"
+          className="inline-flex min-h-[52px] items-center gap-2.5 rounded-sm bg-kado-red px-8 text-xs font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-kado-red-hover"
+        >
+          {ctaLabel} <ArrowDown className="h-4 w-4 shrink-0" aria-hidden />
+        </a>
+      </CollagePageHero>
 
-        <div className="absolute inset-0 bg-gradient-to-r from-kado-dark/95 via-kado-dark/75 to-kado-dark/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-kado-dark/80 via-transparent to-transparent" />
-
-        <div className="relative z-10 flex flex-col justify-end h-full px-6 sm:px-10 md:px-16 pb-12 sm:pb-16" style={{ minHeight: 'inherit' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="max-w-2xl"
-          >
-            <CmsStyledText
-              value={pageCopy.heroEyebrow}
-              as="p"
-              className="kado-label mb-4"
-              defaultColorClass="text-kado-red"
-            />
-            {!isMatcha ? null : (
-              <p className="sr-only">{BOOKING_PAGE_LABELS[kind]}</p>
-            )}
-            <h1 className="mb-5 font-display text-[clamp(2rem,6.5vw,4.5rem)] font-black uppercase leading-[0.95] tracking-tight drop-shadow-lg">
-              <CmsStyledText value={pageCopy.heroTitleLine1} as="span" defaultColorClass="text-kado-cream" />
-              <br />
-              <CmsStyledText value={pageCopy.heroTitleLine2} as="span" defaultColorClass="text-kado-cream" />
-            </h1>
-            <CmsStyledText
-              value={pageCopy.heroDescription}
-              as="p"
-              className="kado-body mb-8 max-w-xl leading-relaxed"
-              defaultColorClass="text-kado-cream/85"
-            />
-
-            <div className="flex flex-wrap gap-3 mb-8">
-              {pageCopy.chips.map((label, i) => (
-                <span
-                  key={boothChipKey(label, i)}
-                  className="inline-flex items-center px-3 py-1.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider text-kado-cream/90"
-                >
-                  <CmsStyledText value={label} as="span" />
-                </span>
-              ))}
-            </div>
-
-            <a
-              href="#booking-form"
-              className="inline-flex items-center gap-2.5 min-h-[52px] px-8 bg-kado-red text-white text-xs font-bold uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-kado-red/30 hover:bg-kado-red-hover transition-colors"
-            >
-              <CmsStyledText value={pageCopy.heroCtaLabel} as="span" /> <ArrowDown className="w-4 h-4 shrink-0" />
-            </a>
-          </motion.div>
-        </div>
-      </section>
-
-      {showcaseMedia.length > 0 && (
-        <section className="py-10 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {showcaseMedia.map((media, i) => (
-                <motion.article
-                  key={media.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.4, delay: i * 0.07 }}
-                  className="rounded-2xl overflow-hidden border border-kado-dark/10 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  <img
-                    src={media.image}
-                    alt={media.title}
-                    className="w-full aspect-[4/3] object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-display text-lg font-bold text-kado-dark">{media.title}</h3>
-                    {media.caption && <p className="text-sm text-kado-dark/60 mt-1">{media.caption}</p>}
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <BookingShowcaseSection kind={kind} media={showcaseMedia} />
 
       <BookingSteps
         eyebrow={pageCopy.howItWorksEyebrow}

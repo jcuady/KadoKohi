@@ -1,0 +1,753 @@
+"""
+Kado Kohi — durable GraphQL system model (documentation only).
+
+Runtime API remains Supabase:
+  Auth JWT → PostgREST / SECURITY DEFINER RPCs (kk_*) → Edge Functions.
+Do not treat this file as an executable GraphQL endpoint unless product migrates.
+
+Project: idwtlujcdfnnndxmlaco · Site: https://www.kadokohi.com
+Super admin: admin@kadokohi.com
+Active branches: branch_marikina (marikina), branch_greenhills (greenhills)
+Orders: ALWAYS via kk_place_order — never direct INSERT.
+"""
+
+# ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  guest
+  customer
+  barista
+  staff
+  admin
+}
+
+enum BranchStatus {
+  active
+  coming_soon
+}
+
+"""
+Wire values in domain.ts / Postgres use hyphens where noted:
+  dine_in → "dine-in"
+GraphQL underscores are documentation-safe aliases only.
+"""
+enum OrderChannel {
+  online
+  """Wire: dine-in"""
+  dine_in
+  takeout
+  pos
+  merch
+}
+
+enum PaymentMethod {
+  """Automated QR Ph via PayMongo hosted checkout. Wire: paymongo"""
+  paymongo
+  """Manual shop GCash QR + screenshot proof. Wire: gcash-qr"""
+  gcash_qr
+  """Cash / counter (dine-in, takeout, POS). Wire: pay-at-store"""
+  pay_at_store
+}
+
+enum PaymentStatus {
+  unpaid
+  proof_submitted
+  paid
+  refunded
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  preparing
+  ready
+  served
+  completed
+  cancelled
+}
+
+enum ProductTemperature {
+  hot
+  iced
+  both
+}
+
+enum GuestOrderAction {
+  cancel
+  change_order
+}
+
+enum CustomerNotificationKind {
+  order
+  payment
+  marketing
+  system
+}
+
+enum LoyaltyRewardType {
+  free_drink
+  discount_percent
+  discount_fixed
+  free_merch
+  custom
+}
+
+enum LoyaltyVoucherStatus {
+  active
+  redeemed
+  expired
+}
+
+enum PromoCodeType {
+  percent
+  fixed
+  free_drink
+  bogo_drink
+}
+
+enum BoothBookingKind {
+  coffee_cart
+  matcha_bar
+}
+
+enum BoothBookingStatus {
+  submitted
+  under_review
+  quoted
+  awaiting_confirmation
+  confirmed
+  declined
+  cancelled
+  completed
+}
+
+enum BoothPaymentMethod {
+  gcash_qr
+  bank_transfer
+  gcash_or_bank
+}
+
+enum StorageBucket {
+  kado_menu_images
+  kado_cms_images
+  kado_blog_images
+  kado_gcash_qr
+  kado_payment_proofs
+}
+
+"""Route surface / chrome family for RoleGate + layout mapping."""
+enum RouteSurface {
+  public
+  auth
+  standalone_guest_order
+  customer_account
+  barista
+  staff
+  admin
+}
+
+# ─── Identity & branches ─────────────────────────────────────────────────────
+
+type Branch {
+  id: ID!
+  slug: String!
+  name: String!
+  address: String!
+  city: String!
+  status: BranchStatus!
+  hours: [BranchHours!]!
+  heroImage: String
+  lat: Float
+  lng: Float
+}
+
+type BranchHours {
+  day: String!
+  open: String!
+  close: String!
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  role: Role!
+  phone: String
+  """Null for admins (all-branch access). Required for barista/staff scoping."""
+  branchId: ID
+  loyaltyStamps: Int
+  createdAt: String!
+}
+
+type AuthSession {
+  user: User
+  loading: Boolean!
+}
+
+# ─── Catalog ─────────────────────────────────────────────────────────────────
+
+type MenuCategory {
+  id: ID!
+  branchId: ID
+  name: String!
+  order: Int!
+  visible: Boolean!
+}
+
+type Product {
+  id: ID!
+  categoryId: ID!
+  branchId: ID
+  name: String!
+  description: String
+  basePrice: Float!
+  discountType: String
+  discountValue: Float
+  image: String
+  temperature: ProductTemperature!
+  sizes: [ProductSize!]!
+  milks: [MilkOption!]!
+  tags: [String!]
+  visible: Boolean!
+  inStock: Boolean
+  order: Int!
+}
+
+type ProductSize {
+  id: ID!
+  label: String!
+  priceDelta: Float!
+}
+
+type MilkOption {
+  id: ID!
+  label: String!
+  priceDelta: Float!
+}
+
+type MerchCategory {
+  id: ID!
+  name: String!
+  order: Int!
+  visible: Boolean!
+}
+
+type MerchProduct {
+  id: ID!
+  categoryId: ID!
+  name: String!
+  description: String
+  basePrice: Float!
+  image: String
+  variants: [MerchVariantGroup!]
+  visible: Boolean!
+  inStock: Boolean
+}
+
+type MerchVariantGroup {
+  id: ID!
+  name: String!
+  options: [MerchVariantOption!]!
+}
+
+type MerchVariantOption {
+  id: ID!
+  label: String!
+  priceDelta: Float!
+}
+
+type Table {
+  id: ID!
+  branchId: ID!
+  code: String!
+  label: String!
+  qrPayload: String!
+  active: Boolean!
+}
+
+# ─── Orders & payments ───────────────────────────────────────────────────────
+
+type OrderItem {
+  id: ID!
+  productId: ID!
+  productNameSnapshot: String!
+  itemType: String
+  mixMatchCookieId: ID
+  sizeId: ID
+  sizeLabelSnapshot: String
+  milkId: ID
+  milkLabelSnapshot: String
+  temperature: String
+  merchVariants: [OrderItemVariant!]
+  unitPrice: Float!
+  qty: Int!
+  lineTotal: Float!
+  originalUnitPrice: Float
+  itemDiscountTotal: Float
+}
+
+type OrderItemVariant {
+  groupName: String!
+  optionLabel: String!
+  priceDelta: Float!
+}
+
+type Order {
+  id: ID!
+  shortCode: String!
+  channel: OrderChannel!
+  branchId: ID!
+  tableId: ID
+  customerId: ID
+  guestName: String
+  staffId: ID
+  paymentMethod: PaymentMethod
+  paymentProofImage: String
+  paymentProofUploadedAt: String
+  paymentStatus: PaymentStatus!
+  status: OrderStatus!
+  items: [OrderItem!]!
+  subtotal: Float!
+  modifiersTotal: Float!
+  productDiscountTotal: Float
+  tax: Float
+  total: Float!
+  paymongoCheckoutSessionId: String
+  paymongoPaymentId: String
+  loyaltyStampsAwarded: Int
+  loyaltyVoucherId: ID
+  loyaltyVoucherCode: String
+  loyaltyDiscountTotal: Float
+  guestAction: GuestOrderAction
+  guestActionReason: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""Public-safe track payload from kk_track_order (unguessable order id)."""
+type TrackedOrder {
+  id: ID!
+  shortCode: String!
+  channel: OrderChannel!
+  branchId: ID
+  status: OrderStatus!
+  paymentStatus: PaymentStatus!
+  paymentMethod: PaymentMethod
+  guestName: String
+  subtotal: Float!
+  modifiersTotal: Float!
+  tax: Float!
+  total: Float!
+  items: [OrderItem!]!
+  hasPaymentProof: Boolean
+  createdAt: String!
+  updatedAt: String!
+}
+
+type PaymongoCheckoutSession {
+  checkoutUrl: String!
+  checkoutSessionId: String!
+}
+
+type PaymongoVerifyResult {
+  paid: Boolean!
+  status: String
+  paymentId: String
+  alreadyPaid: Boolean
+  reconciled: Boolean
+  sessionStatus: String
+}
+
+type CustomerNotification {
+  id: ID!
+  customerId: ID!
+  kind: CustomerNotificationKind!
+  title: String!
+  body: String!
+  url: String
+  tag: String
+  readAt: String
+  createdAt: String!
+}
+
+# ─── Loyalty & promos ────────────────────────────────────────────────────────
+
+type LoyaltyReward {
+  id: ID!
+  name: String!
+  description: String
+  stampsRequired: Int!
+  type: LoyaltyRewardType!
+  value: Float
+  branchId: ID
+  active: Boolean!
+}
+
+type LoyaltyVoucher {
+  id: ID!
+  customerId: ID!
+  rewardId: ID!
+  code: String!
+  status: LoyaltyVoucherStatus!
+  branchId: ID
+  expiresAt: String
+  redeemedOrderId: ID
+}
+
+type PromoCode {
+  id: ID!
+  code: String!
+  type: PromoCodeType!
+  value: Float!
+  minOrderAmount: Float
+  maxUses: Int
+  uses: Int!
+  perCustomer: Boolean
+  branchId: ID
+  active: Boolean!
+}
+
+# ─── CMS & content ───────────────────────────────────────────────────────────
+
+type BlogPost {
+  id: ID!
+  slug: String!
+  title: String!
+  excerpt: String
+  body: String
+  coverImage: String
+  published: Boolean!
+  publishedAt: String
+}
+
+type Event {
+  id: ID!
+  branchId: ID
+  title: String!
+  description: String!
+  startsAt: String!
+  endsAt: String
+  images: [String!]
+  visible: Boolean!
+  highlight: Boolean
+  signupEnabled: Boolean
+  signupFormId: ID
+}
+
+type BoothBooking {
+  id: ID!
+  kind: BoothBookingKind!
+  status: BoothBookingStatus!
+  branchId: ID
+  customerId: ID
+  occasion: String
+  eventDate: String
+  paymentMethod: BoothPaymentMethod
+  total: Float
+  quoteNotes: String
+}
+
+type AppSettings {
+  taxRate: Float!
+  gcashQrImage: String
+  orderHours: String
+  """JSON CMS blobs on kk_app_settings singleton."""
+  landingContent: String
+  boothContent: String
+  matchaContent: String
+  pastriesContent: String
+  careersContent: String
+  boothCatalog: String
+}
+
+# ─── Site map (pages) ────────────────────────────────────────────────────────
+
+type SiteRoute {
+  path: String!
+  surface: RouteSurface!
+  """Page component under src/pages (logical name)."""
+  page: String!
+  """Roles allowed; empty = public/auth/standalone."""
+  allowedRoles: [Role!]!
+  description: String!
+}
+
+type SystemCapability {
+  id: ID!
+  """kk_* RPC, edge function slug, or PostgREST table."""
+  implementation: String!
+  description: String!
+}
+
+# ─── Query ───────────────────────────────────────────────────────────────────
+
+type Query {
+  """Current auth session (authStore ← Supabase Auth + kk_profiles)."""
+  me: AuthSession!
+
+  """Active branches (kk_branches)."""
+  branches: [Branch!]!
+
+  branch(slug: String, id: ID): Branch
+
+  """Coffee menu catalog (kk_menu_categories + kk_products)."""
+  menuCategories(branchId: ID): [MenuCategory!]!
+  products(branchId: ID, categoryId: ID): [Product!]!
+
+  merchCategories: [MerchCategory!]!
+  merchProducts: [MerchProduct!]!
+
+  tables(branchId: ID!): [Table!]!
+  tableByCode(code: String!): Table
+
+  """Staff/admin order board — RLS scoped by role/branch."""
+  orders(
+    channel: OrderChannel
+    branchId: ID
+    status: OrderStatus
+    paymentStatus: PaymentStatus
+  ): [Order!]!
+
+  """Guest/customer capability track (kk_track_order)."""
+  trackOrder(orderId: ID!): TrackedOrder
+
+  customerOrders(customerId: ID!): [Order!]!
+
+  loyaltyRewards(branchId: ID): [LoyaltyReward!]!
+  myVouchers: [LoyaltyVoucher!]!
+  promoCodes: [PromoCode!]!
+
+  events: [Event!]!
+  blogPosts(publishedOnly: Boolean = true): [BlogPost!]!
+  blogPost(slug: String!): BlogPost
+
+  boothBookings(scope: String): [BoothBooking!]!
+  appSettings: AppSettings!
+
+  myNotifications(limit: Int = 40): [CustomerNotification!]!
+
+  """Complete route inventory for agent memory (mirrors src/App.tsx)."""
+  siteRoutes: [SiteRoute!]!
+
+  """Backend capabilities inventory (RPCs + edge functions)."""
+  systemCapabilities: [SystemCapability!]!
+}
+
+# ─── Mutations (transactional & admin) ───────────────────────────────────────
+
+input PlaceOrderItemInput {
+  id: ID!
+  productId: ID!
+  qty: Int!
+  itemType: String
+  mixMatchCookieId: ID
+  sizeId: ID
+  milkId: ID
+  temperature: String
+  merchVariants: [OrderItemVariantInput!]
+  notes: String
+}
+
+input OrderItemVariantInput {
+  groupName: String!
+  optionLabel: String!
+  priceDelta: Float!
+}
+
+input PlaceOrderInput {
+  id: ID!
+  channel: OrderChannel!
+  branchId: ID!
+  tableId: ID
+  customerId: ID
+  guestName: String
+  staffId: ID
+  paymentMethod: PaymentMethod!
+  items: [PlaceOrderItemInput!]!
+  loyaltyVoucherId: ID
+  promoCode: String
+  """Guest QR uses anon session capability where applicable."""
+  guestSession: Boolean
+}
+
+input ChangePaymentMethodInput {
+  orderId: ID!
+  paymentMethod: PaymentMethod!
+  shortCode: String
+}
+
+input GuestCancelOrderInput {
+  orderId: ID!
+  action: GuestOrderAction!
+  reason: String!
+  note: String
+}
+
+input PaymongoCheckoutInput {
+  orderId: ID!
+  shortCode: String
+  successUrl: String
+  cancelUrl: String
+}
+
+input SubmitPaymentProofInput {
+  orderId: ID!
+  """Compressed data URL or storage:// ref."""
+  proofDataUrl: String!
+}
+
+input PatchOrderInput {
+  orderId: ID!
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  paymentProofImage: String
+  loyaltyStampsAwarded: Int
+  staffId: ID
+}
+
+input PushTargetInput {
+  userId: ID
+  branchId: ID
+  roles: [Role!]
+}
+
+input SendPushInput {
+  targets: [PushTargetInput!]!
+  title: String!
+  body: String!
+  url: String
+  tag: String
+  kind: CustomerNotificationKind
+}
+
+input NotifyCustomersInput {
+  title: String!
+  body: String!
+  kind: CustomerNotificationKind = marketing
+  url: String
+  tag: String
+  customerIds: [ID!]
+}
+
+type Mutation {
+  """
+  Sole order create path.
+  Impl: orderingRepo.placeOrder → kk_place_order (server prices, stock, promo, voucher, tax).
+  """
+  placeOrder(input: PlaceOrderInput!): Order!
+
+  """
+  Start PayMongo QR Ph hosted checkout (same-tab).
+  Impl: createPaymongoCheckout → edge kk-paymongo-checkout.
+  Online/merch PayMongo requires signed-in customer; dine-in/takeout allow guest + shortCode.
+  """
+  createPaymongoCheckout(input: PaymongoCheckoutInput!): PaymongoCheckoutSession!
+
+  """
+  Reconcile PayMongo after return / webhook lag.
+  Impl: verifyPaymongoCheckout → edge kk-paymongo-verify → markPaymongoOrderPaid.
+  """
+  verifyPaymongoCheckout(orderId: ID!, shortCode: String): PaymongoVerifyResult!
+
+  """
+  Webhook ingress (HMAC). Not called by SPA.
+  Impl: edge kk-paymongo-webhook.
+  """
+  paymongoWebhookMarkPaid(orderId: ID!, paymentId: String, sessionId: String): Boolean!
+
+  """
+  Manual GCash proof (guest or customer path).
+  Impl: kk_submit_guest_payment_proof or orderingRepo.uploadPaymentProof → payment_status=proof_submitted.
+  """
+  submitGcashPaymentProof(input: SubmitPaymentProofInput!): TrackedOrder!
+
+  """Staff verifies GCash proof → paid (RLS patch on kk_orders)."""
+  confirmGcashPayment(orderId: ID!): Order!
+
+  changeOrderPaymentMethod(input: ChangePaymentMethodInput!): Order!
+
+  """Impl: kk_guest_cancel_order — cancel or change_order while unpaid."""
+  guestCancelOrChangeOrder(input: GuestCancelOrderInput!): Boolean!
+
+  """Impl: kk_guest_switch_to_cash."""
+  switchGuestOrderToCash(orderId: ID!): Order!
+
+  """Barista/admin kitchen + payment patches (RLS)."""
+  patchOrder(input: PatchOrderInput!): Order!
+
+  """Admin delete. Impl: kk_admin_delete_order."""
+  adminDeleteOrder(orderId: ID!): Boolean!
+
+  """On completed drinks — applyLoyaltyStampsForCompletedOrder."""
+  applyLoyaltyStampsForCompletedOrder(orderId: ID!): Order!
+
+  """Impl: kk_claim_loyalty_reward."""
+  claimLoyaltyReward(rewardId: ID!): LoyaltyVoucher!
+
+  """Impl: kk_ensure_my_profile."""
+  ensureMyProfile(name: String): User!
+
+  """Impl: edge kk-customer-signup (+ Auth)."""
+  customerSignup(email: String!, password: String!, name: String!, phone: String!): User!
+
+  """Impl: edge kk-send-push (+ optional kk_customer_notifications insert)."""
+  sendPush(input: SendPushInput!): Boolean!
+
+  """Impl: kk_notify_customers (admin broadcast inbox)."""
+  notifyCustomers(input: NotifyCustomersInput!): Int!
+
+  markNotificationRead(id: ID!): Boolean!
+  markAllNotificationsRead: Boolean!
+
+  """Impl: kk_place_booth_booking / kk_admin_patch_booth_booking / kk_submit_booth_payment_proof."""
+  placeBoothBooking(payload: String!): BoothBooking!
+  adminPatchBoothBooking(payload: String!): BoothBooking!
+  submitBoothPaymentProof(bookingId: ID!, proofDataUrl: String!): BoothBooking!
+
+  """Impl: kk_register_for_event."""
+  registerForEvent(payload: String!): Boolean!
+
+  """Impl: kk_submit_career_application."""
+  submitCareerApplication(payload: String!): Boolean!
+
+  """Impl: edge kk-send-contact (Resend)."""
+  sendContactMessage(payload: String!): Boolean!
+
+  """Impl: edge kk-admin-users actions."""
+  adminCreateUser(payload: String!): User!
+  adminUpdateUser(payload: String!): User!
+  adminDeleteUser(userId: ID!): Boolean!
+  adminResetPassword(userId: ID!, password: String!): Boolean!
+  adminResetDataScope(scope: String!, confirm: String!): Boolean!
+
+  setProductInStock(productId: ID!, inStock: Boolean!): Product!
+}
+
+# ─── Payment / channel matrix (comments for agents) ──────────────────────────
+# Online coffee:  paymongo (customer) | gcash_qr (customer|guest) | pay_at_store ✗
+# Online merch:   paymongo (customer) | gcash_qr (customer|guest) | pay_at_store ✗
+# QR dine-in:     paymongo | gcash_qr | pay_at_store
+# QR takeout:     paymongo | gcash_qr | pay_at_store
+# POS:            pay_at_store (paid immediately)
+#
+# PayMongo: checkout → webhook HMAC → verify poll → /checkout/:id confirmation
+# GCash:    shop QR → proof upload → proof_submitted → staff paid → kitchen
+#
+# Site routes (see Query.siteRoutes descriptions in PROJECT_CONTEXT.md §4 + App.tsx):
+# Public: /, /menu, /about, /contact, /branches, /events, /order, /checkout/:orderId,
+#         /merch, /pastries, /blog, /blog/:slug, /careers, /book/coffee-cart,
+#         /book/matcha-bar, /legal/terms, /legal/privacy
+# Standalone: /order/qr/:code, /order/takeout, /help/install
+# Auth: /auth/*, /management-portal/*
+# Customer: /account, /account/orders, /account/booth, /account/vouchers, /account/profile
+# Barista: /barista, /barista/queue, /barista/pos, /barista/menu, /barista/stamps,
+#          /barista/settings, /barista/kiosk
+# Staff: /staff, /staff/merch-orders, /staff/booth-bookings, /staff/orders, /staff/settings
+# Admin: /admin/* (dashboard, branches, pos, orders, menu, merch, loyalty, stamps,
+#         booth-*, events, tables, landing, blog, careers, pastries, users, audit,
+#         vouchers, settings)
+#
+# Edge functions: kk-paymongo-checkout|verify|webhook, kk-send-push, kk-send-contact,
+#                 kk-customer-signup, kk-admin-users
+# Storage: kado-menu-images, kado-cms-images, kado-blog-images, kado-gcash-qr (public);
+#          kado-payment-proofs (private)

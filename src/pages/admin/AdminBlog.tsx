@@ -251,7 +251,7 @@ export default function AdminBlog() {
           <p className="dash-muted text-xs font-bold uppercase tracking-[0.2em] mb-1">CMS</p>
           <h1 className="dash-heading font-display text-2xl font-bold">Features</h1>
           <p className="dash-muted mt-1 text-sm max-w-xl">
-            Create and manage stories for the public <code className="text-xs">/blog</code> page. Drafts stay hidden when visibility is off.
+            Create and manage stories for the public <code className="text-xs">/features</code> page. Drafts stay hidden when visibility is off.
           </p>
           {hydrated ? (
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
@@ -426,7 +426,7 @@ export default function AdminBlog() {
             </button>
             {editingId && form.visible ? (
               <a
-                href={`/blog/${form.slug}`}
+                href={`/features/${form.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-xl border dash-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:text-kado-red"
@@ -479,7 +479,7 @@ export default function AdminBlog() {
                   </div>
                   <h3 className="dash-heading font-semibold truncate">{post.title}</h3>
                   <p className="dash-muted text-xs mt-0.5">
-                    {formatListDate(post.publishedAt)} · /blog/{post.slug}
+                    {formatListDate(post.publishedAt)} · /features/{post.slug}
                   </p>
                 </div>
               </div>

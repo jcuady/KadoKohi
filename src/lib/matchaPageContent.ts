@@ -41,10 +41,10 @@ export const DEFAULT_MATCHA_PAGE_COPY: BoothPageCopy = {
 export const SEED_MATCHA_SHOWCASE_GALLERY: BookingShowcaseMedia[] = [
   {
     id: 'matcha_media_1',
-    title: 'Matcha Bar Setup',
+    title: 'Ceremonial Matcha Bar',
     caption: 'Premium matcha service for weddings and brand activations.',
     image: '/social/matcha-series.png',
-    tags: ['matcha', 'events'],
+    tags: ['matcha', 'ceremonial', 'events'],
     visible: true,
     order: 0,
   },
@@ -62,7 +62,7 @@ export const SEED_MATCHA_SHOWCASE_GALLERY: BookingShowcaseMedia[] = [
     title: 'Private Celebrations',
     caption: 'Intimate gatherings with a dedicated matcha corner.',
     image: '/booth-photos/booth-3.jpg',
-    tags: ['celebration'],
+    tags: ['celebration', 'private'],
     visible: true,
     order: 2,
   },
