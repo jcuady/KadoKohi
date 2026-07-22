@@ -16,6 +16,45 @@ function json(body: Record<string, unknown>, status = 200) {
   });
 }
 
+function paymongoDetail(pmJson: unknown): string {
+  const errors = (pmJson as { errors?: Array<{ detail?: string; title?: string }> })?.errors;
+  return (
+    errors?.[0]?.detail ||
+    errors?.[0]?.title ||
+    "Could not verify payment with PayMongo."
+  );
+}
+
+/**
+ * Retrieve checkout session.
+ * Create is on /v2, but GET only exists on /v1 — /v2/{id} returns
+ * "The requested route does not exist" (which we used to surface as HTTP 502).
+ */
+async function fetchCheckoutSession(
+  secretKey: string,
+  sessionId: string,
+): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
+  const auth = `Basic ${btoa(`${secretKey}:`)}`;
+  const tryUrl = async (url: string) => {
+    const res = await fetch(url, { headers: { Authorization: auth } });
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: res.ok, status: res.status, body };
+  };
+
+  // Canonical retrieve path (PayMongo docs).
+  const v1 = await tryUrl(`https://api.paymongo.com/v1/checkout_sessions/${sessionId}`);
+  if (v1.ok) return v1;
+
+  // Defensive: some accounts briefly expose v2 retrieve.
+  const detail = paymongoDetail(v1.body);
+  if (/requested route does not exist/i.test(detail)) {
+    const v2 = await tryUrl(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`);
+    if (v2.ok) return v2;
+  }
+
+  return v1;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, message: "Method not allowed" }, 405);
@@ -84,13 +123,9 @@ Deno.serve(async (req) => {
     return json({ ok: true, paid: false, message: "No PayMongo session on this order yet." });
   }
 
-  const pmRes = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
-    headers: { Authorization: `Basic ${btoa(`${secretKey}:`)}` },
-  });
-  const pmJson = await pmRes.json().catch(() => ({}));
-  if (!pmRes.ok) {
-    // Webhook may have already marked paid while PayMongo session fetch fails
-    // (expired/consumed session). Re-check DB before surfacing an error.
+  const pm = await fetchCheckoutSession(secretKey, sessionId);
+  if (!pm.ok) {
+    // Webhook may have already marked paid while session fetch fails.
     const { data: fresh } = await admin
       .from("kk_orders")
       .select("payment_status, status")
@@ -104,33 +139,68 @@ Deno.serve(async (req) => {
         alreadyPaid: true,
       });
     }
-    console.error("paymongo verify session fetch failed", pmJson);
-    const detail =
-      pmJson?.errors?.[0]?.detail ||
-      pmJson?.errors?.[0]?.title ||
-      "Could not verify payment with PayMongo.";
-    // Consumed/expired sessions often mean payment already happened — treat as pending, not hard fail.
-    if (/consumed|expired|inactive/i.test(String(detail))) {
+
+    const detail = paymongoDetail(pm.body);
+    console.error("paymongo verify session fetch failed", {
+      sessionId,
+      status: pm.status,
+      body: pm.body,
+    });
+
+    // Soft pending — never 502 for missing/expired/consumed sessions.
+    // Client keeps polling / shows retry without a hard failure banner.
+    if (
+      /consumed|expired|inactive|requested route does not exist|not found/i.test(detail) ||
+      pm.status === 404
+    ) {
       return json({
         ok: true,
         paid: false,
         status: order.status,
-        sessionStatus: "consumed",
-        message: detail,
+        sessionStatus: "unavailable",
+        message:
+          "Payment is still confirming. Tap Retry confirmation in a moment — if you already paid, it will update.",
       });
     }
-    return json({ ok: false, message: detail }, 502);
-  }
 
-  const attrs = (pmJson?.data?.attributes ?? {}) as Record<string, unknown>;
-  const sessionStatus = String(attrs.status ?? "").toLowerCase();
-  const paidHit = paidPaymentFromSessionAttrs(attrs);
-  if (!paidHit) {
     return json({
       ok: true,
       paid: false,
       status: order.status,
-      sessionStatus: sessionStatus || "active",
+      sessionStatus: "error",
+      message: detail,
+    });
+  }
+
+  const attrs = (pm.body?.data as { attributes?: Record<string, unknown> } | undefined)
+    ?.attributes ?? {};
+  const sessionStatus = String(attrs.status ?? "").toLowerCase();
+  const paidHit = paidPaymentFromSessionAttrs(attrs);
+  if (!paidHit) {
+    // Also check nested payment_intent.payments (some session shapes).
+    const intent = attrs.payment_intent as
+      | { attributes?: Record<string, unknown> }
+      | undefined;
+    const intentPaid = intent?.attributes
+      ? paidPaymentFromSessionAttrs(intent.attributes)
+      : null;
+    if (!intentPaid) {
+      return json({
+        ok: true,
+        paid: false,
+        status: order.status,
+        sessionStatus: sessionStatus || "active",
+      });
+    }
+    const result = await markPaymongoOrderPaid(admin, order, sessionId, intentPaid.paymentId);
+    if (!result.ok) return json({ ok: false, message: "Failed to update order payment." }, 500);
+    const nextStatus = order.status === "pending" ? "accepted" : order.status;
+    return json({
+      ok: true,
+      paid: true,
+      status: nextStatus,
+      paymentId: intentPaid.paymentId,
+      reconciled: !result.alreadyPaid,
     });
   }
 
