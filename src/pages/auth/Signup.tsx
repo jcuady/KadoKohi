@@ -17,6 +17,7 @@ import {
   SIGNUP_EMAIL_QUERY,
 } from '../../lib/authNotices';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
+import { authRepo } from '../../lib/supabase/repositories/auth';
 import {
   firstInvalidSignupField,
   signupFieldElementId,
@@ -135,6 +136,22 @@ export default function Signup() {
 
     setSubmitting(true);
     try {
+      try {
+        const status = await authRepo.getEmailStatus(normalizedEmail);
+        if (status === 'ready' || status === 'unconfirmed') {
+          const msg =
+            status === 'unconfirmed'
+              ? 'That email is already registered but not confirmed. Sign in and use Resend confirmation, or check your inbox.'
+              : 'That email is already registered. Try signing in instead.';
+          setFieldErrors((prev) => ({ ...prev, email: msg }));
+          focusField('email');
+          setSubmitError(msg);
+          return;
+        }
+      } catch {
+        // Fall through to Auth signUp if status lookup fails.
+      }
+
       const { needsEmailConfirmation } = await signUp(
         clampText(name, 80),
         normalizedEmail,
@@ -154,9 +171,17 @@ export default function Signup() {
       }
       navigate('/account', { replace: true, state: { onboard: true } });
     } catch (err) {
-      setSubmitError(
-        formatAuthErrorMessage(err, 'Unable to create account. Please try another email or try again later.'),
+      const message = formatAuthErrorMessage(
+        err,
+        'Unable to create account. Please try another email or try again later.',
       );
+      if (/already registered/i.test(message)) {
+        setFieldErrors((prev) => ({ ...prev, email: message }));
+        focusField('email');
+        setSubmitError(message);
+      } else {
+        setSubmitError(message);
+      }
     } finally {
       setSubmitting(false);
     }

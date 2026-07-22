@@ -63,10 +63,17 @@ function rankHit(query: string, hit: NominatimHit): number {
   const tokens = searchTokens(query);
   if (!tokens.length) return 0;
   const haystack = hit.display_name.toLowerCase();
+  const q = query.trim().toLowerCase();
+  // Require every token for precision inside PH search.
   if (!tokens.every((t) => haystack.includes(t))) return -1;
 
   let score = tokens.length * 12;
-  if (hit.class === 'amenity' || hit.type === 'cafe' || hit.type === 'restaurant') score += 8;
+  if (haystack.startsWith(q)) score += 40;
+  else if (haystack.includes(q)) score += 18;
+  if (hit.class === 'amenity' || hit.type === 'cafe' || hit.type === 'restaurant' || hit.type === 'mall') {
+    score += 10;
+  }
+  if (hit.class === 'shop' || hit.class === 'tourism') score += 6;
   if (hit.address?.city || hit.address?.municipality || hit.address?.town) score += 4;
   if (haystack.includes('philippines')) score += 2;
   return score;
@@ -117,12 +124,22 @@ export async function searchPhilippinesLocations(query: string): Promise<Philipp
   const data = (await nominatimFetch(`/search?${params}`)) as NominatimHit[];
   if (!Array.isArray(data)) return [];
 
-  return data
+  const ranked = data
     .map((hit) => ({ hit, score: rankHit(q, hit) }))
     .filter((row) => row.score >= 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
-    .map((row) => toResult(row.hit));
+    .sort((a, b) => b.score - a.score);
+
+  // Dedupe near-identical pins (same place, slightly different labels).
+  const seen = new Set<string>();
+  const unique: NominatimHit[] = [];
+  for (const row of ranked) {
+    const key = `${Number(row.hit.lat).toFixed(4)},${Number(row.hit.lon).toFixed(4)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row.hit);
+    if (unique.length >= 8) break;
+  }
+  return unique.map(toResult);
 }
 
 export async function reversePhilippinesLocation(

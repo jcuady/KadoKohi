@@ -42,14 +42,22 @@ export default function PaymongoPaymentPanel({
     setLoading(true);
     setError(null);
     try {
-      const { checkoutUrl } = await createPaymongoCheckout({
+      const result = await createPaymongoCheckout({
         orderId: order.id,
         shortCode: shortCode ?? order.shortCode,
         successUrl,
         cancelUrl,
       });
+      if (result.alreadyPaid) {
+        // Payment already landed (webhook/verify) — reload checkout to show confirmed state.
+        window.location.assign(
+          successUrl ??
+            `${window.location.origin}/checkout/${encodeURIComponent(order.id)}?paymongo=success`,
+        );
+        return;
+      }
       // Same-tab assign keeps mobile return URL reliable (no popup blockers).
-      window.location.assign(checkoutUrl);
+      window.location.assign(result.checkoutUrl);
     } catch (err) {
       setError(formatOrderError(err));
       setLoading(false);

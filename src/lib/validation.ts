@@ -89,5 +89,11 @@ export function formatOrderError(err: unknown): string {
   if (/invalid login credentials|invalid.?email.?or.?password/i.test(msg)) {
     return 'Incorrect email or password. Check your credentials and try again.';
   }
+  if (/edge function returned a non-2xx|non-2xx status code/i.test(msg)) {
+    return 'Payment confirmation timed out. Tap Retry confirmation — if you already paid, your order will update.';
+  }
+  if (/already paid/i.test(msg)) {
+    return 'This order is already paid. Refresh the page to see confirmation.';
+  }
   return msg.length < 120 ? msg : 'Could not place your order. Please try again.';
 }

@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { isValidEmail } from '../../lib/validation';
 import { formatAuthErrorMessage } from '../../lib/supabase/authSession';
 import { forgotPasswordPath } from '../../lib/authRedirects';
+import { authRepo } from '../../lib/supabase/repositories/auth';
 
 type Props = {
   expectedRole: Extract<Role, 'admin' | 'barista' | 'staff'>;
@@ -34,7 +35,22 @@ export default function InternalSignInForm({ expectedRole }: Props) {
 
     setSubmitting(true);
     try {
-      await signIn(email.trim().toLowerCase(), password);
+      const normalized = email.trim().toLowerCase();
+      try {
+        const status = await authRepo.getEmailStatus(normalized);
+        if (status === 'missing') {
+          setError('No account found with that email. Check the address or ask an admin to create your login.');
+          return;
+        }
+        if (status === 'unconfirmed') {
+          setError('Please confirm your email first — check your inbox for the Kado Kohi link.');
+          return;
+        }
+      } catch {
+        // Fall through to sign-in if status lookup fails.
+      }
+
+      await signIn(normalized, password);
       const profile = useAuthStore.getState().user;
       const role = profile?.role;
       if (!profile || role !== expectedRole) {
@@ -47,7 +63,12 @@ export default function InternalSignInForm({ expectedRole }: Props) {
         return;
       }
     } catch (err) {
-      setError(formatAuthErrorMessage(err, 'Could not sign in. Check your email and password.'));
+      const raw = err instanceof Error ? err.message : String(err);
+      if (/invalid login credentials|invalid credentials/i.test(raw)) {
+        setError('Incorrect password. Try again or use Forgot password.');
+      } else {
+        setError(formatAuthErrorMessage(err, 'Could not sign in. Check your email and password.'));
+      }
     } finally {
       setSubmitting(false);
     }

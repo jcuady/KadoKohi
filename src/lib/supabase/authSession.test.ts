@@ -82,6 +82,12 @@ describe('formatAuthErrorMessage', () => {
     expect(formatAuthErrorMessage(new Error('Email not confirmed'), fallback)).toMatch(/confirm your email/i);
   });
 
+  it('maps missing-account reset errors', () => {
+    expect(
+      formatAuthErrorMessage(new Error('No account found with that email. Check the address.'), fallback),
+    ).toMatch(/no account found/i);
+  });
+
   it('uses fallback for invalid credentials', () => {
     const fb = 'Invalid credentials. Please check your email and password.';
     expect(formatAuthErrorMessage(new Error('Invalid login credentials'), fb)).toBe(fb);

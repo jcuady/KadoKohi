@@ -94,7 +94,12 @@ Deno.serve(async (req) => {
     return json({ ok: false, message: "This order was cancelled." }, 400);
   }
   if (order.payment_status === "paid") {
-    return json({ ok: false, message: "This order is already paid." }, 400);
+    return json({
+      ok: true,
+      alreadyPaid: true,
+      paid: true,
+      message: "This order is already paid.",
+    });
   }
   if (order.payment_method !== "paymongo") {
     return json({ ok: false, message: "Order is not set to PayMongo." }, 400);

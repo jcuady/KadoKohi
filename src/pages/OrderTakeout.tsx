@@ -186,6 +186,10 @@ export default function OrderTakeout() {
     }
     if (nameErr) {
       setOrderError(nameErr);
+      setCartExpanded(true);
+      window.setTimeout(() => {
+        document.getElementById('qr-takeout-guest-name')?.focus();
+      }, 50);
       return;
     }
     if (cartStale) {
@@ -376,22 +380,6 @@ export default function OrderTakeout() {
       </header>
 
       <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-2 sm:py-4 [@media(orientation:landscape)_and_(max-height:30rem)]:py-1.5 ${mainPaddingBottom}`}>
-        <div className="qr-surface-card mb-3 rounded-xl p-3">
-          <label className="qr-text-subtle mb-1.5 block text-[9px] font-black uppercase tracking-widest">
-            Your name (for pickup)
-          </label>
-          <input
-            value={pickupName}
-            onChange={(e) => {
-              setPickupName(e.target.value);
-              setOrderError('');
-            }}
-            placeholder="e.g. Juan"
-            maxLength={80}
-            className="qr-field w-full rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-kado-red/30 touch-manipulation"
-          />
-        </div>
-
         {!menuReady ? (
           <QrMenuSkeleton />
         ) : showPromoCatalog ? (
@@ -419,7 +407,14 @@ export default function OrderTakeout() {
       <QrStickyCart
         cart={cart}
         cartExpanded={cartExpanded}
-        onCartExpandedChange={setCartExpanded}
+        onCartExpandedChange={(expanded) => {
+          setCartExpanded(expanded);
+          if (expanded && !pickupName.trim()) {
+            window.setTimeout(() => {
+              document.getElementById('qr-takeout-guest-name')?.focus();
+            }, 50);
+          }
+        }}
         cartCount={cartCount}
         cartTotals={cartTotals}
         products={products}
@@ -434,7 +429,6 @@ export default function OrderTakeout() {
         onPlaceOrder={() => void placeOrder()}
         placeDisabled={
           cart.length === 0 ||
-          !pickupName.trim() ||
           submitting ||
           syncing ||
           cartStale ||
@@ -444,13 +438,17 @@ export default function OrderTakeout() {
         placeButtonLabel={placeLabel}
         placeOrderAriaLabel="Place takeout order"
         emptyCartTitle="Your takeout bag"
-        beforePlaceButton={
-          cart.length > 0 && !pickupName.trim() ? (
-            <p className="text-[11px] text-kado-red font-semibold text-center">
-              Add your name above so we can call you for pickup.
-            </p>
-          ) : undefined
-        }
+        guestName={{
+          value: pickupName,
+          onChange: (v) => {
+            setPickupName(v);
+            setOrderError('');
+          },
+          label: 'Your name (for pickup)',
+          placeholder: 'e.g. Juan',
+          required: true,
+          inputId: 'qr-takeout-guest-name',
+        }}
       />
 
       <QrProductSheet

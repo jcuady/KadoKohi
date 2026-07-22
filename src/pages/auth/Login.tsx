@@ -88,9 +88,27 @@ export default function Login() {
       return;
     }
 
+    const normalized = email.trim().toLowerCase();
     setSubmitting(true);
     try {
-      await signIn(email.trim().toLowerCase(), password);
+      // Pre-check so missing / unconfirmed accounts get a clear message (not a vague credential error).
+      try {
+        const status = await authRepo.getEmailStatus(normalized);
+        if (status === 'missing') {
+          setError('No account found with that email. Create an account or check the address.');
+          return;
+        }
+        if (status === 'unconfirmed') {
+          setError(
+            'Please confirm your email first — check your inbox for the Kado Kohi link. After you confirm, you\'ll be signed in automatically.',
+          );
+          return;
+        }
+      } catch {
+        // If status RPC fails, fall through to normal sign-in.
+      }
+
+      await signIn(normalized, password);
       const role = useAuthStore.getState().user?.role;
       if (role && isInternalRole(role)) {
         await useAuthStore.getState().logout();
@@ -100,7 +118,12 @@ export default function Login() {
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from && from.startsWith('/account') ? from : '/account', { replace: true });
     } catch (err) {
-      setError(formatAuthErrorMessage(err, 'Invalid credentials. Please check your email and password.'));
+      const raw = err instanceof Error ? err.message : String(err);
+      if (/invalid login credentials|invalid credentials/i.test(raw)) {
+        setError('Incorrect password. Try again or use Forgot password.');
+      } else {
+        setError(formatAuthErrorMessage(err, 'Could not sign in. Check your email and password.'));
+      }
     } finally {
       setSubmitting(false);
     }

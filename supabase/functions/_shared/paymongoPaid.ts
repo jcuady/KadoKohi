@@ -7,7 +7,11 @@ export function paidPaymentFromSessionAttrs(
     | Array<{ id?: string; attributes?: { status?: string } }>
     | undefined;
   if (!Array.isArray(payments)) return null;
-  const hit = payments.find((p) => p?.attributes?.status === "paid");
+  // PayMongo may mark payments paid / succeeded / consumed after capture.
+  const hit = payments.find((p) => {
+    const status = String(p?.attributes?.status ?? "").toLowerCase();
+    return status === "paid" || status === "succeeded" || status === "consumed";
+  });
   if (!hit) return null;
   return { paymentId: hit.id ?? null };
 }

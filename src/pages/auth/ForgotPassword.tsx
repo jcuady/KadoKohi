@@ -6,8 +6,9 @@ import { passwordResetRedirectUrl } from '../../lib/authRedirects';
 import { isValidEmail } from '../../lib/validation';
 import CustomerAuthLayout from '../../components/auth/CustomerAuthLayout';
 import AuthAlert from '../../components/auth/AuthAlert';
+import AuthFieldError from '../../components/auth/AuthFieldError';
 import AuthFlowGuide from '../../components/auth/AuthFlowGuide';
-import { PASSWORD_RESET_SENT_STEPS } from '../../lib/authNotices';
+import { PASSWORD_RESET_SENT_NOTICE, PASSWORD_RESET_SENT_STEPS } from '../../lib/authNotices';
 
 type ForgotPasswordProps = {
   variant?: 'customer' | 'internal';
@@ -16,26 +17,42 @@ type ForgotPasswordProps = {
 export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordProps) {
   const isInternal = variant === 'internal';
   const signInPath = isInternal ? '/management-portal' : '/auth/login';
+  const signupPath = '/auth/signup';
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(() => searchParams.get('email')?.trim() ?? '');
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email address.');
+    setEmailError('');
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailError('Email is required.');
+      return;
+    }
+    if (!isValidEmail(trimmed)) {
+      setEmailError('Enter a valid email address.');
       return;
     }
     setSubmitting(true);
     try {
       const redirectTo = passwordResetRedirectUrl();
-      await authRepo.resetPasswordForEmail(email.trim().toLowerCase(), redirectTo);
+      const normalized = trimmed.toLowerCase();
+      await authRepo.resetPasswordForEmail(normalized, redirectTo);
+      setSentEmail(normalized);
       setSent(true);
     } catch (err) {
-      setError(formatAuthErrorMessage(err, 'Could not send reset email. Please try again.'));
+      const message = formatAuthErrorMessage(err, 'Could not send reset email. Please try again.');
+      if (/no account found|valid email/i.test(message)) {
+        setEmailError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -45,10 +62,12 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
     <>
       {sent ? (
         <>
-          <AuthAlert variant="success">
-            If an account exists for that email, we sent a password reset link. Check inbox and spam for mail from
-            Kado Kohi (notifications@kadokohi.com). The link expires after use.
-          </AuthAlert>
+          <AuthAlert variant="success">{PASSWORD_RESET_SENT_NOTICE}</AuthAlert>
+          <p
+            className={`mt-2 text-sm font-medium ${isInternal ? 'text-white/80' : 'text-kado-dark/70'}`}
+          >
+            Sent to <span className="font-semibold">{sentEmail}</span>
+          </p>
           {!isInternal && <AuthFlowGuide steps={PASSWORD_RESET_SENT_STEPS} title="Next steps" variant="success" />}
           {isInternal ? (
             <p className="mt-4 text-xs text-white/55">
@@ -62,7 +81,7 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
           )}
         </>
       ) : (
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" noValidate>
           {error && <AuthAlert variant="error">{error}</AuthAlert>}
           <div>
             <label
@@ -78,14 +97,25 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
               type="email"
               autoComplete="username"
               value={email}
-              onChange={(ev) => setEmail(ev.target.value)}
+              onChange={(ev) => {
+                setEmail(ev.target.value);
+                setEmailError('');
+                setError('');
+              }}
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={emailError ? 'forgot-email-error' : undefined}
               className={
                 isInternal
-                  ? 'w-full rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kado-red/30'
-                  : 'w-full rounded-xl border border-kado-dark/12 bg-white px-4 py-3 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/25'
+                  ? `w-full rounded-xl border px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-kado-red/30 ${
+                      emailError ? 'border-red-400 bg-[#1a1a1a]' : 'border-white/15 bg-[#1a1a1a]'
+                    }`
+                  : `w-full rounded-xl border bg-white px-4 py-3 text-sm text-kado-dark focus:outline-none focus:ring-2 focus:ring-kado-red/25 ${
+                      emailError ? 'border-red-400' : 'border-kado-dark/12'
+                    }`
               }
               required
             />
+            <AuthFieldError id="forgot-email-error" message={emailError || null} />
           </div>
           <button
             type="submit"
@@ -94,6 +124,14 @@ export default function ForgotPassword({ variant = 'customer' }: ForgotPasswordP
           >
             {submitting ? 'Sending…' : 'Send reset link'}
           </button>
+          {!isInternal && emailError && /no account found/i.test(emailError) ? (
+            <p className="text-center text-sm text-kado-dark/55">
+              New here?{' '}
+              <Link to={signupPath} state={{ email: email.trim().toLowerCase() }} className="font-semibold text-kado-red hover:underline">
+                Create an account
+              </Link>
+            </p>
+          ) : null}
         </form>
       )}
       <Link

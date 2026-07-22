@@ -38,7 +38,21 @@ async function invokeAdminUsers<T = unknown>(body: Record<string, unknown>): Pro
 
 let signUpInFlight: Promise<AuthTokenResponse['data']> | null = null;
 
+export type AuthEmailStatus = 'invalid' | 'missing' | 'unconfirmed' | 'ready';
+
 export const authRepo = {
+  /** Lookup whether an email is registered (auth.users). Used for clear forgot/login errors. */
+  async getEmailStatus(email: string): Promise<AuthEmailStatus> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const normalized = email.trim().toLowerCase();
+    const { data, error } = await supabase.rpc('kk_auth_email_status', { p_email: normalized });
+    if (error) throw error;
+    const status = String(data ?? 'invalid');
+    if (status === 'missing' || status === 'unconfirmed' || status === 'ready' || status === 'invalid') {
+      return status;
+    }
+    return 'invalid';
+  },
   async signIn(email: string, password: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
     await recoverStaleAuthSession();
@@ -154,7 +168,15 @@ export const authRepo = {
   },
   async resetPasswordForEmail(email: string, redirectTo: string) {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    const normalized = email.trim().toLowerCase();
+    const status = await this.getEmailStatus(normalized);
+    if (status === 'invalid') {
+      throw new Error('Enter a valid email address.');
+    }
+    if (status === 'missing') {
+      throw new Error('No account found with that email. Check the address or create an account.');
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(normalized, { redirectTo });
     if (error) throw error;
   },
   async resendSignupConfirmation(email: string) {

@@ -30,3 +30,7 @@ export const PASSWORD_RESET_SENT_STEPS = [
   'Choose a new password on the secure page',
   'Return here and sign in with your new password',
 ] as const;
+
+export const PASSWORD_RESET_SENT_NOTICE =
+  'We sent a password reset link to your email. Check inbox and spam for mail from Kado Kohi (notifications@kadokohi.com). The link expires after use.';
+

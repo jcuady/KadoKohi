@@ -89,8 +89,37 @@ Deno.serve(async (req) => {
   });
   const pmJson = await pmRes.json().catch(() => ({}));
   if (!pmRes.ok) {
+    // Webhook may have already marked paid while PayMongo session fetch fails
+    // (expired/consumed session). Re-check DB before surfacing an error.
+    const { data: fresh } = await admin
+      .from("kk_orders")
+      .select("payment_status, status")
+      .eq("id", orderId)
+      .maybeSingle();
+    if (fresh?.payment_status === "paid") {
+      return json({
+        ok: true,
+        paid: true,
+        status: fresh.status,
+        alreadyPaid: true,
+      });
+    }
     console.error("paymongo verify session fetch failed", pmJson);
-    return json({ ok: false, message: "Could not verify payment with PayMongo." }, 502);
+    const detail =
+      pmJson?.errors?.[0]?.detail ||
+      pmJson?.errors?.[0]?.title ||
+      "Could not verify payment with PayMongo.";
+    // Consumed/expired sessions often mean payment already happened — treat as pending, not hard fail.
+    if (/consumed|expired|inactive/i.test(String(detail))) {
+      return json({
+        ok: true,
+        paid: false,
+        status: order.status,
+        sessionStatus: "consumed",
+        message: detail,
+      });
+    }
+    return json({ ok: false, message: detail }, 502);
   }
 
   const attrs = (pmJson?.data?.attributes ?? {}) as Record<string, unknown>;

@@ -78,6 +78,7 @@ export default function OrderQR() {
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [guestName, setGuestName] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [orderError, setOrderError] = useState('');
@@ -210,12 +211,17 @@ export default function OrderQR() {
       if (freshTotals.lines.length === 0) {
         throw new Error('Your cart is empty or items are unavailable.');
       }
+      const displayName = user?.name
+        ? clampText(user.name, 80)
+        : guestName.trim()
+          ? clampText(guestName, 80)
+          : refreshedTable.label;
       const order = await createOrder({
         channel: 'dine-in',
         branchId: refreshedTable.branchId,
         tableId: refreshedTable.id,
         customerId: guestOrderCustomerId(user),
-        guestName: user?.name ? clampText(user.name, 80) : refreshedTable.label,
+        guestName: displayName,
         paymentMethod,
         items: freshTotals.lines,
         subtotal: freshTotals.subtotal,
@@ -227,7 +233,7 @@ export default function OrderQR() {
       setTrackedOrder(sessionKey, {
         orderId: order.id,
         shortCode: order.shortCode,
-        label: refreshedTable.label,
+        label: displayName,
         placedAt: order.createdAt,
         snapshot: buildTrackedOrderSnapshot(order, useMenuStore.getState().products),
       });
@@ -434,6 +440,21 @@ export default function OrderQR() {
         placeButtonLabel={placeLabel}
         placeOrderAriaLabel="Place dine-in order"
         emptyCartTitle="Your table cart"
+        guestName={
+          user?.name
+            ? undefined
+            : {
+                value: guestName,
+                onChange: (v) => {
+                  setGuestName(v);
+                  setOrderError('');
+                },
+                label: 'Your name',
+                placeholder: table?.label ? `e.g. ${table.label}` : 'e.g. Juan',
+                required: false,
+                inputId: 'qr-dinein-guest-name',
+              }
+        }
       />
 
       <QrProductSheet

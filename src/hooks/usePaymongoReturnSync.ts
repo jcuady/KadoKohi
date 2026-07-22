@@ -34,7 +34,7 @@ export function usePaymongoReturnSync(
     try {
       for (let attempt = 0; attempt < 12; attempt++) {
         const result = await verifyPaymongoCheckout({ orderId, shortCode });
-        if (result.paid) {
+        if (result.paid || result.alreadyPaid) {
           clearPendingPayment(orderId);
           setSyncState('paid');
           await onPaidRef.current?.();
@@ -47,8 +47,16 @@ export function usePaymongoReturnSync(
       setSyncState('pending');
       return false;
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not confirm payment.';
+      // Already-paid / consumed responses that slipped through as errors.
+      if (/already paid|consumed/i.test(msg)) {
+        clearPendingPayment(orderId);
+        setSyncState('paid');
+        await onPaidRef.current?.();
+        return true;
+      }
       setSyncState('error');
-      setSyncError(err instanceof Error ? err.message : 'Could not confirm payment.');
+      setSyncError(msg);
       return false;
     }
   }, [orderId, shortCode]);

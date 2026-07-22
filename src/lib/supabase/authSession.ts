@@ -67,13 +67,16 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
   if (isInvalidRefreshTokenError(error)) {
     return 'Your session expired. Please try signing up again.';
   }
-  if (/already registered|already exists|user already/i.test(lower)) {
+  if (/already registered|already exists|user already|email address.*registered/i.test(lower)) {
     return 'That email is already registered. Try signing in instead.';
+  }
+  if (/no account found with that email/i.test(lower)) {
+    return 'No account found with that email. Check the address or create an account.';
   }
   if (/password/i.test(lower) && /weak|short|least/i.test(lower)) {
     return 'Password is too weak. Use at least 8 characters.';
   }
-  if (/invalid email|email format/i.test(lower)) {
+  if (/invalid email|email format|enter a valid email/i.test(lower)) {
     return 'Enter a valid email address.';
   }
   if (/signup is disabled|signups not allowed/i.test(lower)) {
@@ -88,7 +91,7 @@ export function formatAuthErrorMessage(error: unknown, fallback: string): string
   if (/current.?password/i.test(lower) && /incorrect|invalid|wrong|required/i.test(lower)) {
     return 'Current password is incorrect.';
   }
-  if (/invalid login credentials|invalid credentials/i.test(lower)) {
+  if (/invalid login credentials|invalid credentials|wrong password|incorrect password/i.test(lower)) {
     return fallback;
   }
   if (msg.trim()) return msg;
