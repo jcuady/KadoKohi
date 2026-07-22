@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { markPaymongoOrderPaid } from "../_shared/paymongoPaid.ts";
+import { markPaymongoOrderPaid, paidPaymentFromSessionAttrs } from "../_shared/paymongoPaid.ts";
 
 /**
  * PayMongo webhook — marks orders paid when checkout_session.payment.paid fires.
@@ -108,12 +108,9 @@ Deno.serve(async (req) => {
     (attrs.reference_number as string | undefined) ||
     (attrs.metadata?.order_id as string | undefined) ||
     null;
-  const payments = attrs.payments as Array<{ id?: string; attributes?: { status?: string } }> | undefined;
-  const paidPayment = Array.isArray(payments)
-    ? payments.find((p) => p?.attributes?.status === "paid")
-    : undefined;
+  const paidHit = paidPaymentFromSessionAttrs(attrs as Record<string, unknown>);
   const paymentId =
-    paidPayment?.id ??
+    paidHit?.paymentId ??
     (attrs.payments?.[0]?.id as string | undefined) ??
     (eventData?.id?.startsWith?.("pay_") ? (eventData.id as string) : null);
 

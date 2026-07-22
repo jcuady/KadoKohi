@@ -414,10 +414,12 @@ Customer browses /merch
 
 #### PayMongo QR Ph (automated)
 
-- `kk-paymongo-checkout`: validates order ownership/capability, amount, payment method, and same-origin return URLs; creates hosted QR Ph checkout.
-- `kk-paymongo-webhook`: public endpoint with PayMongo HMAC verification; idempotently records `paymongo_payment_id`, sets `payment_status = paid`, and accepts the queued order.
-- `kk-paymongo-verify`: authenticated customer or guest short-code fallback; reconciles delayed/missed webhook state from the PayMongo checkout session.
-- Browser return: `/checkout/:orderId?paymongo=success|cancel`; the success flow polls for a bounded period and supports retry without creating duplicate paid records.
+- `kk-paymongo-checkout`: validates order ownership/capability, amount, payment method, and same-origin return URLs; creates hosted QR Ph checkout via **`POST /v2/checkout_sessions`**.
+- `kk-paymongo-webhook`: public endpoint with PayMongo HMAC verification; idempotently records `paymongo_payment_id`, sets `payment_status = paid`, and accepts the queued order. Treat payment statuses `paid` / `succeeded` / `consumed` as paid.
+- `kk-paymongo-verify`: customer JWT or guest short-code; reconciles delayed/missed webhook state by **`GET /v1/checkout_sessions/{id}`** (retrieve is v1 only — calling `/v2/{id}` returns “The requested route does not exist” and used to surface as HTTP 502).
+- Browser return: `/checkout/:orderId?paymongo=success|cancel`; the success flow polls verify for a bounded period and supports retry without creating duplicate paid records.
+
+**Gotcha:** Create = v2, Retrieve = v1. Do not mix them.
 
 #### GCash QR (manual)
 
@@ -626,7 +628,8 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 
 ### PWA & push
 - Install prompt, `/help/install`.
-- Push notification scaffold (`kk-send-push`, `public/push-sw.js`).
+- Web push: `kk-send-push`, `public/push-sw.js`, `src/lib/push.ts`, `src/lib/notify.ts`.
+- **Portable guide (for other projects / AI agents):** [`docs/PWA_WEB_PUSH.md`](./docs/PWA_WEB_PUSH.md).
 
 ---
 

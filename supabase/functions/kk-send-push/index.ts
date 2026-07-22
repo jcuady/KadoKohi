@@ -32,6 +32,29 @@ interface Payload {
   kind?: string;
 }
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/** True when Authorization is this project's anon (or publishable) JWT — guest QR clients. */
+function isProjectAnonBearer(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return false;
+  if (payload.role !== "anon") return false;
+  const ref = typeof payload.ref === "string" ? payload.ref : "";
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  // JWT `ref` is the project ref; URL host starts with the same ref.
+  return Boolean(ref) && url.includes(ref);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") {
@@ -52,7 +75,12 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
   const callerUserId = await userIdFromBearer(admin, authHeader);
-  if (!callerUserId) {
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")?.trim();
+  const isAnonKeyCaller =
+    Boolean(anonKey && bearer && bearer === anonKey) || isProjectAnonBearer(bearer);
+
+  if (!callerUserId && !isAnonKeyCaller) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...cors, "Content-Type": "application/json" },
@@ -74,6 +102,21 @@ Deno.serve(async (req: Request) => {
       status: 400,
       headers: { ...cors, "Content-Type": "application/json" },
     });
+  }
+
+  // Anon callers may only fan out to staff/branch targets — never invent user pushes.
+  if (!callerUserId && isAnonKeyCaller) {
+    const staffFanoutOnly = payload.targets.every(
+      (t) =>
+        !t.userId &&
+        (Boolean(t.branchId) || (Array.isArray(t.roles) && t.roles.length > 0)),
+    );
+    if (!staffFanoutOnly) {
+      return new Response(
+        JSON.stringify({ error: "Anonymous clients may only notify staff/branch targets." }),
+        { status: 403, headers: { ...cors, "Content-Type": "application/json" } },
+      );
+    }
   }
 
   // Persist customer inbox rows for targeted userIds (orders, marketing, etc.).
