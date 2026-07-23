@@ -55,6 +55,11 @@ function isProjectAnonBearer(token: string): boolean {
   return Boolean(ref) && url.includes(ref);
 }
 
+function isServiceRoleBearer(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === "service_role";
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") {
@@ -79,8 +84,10 @@ Deno.serve(async (req: Request) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")?.trim();
   const isAnonKeyCaller =
     Boolean(anonKey && bearer && bearer === anonKey) || isProjectAnonBearer(bearer);
+  const isServiceRoleCaller =
+    Boolean(bearer && bearer === SERVICE_ROLE_KEY) || isServiceRoleBearer(bearer);
 
-  if (!callerUserId && !isAnonKeyCaller) {
+  if (!callerUserId && !isAnonKeyCaller && !isServiceRoleCaller) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...cors, "Content-Type": "application/json" },
@@ -105,7 +112,8 @@ Deno.serve(async (req: Request) => {
   }
 
   // Anon callers may only fan out to staff/branch targets — never invent user pushes.
-  if (!callerUserId && isAnonKeyCaller) {
+  // Service role (webhooks / verify) may target anyone.
+  if (!callerUserId && isAnonKeyCaller && !isServiceRoleCaller) {
     const staffFanoutOnly = payload.targets.every(
       (t) =>
         !t.userId &&

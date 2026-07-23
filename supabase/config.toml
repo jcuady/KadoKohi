@@ -10,9 +10,9 @@ verify_jwt = false
 [functions.kk-admin-users]
 verify_jwt = true
 
-# Push notifications — caller must present a valid Supabase session JWT.
+# Push notifications — custom auth in function (session JWT, anon staff fan-out, or service role).
 [functions.kk-send-push]
-verify_jwt = true
+verify_jwt = false
 
 # PayMongo — custom auth (session JWT for checkout/verify; HMAC signature for webhook).
 [functions.kk-paymongo-checkout]

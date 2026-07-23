@@ -411,7 +411,7 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
       },
 
       ordersForBarista: (branchId) =>
-        get().ordersForBranch(branchId, ['online', 'dine-in', 'takeout', 'pos']),
+        get().ordersForBranch(branchId, ['online', 'dine-in', 'takeout', 'pos', 'merch']),
 
       seed: () => set({ orders: [] }),
 }));

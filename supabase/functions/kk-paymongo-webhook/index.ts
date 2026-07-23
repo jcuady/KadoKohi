@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { markPaymongoOrderPaid, paidPaymentFromSessionAttrs } from "../_shared/paymongoPaid.ts";
+import { notifyCustomerPaymongoPaid } from "../_shared/orderPushNotify.ts";
 
 /**
  * PayMongo webhook — marks orders paid when checkout_session.payment.paid fires.
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
 
   let orderQuery = admin
     .from("kk_orders")
-    .select("id, payment_status, status, payment_method, paymongo_checkout_session_id")
+    .select("id, payment_status, status, payment_method, paymongo_checkout_session_id, short_code, customer_id, channel")
     .limit(1);
 
   if (referenceNumber) {
@@ -143,6 +144,17 @@ Deno.serve(async (req) => {
 
   const result = await markPaymongoOrderPaid(admin, order, sessionId, paymentId);
   if (!result.ok) return json({ ok: false, message: "Failed to mark paid" }, 500);
+
+  if (!result.alreadyPaid) {
+    const nextStatus = order.status === "pending" ? "accepted" : order.status;
+    await notifyCustomerPaymongoPaid({
+      id: order.id,
+      short_code: (order as { short_code?: string }).short_code,
+      customer_id: (order as { customer_id?: string | null }).customer_id,
+      status: nextStatus,
+      channel: (order as { channel?: string | null }).channel,
+    });
+  }
 
   return json({ ok: true, orderId: order.id, paymentId, alreadyPaid: result.alreadyPaid ?? false });
 });

@@ -7,6 +7,11 @@ import { newId } from '../lib/id';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { supabase } from '../lib/supabase/client';
 import { useEventCalendarStore } from './eventCalendarStore';
+import {
+  notifyCustomerBoothStatus,
+  notifyStaffBoothProofSubmitted,
+  notifyStaffNewBoothBooking,
+} from '../lib/notify';
 
 function shortCode(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
@@ -116,6 +121,7 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
       throw new Error(message);
     }
     set({ bookings: get().bookings.map((b) => (b.id === booking.id ? persisted : b)) });
+    notifyStaffNewBoothBooking(persisted);
     return persisted;
   },
 
@@ -127,6 +133,9 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
     set({ bookings: prev.map((b) => (b.id === id ? next : b)) });
     try {
       await patchBookingRemote(id, patch);
+      if (patch.status && patch.status !== snapshot.status) {
+        notifyCustomerBoothStatus(next, patch.status);
+      }
     } catch (err) {
       set({ bookings: prev });
       throw err;
@@ -171,6 +180,9 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
     });
     try {
       await patchBookingRemote(id, patch);
+      if (patch.status && patch.status !== booking.status) {
+        notifyCustomerBoothStatus({ ...booking, ...patch }, patch.status);
+      }
     } catch (err) {
       set({ bookings: prev });
       throw err;
@@ -201,6 +213,13 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
     });
     try {
       await orderingRepo.submitBoothPaymentProof(id, proofRef);
+      notifyStaffBoothProofSubmitted({
+        ...snapshot,
+        paymentStatus: 'proof_submitted',
+        paymentProofImage: proofRef,
+        paymentProofUploadedAt: now,
+        updatedAt: now,
+      });
     } catch (err) {
       set({ bookings: prev });
       throw err;

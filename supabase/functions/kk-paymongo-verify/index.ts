@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { userIdFromBearer } from "../_shared/supabaseAuth.ts";
 import { markPaymongoOrderPaid, paidPaymentFromSessionAttrs } from "../_shared/paymongoPaid.ts";
+import { notifyCustomerPaymongoPaid } from "../_shared/orderPushNotify.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
   const { data: order, error: orderErr } = await admin
     .from("kk_orders")
     .select(
-      "id, short_code, customer_id, payment_method, payment_status, status, paymongo_checkout_session_id",
+      "id, short_code, customer_id, payment_method, payment_status, status, paymongo_checkout_session_id, channel",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -195,6 +196,15 @@ Deno.serve(async (req) => {
     const result = await markPaymongoOrderPaid(admin, order, sessionId, intentPaid.paymentId);
     if (!result.ok) return json({ ok: false, message: "Failed to update order payment." }, 500);
     const nextStatus = order.status === "pending" ? "accepted" : order.status;
+    if (!result.alreadyPaid) {
+      await notifyCustomerPaymongoPaid({
+        id: order.id,
+        short_code: order.short_code,
+        customer_id: order.customer_id,
+        status: nextStatus,
+        channel: (order as { channel?: string | null }).channel ?? null,
+      });
+    }
     return json({
       ok: true,
       paid: true,
@@ -208,6 +218,15 @@ Deno.serve(async (req) => {
   if (!result.ok) return json({ ok: false, message: "Failed to update order payment." }, 500);
 
   const nextStatus = order.status === "pending" ? "accepted" : order.status;
+  if (!result.alreadyPaid) {
+    await notifyCustomerPaymongoPaid({
+      id: order.id,
+      short_code: order.short_code,
+      customer_id: order.customer_id,
+      status: nextStatus,
+      channel: (order as { channel?: string | null }).channel ?? null,
+    });
+  }
   return json({
     ok: true,
     paid: true,

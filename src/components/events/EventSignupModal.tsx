@@ -15,6 +15,7 @@ import { newId } from '../../lib/id';
 import EventSignupFields from './EventSignupFields';
 import OverlayShell from '../ui/OverlayShell';
 import { OVERLAY_CTA, OVERLAY_CTA_DARK } from '../../lib/overlayTheme';
+import { notifyEventRegistration } from '../../lib/notify';
 
 interface Props {
   event: Event;
@@ -118,6 +119,14 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
         customAnswers: checked.customAnswers,
         answers,
       });
+      if (user?.id) {
+        notifyEventRegistration({
+          customerId: user.id,
+          eventId: event.id,
+          eventTitle: event.title,
+          contactName: checked.contactName,
+        });
+      }
       setDone(true);
       onSuccess();
     } catch (err) {
