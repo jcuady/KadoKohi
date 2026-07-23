@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Upload, ExternalLink } from 'lucide-react';
+import { Upload, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import {
   useLandingContentStore,
   useLandingDraftContent,
@@ -20,7 +20,7 @@ import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const HERO_CARD_SLOTS = 4;
 const TRUSTED_BRAND_SLOTS = 5;
-const SPONSOR_SLOTS = 8;
+const MAX_FRIENDS = 16;
 
 function cmsTab(id: LandingTabId) {
   const tab = LANDING_CMS_TABS.find((item) => item.id === id);
@@ -48,6 +48,8 @@ export default function AdminLandingContent() {
   const updateOrderingStep = useLandingContentStore((s) => s.updateOrderingStep);
   const reorderOrderingSteps = useLandingContentStore((s) => s.reorderOrderingSteps);
   const updateKadoCircleSponsor = useLandingContentStore((s) => s.updateKadoCircleSponsor);
+  const addKadoCircleSponsor = useLandingContentStore((s) => s.addKadoCircleSponsor);
+  const removeKadoCircleSponsor = useLandingContentStore((s) => s.removeKadoCircleSponsor);
   const updateBranchesStrip = useLandingContentStore((s) => s.updateBranchesStrip);
   const updateAboutPage = useLandingContentStore((s) => s.updateAboutPage);
   const updateKadoCircle = useLandingContentStore((s) => s.updateKadoCircle);
@@ -925,7 +927,7 @@ export default function AdminLandingContent() {
               onChange={(v) => updateKadoCircle({ disclaimer: v })}
             />
             <CmsField
-              label="Marquee label"
+              label="Friends label"
               value={content.kadoCircle.marqueeLabel}
               onChange={(v) => updateKadoCircle({ marqueeLabel: v })}
             />
@@ -941,31 +943,57 @@ export default function AdminLandingContent() {
             onChange={(v) => updateKadoCircle({ body: v })}
             multiline
           />
-          <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">
-            Marquee carousel ({SPONSOR_SLOTS} slots) — partner name and/or logo
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {Array.from({ length: SPONSOR_SLOTS }, (_, i) => {
-              const sponsor = content.kadoCircle.sponsors[i] ?? { label: '', imageUrl: '' };
-              return (
-                <div key={i} className="rounded-lg border dash-border p-3 space-y-2">
-                  <CmsField
-                    label={`Partner ${i + 1} name`}
-                    value={sponsor.label}
-                    onChange={(v) => updateKadoCircleSponsor(i, { label: v })}
-                  />
-                  <ImageUrlField
-                    label="Logo image (optional)"
-                    value={sponsor.imageUrl ?? ''}
-                    onChange={(v) => updateKadoCircleSponsor(i, { imageUrl: v })}
-                    onPickFile={(files) =>
-                      onPickImage(`landing/kado-circle/sponsors/${i}`, (url) => updateKadoCircleSponsor(i, { imageUrl: url }), files)
-                    }
-                  />
-                </div>
-              );
-            })}
+          <div className="mt-4 mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase dash-muted">
+              Friends of the corner ({content.kadoCircle.sponsors.length}/{MAX_FRIENDS})
+            </p>
+            <button
+              type="button"
+              onClick={() => addKadoCircleSponsor()}
+              disabled={content.kadoCircle.sponsors.length >= MAX_FRIENDS}
+              className="inline-flex min-h-[40px] cursor-pointer items-center gap-1.5 rounded-lg border dash-border bg-kado-cream px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-kado-dark transition-colors hover:border-kado-red hover:text-kado-red disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              Add friend
+            </button>
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {content.kadoCircle.sponsors.map((sponsor, i) => (
+              <div key={i} className="space-y-2 rounded-lg border dash-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] dash-muted">Friend {i + 1}</p>
+                  <button
+                    type="button"
+                    onClick={() => removeKadoCircleSponsor(i)}
+                    className="inline-flex min-h-[36px] min-w-[36px] cursor-pointer items-center justify-center rounded-md text-kado-dark/55 transition-colors hover:bg-kado-red/10 hover:text-kado-red"
+                    aria-label={`Remove friend ${i + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <CmsField
+                  label="Name"
+                  value={sponsor.label}
+                  onChange={(v) => updateKadoCircleSponsor(i, { label: v })}
+                />
+                <ImageUrlField
+                  label="Logo image (optional)"
+                  value={sponsor.imageUrl ?? ''}
+                  onChange={(v) => updateKadoCircleSponsor(i, { imageUrl: v })}
+                  onPickFile={(files) =>
+                    onPickImage(
+                      `landing/kado-circle/sponsors/${i}`,
+                      (url) => updateKadoCircleSponsor(i, { imageUrl: url }),
+                      files,
+                    )
+                  }
+                />
+              </div>
+            ))}
+          </div>
+          {content.kadoCircle.sponsors.length === 0 ? (
+            <p className="mt-2 text-sm dash-muted">No friends yet — click Add friend, or publish seed (Blitzbar, Offgrid, Anik PH).</p>
+          ) : null}
           <p className="text-xs font-bold uppercase dash-muted mt-4 mb-2">Stats row (4 fixed)</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {content.kadoCircle.stats.map((stat, si) => (

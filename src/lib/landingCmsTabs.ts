@@ -21,7 +21,7 @@ export const LANDING_CMS_TABS = [
     label: 'FAQ',
     hint: 'Good-to-know accordion — ordering, loyalty, booth booking, and site policies.',
   },
-  { id: 'kado-circle', label: 'Kado Circle', hint: 'Newsletter CTA, marquee partners, and stats row.' },
+  { id: 'kado-circle', label: 'Kado Circle', hint: 'Membership CTA, Friends of the corner (CRUD), and stats.' },
 ] as const;
 
 export type LandingTabId = (typeof LANDING_CMS_TABS)[number]['id'];

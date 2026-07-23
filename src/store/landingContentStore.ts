@@ -244,6 +244,8 @@ interface LandingContentStore {
   setTrustedBrands: (brands: BrandMarqueeItem[]) => void;
   updateTrustedBrand: (index: number, patch: Partial<BrandMarqueeItem>) => void;
   updateKadoCircleSponsor: (index: number, patch: Partial<BrandMarqueeItem>) => void;
+  addKadoCircleSponsor: () => void;
+  removeKadoCircleSponsor: (index: number) => void;
   updateOrdering: (patch: Partial<OrderingCopy>) => void;
   updateOrderingStep: (index: number, patch: Partial<OrderingStepCopy>) => void;
   reorderOrderingSteps: (fromIndex: number, toIndex: number) => void;
@@ -266,15 +268,12 @@ const SEED_TRUSTED_BRANDS: BrandMarqueeItem[] = [
 ];
 
 const SEED_KADO_CIRCLE_SPONSORS: BrandMarqueeItem[] = [
-  { label: 'Kado Kohi', imageUrl: '/logo/Logo1-sm.png' },
-  { label: 'Anytime Fitness', imageUrl: '' },
-  { label: 'foodpanda', imageUrl: '' },
-  { label: 'GrabFood', imageUrl: '' },
-  { label: 'Pick.A.Roo', imageUrl: '' },
-  { label: 'Oatside', imageUrl: '' },
-  { label: 'Lalamove', imageUrl: '' },
-  { label: 'Emborg', imageUrl: '' },
+  { label: 'Blitzbar', imageUrl: '' },
+  { label: 'Offgrid', imageUrl: '' },
+  { label: 'Anik PH', imageUrl: '' },
 ];
+
+const MAX_KADO_CIRCLE_FRIENDS = 16;
 
 const SEED_ORDERING_STEPS: OrderingStepCopy[] = [
   {
@@ -497,13 +496,13 @@ export const SEED_CONTENT: LandingContentState = {
     contactCtaLabel: '@kadocoffeeph',
   },
   kadoCircle: {
-    badge: 'The Inner Circle',
-    titleBefore: 'Join the',
-    titleAccent: 'Kado Circle.',
-    body: 'Curated invites to private events, secret menu drops, and your trackable loyalty stamp card. Become a local.',
-    emailPlaceholder: 'Enter your email address',
+    badge: 'Kado Circle',
+    titleBefore: 'Your seat at the',
+    titleAccent: 'corner.',
+    body: 'Kado Circle is how locals stay close — event invites, stamp loyalty on completed drinks, and early word on secret menu drops. One email. One corner.',
+    emailPlaceholder: 'you@email.com',
     submitLabel: 'Request access',
-    disclaimer: 'No spam. Unsubscribe any time.',
+    disclaimer: 'No spam. Leave anytime.',
     marqueeLabel: 'Friends of the corner',
     sponsors: [...SEED_KADO_CIRCLE_SPONSORS],
     stats: [
@@ -512,7 +511,7 @@ export const SEED_CONTENT: LandingContentState = {
       { num: '9', label: 'Stamp loyalty' },
       { num: '∞', label: 'Good vibes' },
     ],
-    footerLinkLabel: 'Or go straight to create account →',
+    footerLinkLabel: 'Create account instead',
   },
 };
 
@@ -605,6 +604,33 @@ function toBrandItem(value: unknown, fallback: BrandMarqueeItem): BrandMarqueeIt
 function clampBrandList(saved: unknown[] | undefined, seed: BrandMarqueeItem[]): BrandMarqueeItem[] {
   if (!Array.isArray(saved) || saved.length === 0) return seed.map((b) => ({ ...b }));
   return seed.map((fallback, i) => toBrandItem(saved[i], fallback));
+}
+
+/** Variable-length Friends of the corner — admin CRUD; adopt new seed when legacy partners remain. */
+function isLegacyKadoCircleFriends(items: BrandMarqueeItem[]): boolean {
+  const blob = items.map((i) => cmsTextPlain(i.label).toLowerCase()).join('|');
+  return /anytime fitness|foodpanda|grabfood|lalamove|pick\.a\.roo|oatside|emborg/.test(blob);
+}
+
+function clampKadoCircleFriends(
+  saved: unknown[] | undefined | null,
+  opts?: { adoptLegacy?: boolean },
+): BrandMarqueeItem[] {
+  if (saved == null || !Array.isArray(saved)) {
+    return SEED_KADO_CIRCLE_SPONSORS.map((b) => ({ ...b }));
+  }
+  if (saved.length === 0) {
+    return opts?.adoptLegacy ? SEED_KADO_CIRCLE_SPONSORS.map((b) => ({ ...b })) : [];
+  }
+  const empty: BrandMarqueeItem = { label: '', imageUrl: '' };
+  const mapped = saved
+    .slice(0, MAX_KADO_CIRCLE_FRIENDS)
+    .map((item, i) => toBrandItem(item, SEED_KADO_CIRCLE_SPONSORS[i] ?? empty));
+  // ponytail: only swap legacy lists on hydrate — not mid-edit when admin is renaming slots
+  if (opts?.adoptLegacy && isLegacyKadoCircleFriends(mapped)) {
+    return SEED_KADO_CIRCLE_SPONSORS.map((b) => ({ ...b }));
+  }
+  return mapped;
 }
 
 function clampAccentHeadline(
@@ -869,7 +895,7 @@ export function normalizeLandingContent(raw: Partial<LandingContentState> | unde
         'marqueeLabel',
         'footerLinkLabel',
       ]),
-      sponsors: clampBrandList(raw.kadoCircle?.sponsors as unknown[] | undefined, SEED_KADO_CIRCLE_SPONSORS),
+      sponsors: clampKadoCircleFriends(raw.kadoCircle?.sponsors as unknown[] | undefined, { adoptLegacy: true }),
       stats:
         Array.isArray(raw.kadoCircle?.stats) && raw.kadoCircle.stats.length >= 4
           ? raw.kadoCircle.stats.slice(0, 4).map((stat, i) => ({
@@ -1143,7 +1169,32 @@ export const useLandingContentStore = create<LandingContentStore>()(
             ...d,
             kadoCircle: {
               ...d.kadoCircle,
-              sponsors: clampBrandList(sponsors, SEED_KADO_CIRCLE_SPONSORS),
+              sponsors: clampKadoCircleFriends(sponsors),
+            },
+          };
+        }),
+
+      addKadoCircleSponsor: () =>
+        patchDraft(set, get, (d) => {
+          if (d.kadoCircle.sponsors.length >= MAX_KADO_CIRCLE_FRIENDS) return d;
+          return {
+            ...d,
+            kadoCircle: {
+              ...d.kadoCircle,
+              sponsors: clampKadoCircleFriends([...d.kadoCircle.sponsors, { label: '', imageUrl: '' }]),
+            },
+          };
+        }),
+
+      removeKadoCircleSponsor: (index) =>
+        patchDraft(set, get, (d) => {
+          if (index < 0 || index >= d.kadoCircle.sponsors.length) return d;
+          const sponsors = d.kadoCircle.sponsors.filter((_, i) => i !== index);
+          return {
+            ...d,
+            kadoCircle: {
+              ...d.kadoCircle,
+              sponsors: clampKadoCircleFriends(sponsors),
             },
           };
         }),
@@ -1207,7 +1258,7 @@ export const useLandingContentStore = create<LandingContentStore>()(
             ...patch,
             sponsors:
               patch.sponsors !== undefined
-                ? clampBrandList(patch.sponsors, SEED_KADO_CIRCLE_SPONSORS)
+                ? clampKadoCircleFriends(patch.sponsors)
                 : d.kadoCircle.sponsors,
             stats: patch.stats !== undefined ? patch.stats.slice(0, 4) : d.kadoCircle.stats,
           },
