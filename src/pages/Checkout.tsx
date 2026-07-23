@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   BellRing,
   CheckCircle2,
-  Clock,
   Coffee,
   CreditCard,
   Loader2,
@@ -19,6 +18,7 @@ import {
   awaitsGatewayPayment,
   isGcashOrder,
   isPaymongoOrder,
+  ORDER_STATUS_BADGE,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
 } from '../lib/orderStatus';
@@ -28,6 +28,9 @@ import GcashQrModal from '../components/GcashQrModal';
 import CheckoutPushPrompt from '../components/CheckoutPushPrompt';
 import CheckoutOrderActions from '../components/checkout/CheckoutOrderActions';
 import CheckoutPaymentIssueCard from '../components/checkout/CheckoutPaymentIssueCard';
+import GuestOrderStatusTimeline, {
+  fulfillmentHeadline,
+} from '../components/order/GuestOrderStatusTimeline';
 import { clearPendingPayment, getPendingPayment, rememberPendingPayment } from '../lib/pendingPayments';
 import { usePaymongoReturnSync } from '../hooks/usePaymongoReturnSync';
 import { verifyPaymongoCheckout } from '../lib/supabase/repositories/paymongo';
@@ -150,6 +153,134 @@ function CheckoutSteps({
   );
 }
 
+function CheckoutConfirmed({
+  tracked,
+  branchLabel,
+  displayLines,
+  orderId,
+  returnTo,
+  isCustomer,
+  redirectSeconds,
+  trackingLive,
+}: {
+  tracked: TrackedOrderStatus;
+  branchLabel: string;
+  displayLines: ConsolidatedOrderLine[];
+  orderId: string;
+  returnTo: string | null;
+  isCustomer: boolean;
+  redirectSeconds: number | null;
+  trackingLive: boolean;
+}) {
+  const headline = fulfillmentHeadline(tracked.status);
+  const statusBadge = ORDER_STATUS_BADGE[tracked.status] ?? 'bg-kado-offwhite text-kado-dark/60 border-kado-dark/8';
+  const HeroIcon =
+    tracked.status === 'cancelled'
+      ? XCircle
+      : tracked.status === 'ready' || tracked.status === 'served' || tracked.status === 'completed'
+        ? Coffee
+        : CheckCircle2;
+  const eyebrow =
+    tracked.status === 'cancelled'
+      ? 'Order update'
+      : tracked.status === 'ready' || tracked.status === 'served' || tracked.status === 'completed'
+        ? 'Fulfillment update'
+        : 'Payment confirmed';
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="space-y-5"
+      aria-live="polite"
+    >
+      <div className="relative overflow-hidden rounded-2xl border border-kado-dark/8 bg-kado-dark px-5 py-8 text-center sm:px-8 sm:py-10">
+        <span
+          className="pointer-events-none absolute -right-2 top-2 select-none font-display text-[5.5rem] leading-none text-kado-cream/[0.06]"
+          aria-hidden
+        >
+          角
+        </span>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-kado-cream text-kado-red">
+          <HeroIcon className="h-8 w-8" aria-hidden />
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-cream/55">{eyebrow}</p>
+        <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-kado-cream sm:text-3xl">
+          {headline.title}
+        </h1>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-kado-cream/70">
+          {headline.lead}
+          <span className="font-mono font-bold text-kado-cream">{tracked.shortCode}</span>
+          {headline.trail}
+        </p>
+        {redirectSeconds != null && redirectSeconds > 0 ? (
+          <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-kado-cream/50">
+            Opening your orders in {redirectSeconds}…
+          </p>
+        ) : null}
+      </div>
+
+      <CheckoutSteps active="done" />
+
+      <div className="space-y-3 rounded-2xl border border-kado-dark/10 bg-white p-4 sm:p-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm text-kado-dark/55">Amount paid</span>
+          <span className="font-display text-xl font-bold text-kado-red">{formatPhp(tracked.total)}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-800">
+            <CheckCircle2 className="h-3 w-3" aria-hidden /> Paid
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${statusBadge}`}
+          >
+            <Coffee className="h-3 w-3" aria-hidden /> {ORDER_STATUS_LABELS[tracked.status] ?? tracked.status}
+          </span>
+          {branchLabel ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-kado-dark/8 bg-kado-offwhite px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
+              <MapPin className="h-3 w-3" aria-hidden /> {branchLabel}
+            </span>
+          ) : null}
+        </div>
+        <OrderLinesList lines={displayLines} />
+      </div>
+
+      <GuestOrderStatusTimeline
+        status={tracked.status}
+        channel={tracked.channel}
+        paymentMethod={tracked.paymentMethod}
+        isLive={trackingLive}
+      />
+
+      <div className="flex flex-col gap-2.5 sm:flex-row">
+        {isCustomer ? (
+          <Link
+            to={`/account/orders?placed=${encodeURIComponent(orderId)}`}
+            replace
+            className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[11px] font-black uppercase tracking-wider text-kado-cream transition-colors hover:bg-kado-dark"
+          >
+            Track my order
+          </Link>
+        ) : (
+          <p className="flex-1 rounded-2xl border border-kado-dark/10 bg-white px-4 py-3 text-center text-xs leading-relaxed text-kado-dark/60">
+            Keep this page open or save order{' '}
+            <span className="font-mono font-bold text-kado-dark">{tracked.shortCode}</span> — status updates live
+            here.
+          </p>
+        )}
+        <Link
+          to={returnTo || '/menu'}
+          className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full border-2 border-kado-dark/15 bg-white px-5 text-[11px] font-black uppercase tracking-wider text-kado-dark transition-colors hover:border-kado-red/40"
+        >
+          <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
+          {returnTo?.includes('/order/') ? 'Back to ordering' : 'Continue shopping'}
+        </Link>
+      </div>
+    </motion.section>
+  );
+}
+
 export default function Checkout() {
   const { orderId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -172,6 +303,7 @@ export default function Checkout() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [openMethodPicker, setOpenMethodPicker] = useState(false);
   const [redirectSeconds, setRedirectSeconds] = useState<number | null>(null);
+  const [trackingLive, setTrackingLive] = useState(false);
   const orderActionsRef = useRef<HTMLDivElement>(null);
   const payPanelRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -228,11 +360,17 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!orderId) return;
+    setTrackingLive(false);
     const handle = subscribeGuestOrderTracking(orderId, (next) => {
       setTracked(next);
       if (next.paymentStatus === 'paid' || next.status === 'cancelled') clearPendingPayment(orderId);
     });
-    return () => handle.stop();
+    // ponytail: poll isLive — subscribe API is a getter, not a callback
+    const liveTimer = window.setInterval(() => setTrackingLive(handle.isLive()), 1000);
+    return () => {
+      window.clearInterval(liveTimer);
+      handle.stop();
+    };
   }, [orderId]);
 
   useEffect(() => {
@@ -497,98 +635,16 @@ export default function Checkout() {
 
         {/* ── Confirmation state ── */}
         {paymentConfirmed ? (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="space-y-5"
-            aria-live="polite"
-          >
-            <div className="rounded-2xl border border-kado-dark/8 bg-kado-dark px-5 py-8 sm:px-8 sm:py-10 text-center relative overflow-hidden">
-              <span
-                className="pointer-events-none absolute -right-2 top-2 font-display text-[5.5rem] leading-none text-kado-cream/[0.06] select-none"
-                aria-hidden
-              >
-                角
-              </span>
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-kado-cream text-kado-red">
-                <CheckCircle2 className="h-8 w-8" aria-hidden />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-cream/55">Payment confirmed</p>
-              <h1 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-kado-cream tracking-tight">
-                Salamat — order received
-              </h1>
-              <p className="mt-2 text-sm text-kado-cream/70 leading-relaxed max-w-sm mx-auto">
-                Order <span className="font-mono font-bold text-kado-cream">{tracked.shortCode}</span> is paid and
-                queued. We’ll brew it next.
-              </p>
-              {redirectSeconds != null && redirectSeconds > 0 ? (
-                <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-kado-cream/50">
-                  Opening your orders in {redirectSeconds}…
-                </p>
-              ) : null}
-            </div>
-
-            <CheckoutSteps active="done" />
-
-            <div className="rounded-2xl border border-kado-dark/10 bg-white p-4 sm:p-5 space-y-3">
-              <div className="flex justify-between items-baseline gap-3">
-                <span className="text-sm text-kado-dark/55">Amount paid</span>
-                <span className="font-display font-bold text-xl text-kado-red">{formatPhp(tracked.total)}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-800">
-                  <CheckCircle2 className="h-3 w-3" aria-hidden /> Paid
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-kado-offwhite border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
-                  <Coffee className="h-3 w-3" aria-hidden /> {ORDER_STATUS_LABELS[tracked.status] ?? tracked.status}
-                </span>
-                {branchLabel ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-kado-offwhite border border-kado-dark/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-kado-dark/60">
-                    <MapPin className="h-3 w-3" aria-hidden /> {branchLabel}
-                  </span>
-                ) : null}
-              </div>
-              <OrderLinesList lines={displayLines} />
-            </div>
-
-            <div className="rounded-2xl border border-kado-dark/10 bg-kado-offwhite p-4 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-kado-dark/50 flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-kado-red" aria-hidden />
-                What happens next
-              </p>
-              <ul className="space-y-2 text-sm text-kado-dark/65 leading-relaxed">
-                <li>1. Baristas prepare your order in queue order.</li>
-                <li>2. You’ll get updates when it’s brewing and ready for pickup.</li>
-                <li>3. Stamps unlock when the order is marked complete.</li>
-              </ul>
-            </div>
-
-            <div className="flex flex-col gap-2.5 sm:flex-row">
-              {user?.role === 'customer' ? (
-                <Link
-                  to={`/account/orders?placed=${encodeURIComponent(orderId)}`}
-                  replace
-                  className="flex-1 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[11px] font-black uppercase tracking-wider text-kado-cream hover:bg-kado-dark transition-colors"
-                >
-                  Track my order
-                </Link>
-              ) : (
-                <p className="flex-1 rounded-2xl border border-kado-dark/10 bg-white px-4 py-3 text-center text-xs text-kado-dark/60 leading-relaxed">
-                  Keep this page open or save order{' '}
-                  <span className="font-mono font-bold text-kado-dark">{tracked.shortCode}</span> — status updates
-                  live here.
-                </p>
-              )}
-              <Link
-                to={returnTo || '/menu'}
-                className="flex-1 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border-2 border-kado-dark/15 bg-white px-5 text-[11px] font-black uppercase tracking-wider text-kado-dark hover:border-kado-red/40 transition-colors"
-              >
-                <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
-                {returnTo?.includes('/order/') ? 'Back to ordering' : 'Continue shopping'}
-              </Link>
-            </div>
-          </motion.section>
+          <CheckoutConfirmed
+            tracked={tracked}
+            branchLabel={branchLabel}
+            displayLines={displayLines}
+            orderId={orderId}
+            returnTo={returnTo}
+            isCustomer={user?.role === 'customer'}
+            redirectSeconds={redirectSeconds}
+            trackingLive={trackingLive}
+          />
         ) : (
           /* ── Pay / sync / cancel states ── */
           <section className="space-y-4">
