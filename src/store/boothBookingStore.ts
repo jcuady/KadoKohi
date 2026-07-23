@@ -122,6 +122,9 @@ export const useBoothBookingStore = create<BoothBookingStore>()((set, get) => ({
     }
     set({ bookings: get().bookings.map((b) => (b.id === booking.id ? persisted : b)) });
     notifyStaffNewBoothBooking(persisted);
+    if (persisted.customerId) {
+      notifyCustomerBoothStatus(persisted, persisted.status);
+    }
     return persisted;
   },
 

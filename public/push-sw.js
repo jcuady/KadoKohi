@@ -10,9 +10,13 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'Kado Kohi';
-  const isOrderAlert = typeof data.tag === 'string' && data.tag.startsWith('order-');
   const isNewOrder = typeof data.tag === 'string' && data.tag.startsWith('new-order-');
-  const isProof = typeof data.tag === 'string' && data.tag.startsWith('proof-');
+  const isProof =
+    typeof data.tag === 'string' &&
+    (data.tag.startsWith('proof-') || data.tag.startsWith('booth-proof-'));
+  const isBoothOrEvent =
+    typeof data.tag === 'string' &&
+    (data.tag.startsWith('booth-') || data.tag.startsWith('event-reg-'));
 
   const options = {
     body: data.body || '',
@@ -21,7 +25,7 @@ self.addEventListener('push', (event) => {
     image: data.image || undefined,
     tag: data.tag || 'kado-order',
     renotify: true,
-    requireInteraction: isNewOrder || isProof,
+    requireInteraction: isNewOrder || isProof || isBoothOrEvent,
     vibrate: isNewOrder || isProof ? [120, 60, 120, 60, 120] : [80, 40, 80],
     timestamp: Date.now(),
     silent: false,

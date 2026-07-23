@@ -40,7 +40,7 @@ const FOOD_STATUS_COPY: Record<OrderStatus, StatusCopy | null> = {
   },
   preparing: {
     title: 'Preparing your order',
-    body: (o) => `We're preparing order ${o.shortCode} now — drinks, pastries, the works.`,
+    body: (o) => `We're preparing order ${o.shortCode} now.`,
   },
   ready: {
     title: 'Ready for pickup',
@@ -212,6 +212,10 @@ export function buildCustomerPaymongoPaidPayload(order: Order): NotifyPayload | 
 const BOOTH_STATUS_COPY: Partial<
   Record<BoothBookingStatus, { title: string; body: (b: BoothBooking) => string }>
 > = {
+  submitted: {
+    title: 'Event proposal received',
+    body: (b) => `We received ${b.shortCode} for ${b.eventName}. Our events team will follow up.`,
+  },
   under_review: {
     title: 'Booking under review',
     body: (b) => `We're reviewing ${b.shortCode} (${b.eventName}). We'll update you soon.`,
@@ -279,7 +283,7 @@ export function buildBoothStaffNewPayload(booking: BoothBooking): NotifyPayload 
     targets: boothStaffTargets(booking),
     title: 'New event booking',
     body: `${booking.shortCode} · ${booking.eventName} · ${booking.guestCount} guests.`,
-    url: '/admin/booth-bookings',
+    url: '/staff/booth-bookings',
     tag: `booth-new-${booking.id}`,
   };
 }
@@ -293,7 +297,7 @@ export function buildBoothStaffProofPayload(booking: BoothBooking): NotifyPayloa
     targets: boothStaffTargets(booking),
     title: 'Booth payment proof',
     body: `${booking.shortCode} uploaded payment proof for ${booking.eventName}.`,
-    url: '/admin/booth-bookings',
+    url: '/staff/booth-bookings',
     tag: `booth-proof-${booking.id}`,
   };
 }
@@ -322,12 +326,13 @@ export function buildEventRegistrationStaffPayload(input: {
   eventTitle: string;
   contactName: string;
 }): NotifyPayload {
+  // Events CMS is admin-only; staff RoleGate cannot open /admin/events.
   return {
-    targets: [{ roles: ['admin', 'staff'] }],
+    targets: [{ roles: ['admin'] }],
     title: 'New event registration',
     body: `${input.contactName} registered for ${input.eventTitle}.`,
     url: '/admin/events',
-    tag: `event-reg-staff-${input.eventId}-${Date.now()}`,
+    tag: `event-reg-staff-${input.eventId}`,
   };
 }
 

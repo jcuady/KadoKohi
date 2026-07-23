@@ -230,26 +230,29 @@ describe('booth booking payloads', () => {
     const quoted = buildBoothStatusPayload(baseBooking({ status: 'quoted' }), 'quoted');
     const confirmed = buildBoothStatusPayload(baseBooking({ status: 'confirmed' }), 'confirmed');
     const declined = buildBoothStatusPayload(baseBooking({ status: 'declined' }), 'declined');
+    const submitted = buildBoothStatusPayload(baseBooking({ status: 'submitted' }), 'submitted');
     expect(quoted!.url).toBe('/account/booth');
     expect(confirmed!.title.toLowerCase()).toMatch(/confirm/);
     expect(declined!.kind).toBe('system');
+    expect(submitted!.title.toLowerCase()).toMatch(/received|submitted|proposal/);
     expect(buildBoothStatusPayload(baseBooking({ customerId: undefined }), 'quoted')).toBeNull();
   });
 
-  it('notifies staff of new booking and payment proof', () => {
+  it('notifies staff of new booking and payment proof via staff booth route', () => {
     const neu = buildBoothStaffNewPayload(baseBooking({ branchId: 'branch_greenhills' }));
     expect(neu.targets).toEqual([
       { branchId: 'branch_greenhills', roles: ['staff', 'barista'] },
       { roles: ['admin'] },
     ]);
-    expect(neu.url).toBe('/admin/booth-bookings');
+    expect(neu.url).toBe('/staff/booth-bookings');
     const proof = buildBoothStaffProofPayload(baseBooking());
     expect(proof.title.toLowerCase()).toContain('proof');
+    expect(proof.url).toBe('/staff/booth-bookings');
   });
 });
 
 describe('event registration payloads', () => {
-  it('confirms customer and alerts staff', () => {
+  it('confirms customer and alerts admins (staff have no events console)', () => {
     const customer = buildEventRegistrationCustomerPayload({
       customerId: 'cust-1',
       eventId: 'ev-1',
@@ -262,7 +265,7 @@ describe('event registration payloads', () => {
     });
     expect(customer.targets).toEqual([{ userId: 'cust-1' }]);
     expect(customer.body).toContain('Latte Art Night');
-    expect(staff.targets).toEqual([{ roles: ['admin', 'staff'] }]);
+    expect(staff.targets).toEqual([{ roles: ['admin'] }]);
     expect(staff.url).toBe('/admin/events');
   });
 });
