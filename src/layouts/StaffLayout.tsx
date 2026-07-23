@@ -110,7 +110,7 @@ export default function StaffLayout() {
           className="shrink-0 space-y-1 border-t px-2 pb-3 pt-3"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
-          <NotificationToggle variant="sidebar" audience="staff" label="Enable alerts" />
+          <NotificationToggle variant="sidebar" audience="staff" label="Push alerts" />
           <button type="button" onClick={toggle} className={sidebarFooterBtnClass()}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
             {isDark ? 'Light mode' : 'Dark mode'}

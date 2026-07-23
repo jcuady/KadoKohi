@@ -414,7 +414,7 @@ export default function AdminLayout() {
           >
             Workspace
           </p>
-          <NotificationToggle variant="sidebar" audience="staff" label="Enable alerts" />
+          <NotificationToggle variant="sidebar" audience="staff" label="Push alerts" />
           <button type="button" onClick={toggle} className={sidebarFooterBtnClass()} title={isDark ? 'Light mode' : 'Dark mode'}>
             {isDark ? <Sun className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Moon className="h-4 w-4 shrink-0" strokeWidth={2} />}
             <span className="hidden md:inline">{isDark ? 'Light mode' : 'Dark mode'}</span>

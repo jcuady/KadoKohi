@@ -3,6 +3,8 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet';
 import { Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 import {
+  geocodePhilippinesAddress,
+  parseGoogleMapsInput,
   reversePhilippinesLocation,
   searchPhilippinesLocations,
   type PhilippinesLocationResult,
@@ -36,7 +38,6 @@ export type BranchLocationValue = {
 type Props = {
   value: BranchLocationValue;
   onChange: (next: BranchLocationValue) => void;
-  /** Pre-fill search when editing an existing branch */
   searchHint?: string;
 };
 
@@ -87,7 +88,7 @@ function MapPinLayer({
   );
 }
 
-/** Single Leaflet map + Philippines Nominatim search — no duplicate OSM iframe. */
+/** Leaflet map + PH search: place name, full address, or Google Maps link. */
 export default function BranchLocationPicker({ value, onChange, searchHint }: Props) {
   const [query, setQuery] = useState(searchHint ?? '');
   const [results, setResults] = useState<PhilippinesLocationResult[]>([]);
@@ -98,6 +99,7 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
   const [listOpen, setListOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const searchGen = useRef(0);
 
   const hasPin = value.lat != null && value.lng != null;
 
@@ -118,35 +120,6 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setSearchError('');
-      return;
-    }
-
-    debounceRef.current = setTimeout(() => {
-      setSearching(true);
-      setSearchError('');
-      void searchPhilippinesLocations(q)
-        .then((hits) => {
-          setResults(hits);
-          setListOpen(hits.length > 0);
-        })
-        .catch((err) => {
-          setResults([]);
-          setSearchError(err instanceof Error ? err.message : 'Search failed.');
-        })
-        .finally(() => setSearching(false));
-    }, 320);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query]);
-
   const applyResult = (hit: PhilippinesLocationResult) => {
     onChange({
       lat: hit.lat,
@@ -158,6 +131,7 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
     setQuery(hit.label);
     setResults([]);
     setListOpen(false);
+    setSearchError('');
   };
 
   const applyPin = (lat: number, lng: number) => {
@@ -177,6 +151,74 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
       })
       .finally(() => setReverseBusy(false));
   };
+
+  const runSearch = async (raw: string) => {
+    const q = raw.trim();
+    if (q.length < 2) {
+      setResults([]);
+      setSearchError('');
+      return;
+    }
+
+    const gen = ++searchGen.current;
+    setSearching(true);
+    setSearchError('');
+
+    try {
+      // Instant path: Maps URL with coordinates.
+      const maps = parseGoogleMapsInput(q);
+      if (maps && 'lat' in maps) {
+        const hit =
+          (await reversePhilippinesLocation(maps.lat, maps.lng)) ??
+          ({
+            lat: maps.lat,
+            lng: maps.lng,
+            label: `${maps.lat.toFixed(6)}, ${maps.lng.toFixed(6)}`,
+          } satisfies PhilippinesLocationResult);
+        if (gen !== searchGen.current) return;
+        applyResult(hit);
+        return;
+      }
+
+      const hits = await searchPhilippinesLocations(q);
+      if (gen !== searchGen.current) return;
+      setResults(hits);
+      setListOpen(hits.length > 0);
+      if (!hits.length) {
+        setSearchError(
+          'No match in OpenStreetMap. Try “Promenade Greenhills”, paste a Google Maps link, or drop a pin on the map.',
+        );
+      }
+    } catch (err) {
+      if (gen !== searchGen.current) return;
+      setResults([]);
+      setSearchError(err instanceof Error ? err.message : 'Search failed.');
+    } finally {
+      if (gen === searchGen.current) setSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      setSearchError('');
+      return;
+    }
+
+    // Maps links: resolve immediately (no debounce spam).
+    if (parseGoogleMapsInput(q)) {
+      debounceRef.current = setTimeout(() => void runSearch(q), 120);
+    } else {
+      debounceRef.current = setTimeout(() => void runSearch(q), 380);
+    }
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: search on query only
+  }, [query]);
 
   const clearPin = () => {
     onChange({
@@ -211,11 +253,12 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
     <div className="space-y-3" ref={wrapRef}>
       <div>
         <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
-          Branch location (Philippines)
+          Find location
         </label>
         <p className="mb-2 text-[11px] leading-relaxed dash-muted">
-          Search any place in the Philippines, drop a pin, or use your current location. Address and city fill
-          automatically.
+          Search a place name, paste a full street address, or paste a Google Maps link. Street and city
+          fill from the pin — OSM may not know every brand (e.g. “Kado Kohi”); use the mall/street name
+          or a Maps link instead.
         </p>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-kado-red/70" />
@@ -229,15 +272,16 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
               if (results.length) setListOpen(true);
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && results[0]) {
+              if (e.key === 'Enter') {
                 e.preventDefault();
-                applyResult(results[0]);
+                if (results[0]) applyResult(results[0]);
+                else void runSearch(query);
               }
               if (e.key === 'Escape') setListOpen(false);
             }}
-            placeholder="Search mall, street, barangay, city…"
+            placeholder="e.g. Promenade Greenhills · or paste Maps link / full address"
             className="w-full rounded-xl border-2 border-kado-dark/80 bg-white py-2.5 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/25"
-            aria-label="Search branch location in the Philippines"
+            aria-label="Search branch location"
             aria-autocomplete="list"
             aria-expanded={listOpen && results.length > 0}
             autoComplete="off"
@@ -249,6 +293,7 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
                 setQuery('');
                 setResults([]);
                 setListOpen(false);
+                setSearchError('');
               }}
               className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full dash-muted hover:bg-kado-cream"
               aria-label="Clear search"
@@ -338,9 +383,25 @@ export default function BranchLocationPicker({ value, onChange, searchHint }: Pr
         </p>
       ) : (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
-          Add a location pin so customers can open directions from the Branches page.
+          Add a pin so customers get directions on the Branches page.
         </p>
       )}
     </div>
   );
+}
+
+/** Geocode when admin pastes/edits the street address field. */
+export async function geocodeBranchStreetAddress(
+  address: string,
+  city?: string,
+): Promise<BranchLocationValue | null> {
+  const hit = await geocodePhilippinesAddress(address, city);
+  if (!hit) return null;
+  return {
+    lat: hit.lat,
+    lng: hit.lng,
+    label: hit.label,
+    address: hit.addressLine ?? address.trim(),
+    city: hit.city ?? city,
+  };
 }

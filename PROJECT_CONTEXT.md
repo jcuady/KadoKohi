@@ -52,7 +52,7 @@ Kado Kohi is a **multi-role specialty coffee platform** for a Philippine café b
 | Animation | `motion/react`, GSAP (select sections) |
 | Client state | Zustand (caches synced to Supabase — **not** local-only mock) |
 | Backend | Supabase: Postgres (`kk_*` tables), Storage, Realtime, RPCs, **Auth** (email/password) |
-| Edge functions | `kk-admin-users`, `kk-customer-signup`, `kk-send-contact`, `kk-send-push` |
+| Edge functions | `kk-admin-users`, `kk-customer-signup`, `kk-send-contact`, `kk-send-push`, `kk-geocode`, PayMongo trio |
 | Email | Resend (contact form, Kado Circle signups) |
 | PWA | `vite-plugin-pwa`, service worker, push scaffold |
 | E2E | Playwright (`e2e/*.spec.ts`) |
@@ -708,6 +708,7 @@ Proof refs stored as `proof-storage:` prefix in DB — resolved via `usePaymentP
 | `kk-admin-users` | Admin user management | Create users, reset passwords, role assignment, scoped data resets |
 | `kk-send-contact` | Contact / Kado Circle forms | Resend email to shop inbox |
 | `kk-send-push` | Order / marketing notifications | Web push + customer inbox rows |
+| `kk-geocode` | Admin Branches location picker | Proxies Nominatim (CORS-safe); PH search + reverse |
 | `kk-paymongo-checkout` | Checkout “Pay with QR Ph” | Create PayMongo hosted checkout session |
 | `kk-paymongo-verify` | Return / poll after PayMongo | Reconcile session → mark order paid |
 | `kk-paymongo-webhook` | PayMongo webhook (HMAC) | Idempotent paid mark |

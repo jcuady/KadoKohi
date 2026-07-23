@@ -123,7 +123,7 @@ export default function BaristaLayout() {
           >
             Workspace
           </p>
-          <NotificationToggle variant="sidebar" audience="staff" label="Enable alerts" />
+          <NotificationToggle variant="sidebar" audience="staff" label="Push alerts" />
           <button
             type="button"
             onClick={toggle}

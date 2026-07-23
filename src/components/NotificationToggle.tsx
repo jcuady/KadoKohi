@@ -57,7 +57,7 @@ function ToggleSwitch({
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-kado-red/40 focus-visible:ring-offset-2',
         'min-h-[44px] min-w-[56px] touch-manipulation',
         disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
-        checked ? 'bg-emerald-500' : 'bg-kado-dark/20',
+        checked ? 'bg-kado-red' : 'bg-kado-dark/20',
       ].join(' ')}
     >
       <span
@@ -69,7 +69,7 @@ function ToggleSwitch({
         {busy ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin text-kado-dark/50" />
         ) : checked ? (
-          <BellRing className="w-3.5 h-3.5 text-emerald-600" />
+          <BellRing className="w-3.5 h-3.5 text-kado-red" />
         ) : (
           <Bell className="w-3.5 h-3.5 text-kado-dark/35" />
         )}
@@ -109,54 +109,110 @@ export default function NotificationToggle({
   }
 
   if (variant === 'sidebar') {
+    const statusLabel =
+      status === 'denied'
+        ? 'Blocked'
+        : status === 'loading'
+          ? '…'
+          : enabled
+            ? 'On'
+            : 'Off';
+
     return (
-      <div className="space-y-2 px-1">
+      <div className="space-y-1.5 px-0.5">
+        {/* Collapsed rail */}
         <button
           type="button"
           onClick={() => void toggle()}
           disabled={switchDisabled || busy}
-          title={enabled ? `${title} — on` : title}
+          title={enabled ? 'Push alerts on' : 'Enable push alerts'}
+          aria-label={enabled ? 'Disable push alerts' : 'Enable push alerts'}
           className="flex w-full items-center justify-center rounded-lg p-2 transition-colors hover:bg-[var(--color-dash-hover)] disabled:opacity-45 md:hidden"
         >
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-              enabled ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+              enabled
+                ? 'border-kado-red/25 bg-kado-red/10 text-kado-red'
+                : 'border-transparent bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
             }`}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : enabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : enabled ? (
+              <BellRing className="h-4 w-4" />
+            ) : (
+              <Bell className="h-4 w-4" />
+            )}
           </span>
         </button>
+
+        {/* Expanded sidebar — matches workspace footer density */}
         <div className="hidden md:block">
-          <div className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-[var(--color-dash-hover)] transition-colors">
-            <label htmlFor={switchId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
+          <div
+            className="rounded-xl border px-2.5 py-2.5 transition-colors"
+            style={{
+              borderColor: enabled ? 'rgba(158, 24, 29, 0.22)' : 'var(--color-dash-border)',
+              background: enabled ? 'rgba(158, 24, 29, 0.06)' : 'transparent',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                  enabled ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
+                  enabled
+                    ? 'bg-kado-red text-kado-cream'
+                    : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
                 }`}
               >
-                {enabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                {busy ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : enabled ? (
+                  <BellRing className="h-3.5 w-3.5" />
+                ) : (
+                  <Bell className="h-3.5 w-3.5" />
+                )}
               </span>
-              <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-[var(--color-dash-text)]">{title}</span>
-                <span className="block text-[10px] leading-snug text-[var(--color-dash-text-muted)]">
-                  {enabled ? 'On for this device' : 'Tap to enable'}
-                </span>
-              </span>
-            </label>
-            <ToggleSwitch
-              id={switchId}
-              checked={enabled}
-              disabled={switchDisabled}
-              busy={busy}
-              onToggle={() => void toggle()}
-            />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-[12px] font-semibold text-[var(--color-dash-text)]">
+                    {title}
+                  </p>
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${
+                      enabled
+                        ? 'bg-kado-red text-kado-cream'
+                        : 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text-muted)]'
+                    }`}
+                  >
+                    {statusLabel}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[10px] leading-snug text-[var(--color-dash-text-muted)]">
+                  {status === 'denied'
+                    ? 'Allow in browser settings'
+                    : enabled
+                      ? 'New orders on this device'
+                      : 'Orders & payment proofs'}
+                </p>
+              </div>
+              <ToggleSwitch
+                id={switchId}
+                checked={enabled}
+                disabled={switchDisabled}
+                busy={busy}
+                onToggle={() => void toggle()}
+              />
+            </div>
           </div>
-          {status === 'denied' && (
-            <p className="px-2 text-[10px] leading-snug text-amber-600">
-              Blocked in browser settings — allow notifications for this site, then reload.
+          {status === 'denied' ? (
+            <p className="px-1 pt-1 text-[10px] leading-snug text-amber-700 dark:text-amber-400">
+              Notifications blocked — allow this site in browser settings, then reload.
             </p>
-          )}
-          {feedback && <div className="px-1"><FeedbackBanner feedback={feedback} /></div>}
+          ) : null}
+          {feedback ? (
+            <div className="pt-1">
+              <FeedbackBanner feedback={feedback} />
+            </div>
+          ) : null}
         </div>
       </div>
     );

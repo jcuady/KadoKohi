@@ -4,7 +4,9 @@ import { useBranchStore } from '../../store/branchStore';
 import { formatBranchCrudError } from '../../lib/supabase/repositories/ordering';
 import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
 import { branchGoogleMapsUrl, branchHeroImageUrl } from '../../lib/branchMaps';
-import BranchLocationPicker from '../../components/admin/BranchLocationPicker';
+import BranchLocationPicker, {
+  geocodeBranchStreetAddress,
+} from '../../components/admin/BranchLocationPicker';
 import {
   MapPin,
   Pencil,
@@ -66,6 +68,9 @@ export default function AdminBranches() {
   const [uploadError, setUploadError] = useState('');
   const [listQuery, setListQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | BranchStatus>('all');
+  const [geocodingAddress, setGeocodingAddress] = useState(false);
+  /** When true, editing slug manually — don't overwrite from display name. */
+  const [slugTouched, setSlugTouched] = useState(false);
 
   useEffect(() => {
     void hydrateBranches();
@@ -101,6 +106,7 @@ export default function AdminBranches() {
     setShowForm(false);
     setForm(emptyForm);
     setEditingId(null);
+    setSlugTouched(false);
     setUploadError('');
     setSaveError('');
   };
@@ -108,6 +114,7 @@ export default function AdminBranches() {
   const startAdd = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setSlugTouched(false);
     setUploadError('');
     setSaveError('');
     setShowForm(true);
@@ -125,6 +132,7 @@ export default function AdminBranches() {
       lat: b.lat,
       lng: b.lng,
     });
+    setSlugTouched(true);
     setUploadError('');
     setSaveError('');
     setShowForm(true);
@@ -213,8 +221,43 @@ export default function AdminBranches() {
       .finally(() => setDeletingId(null));
   };
 
-  const hasCoords = form.lat != null && form.lng != null;
   const heroPreview = branchHeroImageUrl({ slug: form.slug || 'branch', heroImage: form.heroImage });
+
+  const suggestSlugFromName = (name: string) => {
+    const cleaned = name
+      .toLowerCase()
+      .replace(/kado\s*kohi/gi, '')
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .trim();
+    return normalizeSlug(cleaned);
+  };
+
+  const geocodeFromStreetField = async (address: string) => {
+    const trimmed = address.trim();
+    if (trimmed.length < 8) return;
+    setGeocodingAddress(true);
+    setSaveError('');
+    try {
+      const hit = await geocodeBranchStreetAddress(trimmed, form.city);
+      if (!hit) {
+        setSaveError(
+          'Could not place that street address on the map. Try a shorter place name (e.g. Promenade Greenhills) or paste a Google Maps link in Find location.',
+        );
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        lat: hit.lat,
+        lng: hit.lng,
+        address: hit.address ?? trimmed,
+        city: hit.city ?? f.city,
+      }));
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Address lookup failed.');
+    } finally {
+      setGeocodingAddress(false);
+    }
+  };
 
   return (
     <div className="dash-page max-w-5xl space-y-6 pb-16">
@@ -442,7 +485,14 @@ export default function AdminBranches() {
                   </label>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setForm((f) => ({
+                        ...f,
+                        name,
+                        slug: !slugTouched && !editingId ? suggestSlugFromName(name) || f.slug : f.slug,
+                      }));
+                    }}
                     className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     placeholder="Kado Kohi — Greenhills"
                     required
@@ -451,16 +501,22 @@ export default function AdminBranches() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
-                    Slug (URL)
+                    Slug (takeout QR)
                   </label>
                   <input
                     value={form.slug}
-                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                    onChange={(e) => {
+                      setSlugTouched(true);
+                      setForm((f) => ({ ...f, slug: e.target.value }));
+                    }}
                     className="w-full rounded-xl border dash-input px-3 py-2.5 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     placeholder="greenhills"
                     required
                   />
-                  <p className="mt-1 text-[10px] dash-muted">Used in takeout QR: ?b={form.slug || 'slug'}</p>
+                  <p className="mt-1 text-[10px] leading-snug dash-muted">
+                    Not redundant — takeout links use <span className="font-mono">?b={form.slug || 'slug'}</span>.
+                    Keep stable; changing it breaks printed takeout QRs until you reprint.
+                  </p>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
@@ -553,9 +609,31 @@ export default function AdminBranches() {
                   <input
                     value={form.address}
                     onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                    onBlur={(e) => {
+                      const next = e.target.value.trim();
+                      // Geocode pasted / long addresses (Google-style lines).
+                      if (next.length >= 12 && (next.includes(',') || next.split(/\s+/).length >= 4)) {
+                        void geocodeFromStreetField(next);
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData.getData('text').trim();
+                      if (pasted.length >= 12) {
+                        window.setTimeout(() => void geocodeFromStreetField(pasted), 0);
+                      }
+                    }}
                     className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-                    placeholder="Filled from map search"
+                    placeholder="Paste address — pin updates on blur"
                   />
+                  {geocodingAddress ? (
+                    <p className="mt-1 flex items-center gap-1.5 text-[10px] dash-muted">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Finding on map…
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[10px] dash-muted">
+                      Paste a full address here or use Find location above. Both update the pin.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
@@ -569,19 +647,6 @@ export default function AdminBranches() {
                   />
                 </div>
               </div>
-
-              {hasCoords ? (
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
-                    Google Maps link
-                  </label>
-                  <input
-                    readOnly
-                    value={branchGoogleMapsUrl(form.lat!, form.lng!)}
-                    className="w-full select-all rounded-xl border dash-input px-3 py-2 text-xs dash-muted"
-                  />
-                </div>
-              ) : null}
             </div>
 
             <div className="flex flex-col-reverse gap-2 border-t dash-border bg-white/60 px-5 py-4 sm:flex-row sm:px-6">

@@ -1,20 +1,49 @@
-import { useState, useMemo, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Role } from '../../types/domain';
 import { useUserStore } from '../../store/userStore';
 import { hasAllBranchAccess, isInternalRole, matchesUserSearch } from '../../lib/roles';
 import { useBranchStore } from '../../store/branchStore';
-import { Plus, Pencil, Trash2, Shield, AlertCircle, KeyRound, Stamp, Search, Filter } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  KeyRound,
+  Stamp,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Loader2,
+} from 'lucide-react';
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { useAuthStore } from '../../store/authStore';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 
 const CREATABLE_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
 const ALL_DISPLAY_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
+const PAGE_SIZE = 12;
 
 type RoleFilter = 'team' | Role | 'all';
-
 type FormData = { name: string; email: string; role: Role; branchId: string };
 const emptyForm: FormData = { name: '', email: '', role: 'barista', branchId: '' };
 
+const ROLE_BADGE: Record<Role, string> = {
+  admin: 'bg-kado-red/10 text-kado-red border-kado-red/25',
+  barista: 'bg-amber-50 text-amber-900 border-amber-200',
+  staff: 'bg-sky-50 text-sky-900 border-sky-200',
+  customer: 'bg-kado-cream/80 text-kado-dark/70 border-kado-dark/10',
+  guest: 'bg-kado-dark/5 text-kado-dark/60 border-kado-dark/10',
+};
+
+function roleRank(r: Role): number {
+  return r === 'admin' ? 0 : r === 'barista' ? 1 : r === 'staff' ? 2 : 3;
+}
+
+/**
+ * Admin Users — dense table CRUD with filters + client pagination.
+ * Create/update/delete still go through authRepo / userStore (edge for internal accounts).
+ */
 export default function AdminUsers() {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const users = useUserStore((s) => s.users);
@@ -28,6 +57,7 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('team');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const [stampUserId, setStampUserId] = useState<string | null>(null);
   const [stampDelta, setStampDelta] = useState(1);
@@ -47,14 +77,13 @@ export default function AdminUsers() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState('');
 
   const activeBranches = useMemo(() => branches.filter((b) => b.status === 'active'), [branches]);
   const branchName = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
 
-  const teamCount = useMemo(
-    () => users.filter((u) => isInternalRole(u.role)).length,
-    [users],
-  );
+  const teamCount = useMemo(() => users.filter((u) => isInternalRole(u.role)).length, [users]);
+  const customerCount = useMemo(() => users.filter((u) => u.role === 'customer').length, [users]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim();
@@ -73,13 +102,28 @@ export default function AdminUsers() {
     }
 
     return [...list].sort((a, b) => {
-      const rank = (r: Role) =>
-        r === 'admin' ? 0 : r === 'barista' ? 1 : r === 'staff' ? 2 : 3;
-      const d = rank(a.role) - rank(b.role);
+      const d = roleRank(a.role) - roleRank(b.role);
       if (d !== 0) return d;
       return a.name.localeCompare(b.name);
     });
   }, [users, roleFilter, branchFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pageRows = useMemo(() => {
+    const start = (pageSafe - 1) * PAGE_SIZE;
+    return filteredUsers.slice(start, start + PAGE_SIZE);
+  }, [filteredUsers, pageSafe]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, branchFilter, search]);
+
+  useEffect(() => {
+    if (!saveOk) return;
+    const t = window.setTimeout(() => setSaveOk(''), 5000);
+    return () => window.clearTimeout(t);
+  }, [saveOk]);
 
   const handleDelete = async (id: string) => {
     setDeleteError('');
@@ -95,6 +139,7 @@ export default function AdminUsers() {
     try {
       await removeUser(id);
       setConfirmDeleteId(null);
+      setSaveOk('User removed.');
       await hydrateUsers();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Unable to delete user.');
@@ -111,12 +156,14 @@ export default function AdminUsers() {
     setFormError('');
     setShowForm(true);
   };
-  const startEdit = (u: typeof users[0]) => {
+
+  const startEdit = (u: (typeof users)[0]) => {
     setEditingId(u.id);
     setForm({ name: u.name, email: u.email, role: u.role, branchId: u.branchId ?? '' });
     setFormError('');
     setShowForm(true);
   };
+
   const cancel = () => {
     setShowForm(false);
     setEditingId(null);
@@ -134,7 +181,6 @@ export default function AdminUsers() {
       setFormError('A branch is required for barista / staff accounts.');
       return;
     }
-
     if (needsBranch && !activeBranches.some((b) => b.id === form.branchId)) {
       setFormError('Selected branch is not active. Choose an active branch.');
       return;
@@ -164,6 +210,7 @@ export default function AdminUsers() {
           await updateUser(editingId, payload);
         }
         await hydrateUsers();
+        setSaveOk(`Updated ${payload.name}.`);
       } else {
         if (password.trim().length < 8) {
           setFormError('Password must be at least 8 characters.');
@@ -179,11 +226,9 @@ export default function AdminUsers() {
         });
         const newId = created?.user?.id;
         if (!newId) throw new Error('Account was created but no user id was returned.');
-        addUser({
-          id: newId,
-          ...payload,
-        });
+        addUser({ id: newId, ...payload });
         await hydrateUsers();
+        setSaveOk(`Created ${payload.name}.`);
       }
       cancel();
     } catch (err) {
@@ -206,6 +251,7 @@ export default function AdminUsers() {
       await authRepo.resetInternalPassword(resetUserId, resetPassword.trim());
       setResetUserId(null);
       setResetPassword('');
+      setSaveOk('Password updated.');
     } catch (err) {
       setResetError(err instanceof Error ? err.message : 'Failed to reset password.');
     } finally {
@@ -222,157 +268,287 @@ export default function AdminUsers() {
     { id: 'all', label: 'All' },
   ];
 
+  const rangeStart = filteredUsers.length === 0 ? 0 : (pageSafe - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(pageSafe * PAGE_SIZE, filteredUsers.length);
+
   return (
-    <div className="dash-page max-w-4xl">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div className="dash-page max-w-6xl space-y-5 pb-12">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading">Users</h1>
-          <p className="dash-muted text-sm mt-1">
-            {teamCount} team member(s) — admin, barista, and staff. Customers are hidden until you search or filter.
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red">Administration</p>
+          <h1 className="font-display text-3xl font-bold dash-heading md:text-4xl">Users</h1>
+          <p className="mt-1 text-sm dash-muted">
+            {teamCount} team · {customerCount} customers — create accounts, assign branches, reset passwords.
           </p>
         </div>
         <button
           type="button"
           onClick={startAdd}
-          className="rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors flex items-center gap-1"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-kado-red px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-cream transition-colors hover:bg-kado-dark"
         >
-          <Plus className="w-4 h-4" /> Add user
+          <Plus className="h-4 w-4" /> Add user
         </button>
       </div>
 
-      <div className="rounded-2xl dash-card border dash-border p-4 mb-5 space-y-3">
+      {saveOk ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800">
+          {saveOk}
+        </p>
+      ) : null}
+      {deleteError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{deleteError}</span>
+        </div>
+      ) : null}
+
+      <div className="space-y-3 rounded-2xl border dash-border dash-card p-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dash-muted" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 dash-muted" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name or email (includes customers)…"
-            className="w-full rounded-xl dash-input pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            placeholder="Search name or email…"
+            className="w-full rounded-xl dash-input py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            aria-label="Search users"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter className="w-4 h-4 dash-muted shrink-0" />
-          {rolePills.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setRoleFilter(id)}
-              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border transition-colors ${
-                roleFilter === id ? 'bg-kado-red text-white border-kado-red' : 'dash-border dash-muted hover:bg-kado-cream'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider dash-muted">Branch</span>
-          <select
-            value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
-            className="rounded-xl dash-input border px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-          >
-            <option value="all">All branches</option>
-            {activeBranches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Role filter">
+            {rolePills.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setRoleFilter(id)}
+                className={`min-h-[36px] rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                  roleFilter === id
+                    ? 'bg-kado-red text-white'
+                    : 'border dash-border dash-muted hover:bg-kado-cream'
+                }`}
+              >
+                {label}
+              </button>
             ))}
-          </select>
+          </div>
+          <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider dash-muted">
+            Branch
+            <select
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              className="min-h-[36px] rounded-lg border dash-input px-3 py-1.5 text-xs font-semibold normal-case tracking-normal focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+            >
+              <option value="all">All branches</option>
+              {activeBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
-      {deleteError && (
-        <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-xs font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{deleteError}</span>
-        </div>
-      )}
+      <div className="overflow-hidden rounded-2xl border dash-border dash-card">
+        {filteredUsers.length === 0 ? (
+          <div className="px-5 py-14 text-center text-sm dash-muted">
+            {search.trim()
+              ? 'No users match your search.'
+              : roleFilter === 'customer'
+                ? 'No customer accounts found. Customers usually sign up on the site.'
+                : 'No users match these filters.'}
+          </div>
+        ) : (
+          <>
+            <div className="dash-table-scroll custom-scrollbar">
+              <Table>
+                <TableHeader>
+                  <TableRow className="dash-card-alt hover:bg-transparent">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Branch</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pageRows.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold dash-heading">{u.name}</p>
+                          {u.role === 'customer' ? (
+                            <p className="mt-0.5 text-[10px] tabular-nums dash-muted">
+                              Stamps: {u.loyaltyStamps ?? 0}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[14rem] truncate text-xs dash-muted">{u.email}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${ROLE_BADGE[u.role]}`}
+                        >
+                          {u.role}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs dash-muted">
+                        {hasAllBranchAccess(u)
+                          ? 'All branches'
+                          : u.branchId
+                            ? branchName(u.branchId)
+                            : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {u.role === 'customer' ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStampUserId(u.id);
+                                setStampDelta(1);
+                                setStampReason('');
+                              }}
+                              className="inline-flex min-h-[40px] items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-900 hover:bg-amber-100"
+                              title="Manage stamps"
+                              aria-label={`Manage stamps for ${u.name}`}
+                            >
+                              <Stamp className="h-3.5 w-3.5" />
+                              {u.loyaltyStamps ?? 0}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => startEdit(u)}
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border dash-border dash-muted hover:border-kado-red/30 hover:text-kado-red"
+                            aria-label={`Edit ${u.name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResetUserId(u.id);
+                              setResetPassword('');
+                              setResetError('');
+                            }}
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border dash-border dash-muted hover:border-kado-red/30 hover:text-kado-red"
+                            aria-label={`Reset password for ${u.name}`}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(u.id)}
+                            onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
+                            disabled={u.id === currentUserId || deletingId === u.id}
+                            className={`inline-flex min-h-[40px] items-center justify-center gap-1 rounded-lg border px-2 text-[10px] font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-30 ${
+                              confirmDeleteId === u.id
+                                ? 'border-red-300 bg-red-50 text-red-700'
+                                : 'border-transparent text-red-500 hover:bg-red-50'
+                            }`}
+                            title={
+                              u.id === currentUserId
+                                ? 'Cannot delete your own account'
+                                : confirmDeleteId === u.id
+                                  ? 'Click again to confirm'
+                                  : 'Delete user'
+                            }
+                            aria-label={
+                              confirmDeleteId === u.id ? `Confirm delete ${u.name}` : `Delete ${u.name}`
+                            }
+                          >
+                            {deletingId === u.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            {confirmDeleteId === u.id ? 'Confirm' : null}
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-      {filteredUsers.length === 0 ? (
-        <div className="rounded-xl dash-card border px-5 py-10 text-center text-sm dash-muted">
-          {search.trim()
-            ? 'No users match your search.'
-            : roleFilter === 'customer'
-              ? 'No customer accounts found. Customers usually sign up on the site.'
-              : 'No team members match these filters.'}
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {filteredUsers.map((u) => (
-            <li key={u.id} className="rounded-xl dash-card border px-5 py-4 flex items-center gap-4">
-              <Shield className="w-5 h-5 text-kado-red shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-sm dash-heading">{u.name}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-widest dash-card-alt dash-muted px-2 py-0.5 rounded-full dash-border border">{u.role}</span>
-                  {hasAllBranchAccess(u) && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest bg-kado-red/10 text-kado-red px-2 py-0.5 rounded-full border border-kado-red/20">
-                      All branches
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] dash-muted">
-                  {u.email}
-                  {u.branchId && u.role !== 'admin'
-                    ? ` · ${branchName(u.branchId)}`
-                    : hasAllBranchAccess(u)
-                      ? ' · All branches'
-                      : ''}
-                </p>
-              </div>
-              {u.role === 'customer' && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t dash-border px-4 py-3">
+              <p className="text-[11px] dash-muted">
+                Showing {rangeStart}–{rangeEnd} of {filteredUsers.length}
+              </p>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => { setStampUserId(u.id); setStampDelta(1); setStampReason(''); }}
-                  className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 text-[10px] font-bold"
-                  title="Manage Kado Circle stamps"
+                  disabled={pageSafe <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border dash-border dash-muted hover:bg-kado-cream disabled:opacity-40"
+                  aria-label="Previous page"
                 >
-                  <Stamp className="w-3.5 h-3.5" /> {u.loyaltyStamps ?? 0}
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
-              )}
-              <button type="button" onClick={() => startEdit(u)} className="dash-muted hover:text-kado-red p-1"><Pencil className="w-4 h-4" /></button>
-              <button type="button" onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetError(''); }} className="dash-muted hover:text-kado-red p-1" title="Reset password">
-                <KeyRound className="w-4 h-4" />
-              </button>
+                <span className="min-w-[5.5rem] text-center text-[11px] font-semibold dash-muted">
+                  Page {pageSafe} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={pageSafe >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border dash-border dash-muted hover:bg-kado-cream disabled:opacity-40"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {showForm ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-kado-dark/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <form
+            onSubmit={(e) => void submit(e)}
+            className="flex max-h-[min(92dvh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border dash-border bg-[var(--color-dash-surface)] shadow-xl sm:rounded-2xl"
+          >
+            <div className="flex items-center justify-between border-b dash-border px-5 py-4">
+              <h2 className="font-display text-xl font-bold dash-heading">
+                {editingId ? 'Edit user' : 'New user'}
+              </h2>
               <button
                 type="button"
-                onClick={() => void handleDelete(u.id)}
-                onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
-                disabled={u.id === currentUserId || deletingId === u.id}
-                className={`p-1 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                  confirmDeleteId === u.id ? 'bg-red-100 text-red-600' : 'text-red-400 hover:text-red-600'
-                }`}
-                title={
-                  u.id === currentUserId
-                    ? 'Cannot delete your own account'
-                    : confirmDeleteId === u.id
-                      ? 'Click again to confirm delete'
-                      : 'Delete user (removes login and profile)'
-                }
+                onClick={cancel}
+                className="flex h-10 w-10 items-center justify-center rounded-full border dash-border dash-muted hover:bg-kado-cream"
+                aria-label="Close"
               >
-                <Trash2 className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
-          <form onSubmit={submit} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
-            <h2 className="font-display font-bold text-xl dash-heading mb-4">{editingId ? 'Edit user' : 'New user'}</h2>
-            <div className="space-y-4">
+            </div>
+            <div className="space-y-4 overflow-y-auto px-5 py-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Name</label>
-                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30" />
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Email</label>
-                <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30" />
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  required
+                  className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                />
               </div>
-              {!editingId && (
+              {!editingId ? (
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Initial Password</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
+                    Initial password
+                  </label>
                   <input
                     type="password"
                     value={password}
@@ -382,9 +558,9 @@ export default function AdminUsers() {
                     className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                   />
                 </div>
-              )}
+              ) : null}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Role</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">Role</label>
                 <select
                   value={form.role}
                   onChange={(e) => {
@@ -398,58 +574,87 @@ export default function AdminUsers() {
                   className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                 >
                   {(editingId ? ALL_DISPLAY_ROLES : CREATABLE_ROLES).map((r) => (
-                    <option key={r} value={r}>{r}</option>
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
                   ))}
                 </select>
-                {form.role === 'admin' && (
-                  <p className="text-[10px] dash-muted mt-1">Admin accounts have access to every branch — no branch assignment.</p>
-                )}
-                {form.role === 'customer' && (
-                  <p className="text-[10px] dash-muted mt-1">Customer accounts are for online ordering and Kado Circle — not shown in the default team list.</p>
-                )}
+                {form.role === 'admin' ? (
+                  <p className="mt-1 text-[10px] dash-muted">Admins access every branch — no branch assignment.</p>
+                ) : null}
+                {form.role === 'customer' ? (
+                  <p className="mt-1 text-[10px] dash-muted">
+                    Customers use online ordering and Kado Circle — hidden from the default Team filter.
+                  </p>
+                ) : null}
               </div>
-              {(form.role === 'barista' || form.role === 'staff') && (
+              {form.role === 'barista' || form.role === 'staff' ? (
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
                     Branch <span className="text-kado-red">*</span>
                   </label>
                   <select
                     value={form.branchId}
-                    onChange={(e) => { setForm((f) => ({ ...f, branchId: e.target.value })); setFormError(''); }}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, branchId: e.target.value }));
+                      setFormError('');
+                    }}
                     className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     required
                   >
                     <option value="">— select branch —</option>
-                    {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    {activeBranches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
                   </select>
-                  <p className="text-[10px] dash-muted mt-1">
-                    {form.role === 'staff' ? 'Staff' : 'Barista'} only sees orders for this branch.
+                  <p className="mt-1 text-[10px] dash-muted">
+                    {form.role === 'staff' ? 'Staff' : 'Barista'} only sees this branch.
                     {editingId ? ' They must sign out and back in after a branch change.' : ''}
                   </p>
                 </div>
-              )}
-              {formError && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : null}
+              {formError ? (
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{formError}</span>
                 </div>
-              )}
+              ) : null}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={cancel} className="rounded-xl dash-border border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream transition-colors">Cancel</button>
-              <button type="submit" disabled={saving} className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60">{saving ? 'Saving…' : editingId ? 'Update' : 'Create'}</button>
+            <div className="flex flex-col-reverse gap-2 border-t dash-border px-5 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={cancel}
+                className="min-h-[48px] rounded-xl border dash-border px-5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream sm:min-w-[7rem]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-kado-red px-6 text-xs font-bold uppercase tracking-wider text-kado-cream hover:bg-kado-dark disabled:opacity-60 sm:min-w-[8rem]"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create user'}
+              </button>
             </div>
           </form>
         </div>
-      )}
-      {resetUserId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
-          <form onSubmit={submitResetPassword} className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
-            <h2 className="font-display font-bold text-xl dash-heading mb-4">Reset password</h2>
-            <p className="text-xs dash-muted mb-3">
-              Instant admin set — use this when a customer or teammate cannot receive the reset email. Share the temporary password with them securely.
+      ) : null}
+
+      {resetUserId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/50 px-4 backdrop-blur-[2px]">
+          <form
+            onSubmit={(e) => void submitResetPassword(e)}
+            className="w-full max-w-md rounded-2xl border dash-border bg-[var(--color-dash-surface)] p-6 shadow-xl"
+          >
+            <h2 className="mb-2 font-display text-xl font-bold dash-heading">Reset password</h2>
+            <p className="mb-4 text-xs dash-muted">
+              Instant admin set — use when someone cannot receive the reset email. Share the temporary password
+              securely.
             </p>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">New password</label>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">New password</label>
             <input
               type="password"
               value={resetPassword}
@@ -458,54 +663,99 @@ export default function AdminUsers() {
               required
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             />
-            {resetError && <p className="mt-2 text-xs text-red-600">{resetError}</p>}
-            <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={() => { setResetUserId(null); setResetPassword(''); setResetError(''); }} className="rounded-xl dash-border border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream transition-colors">Cancel</button>
-              <button type="submit" disabled={resetting} className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60">{resetting ? 'Updating…' : 'Update password'}</button>
+            {resetError ? <p className="mt-2 text-xs text-red-600">{resetError}</p> : null}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetUserId(null);
+                  setResetPassword('');
+                  setResetError('');
+                }}
+                className="rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={resetting}
+                className="rounded-xl bg-kado-red px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-cream hover:bg-kado-dark disabled:opacity-60"
+              >
+                {resetting ? 'Updating…' : 'Update password'}
+              </button>
             </div>
           </form>
         </div>
-      )}
-      {stampUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/55 backdrop-blur-[3px] px-4">
-          <div className="w-full max-w-md dash-card rounded-[2rem] p-6 md:p-8 shadow-[0_30px_60px_rgba(158,24,29,0.12)]">
-            <h2 className="font-display font-bold text-xl dash-heading mb-1 flex items-center gap-2">
-              <Stamp className="w-5 h-5 text-kado-red" /> Kado Circle stamps
+      ) : null}
+
+      {stampUser ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kado-dark/50 px-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl border dash-border bg-[var(--color-dash-surface)] p-6 shadow-xl">
+            <h2 className="mb-1 flex items-center gap-2 font-display text-xl font-bold dash-heading">
+              <Stamp className="h-5 w-5 text-kado-red" /> Kado Circle stamps
             </h2>
-            <p className="text-xs dash-muted mb-4">{stampUser.name} · current balance <strong>{stampUser.loyaltyStamps ?? 0}</strong></p>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Adjustment</label>
-            <div className="flex items-center gap-2 mb-3">
-              <button type="button" onClick={() => setStampDelta((d) => d - 1)} className="rounded-lg dash-border border w-9 h-9 text-lg font-bold dash-muted">−</button>
+            <p className="mb-4 text-xs dash-muted">
+              {stampUser.name} · balance <strong>{stampUser.loyaltyStamps ?? 0}</strong>
+            </p>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">Adjustment</label>
+            <div className="mb-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStampDelta((d) => d - 1)}
+                className="h-10 w-10 rounded-lg border dash-border text-lg font-bold dash-muted"
+              >
+                −
+              </button>
               <input
                 type="number"
                 value={stampDelta}
                 onChange={(e) => setStampDelta(parseInt(e.target.value || '0', 10))}
-                className="w-full text-center rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                className="w-full rounded-xl dash-input px-4 py-2.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
               />
-              <button type="button" onClick={() => setStampDelta((d) => d + 1)} className="rounded-lg dash-border border w-9 h-9 text-lg font-bold dash-muted">+</button>
+              <button
+                type="button"
+                onClick={() => setStampDelta((d) => d + 1)}
+                className="h-10 w-10 rounded-lg border dash-border text-lg font-bold dash-muted"
+              >
+                +
+              </button>
             </div>
-            <p className="text-[11px] dash-muted mb-3">New balance: <strong>{Math.max(0, (stampUser.loyaltyStamps ?? 0) + stampDelta)}</strong></p>
-            <label className="block text-xs font-bold uppercase tracking-wider dash-muted mb-1">Reason (optional)</label>
+            <p className="mb-3 text-[11px] dash-muted">
+              New balance: <strong>{Math.max(0, (stampUser.loyaltyStamps ?? 0) + stampDelta)}</strong>
+            </p>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
+              Reason (optional)
+            </label>
             <input
               value={stampReason}
               onChange={(e) => setStampReason(e.target.value)}
-              placeholder="e.g. service recovery, promo"
+              placeholder="e.g. service recovery"
               className="w-full rounded-xl dash-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
             />
-            <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={() => setStampUserId(null)} className="rounded-xl dash-border border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream transition-colors">Cancel</button>
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { adjustLoyaltyStamps(stampUser.id, stampDelta, stampReason.trim() || undefined); setStampUserId(null); }}
+                onClick={() => setStampUserId(null)}
+                className="rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-muted hover:bg-kado-cream"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  adjustLoyaltyStamps(stampUser.id, stampDelta, stampReason.trim() || undefined);
+                  setStampUserId(null);
+                  setSaveOk('Stamps updated.');
+                }}
                 disabled={stampDelta === 0}
-                className="rounded-xl bg-kado-red text-kado-cream px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-dark transition-colors disabled:opacity-60"
+                className="rounded-xl bg-kado-red px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-kado-cream hover:bg-kado-dark disabled:opacity-60"
               >
                 Apply
               </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
