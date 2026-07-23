@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { AnimatedTestimonials } from '../ui/animated-testimonials';
 import { KadoOrderingCarousel } from '../ui/animated-feature-carousel';
 import KadoCircleCTA from '../ui/cta-with-text-marquee';
@@ -30,18 +29,15 @@ function showSection(id: LandingTabId, sectionOnly?: LandingTabId) {
  */
 export default function HomePageContent({ landing, previewBanner, sectionOnly, cmsEditMode }: Props) {
   return (
-    <motion.div
-      initial={false}
+    <div
       className="flex w-full min-w-0 flex-col gap-0 overflow-x-hidden bg-kado-cream font-sans text-kado-dark"
     >
       {previewBanner ? (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="sticky top-0 z-[100] bg-amber-500 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-kado-dark shadow-md"
         >
           Preview mode — unpublished changes only
-        </motion.div>
+        </div>
       ) : null}
 
       {showSection('hero', sectionOnly) ? (
@@ -108,6 +104,6 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
           <HomePageSeoSection copy={landing.menuSeo} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
-    </motion.div>
+    </div>
   );
 }

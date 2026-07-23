@@ -5,7 +5,7 @@
  * CTAs, and trust pills over a soft left vignette for contrast.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { ArrowRight, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { HomeHeroSlide } from '../../data/homeHeroMedia';
@@ -119,54 +119,45 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
       aria-labelledby="hero-main-headline"
       className="landing-hero relative w-full overflow-hidden bg-[#E8D9C4]"
     >
-      <AnimatePresence mode="wait">
-        {cms ? (
-          <div key={current.id} className="absolute inset-0">
-            <CmsEditableImage
-              cmsField={`hero.slide.${slideIndex}.image`}
-              src={current.image}
+      {cms ? (
+        <div key={current.id} className="absolute inset-0">
+          <CmsEditableImage
+            cmsField={`hero.slide.${slideIndex}.image`}
+            src={current.image}
+            alt={current.imageAlt}
+            className="h-full w-full"
+            onImageChange={(url) => updateHeroSlide(slideIndex, { image: url })}
+          />
+        </div>
+      ) : (
+        // ponytail: plain DOM for LCP — AnimatePresence/motion forced reflow added ~1.5s render delay
+        <div key={current.id} className="absolute inset-0">
+          <picture className="absolute inset-0 block h-full w-full">
+            <source media={MOBILE_HERO_MQ} type="image/webp" srcSet={mobileWebp} />
+            <source media={MOBILE_HERO_MQ} srcSet={mobilePng} />
+            <source type="image/webp" srcSet={desktopWebp} />
+            <img
+              src={desktopPng}
               alt={current.imageAlt}
-              className="h-full w-full"
-              onImageChange={(url) => updateHeroSlide(slideIndex, { image: url })}
+              className="landing-hero-media absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority={index === 0 ? 'high' : 'auto'}
+              width={1920}
+              height={1080}
+              sizes="100vw"
+              onError={(e) => {
+                const el = e.currentTarget;
+                if (el.src !== desktopPng && desktopPng !== desktopWebp) {
+                  el.src = desktopPng;
+                  return;
+                }
+                if (el.src !== current.image) el.src = current.image;
+              }}
             />
-          </div>
-        ) : (
-          <motion.div
-            key={current.id}
-            className="absolute inset-0"
-            // ponytail: never fade the LCP image in — PSI mobile charged ~1.85s render delay
-            initial={false}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={prefersReducedMotion ? undefined : { opacity: 0.35, scale: 1.02 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: 'easeOut' }}
-          >
-            <picture className="absolute inset-0 block h-full w-full">
-              <source media={MOBILE_HERO_MQ} type="image/webp" srcSet={mobileWebp} />
-              <source media={MOBILE_HERO_MQ} srcSet={mobilePng} />
-              <source type="image/webp" srcSet={desktopWebp} />
-              <img
-                src={desktopPng}
-                alt={current.imageAlt}
-                className="landing-hero-media absolute inset-0 h-full w-full object-cover"
-                loading="eager"
-                decoding="async"
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                width={1920}
-                height={1080}
-                sizes="100vw"
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  if (el.src !== desktopPng && desktopPng !== desktopWebp) {
-                    el.src = desktopPng;
-                    return;
-                  }
-                  if (el.src !== current.image) el.src = current.image;
-                }}
-              />
-            </picture>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </picture>
+        </div>
+      )}
 
       {/* Left vignette only — keep Figma right-side product art readable */}
       <div

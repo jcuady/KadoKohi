@@ -22,6 +22,10 @@ export function resolveDisplayImageUrl(src: string | undefined | null): string {
   if (!value) return value;
   if (value.includes('/logo/Logo1.png')) return '/logo/Logo1-sm.png';
   if (value.includes('/logo/Logo2.png')) return '/logo/Logo2-sm.png';
+  // Branches strip cards display ~400–660 CSS px — prefer -sm WebP when present.
+  if (/\/featuredmarikina\/kadom[12](\.jpg|\.webp)$/i.test(value.split('?')[0] ?? value)) {
+    return value.replace(/kadom(1|2)(\.jpg|\.webp)$/i, 'kadom$1-sm.webp');
+  }
   return toWebpSrc(value) || value;
 }
 

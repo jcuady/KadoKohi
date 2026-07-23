@@ -19,6 +19,7 @@ import {
   recordSupabaseFailure,
   recordSupabaseSuccess,
 } from './networkGuard';
+import { invalidateKkAppSettingsCache } from './repositories/ordering';
 
 const GUEST_TABLES = [
   'kk_menu_categories',
@@ -72,6 +73,7 @@ const refresh = {
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
   settings: debounce(() => {
+    invalidateKkAppSettingsCache();
     void useSettingsStore.getState().hydrateFromRemote();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();

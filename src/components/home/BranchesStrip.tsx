@@ -9,8 +9,8 @@ import { useBranchStore } from '../../store/branchStore';
 import ResilientImage from '../ui/ResilientImage';
 
 const BRANCH_FALLBACK_IMAGES: Record<string, string> = {
-  branch_marikina: '/featuredmarikina/kadom1.jpg',
-  branch_greenhills: '/featuredmarikina/kadom2.jpg',
+  branch_marikina: '/featuredmarikina/kadom1.webp',
+  branch_greenhills: '/featuredmarikina/kadom2.webp',
 };
 
 type Props = { copy: BranchesStripCopy; cmsEditMode?: boolean };
@@ -102,6 +102,19 @@ export default function BranchesStrip({ copy, cmsEditMode }: Props) {
                     src={photo}
                     alt={`${branch.name} — ${branch.city}`}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                    width={800}
+                    height={600}
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    srcSet={
+                      photo.includes('kadom1')
+                        ? '/featuredmarikina/kadom1-sm.webp 480w, /featuredmarikina/kadom1.webp 800w'
+                        : photo.includes('kadom2')
+                          ? '/featuredmarikina/kadom2-sm.webp 480w, /featuredmarikina/kadom2.webp 800w'
+                          : undefined
+                    }
+                    displayWidth={800}
+                    fallbackSrc={BRANCH_FALLBACK_IMAGES[branch.id]}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-kado-dark via-kado-dark/55 to-kado-dark/20" />
                   <div className="absolute inset-0 bg-gradient-to-br from-kado-red/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />

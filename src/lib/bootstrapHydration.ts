@@ -45,6 +45,7 @@ export function hydrateGlobalMinimal(): Promise<void> {
 export function hydratePublicShell(): Promise<void> {
   return runOnce('public-shell', async () => {
     // Critical for above-the-fold copy (hero/CMS). Catalog waits until after first paint.
+    // Settings + landing share one kk_app_settings select(*) via orderingRepo cache.
     await Promise.all([
       useSettingsStore.getState().hydrateFromRemote(),
       useLandingContentStore.getState().hydrateFromRemote(),

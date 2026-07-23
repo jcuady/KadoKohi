@@ -25,7 +25,8 @@ function Bootstrap() {
     initSupabaseNetworkLifecycle();
     initSupabaseRealtimeNetworkLifecycle();
     void recoverStaleAuthSession().then(() => initAuth());
-    // Homepage critical path: don't block FCP/LCP on CMS seed probes.
+  // Homepage critical path: don't block FCP/LCP on CMS seed probes.
+    // Settings hydrate is shared with PublicLayout via kk_app_settings row cache.
     void hydrateGlobalMinimal();
     window.setTimeout(() => {
       void ensurePublishedCms();

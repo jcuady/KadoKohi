@@ -30,6 +30,7 @@ import {
   recordSupabaseFailure,
   recordSupabaseSuccess,
 } from './networkGuard';
+import { invalidateKkAppSettingsCache } from './repositories/ordering';
 
 /** Operational tables mirrored live on admin / barista / staff surfaces. */
 const OPS_TABLES = [
@@ -93,9 +94,11 @@ const refresh = {
   tables: debounce(() => void useTableStore.getState().hydrateFromRemote(), 300),
   branches: debounce(() => void useBranchStore.getState().hydrateFromRemote(), 300),
   settings: debounce(() => {
+    invalidateKkAppSettingsCache();
     void useSettingsStore.getState().hydrateFromRemote();
   }, 300),
   settingsCms: debounce(() => {
+    invalidateKkAppSettingsCache();
     void useLandingContentStore.getState().hydrateFromRemote();
     void useBoothShowcaseStore.getState().hydrateFromRemote();
     void useMatchaShowcaseStore.getState().hydrateFromRemote();

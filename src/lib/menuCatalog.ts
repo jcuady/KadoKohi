@@ -1,5 +1,6 @@
 import type { MenuCategory, Product } from '../types/domain';
 import { normalizeExternalMenuImageUrl } from './menuProductImage';
+import { displaySizedImage } from './supabaseSizedImage';
 
 /** Bundled fallbacks — avoid external URLs that 404 in production. */
 const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
@@ -20,10 +21,13 @@ export function isMerchCategoryName(name: string | undefined): boolean {
 /** Same image resolution as /menu — product.image from Supabase, then category fallback. */
 export function getMenuProductImageUrl(
   product: Pick<Product, 'image' | 'categoryId'>,
-  options?: { pastriesCategoryId?: string },
+  options?: { pastriesCategoryId?: string; displayWidth?: number },
 ): string {
   const fromProduct = product.image?.trim();
-  if (fromProduct) return normalizeExternalMenuImageUrl(fromProduct);
+  if (fromProduct) {
+    const normalized = normalizeExternalMenuImageUrl(fromProduct);
+    return displaySizedImage(normalized, options?.displayWidth ?? 560);
+  }
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     return FALLBACK_IMAGE_BY_CATEGORY[product.categoryId];
   }

@@ -416,6 +416,29 @@ function mapSettings(row: Record<string, unknown>): Partial<AppSettings> {
   });
 }
 
+/** ponytail: one select(*) per session — homepage was firing 7+ column-scoped kk_app_settings reads. */
+let appSettingsRowPromise: Promise<Record<string, unknown> | null> | null = null;
+
+async function fetchAppSettingsRow(force = false): Promise<Record<string, unknown> | null> {
+  if (!supabase) return null;
+  if (!force && appSettingsRowPromise) return appSettingsRowPromise;
+  appSettingsRowPromise = (async () => {
+    const { data, error } = await supabase.from('kk_app_settings').select('*').eq('id', true).maybeSingle();
+    if (error || !data) return null;
+    return data as Record<string, unknown>;
+  })();
+  return appSettingsRowPromise;
+}
+
+function invalidateAppSettingsRowCache() {
+  appSettingsRowPromise = null;
+}
+
+/** Call after realtime SETTINGS change so hydrates re-read Postgres. */
+export function invalidateKkAppSettingsCache() {
+  invalidateAppSettingsRowCache();
+}
+
 export const orderingRepo = {
   async fetchBranches(): Promise<Branch[]> {
     if (!supabase) return [];
@@ -1247,8 +1270,8 @@ export const orderingRepo = {
   },
   async fetchSettings(): Promise<Partial<AppSettings> | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('kk_app_settings').select('*').eq('id', true).maybeSingle();
-    if (error || !data) return null;
+    const data = await fetchAppSettingsRow();
+    if (!data) return null;
     return mapSettings(data);
   },
   async upsertSettings(settings: AppSettings) {
@@ -1268,6 +1291,7 @@ export const orderingRepo = {
     if (!data) {
       throw new Error('Settings row not found (kk_app_settings.id = true). Run database migrations.');
     }
+    invalidateAppSettingsRowCache();
   },
   /** Upload menu product photo to public storage; returns HTTPS URL for kk_products.image. */
   async uploadMenuProductImage(file: File, productId: string): Promise<string> {
@@ -1363,98 +1387,63 @@ export const orderingRepo = {
   /** Shared landing-page CMS content (admin-published, publicly readable). */
   async fetchLandingContent(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('landing_content')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { landing_content?: unknown }).landing_content ?? null;
+    return data.landing_content ?? null;
   },
   async upsertLandingContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, landing_content: content });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
   async fetchBoothPageContent(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('booth_content')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { booth_content?: unknown }).booth_content ?? null;
+    return data.booth_content ?? null;
   },
   async upsertBoothPageContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_content: content });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
   async fetchMatchaPageContent(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('matcha_content')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { matcha_content?: unknown }).matcha_content ?? null;
+    return data.matcha_content ?? null;
   },
   async upsertMatchaPageContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, matcha_content: content });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
   async fetchCareersContent(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('careers_content')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { careers_content?: unknown }).careers_content ?? null;
+    return data.careers_content ?? null;
   },
   async upsertCareersContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, careers_content: content });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
   async fetchPastriesContent(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('pastries_content')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { pastries_content?: unknown }).pastries_content ?? null;
+    return data.pastries_content ?? null;
   },
   async upsertPastriesContent(content: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, pastries_content: content });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
   async submitCareerApplication(input: {
     id: string;
@@ -1517,21 +1506,14 @@ export const orderingRepo = {
   },
   async fetchBoothCatalog(): Promise<unknown | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('kk_app_settings')
-      .select('booth_catalog')
-      .eq('id', true)
-      .maybeSingle();
-    if (error) {
-      if (error.code === '42703') return null;
-      return null;
-    }
+    const data = await fetchAppSettingsRow();
     if (!data) return null;
-    return (data as { booth_catalog?: unknown }).booth_catalog ?? null;
+    return data.booth_catalog ?? null;
   },
   async upsertBoothCatalog(catalog: unknown) {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase.from('kk_app_settings').upsert({ id: true, booth_catalog: catalog });
     if (error) throw error;
+    invalidateAppSettingsRowCache();
   },
 };

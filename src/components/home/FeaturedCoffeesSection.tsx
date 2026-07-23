@@ -143,6 +143,7 @@ function DrinkCard({
               width={528}
               height={704}
               sizes="(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 280px"
+              displayWidth={560}
             />
           )}
         </div>

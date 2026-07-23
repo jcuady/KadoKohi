@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { toWebpSrc } from '../../lib/toWebpSrc';
+import { resolveDisplayImageUrl, toWebpSrc } from '../../lib/toWebpSrc';
+import { displaySizedImage } from '../../lib/supabaseSizedImage';
 
 type Props = {
   src: string;
@@ -11,7 +12,16 @@ type Props = {
   width?: number;
   height?: number;
   sizes?: string;
+  srcSet?: string;
+  /** When set, Supabase storage URLs are rewritten to the render/transform endpoint. */
+  displayWidth?: number;
 };
+
+function resolveSrc(raw: string, preferWebp: boolean, displayWidth?: number): string {
+  const local = resolveDisplayImageUrl(raw);
+  const candidate = preferWebp ? toWebpSrc(local) || local : local;
+  return displayWidth ? displaySizedImage(candidate, displayWidth) : candidate;
+}
 
 /** Hides broken images instead of showing the browser broken-icon glyph. Prefers local WebP. */
 export default function ResilientImage({
@@ -24,6 +34,8 @@ export default function ResilientImage({
   width,
   height,
   sizes,
+  srcSet,
+  displayWidth,
 }: Props) {
   const primary = src.trim();
   const [activeSrc, setActiveSrc] = useState(primary);
@@ -38,8 +50,7 @@ export default function ResilientImage({
 
   if (failed) return null;
 
-  const webp = toWebpSrc(activeSrc);
-  const displaySrc = preferWebp ? webp : activeSrc;
+  const displaySrc = resolveSrc(activeSrc, preferWebp, displayWidth);
 
   return (
     <img
@@ -52,8 +63,9 @@ export default function ResilientImage({
       width={width}
       height={height}
       sizes={sizes}
+      srcSet={srcSet}
       onError={() => {
-        if (preferWebp && webp !== activeSrc) {
+        if (preferWebp) {
           setPreferWebp(false);
           return;
         }

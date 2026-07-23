@@ -18,4 +18,9 @@ describe('resolveDisplayImageUrl', () => {
     expect(resolveDisplayImageUrl('/logo/Logo1.png')).toBe('/logo/Logo1-sm.png');
     expect(resolveDisplayImageUrl('/logo/Logo2.png')).toBe('/logo/Logo2-sm.png');
   });
+
+  it('maps branch marikina photos to -sm webp', () => {
+    expect(resolveDisplayImageUrl('/featuredmarikina/kadom1.jpg')).toBe('/featuredmarikina/kadom1-sm.webp');
+    expect(resolveDisplayImageUrl('/featuredmarikina/kadom2.webp')).toBe('/featuredmarikina/kadom2-sm.webp');
+  });
 });
