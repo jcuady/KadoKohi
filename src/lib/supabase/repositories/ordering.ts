@@ -1268,6 +1268,17 @@ export const orderingRepo = {
     const { error } = await supabase.from('kk_profiles').update({ loyalty_stamps: stamps }).eq('id', id);
     if (error) throw error;
   },
+  /** Staff-only idempotent stamp credit after order completion. */
+  async awardLoyaltyStamps(orderId: string): Promise<{ awarded: number; already: boolean } | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc('kk_award_loyalty_stamps', { p_order_id: orderId });
+    if (error) throw error;
+    const row = data as { awarded?: number; already?: boolean } | null;
+    return {
+      awarded: Number(row?.awarded ?? 0),
+      already: Boolean(row?.already),
+    };
+  },
   async fetchSettings(): Promise<Partial<AppSettings> | null> {
     if (!supabase) return null;
     const data = await fetchAppSettingsRow();

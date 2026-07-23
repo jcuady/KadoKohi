@@ -32,10 +32,18 @@ export async function markPaymongoOrderPaid(
   if (paymentId) patch.paymongo_payment_id = paymentId;
   if (order.status === "pending") patch.status = "accepted";
 
-  const { error } = await admin.from("kk_orders").update(patch).eq("id", order.id);
+  // Conditional update: concurrent verify+webhook → only one writer wins.
+  const { data, error } = await admin
+    .from("kk_orders")
+    .update(patch)
+    .eq("id", order.id)
+    .neq("payment_status", "paid")
+    .select("id");
+
   if (error) {
     console.error("markPaymongoOrderPaid failed", error);
     return { ok: false };
   }
+  if (!data?.length) return { ok: true, alreadyPaid: true };
   return { ok: true };
 }

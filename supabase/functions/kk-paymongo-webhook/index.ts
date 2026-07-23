@@ -47,10 +47,24 @@ function basicUser(authHeader: string | null): string | null {
 }
 
 async function isAuthorized(req: Request, rawBody: string, webhookSecret: string): Promise<boolean> {
-  const signature = req.headers.get("paymongo-signature")?.trim();
-  if (signature) {
-    const expected = await hmacSha256Hex(webhookSecret, rawBody);
-    if (timingSafeEqual(expected, signature)) return true;
+  const signatureHeader = req.headers.get("paymongo-signature")?.trim();
+  if (signatureHeader) {
+    // PayMongo format: t=<ts>,te=<testSig>,li=<liveSig>; signed message = `${t}.${rawBody}`
+    const parts: Record<string, string> = {};
+    for (const piece of signatureHeader.split(",")) {
+      const eq = piece.indexOf("=");
+      if (eq <= 0) continue;
+      parts[piece.slice(0, eq).trim()] = piece.slice(eq + 1).trim();
+    }
+    const timestamp = parts.t;
+    const candidates = [parts.li, parts.te].filter((s): s is string => Boolean(s));
+    if (timestamp && candidates.length) {
+      const expected = await hmacSha256Hex(webhookSecret, `${timestamp}.${rawBody}`);
+      if (candidates.some((sig) => timingSafeEqual(expected, sig))) return true;
+    }
+    // Legacy: some older configs compared HMAC(body) to the raw header value.
+    const legacy = await hmacSha256Hex(webhookSecret, rawBody);
+    if (timingSafeEqual(legacy, signatureHeader)) return true;
   }
   const user = basicUser(req.headers.get("Authorization"));
   return user === webhookSecret;

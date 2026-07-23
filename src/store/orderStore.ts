@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Order, OrderStatus, PaymentStatus } from '../types/domain';
 import { newId } from '../lib/id';
-import { applyLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
+import { applyLoyaltyStampsForCompletedOrder, persistLoyaltyStampsForCompletedOrder } from '../lib/loyaltyStamps';
 import { defaultFieldsForNewOrder, normalizeOrderFields, ORDER_STATUS_LABELS, awaitsGatewayPayment } from '../lib/orderStatus';
 import { orderingRepo, formatBaristaOrderError } from '../lib/supabase/repositories/ordering';
 import { logAudit } from '../lib/audit';
@@ -210,16 +210,19 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           orders: get().orders.map((o) => (o.id === id ? next : o)),
         });
 
-        // Persist status (+ awarded stamps when completing) and surface any error.
+        // Persist status; stamps are awarded server-side via kk_award_loyalty_stamps.
         try {
           await orderingRepo.patchOrder(id, {
             status: next.status,
-            ...(justCompleted ? { loyaltyStampsAwarded: next.loyaltyStampsAwarded } : {}),
           });
         } catch (err) {
           // Roll back optimistic update.
           set({ orders: get().orders.map((o) => (o.id === id ? prev : o)) });
           return err instanceof Error ? err.message : 'Failed to update order status.';
+        }
+
+        if (justCompleted) {
+          void persistLoyaltyStampsForCompletedOrder(next);
         }
 
         // Audit the staff action + notify the customer of the new status.
@@ -309,11 +312,14 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
           await orderingRepo.patchOrder(id, {
             status: next.status,
             paymentStatus: next.paymentStatus,
-            ...(justCompleted ? { loyaltyStampsAwarded: next.loyaltyStampsAwarded } : {}),
           });
         } catch (err) {
           set({ orders: get().orders.map((o) => (o.id === id ? prev : o)) });
           return formatBaristaOrderError(err, 'update');
+        }
+
+        if (justCompleted) {
+          void persistLoyaltyStampsForCompletedOrder(next);
         }
 
         if (patch.status && patch.status !== prev.status) {

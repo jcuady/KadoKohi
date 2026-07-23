@@ -19,11 +19,8 @@ export function countDrinkStampsForOrder(order: Pick<Order, 'channel' | 'items'>
 }
 
 /**
- * When an order becomes completed, award drink-based stamps to the customer account.
- * Idempotent via `loyaltyStampsAwarded` on the order.
- *
- * Returns the updated order immediately (with stampsAwarded set) and resolves
- * the async DB write / fallback in the background.
+ * Optimistic local stamp count when an order becomes completed.
+ * Persist via {@link persistLoyaltyStampsForCompletedOrder} AFTER status is saved.
  */
 export function applyLoyaltyStampsForCompletedOrder(order: Order): Order {
   if (order.status !== 'completed') return order;
@@ -31,39 +28,34 @@ export function applyLoyaltyStampsForCompletedOrder(order: Order): Order {
   if (!order.customerId) return order;
 
   const delta = countDrinkStampsForOrder(order);
-  const stampedOrder: Order = { ...order, loyaltyStampsAwarded: delta };
-
-  if (delta <= 0) return stampedOrder;
-
-  // Fire-and-forget async stamp credit. The returned order already has the
-  // awarded count set so the DB patch for the order row is correct.
-  void applyStampsAsync(order.customerId, delta);
-
-  return stampedOrder;
+  return { ...order, loyaltyStampsAwarded: delta };
 }
 
-async function applyStampsAsync(customerId: string, delta: number) {
-  // Prefer local store (fast path) but fall back to a DB read so stamps are
-  // awarded even when the customer hasn't been loaded into this device's store.
-  let localCustomer = useUserStore.getState().getById(customerId);
-  if (!localCustomer) {
-    localCustomer = await orderingRepo.fetchUserById(customerId);
-  }
-  if (!localCustomer) return; // customer row doesn't exist — skip
+/** Server-side idempotent stamp award (call after order.status = completed is persisted). */
+export async function persistLoyaltyStampsForCompletedOrder(order: Pick<Order, 'id' | 'customerId'>) {
+  if (!order.customerId) return;
+  try {
+    const result = await orderingRepo.awardLoyaltyStamps(order.id);
+    if (!result || result.already || result.awarded <= 0) return;
 
-  const nextStamps = (localCustomer.loyaltyStamps ?? 0) + delta;
+    const customerId = order.customerId;
+    let localCustomer = useUserStore.getState().getById(customerId);
+    if (!localCustomer) {
+      localCustomer = await orderingRepo.fetchUserById(customerId);
+    }
+    if (!localCustomer) return;
 
-  // Persist to DB.
-  void orderingRepo.updateUserStamps(customerId, nextStamps);
-
-  // Reflect in local stores.
-  useUserStore.setState({
-    users: useUserStore
-      .getState()
-      .users.map((u) => (u.id === customerId ? { ...u, loyaltyStamps: nextStamps } : u)),
-  });
-  const session = useAuthStore.getState().user;
-  if (session?.id === customerId && session.role === 'customer') {
-    useAuthStore.setState({ user: { ...session, loyaltyStamps: nextStamps } });
+    const nextStamps = (localCustomer.loyaltyStamps ?? 0) + result.awarded;
+    useUserStore.setState({
+      users: useUserStore
+        .getState()
+        .users.map((u) => (u.id === customerId ? { ...u, loyaltyStamps: nextStamps } : u)),
+    });
+    const session = useAuthStore.getState().user;
+    if (session?.id === customerId && session.role === 'customer') {
+      useAuthStore.setState({ user: { ...session, loyaltyStamps: nextStamps } });
+    }
+  } catch {
+    // Completion already persisted; staff can retry by re-calling the RPC.
   }
 }
