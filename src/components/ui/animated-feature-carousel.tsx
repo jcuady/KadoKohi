@@ -176,7 +176,7 @@ export function KadoOrderingCarousel({
             as="p"
             className="hidden max-w-md md:block md:text-right"
             defaultSizeClass="kado-body"
-            defaultColorClass="text-kado-dark/55"
+            defaultColorClass="text-kado-dark/70"
             {...cmsTextProps(cmsEditMode, 'ordering.subtitleDesktop', 'Subtitle (desktop)', (v) =>
               updateOrdering({ subtitleDesktop: v }),
             )}
@@ -187,7 +187,7 @@ export function KadoOrderingCarousel({
           as="p"
           className="-mt-1 md:hidden"
           defaultSizeClass="kado-body-sm"
-          defaultColorClass="text-kado-dark/55"
+          defaultColorClass="text-kado-dark/70"
           {...cmsTextProps(cmsEditMode, 'ordering.subtitleMobile', 'Subtitle (mobile)', (v) =>
             updateOrdering({ subtitleMobile: v }),
           )}

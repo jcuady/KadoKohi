@@ -9,7 +9,7 @@ This repo is a **full-stack café operations platform** (not just a landing page
 2. For durable typed system memory (pages, roles, mutations, flows): **[schema/](./schema/)** — `kado-system.graphql` + `SYSTEM_INVENTORY.md` (documentation GraphQL only; runtime is still Supabase RPCs).
 3. Follow **[.cursor/rules/karpathy-guidelines.mdc](./.cursor/rules/karpathy-guidelines.mdc)** — think first, minimal diffs, verify with tests/build.
 4. For brand/UI work: **[BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md](./BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md)** §1–2 (identity) and §3–5 (implementation gaps).
-5. For PWA web push (portable to other apps): **[docs/PWA_WEB_PUSH.md](./docs/PWA_WEB_PUSH.md)**.
+5. For **Web Push on any project / AI with no context:** **[docs/WEB_PUSH_AGENT_PLAYBOOK.md](./docs/WEB_PUSH_AGENT_PLAYBOOK.md)**. Kado-specific matrix + QA: **[docs/PWA_WEB_PUSH.md](./docs/PWA_WEB_PUSH.md)**.
 
 Cursor loads `.cursor/rules/project-context.mdc` automatically in every chat.
 

@@ -1,6 +1,10 @@
-# PWA Web Push — implementation guide + Kado QA checklist
+# PWA Web Push — Kado Kohi implementation + QA checklist
 
-This document explains how Kado Kohi implements **Web Push** for a Vite + React PWA so another project (or an AI agent) can reproduce the same pattern, and includes the **Kado product matrix** used for QA.
+> **Starting a new project or instructing an AI with no café context?** Use the portable playbook first:  
+> **[`WEB_PUSH_AGENT_PLAYBOOK.md`](./WEB_PUSH_AGENT_PLAYBOOK.md)**  
+> This file is the **Kado-specific** overlay: file paths, order/booth/event matrix, and QA checkboxes.
+
+This document explains how Kado Kohi implements **Web Push** for its Vite + React PWA and includes the **product matrix** used for QA.
 
 Use this when you need: order alerts, payment reminders, staff “new order” buzzes, booth/event alerts, or any browser push that works after the tab is closed (installed PWA / supported mobile browsers).
 
@@ -380,3 +384,12 @@ Staff are **not** targeted (no staff events console / RoleGate).
 - Prune dead endpoints to avoid leaking stale device metadata.
 
 This pattern is stack-agnostic: replace Supabase with any Postgres + HTTPS API; replace vite-plugin-pwa with Workbox or a custom SW — the subscribe → store → VAPID send → SW display loop stays the same.
+
+---
+
+## 13. Related docs
+
+| Doc | Use when |
+|-----|----------|
+| [`WEB_PUSH_AGENT_PLAYBOOK.md`](./WEB_PUSH_AGENT_PLAYBOOK.md) | Any project / AI with no Kado context — copy into other repos |
+| **This file** | Kado file map, event matrix, café QA checklist |

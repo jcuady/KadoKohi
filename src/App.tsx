@@ -4,35 +4,37 @@ import { lazyWithRetry } from './lib/lazyWithRetry';
 import PublicLayout from './layouts/PublicLayout';
 import RoleGate from './components/RoleGate';
 import Home from './pages/Home';
-import Menu from './pages/Menu';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Branches from './pages/Branches';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import AuthConfirm from './pages/auth/AuthConfirm';
 import InternalLogin from './pages/auth/InternalLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
-import Events from './pages/Events';
-import Order from './pages/Order';
 import OrderQR from './pages/OrderQR';
 import OrderTakeout from './pages/OrderTakeout';
-import Checkout from './pages/Checkout';
-import Merch from './pages/Merch';
-import Blog from './pages/Blog';
-import BlogPost from './pages/BlogPost';
-import Pastries from './pages/Pastries';
-import Careers from './pages/Careers';
-import TermsOfService from './pages/legal/TermsOfService';
-import PrivacyPolicy from './pages/legal/PrivacyPolicy';
-import BookBooth from './pages/BookBooth';
 import NotFound from './pages/NotFound';
 import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
 import ScrollToTop from './components/ScrollToTop';
 import PublicDocumentTheme from './components/PublicDocumentTheme';
 import SiteCookieConsent from './components/SiteCookieConsent';
+
+// Public marketing routes — lazy so homepage PSI doesn't pay for Menu/About/etc. chunks.
+const Menu = lazy(() => import('./pages/Menu'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Branches = lazy(() => import('./pages/Branches'));
+const Events = lazy(() => import('./pages/Events'));
+const Order = lazy(() => import('./pages/Order'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Merch = lazy(() => import('./pages/Merch'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
+const Pastries = lazy(() => import('./pages/Pastries'));
+const Careers = lazy(() => import('./pages/Careers'));
+const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
+const BookBooth = lazy(() => import('./pages/BookBooth'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const BaristaLayout = lazy(() => import('./layouts/BaristaLayout'));
@@ -114,26 +116,26 @@ export default function App() {
 
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/menu" element={<Menu />} />
-          <Route path="/about" element={<About />} />
+          <Route path="/menu" element={<LazyRoutes><Menu /></LazyRoutes>} />
+          <Route path="/about" element={<LazyRoutes><About /></LazyRoutes>} />
           <Route path="/contacts" element={<Navigate to="/contact" replace />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/branches" element={<Branches />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/order" element={<Order />} />
-          <Route path="/checkout/:orderId" element={<Checkout />} />
-          <Route path="/merch" element={<Merch />} />
-          <Route path="/pastries" element={<Pastries />} />
-          <Route path="/features" element={<Blog />} />
-          <Route path="/features/:slug" element={<BlogPost />} />
+          <Route path="/contact" element={<LazyRoutes><Contact /></LazyRoutes>} />
+          <Route path="/branches" element={<LazyRoutes><Branches /></LazyRoutes>} />
+          <Route path="/events" element={<LazyRoutes><Events /></LazyRoutes>} />
+          <Route path="/order" element={<LazyRoutes><Order /></LazyRoutes>} />
+          <Route path="/checkout/:orderId" element={<LazyRoutes><Checkout /></LazyRoutes>} />
+          <Route path="/merch" element={<LazyRoutes><Merch /></LazyRoutes>} />
+          <Route path="/pastries" element={<LazyRoutes><Pastries /></LazyRoutes>} />
+          <Route path="/features" element={<LazyRoutes><Blog /></LazyRoutes>} />
+          <Route path="/features/:slug" element={<LazyRoutes><BlogPost /></LazyRoutes>} />
           <Route path="/blog" element={<Navigate to="/features" replace />} />
           <Route path="/blog/:slug" element={<BlogSlugRedirect />} />
-          <Route path="/careers" element={<Careers />} />
-          <Route path="/book/coffee-cart" element={<BookBooth />} />
-          <Route path="/book/matcha-bar" element={<BookBooth kind="matcha-bar" />} />
+          <Route path="/careers" element={<LazyRoutes><Careers /></LazyRoutes>} />
+          <Route path="/book/coffee-cart" element={<LazyRoutes><BookBooth /></LazyRoutes>} />
+          <Route path="/book/matcha-bar" element={<LazyRoutes><BookBooth kind="matcha-bar" /></LazyRoutes>} />
           <Route path="/book/booth" element={<Navigate to="/book/coffee-cart" replace />} />
-          <Route path="/legal/terms" element={<TermsOfService />} />
-          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+          <Route path="/legal/terms" element={<LazyRoutes><TermsOfService /></LazyRoutes>} />
+          <Route path="/legal/privacy" element={<LazyRoutes><PrivacyPolicy /></LazyRoutes>} />
           <Route path="*" element={<NotFound />} />
         </Route>
 

@@ -53,13 +53,14 @@ const FEATURED_CUTOUT_BY_ID: Partial<Record<string, string>> = {
   prod_matcha_oat: '/featured/matcha-oat.webp',
 };
 
-function featuredDrinkImage(drink: Product, override?: string): string {
+function featuredDrinkImage(drink: Product, override?: string, cmsEditMode?: boolean): string {
+  const localCutout = FEATURED_CUTOUT_BY_ID[drink.id];
   const fromOverride = override?.trim();
+  // Public homepage: always prefer local WebP cutouts (PSI: avoid 1200px Supabase JPGs).
+  if (!cmsEditMode && localCutout) return localCutout;
   if (fromOverride) return fromOverride;
-  const fromProduct = getMenuProductImageUrl(drink);
-  const generic = getMenuProductImageUrl({ image: undefined, categoryId: drink.categoryId });
-  if (fromProduct !== generic) return fromProduct;
-  return FEATURED_CUTOUT_BY_ID[drink.id] ?? fromProduct;
+  if (localCutout) return localCutout;
+  return getMenuProductImageUrl(drink);
 }
 
 /** Display name shortened to match Figma labels where DB uses the long oat title. */
@@ -89,8 +90,7 @@ function DrinkCard({
   sectionRef,
   onSelect,
 }: CardProps) {
-  const menuImage = featuredDrinkImage(drink, imageOverride);
-  const image = menuImage;
+  const image = featuredDrinkImage(drink, imageOverride, cmsEditMode);
   const promo = productPromoTag(drink);
   const name = displayName(drink);
   const price = formatPhp(discountedBasePrice(drink));
@@ -139,6 +139,10 @@ function DrinkCard({
               fallbackSrc={FEATURED_CUTOUT_BY_ID[drink.id]}
               alt={name}
               className={imageClassName}
+              loading="lazy"
+              width={528}
+              height={704}
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 280px"
             />
           )}
         </div>
@@ -372,7 +376,7 @@ export default function FeaturedCoffeesSection({ copy, cmsEditMode }: Props) {
               {menuReady && showcaseDrinks.length > 1 ? (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 text-kado-dark/35" aria-hidden />
-                  <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-kado-dark/55">
+                  <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-kado-dark/70">
                     Swipe for more
                   </p>
                 </>

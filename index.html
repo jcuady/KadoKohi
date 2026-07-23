@@ -33,23 +33,26 @@
     <!-- Critical origins + LCP preload + optional fonts (mobile: don't chain fonts after JS) -->
     <link rel="preconnect" href="https://idwtlujcdfnnndxmlaco.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://idwtlujcdfnnndxmlaco.supabase.co" />
-    <link rel="preload" href="/fonts/m-plus-1-400.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Fonts discovered in parallel with CSS (PSI: don't wait for stylesheet to find @font-face). -->
+    <link rel="preload" href="/fonts/m-plus-1-700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/zalando-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/zalando-700.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- LCP: homepage espresso hero (match Tailwind lg / home-hero-slider breakpoint). -->
     <link
       rel="preload"
       as="image"
       type="image/webp"
-      href="/Social%20Media%20References/Copy%20of%203-sm.webp"
+      href="/heroes/mobile/espresso.webp"
       fetchpriority="high"
-      media="(max-width: 767px)"
+      media="(max-width: 1023px)"
     />
     <link
       rel="preload"
       as="image"
       type="image/webp"
-      href="/Social%20Media%20References/Copy%20of%203.webp"
+      href="/heroes/espresso.webp"
       fetchpriority="high"
-      media="(min-width: 768px)"
+      media="(min-width: 1024px)"
     />
     <meta property="og:title" content="Kado Coffee | Ceremonial Grade Matcha and Coffee" />
     <meta property="og:description" content="Kado Coffee (Kado Kohi) — ceremonial grade matcha, specialty coffee, and oat lattes across Metro Manila. Order online. Rated 4.9★." />

@@ -218,9 +218,9 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
             ) : status === 'error' ? (
               <p className="text-red-300 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
             ) : statusDetail ? (
-              <p className="text-white/45 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
+              <p className="text-white/70 text-xs mt-3 text-center lg:text-left">{statusDetail}</p>
             ) : (
-              <p className="text-white/35 text-xs mt-3 text-center lg:text-left">
+              <p className="text-white/65 text-xs mt-3 text-center lg:text-left">
                 <CmsStyledText
                   value={copy?.disclaimer ?? 'No spam. Unsubscribe any time.'}
                   as="span"
@@ -239,7 +239,7 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
             value={copy?.marqueeLabel ?? 'Friends of the corner'}
             as="p"
             className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-center"
-            defaultColorClass="text-white/35"
+            defaultColorClass="text-white/65"
             {...cmsTextProps(cmsEditMode, 'kado-circle.marqueeLabel', 'Marquee label', (v) =>
               updateKadoCircle({ marqueeLabel: v }),
             )}
@@ -328,7 +328,7 @@ export default function KadoCircleCTA({ className, copy, cmsEditMode }: KadoCirc
                 value={label}
                 as="p"
                 className="text-xs uppercase tracking-widest font-bold"
-                defaultColorClass="text-white/40"
+                defaultColorClass="text-white/65"
                 {...cmsTextProps(cmsEditMode, `kado-circle.stat.${statIdx}.label`, `Stat ${statIdx + 1} label`, (v) => {
                   const stats = [...(copy?.stats?.length ? copy.stats : [
                     { num: '2+', label: 'Branches' },

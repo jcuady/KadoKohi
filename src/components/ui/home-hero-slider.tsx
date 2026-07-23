@@ -63,13 +63,15 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
     setIndex(0);
   }, [safeSlides.length]);
 
-  // LCP: preload viewport-matching first slide (portrait mobile vs wide desktop).
+  // LCP: index.html already preloads seed espresso. Only re-hint when CMS swaps the first slide.
   useEffect(() => {
     const first = safeSlides[0];
     if (!first) return;
-    document.querySelector('link[data-kado-lcp-hero]')?.remove();
     const mobileHref = toWebpSrc(first.imageMobile) || first.imageMobile;
     const desktopHref = toWebpSrc(first.image) || first.image;
+    const seedMobile = '/heroes/mobile/espresso.webp';
+    const seedDesktop = '/heroes/espresso.webp';
+    if (mobileHref === seedMobile && desktopHref === seedDesktop) return;
     upsertHeroPreload('data-kado-lcp-hero-mobile', mobileHref, MOBILE_HERO_MQ);
     upsertHeroPreload('data-kado-lcp-hero-desktop', desktopHref, '(min-width: 1024px)');
   }, [safeSlides]);
@@ -148,7 +150,9 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
                 className="landing-hero-media absolute inset-0 h-full w-full object-cover"
                 loading="eager"
                 decoding="async"
-                fetchPriority="high"
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                width={1920}
+                height={1080}
                 sizes="100vw"
                 onError={(e) => {
                   const el = e.currentTarget;

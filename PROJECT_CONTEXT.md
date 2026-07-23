@@ -629,7 +629,8 @@ When status → `completed`: `applyLoyaltyStampsForCompletedOrder()` awards drin
 ### PWA & push
 - Install prompt, `/help/install`.
 - Web push: `kk-send-push`, `public/push-sw.js`, `src/lib/push.ts`, `src/lib/notify.ts`.
-- **Portable guide (for other projects / AI agents):** [`docs/PWA_WEB_PUSH.md`](./docs/PWA_WEB_PUSH.md).
+- **Portable Web Push playbook (other projects / AI, no Kado context required):** [`docs/WEB_PUSH_AGENT_PLAYBOOK.md`](./docs/WEB_PUSH_AGENT_PLAYBOOK.md).
+- **Kado event matrix + QA checklist:** [`docs/PWA_WEB_PUSH.md`](./docs/PWA_WEB_PUSH.md).
 
 ---
 

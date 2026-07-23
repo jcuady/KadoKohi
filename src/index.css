@@ -812,14 +812,14 @@ html.customer-facing {
   width: 100%;
 }
 
-/* Portrait Heroes/Mobile: keep product art readable under copy + CTAs */
+/* Mobile uses /heroes/mobile/* crops (drink already framed). Desktop: keep cup in frame. */
 .landing-hero-media {
-  object-position: center 42%;
+  object-position: center center;
 }
 
 @media (min-width: 1024px) {
   .landing-hero-media {
-    object-position: 68% center;
+    object-position: center 42%;
   }
 }
 
