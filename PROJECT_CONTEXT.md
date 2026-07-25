@@ -847,6 +847,8 @@ Reference when adding features — types mirror Postgres tables:
 | `schema/SYSTEM_INVENTORY.md` | Routes, stores, RPCs, edge fns, payment matrix for agents |
 | `schema/README.md` | How to use / update the GraphQL memory |
 | `AGENTS.md` | Short pointer for AI agents — read `PROJECT_CONTEXT.md` |
+| `schema/` | GraphQL **documentation** memory (`kado-system.graphql` + `SYSTEM_INVENTORY.md`) — not a live API |
+| `SYSTEM_READINESS.md` | Production readiness scorecard, role matrix, gaps → 100% backlog (audit 2026-07-24) |
 | `.cursor/rules/` | Cursor rules: `karpathy-guidelines.mdc`, `project-context.mdc` |
 | `PROJECT_PLAN.md` | Historical architecture blueprint (partially stale) |
 | `BRANDING_SYSTEM_AND_PROJECT_CONTEXT.md` | Brand identity (§1–2); implementation status (§3–5) |
@@ -864,12 +866,16 @@ Reference when adding features — types mirror Postgres tables:
 
 ## 20. Open Questions & Known Gaps
 
+Authoritative readiness scorecard: **[`SYSTEM_READINESS.md`](./SYSTEM_READINESS.md)** (~88% weighted; café-ops ready with caveats).
+
 1. **Hero viewport peek** — client revision not fully implemented.
 2. **PayMongo live certification** — integration is shipped; production success/cancel/webhook should be smoke-tested after credential or webhook changes.
-3. **PROJECT_PLAN** — historical; superseded by this file for architecture.
-4. **E2E stability** — admin/barista tests intermittently fail in CI.
-5. **Online orders to barista board** — baristas see all channels including online for their branch; original plan debated whether online should be admin-only.
-6. **Brand asset rollout** — logo lockups and local photography not consistent on all surfaces.
+3. **Refunds** — `refunded` is status-only (no PayMongo reverse / stamp unwind).
+4. **Contact** — email-only (no durable admin inbox).
+5. **Mix & match** — server catalog exists; customer UI removed.
+6. **PROJECT_PLAN** — historical; superseded by this file for architecture.
+7. **E2E stability** — admin/barista tests intermittently fail in CI.
+8. **Brand asset rollout** — logo lockups and local photography not consistent on all surfaces.
 
 ---
 

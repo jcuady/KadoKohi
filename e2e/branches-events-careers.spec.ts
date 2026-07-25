@@ -44,7 +44,9 @@ test.describe('Public branches', () => {
     await page.goto('/branches');
     await dismissCookieConsent(page);
 
-    await expect(page.getByRole('heading', { name: /kado coffee — marikina/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /kado coffee branches/i })).toBeVisible({
+      timeout: 20000,
+    });
 
     for (const branch of branches) {
       await expect(page.getByRole('heading', { name: branch.name, exact: true })).toBeVisible({
@@ -59,6 +61,13 @@ test.describe('Public branches', () => {
     expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
   });
 });
+
+/** Mirrors `branchPillLabel` on Events page (public filter chips). */
+function eventsBranchPillLabel(name: string): string {
+  const n = name.trim();
+  if (/^kado\s/i.test(n)) return n.toUpperCase();
+  return `KADO KOHI - ${n}`.toUpperCase();
+}
 
 test.describe('Events × branches', () => {
   test('events page shows a filter chip for every active branch', async ({ page, request }) => {
@@ -77,13 +86,14 @@ test.describe('Events × branches', () => {
     await expect(page.getByRole('button', { name: /^all branches$/i })).toBeVisible();
 
     for (const branch of active) {
-      await expect(page.getByRole('button', { name: branch.name, exact: true })).toBeVisible({
+      const pill = eventsBranchPillLabel(branch.name);
+      await expect(page.getByRole('button', { name: pill, exact: true })).toBeVisible({
         timeout: 20000,
       });
     }
 
     const target = active[0]!;
-    await page.getByRole('button', { name: target.name, exact: true }).click();
+    await page.getByRole('button', { name: eventsBranchPillLabel(target.name), exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`[?&]branch=${encodeURIComponent(target.slug)}`));
 
     await page.getByRole('button', { name: /^all branches$/i }).click();
@@ -143,12 +153,10 @@ test.describe('Careers apply → admin inbox', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await internalLogin(page, 'admin');
-    await page.goto('/admin/careers');
+    await page.goto('/admin/careers?tab=applications');
     await expect(page.getByRole('heading', { name: /^careers$/i })).toBeVisible({ timeout: 20000 });
-
-    await page.getByRole('tab', { name: /applications/i }).click();
-    await expect(page.getByRole('heading', { name: /^applications$/i })).toBeVisible({
-      timeout: 15000,
+    await expect(page.getByPlaceholder(/search applicants/i)).toBeVisible({
+      timeout: 20000,
     });
 
     const search = page.getByPlaceholder(/search applicants/i);

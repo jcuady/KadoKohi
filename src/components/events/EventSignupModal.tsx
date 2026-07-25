@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
 import type { Event } from '../../types/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useEventFormStore } from '../../store/eventFormStore';
@@ -14,7 +12,7 @@ import { orderingRepo } from '../../lib/supabase/repositories/ordering';
 import { newId } from '../../lib/id';
 import EventSignupFields from './EventSignupFields';
 import OverlayShell from '../ui/OverlayShell';
-import { OVERLAY_CTA, OVERLAY_CTA_DARK } from '../../lib/overlayTheme';
+import { OVERLAY_CTA_DARK } from '../../lib/overlayTheme';
 import { notifyEventRegistration } from '../../lib/notify';
 
 interface Props {
@@ -25,7 +23,6 @@ interface Props {
 
 export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
   const user = useAuthStore((s) => s.user);
-  const isCustomer = user?.role === 'customer';
   const forms = useEventFormStore((s) => s.forms);
   const hydrateForms = useEventFormStore((s) => s.hydrateFromRemote);
 
@@ -76,25 +73,6 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
 
   const fieldSummary = useMemo(() => fields.map((f) => f.label).join(', '), [fields]);
 
-  if (!isCustomer) {
-    return (
-      <OverlayShell open onClose={onClose} title={event.title} centered zClass="z-[300]" labelledBy="event-signup-title">
-        <div className="text-center py-2">
-          <p className="text-sm text-kado-dark/65 mb-6 leading-relaxed">
-            Sign in to register for <strong>{event.title}</strong>. We need your account to confirm your spot.
-          </p>
-          <Link
-            to="/auth/login"
-            state={{ from: '/events', notice: `Sign in to register for ${event.title}.` }}
-            className={OVERLAY_CTA}
-          >
-            <LogIn className="w-4 h-4" /> Sign in to register
-          </Link>
-        </div>
-      </OverlayShell>
-    );
-  }
-
   const setAnswer = (fieldId: string, value: string | boolean) => {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }));
   };
@@ -119,18 +97,18 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
         customAnswers: checked.customAnswers,
         answers,
       });
-      if (user?.id) {
-        notifyEventRegistration({
-          customerId: user.id,
-          eventId: event.id,
-          eventTitle: event.title,
-          contactName: checked.contactName,
-        });
-      }
+      notifyEventRegistration({
+        customerId: user?.role === 'customer' ? user.id : undefined,
+        eventId: event.id,
+        eventTitle: event.title,
+        contactName: checked.contactName,
+        branchId: event.branchId,
+      });
       setDone(true);
       onSuccess();
     } catch (err) {
-      const msg = err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : '';
+      const msg =
+        err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : '';
       setError(msg || 'Could not complete registration. Please try again.');
     } finally {
       setSubmitting(false);
@@ -150,19 +128,17 @@ export default function EventSignupModal({ event, onClose, onSuccess }: Props) {
           </button>
         </div>
       ) : loadingForm ? (
-        <p className="text-sm text-kado-dark/60 py-6 text-center">Loading registration form…</p>
+        <p className="text-sm text-kado-dark/60 py-8 text-center">Loading form…</p>
       ) : (
-        <form onSubmit={submit} className="space-y-4">
-          <p className="text-sm text-kado-dark/60">
-            Register for {event.title}
-            <span className="block text-[10px] text-kado-dark/45 mt-1">{fieldSummary}</span>
+        <form onSubmit={(ev) => void submit(ev)} className="space-y-4">
+          <p className="text-xs text-kado-dark/55">
+            {fieldSummary ? `Fields: ${fieldSummary}` : 'Complete the form to reserve your spot.'}
+            {!user ? ' Guests welcome — no account required.' : null}
           </p>
           <EventSignupFields fields={fields} answers={answers} onChange={setAnswer} />
-          {error && (
-            <p className="text-sm text-red-600 rounded-lg border border-red-200 bg-red-50 px-3 py-2">{error}</p>
-          )}
-          <button type="submit" disabled={submitting} className={OVERLAY_CTA}>
-            {submitting ? 'Submitting…' : 'Confirm registration'}
+          {error ? <p className="text-sm font-semibold text-kado-red">{error}</p> : null}
+          <button type="submit" disabled={submitting} className={OVERLAY_CTA_DARK}>
+            {submitting ? 'Submitting…' : 'Register'}
           </button>
         </form>
       )}

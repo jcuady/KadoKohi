@@ -222,7 +222,8 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         }
 
         if (justCompleted) {
-          void persistLoyaltyStampsForCompletedOrder(next);
+          const stampErr = await persistLoyaltyStampsForCompletedOrder(next);
+          if (stampErr) return stampErr;
         }
 
         // Audit the staff action + notify the customer of the new status.
@@ -319,7 +320,8 @@ export const useOrderStore = create<OrderStore>()((set, get) => ({
         }
 
         if (justCompleted) {
-          void persistLoyaltyStampsForCompletedOrder(next);
+          const stampErr = await persistLoyaltyStampsForCompletedOrder(next);
+          if (stampErr) return stampErr;
         }
 
         if (patch.status && patch.status !== prev.status) {

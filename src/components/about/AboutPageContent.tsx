@@ -8,11 +8,12 @@ import AboutTimeline from './AboutTimeline';
 import AboutSpace from './AboutSpace';
 import AboutExperience from './AboutExperience';
 import AboutCta from './AboutCta';
-import { useLandingContentStore } from '@/store/landingContentStore';
+import { useLandingPageContent } from '@/hooks/useLandingPageContent';
 
 /** Editorial About page — Hatton-inspired layout, Kado Kohi brand tokens. */
 export default function AboutPageContent() {
-  const aboutPage = useLandingContentStore((s) => s.published.aboutPage);
+  // Same draft/preview rules as homepage (`?preview=1` / admin preview session).
+  const aboutPage = useLandingPageContent().aboutPage;
 
   return (
     <div className="flex w-full min-w-0 flex-col overflow-x-clip bg-kado-cream text-kado-dark">

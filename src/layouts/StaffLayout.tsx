@@ -2,6 +2,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import {
   CalendarClock,
+  CalendarDays,
   Package,
   ClipboardList,
   LogOut,
@@ -22,6 +23,7 @@ const MAIN_OFFSET = 'ml-56';
 
 const nav = [
   { to: '/staff/booth-bookings', label: 'Booth Bookings', icon: CalendarClock },
+  { to: '/staff/event-registrations', label: 'Event Sign-ups', icon: CalendarDays },
   { to: '/staff/merch-orders', label: 'Merch Orders', icon: Package },
   { to: '/staff/orders', label: 'All Orders', icon: ClipboardList },
   { to: '/staff/settings', label: 'Settings', icon: Settings },

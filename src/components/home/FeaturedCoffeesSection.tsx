@@ -20,10 +20,10 @@ import ResilientImage from '../ui/ResilientImage';
 import BrandHybridMark from '../BrandHybridMark';
 import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
 import {
-  getMenuProductImageUrl,
   listVisibleCoffeeProducts,
   pickFeaturedCoffeeProducts,
 } from '../../lib/menuCatalog';
+import { FEATURED_CUTOUT_BY_ID, resolveFeaturedDrinkImage } from '../../lib/featuredDrinkImage';
 
 const cardReveal: Variants = {
   visible: (i: number) => ({
@@ -46,21 +46,8 @@ function drinkBlurb(drink: Product): string {
   return 'Served iced — crisp and refreshing.';
 }
 
-/** Local cutout fallbacks for Signature Sips — matches Figma product cards. */
-const FEATURED_CUTOUT_BY_ID: Partial<Record<string, string>> = {
-  prod_matcha_straw: '/featured/matcha-strawberry.webp',
-  prod_dirty_matcha: '/featured/dirty-matcha-oat.webp',
-  prod_matcha_oat: '/featured/matcha-oat.webp',
-};
-
-function featuredDrinkImage(drink: Product, override?: string, cmsEditMode?: boolean): string {
-  const localCutout = FEATURED_CUTOUT_BY_ID[drink.id];
-  const fromOverride = override?.trim();
-  // Public homepage: always prefer local WebP cutouts (PSI: avoid 1200px Supabase JPGs).
-  if (!cmsEditMode && localCutout) return localCutout;
-  if (fromOverride) return fromOverride;
-  if (localCutout) return localCutout;
-  return getMenuProductImageUrl(drink);
+function featuredDrinkImage(drink: Product, override?: string): string {
+  return resolveFeaturedDrinkImage(drink, override);
 }
 
 /** Display name shortened to match Figma labels where DB uses the long oat title. */
@@ -90,7 +77,7 @@ function DrinkCard({
   sectionRef,
   onSelect,
 }: CardProps) {
-  const image = featuredDrinkImage(drink, imageOverride, cmsEditMode);
+  const image = featuredDrinkImage(drink, imageOverride);
   const promo = productPromoTag(drink);
   const name = displayName(drink);
   const price = formatPhp(discountedBasePrice(drink));

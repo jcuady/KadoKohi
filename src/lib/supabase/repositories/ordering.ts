@@ -1491,6 +1491,7 @@ export const orderingRepo = {
       contactPhone: string;
       answers: Record<string, unknown>;
       customerId: string | null;
+      status: 'new' | 'reviewing' | 'interview' | 'hired' | 'rejected';
       createdAt: string;
     }>
   > {
@@ -1502,6 +1503,12 @@ export const orderingRepo = {
     if (error) throw error;
     return (data ?? []).map((row) => {
       const r = row as Record<string, unknown>;
+      const statusRaw = String(r.status ?? 'new');
+      const status = (
+        ['new', 'reviewing', 'interview', 'hired', 'rejected'].includes(statusRaw)
+          ? statusRaw
+          : 'new'
+      ) as 'new' | 'reviewing' | 'interview' | 'hired' | 'rejected';
       return {
         id: String(r.id),
         listingId: String(r.listing_id),
@@ -1511,9 +1518,18 @@ export const orderingRepo = {
         contactPhone: String(r.contact_phone ?? ''),
         answers: (r.answers as Record<string, unknown>) ?? {},
         customerId: r.customer_id ? String(r.customer_id) : null,
+        status,
         createdAt: String(r.created_at),
       };
     });
+  },
+  async updateCareerApplicationStatus(
+    id: string,
+    status: 'new' | 'reviewing' | 'interview' | 'hired' | 'rejected',
+  ): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase.from('kk_career_applications').update({ status }).eq('id', id);
+    if (error) throw error;
   },
   async fetchBoothCatalog(): Promise<unknown | null> {
     if (!supabase) return null;

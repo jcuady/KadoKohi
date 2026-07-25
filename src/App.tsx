@@ -25,7 +25,6 @@ const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Branches = lazy(() => import('./pages/Branches'));
 const Events = lazy(() => import('./pages/Events'));
-const Order = lazy(() => import('./pages/Order'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Merch = lazy(() => import('./pages/Merch'));
 const Blog = lazy(() => import('./pages/Blog'));
@@ -66,6 +65,7 @@ const AdminBlog = lazy(() => import('./pages/admin/AdminBlog'));
 const StaffMerchOrders = lazy(() => import('./pages/staff/StaffMerchOrders'));
 const StaffAllOrders = lazy(() => import('./pages/staff/StaffAllOrders'));
 const StaffBoothBookings = lazy(() => import('./pages/staff/StaffBoothBookings'));
+const StaffEventRegistrations = lazy(() => import('./pages/staff/StaffEventRegistrations'));
 const InternalAccountSettings = lazy(() => import('./pages/internal/InternalAccountSettings'));
 
 const BaristaBoard = lazy(() => import('./pages/barista/BaristaBoard'));
@@ -122,7 +122,8 @@ export default function App() {
           <Route path="/contact" element={<LazyRoutes><Contact /></LazyRoutes>} />
           <Route path="/branches" element={<LazyRoutes><Branches /></LazyRoutes>} />
           <Route path="/events" element={<LazyRoutes><Events /></LazyRoutes>} />
-          <Route path="/order" element={<LazyRoutes><Order /></LazyRoutes>} />
+          {/* Legacy online order page — cart lives on /menu; keep URL for old links. */}
+          <Route path="/order" element={<Navigate to="/menu" replace />} />
           <Route path="/checkout/:orderId" element={<LazyRoutes><Checkout /></LazyRoutes>} />
           <Route path="/merch" element={<LazyRoutes><Merch /></LazyRoutes>} />
           <Route path="/pastries" element={<LazyRoutes><Pastries /></LazyRoutes>} />
@@ -217,6 +218,7 @@ export default function App() {
           >
             <Route index element={<LazyRoutes><StaffMerchOrders /></LazyRoutes>} />
             <Route path="booth-bookings" element={<LazyRoutes><StaffBoothBookings /></LazyRoutes>} />
+            <Route path="event-registrations" element={<LazyRoutes><StaffEventRegistrations /></LazyRoutes>} />
             <Route path="merch-orders" element={<LazyRoutes><StaffMerchOrders /></LazyRoutes>} />
             <Route path="orders" element={<LazyRoutes><StaffAllOrders /></LazyRoutes>} />
             <Route path="settings" element={<LazyRoutes><InternalAccountSettings portalLabel="Staff" /></LazyRoutes>} />

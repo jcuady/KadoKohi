@@ -18,7 +18,6 @@ import type { CmsText } from '../../lib/cmsTypography';
 import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
-const HERO_CARD_SLOTS = 4;
 const TRUSTED_BRAND_SLOTS = 5;
 const MAX_FRIENDS = 16;
 
@@ -33,7 +32,6 @@ export default function AdminLandingContent() {
   const initDraft = useLandingContentStore((s) => s.initDraft);
   const hydrateFromRemote = useLandingContentStore((s) => s.hydrateFromRemote);
   const updateHeroSlide = useLandingContentStore((s) => s.updateHeroSlide);
-  const updateHeroCard = useLandingContentStore((s) => s.updateHeroCard);
   const updateHeroChrome = useLandingContentStore((s) => s.updateHeroChrome);
   const updateStorySeo = useLandingContentStore((s) => s.updateStorySeo);
   const updateStorySeoPillar = useLandingContentStore((s) => s.updateStorySeoPillar);
@@ -179,9 +177,10 @@ export default function AdminLandingContent() {
         </section>
 
         <section className="rounded-2xl dash-card border p-5 md:p-6">
-          <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero slides & card images</h2>
+          <h2 className="font-display font-bold text-xl dash-heading mb-4">Hero slides</h2>
           <p className="text-xs dash-muted mb-4">
-            Three slides and four cards per slide on desktop — count cannot change.
+            Three full-bleed slides — desktop and mobile backgrounds. Card collage fields were retired (slider is
+            edge-to-edge only).
           </p>
           <div className="space-y-6">
             {content.heroSlides.map((slide, index) => (
@@ -201,11 +200,23 @@ export default function AdminLandingContent() {
                     onChange={(v) => updateHeroSlide(index, { subtitle: v })}
                   />
                   <ImageUrlField
-                    label="Background image"
+                    label="Desktop background"
                     value={slide.image}
                     onChange={(v) => updateHeroSlide(index, { image: v })}
                     onPickFile={(files) =>
                       onPickImage(`landing/hero/slides/${index}`, (url) => updateHeroSlide(index, { image: url }), files)
+                    }
+                  />
+                  <ImageUrlField
+                    label="Mobile background"
+                    value={slide.imageMobile}
+                    onChange={(v) => updateHeroSlide(index, { imageMobile: v })}
+                    onPickFile={(files) =>
+                      onPickImage(
+                        `landing/hero/slides/${index}-mobile`,
+                        (url) => updateHeroSlide(index, { imageMobile: url }),
+                        files,
+                      )
                     }
                   />
                   <PlainField
@@ -213,39 +224,6 @@ export default function AdminLandingContent() {
                     value={slide.imageAlt}
                     onChange={(v) => updateHeroSlide(index, { imageAlt: v })}
                   />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider dash-muted mb-2">Hero cards</p>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {slide.cards.slice(0, HERO_CARD_SLOTS).map((card, ci) => (
-                      <div
-                        key={card.id}
-                       
-                        className="rounded-lg border dash-border p-3 space-y-2"
-                      >
-                        <p className="text-[10px] font-bold uppercase dash-muted">Card {ci + 1}</p>
-                        <CmsField
-                          label="Title"
-                          value={card.title}
-                          onChange={(v) => updateHeroCard(index, ci, { title: v })}
-                        />
-                        <CmsField label="Tag" value={card.tag} onChange={(v) => updateHeroCard(index, ci, { tag: v })} />
-                        <PlainField label="Alt" value={card.alt} onChange={(v) => updateHeroCard(index, ci, { alt: v })} />
-                        <ImageUrlField
-                          label="Image"
-                          value={card.src}
-                          onChange={(v) => updateHeroCard(index, ci, { src: v })}
-                          onPickFile={(files) =>
-                            onPickImage(
-                              `landing/hero/cards/${index}-${ci}`,
-                              (url) => updateHeroCard(index, ci, { src: url }),
-                              files,
-                            )
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </article>
             ))}
@@ -569,6 +547,14 @@ export default function AdminLandingContent() {
                   value={step.description}
                   onChange={(v) => updateOrderingStep(si, { description: v })}
                   multiline
+                />
+                <ImageUrlField
+                  label="Step icon"
+                  value={step.icon}
+                  onChange={(v) => updateOrderingStep(si, { icon: v })}
+                  onPickFile={(files) =>
+                    onPickImage(`landing/ordering/step-${si}`, (url) => updateOrderingStep(si, { icon: url }), files)
+                  }
                 />
               </div>
             )}

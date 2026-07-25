@@ -14,7 +14,7 @@ test.describe('Barista operational writes', () => {
 
     const modal = page.locator('.fixed.inset-0').filter({ hasText: /select variants/i });
     await expect(modal).toBeVisible({ timeout: 10000 });
-    await modal.getByRole('button', { name: /add to cart/i }).click();
+    await modal.getByRole('button', { name: /^Add/i }).click();
     await expect(modal).toHaveCount(0, { timeout: 10000 });
 
     await page.getByRole('button', { name: /place order/i }).click();
@@ -28,6 +28,17 @@ test.describe('Barista operational writes', () => {
     await page.goto('/barista/queue');
     await expect(page.getByRole('heading', { name: /^queue$/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(shortCode!)).toBeVisible({ timeout: 20000 });
+
+    // Open status modal and move the paid POS ticket into preparing.
+    await page.getByRole('button', { name: new RegExp(shortCode!) }).first().click();
+    const statusModal = page.locator('.fixed.inset-0').filter({ hasText: /update order/i });
+    await expect(statusModal).toBeVisible({ timeout: 10000 });
+    await statusModal.locator('select').first().selectOption('preparing');
+    await statusModal.getByRole('button', { name: /^save$/i }).click();
+    await expect(statusModal).toHaveCount(0, { timeout: 15000 });
+    await expect(page.getByText(/preparing/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.fixed.bottom-4').filter({ hasText: /failed/i })).toHaveCount(0);
+
     expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
   });
 });

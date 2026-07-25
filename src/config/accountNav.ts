@@ -20,7 +20,7 @@ export type AccountNavItem = {
 export const ACCOUNT_NAV: AccountNavItem[] = [
   { to: '/account', label: 'Home', shortLabel: 'Home', end: true, icon: LayoutDashboard },
   { to: '/account/orders', label: 'Orders', shortLabel: 'Orders', icon: ClipboardList },
-  { to: '/account/booth', label: 'Events', shortLabel: 'Events', icon: CalendarHeart },
+  { to: '/account/booth', label: 'Bookings', shortLabel: 'Bookings', icon: CalendarHeart },
   { to: '/account/vouchers', label: 'Rewards', shortLabel: 'Rewards', icon: Gift },
   { to: '/account/profile', label: 'Profile', shortLabel: 'Profile', icon: User },
 ];

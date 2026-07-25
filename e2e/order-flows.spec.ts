@@ -18,11 +18,9 @@ test('Takeout page renders the ordering UI and gates the place button', async ({
   const errors = trackPageErrors(page);
   await page.goto('/order/takeout');
 
-  // Branded header + pickup capture.
+  // Branded header + empty-cart place gate (guest name appears after items are added).
   await expect(page.getByText(/grab & go/i)).toBeVisible({ timeout: 20000 });
-  await expect(page.getByPlaceholder(/e\.g\. juan/i)).toBeVisible();
 
-  // The place button must be disabled with an empty cart.
   const placeBtn = page.getByRole('button', { name: /place takeout order/i });
   await expect(placeBtn).toBeVisible();
   await expect(placeBtn).toBeDisabled();

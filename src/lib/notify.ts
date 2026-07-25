@@ -325,29 +325,46 @@ export function buildEventRegistrationStaffPayload(input: {
   eventId: string;
   eventTitle: string;
   contactName: string;
+  branchId?: string | null;
 }): NotifyPayload {
-  // Events CMS is admin-only; staff RoleGate cannot open /admin/events.
+  // Form builder / event CMS stays admin-only; staff review submissions here.
+  const targets: PushTarget[] = [{ roles: ['admin'] }];
+  if (input.branchId) {
+    targets.unshift({ branchId: input.branchId, roles: ['staff'] });
+  } else {
+    targets.unshift({ roles: ['staff'] });
+  }
   return {
-    targets: [{ roles: ['admin'] }],
+    targets,
     title: 'New event registration',
     body: `${input.contactName} registered for ${input.eventTitle}.`,
-    url: '/admin/events',
+    url: '/staff/event-registrations',
     tag: `event-reg-staff-${input.eventId}`,
   };
 }
 
 export function notifyEventRegistration(input: {
-  customerId: string;
+  customerId?: string;
   eventId: string;
   eventTitle: string;
   contactName: string;
+  branchId?: string | null;
 }): void {
-  send(buildEventRegistrationCustomerPayload(input));
+  if (input.customerId) {
+    send(
+      buildEventRegistrationCustomerPayload({
+        customerId: input.customerId,
+        eventId: input.eventId,
+        eventTitle: input.eventTitle,
+      }),
+    );
+  }
   send(
     buildEventRegistrationStaffPayload({
       eventId: input.eventId,
       eventTitle: input.eventTitle,
       contactName: input.contactName,
+      branchId: input.branchId,
     }),
   );
 }

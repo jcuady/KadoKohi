@@ -246,7 +246,7 @@ export default function AdminLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login', { replace: true });
+    navigate('/management-portal', { replace: true });
   };
 
   return (

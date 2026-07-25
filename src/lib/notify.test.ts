@@ -252,7 +252,7 @@ describe('booth booking payloads', () => {
 });
 
 describe('event registration payloads', () => {
-  it('confirms customer and alerts admins (staff have no events console)', () => {
+  it('confirms customer and alerts staff + admins via staff submissions route', () => {
     const customer = buildEventRegistrationCustomerPayload({
       customerId: 'cust-1',
       eventId: 'ev-1',
@@ -262,10 +262,14 @@ describe('event registration payloads', () => {
       eventId: 'ev-1',
       eventTitle: 'Latte Art Night',
       contactName: 'Ana',
+      branchId: 'branch_marikina',
     });
     expect(customer.targets).toEqual([{ userId: 'cust-1' }]);
     expect(customer.body).toContain('Latte Art Night');
-    expect(staff.targets).toEqual([{ roles: ['admin'] }]);
-    expect(staff.url).toBe('/admin/events');
+    expect(staff.targets).toEqual([
+      { branchId: 'branch_marikina', roles: ['staff'] },
+      { roles: ['admin'] },
+    ]);
+    expect(staff.url).toBe('/staff/event-registrations');
   });
 });

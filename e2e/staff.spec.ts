@@ -5,6 +5,7 @@ const STAFF_ROUTES = [
   '/staff',
   '/staff/merch-orders',
   '/staff/booth-bookings',
+  '/staff/event-registrations',
   '/staff/orders',
   '/staff/settings',
 ];

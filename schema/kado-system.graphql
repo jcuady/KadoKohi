@@ -734,15 +734,16 @@ type Mutation {
 # GCash:    shop QR → proof upload → proof_submitted → staff paid → kitchen
 #
 # Site routes (see Query.siteRoutes descriptions in PROJECT_CONTEXT.md §4 + App.tsx):
-# Public: /, /menu, /about, /contact, /branches, /events, /order, /checkout/:orderId,
-#         /merch, /pastries, /blog, /blog/:slug, /careers, /book/coffee-cart,
-#         /book/matcha-bar, /legal/terms, /legal/privacy
+# Public: /, /menu, /about, /contact, /branches, /events, /order→/menu, /checkout/:orderId,
+#         /merch, /pastries, /features, /features/:slug (/blog → redirect), /careers,
+#         /book/coffee-cart, /book/matcha-bar, /legal/terms, /legal/privacy
 # Standalone: /order/qr/:code, /order/takeout, /help/install
 # Auth: /auth/*, /management-portal/*
 # Customer: /account, /account/orders, /account/booth, /account/vouchers, /account/profile
 # Barista: /barista, /barista/queue, /barista/pos, /barista/menu, /barista/stamps,
 #          /barista/settings, /barista/kiosk
-# Staff: /staff, /staff/merch-orders, /staff/booth-bookings, /staff/orders, /staff/settings
+# Staff: /staff, /staff/merch-orders, /staff/booth-bookings, /staff/event-registrations,
+#        /staff/orders, /staff/settings
 # Admin: /admin/* (dashboard, branches, pos, orders, menu, merch, loyalty, stamps,
 #         booth-*, events, tables, landing, blog, careers, pastries, users, audit,
 #         vouchers, settings)

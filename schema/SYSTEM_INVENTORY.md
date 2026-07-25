@@ -32,11 +32,11 @@ Wire enums (domain.ts): `OrderChannel` uses hyphens (`dine-in`); GraphQL SDL use
 | `/contact` | Contact (`/contacts` → redirect) |
 | `/branches` | Branches |
 | `/events` | Events |
-| `/order` | Order (online coffee) |
+| `/order` | → `/menu` (legacy redirect) |
 | `/checkout/:orderId` | Checkout (PayMongo return + GCash) |
 | `/merch` | Merch |
 | `/pastries` | Pastries / mix-match |
-| `/blog`, `/blog/:slug` | Blog |
+| `/features`, `/features/:slug` | Blog (canonical); `/blog` → redirect |
 | `/careers` | Careers |
 | `/book/coffee-cart`, `/book/matcha-bar` | Booth booking (`/book/booth` → coffee-cart) |
 | `/legal/terms`, `/legal/privacy` | Legal |
@@ -82,6 +82,7 @@ Wire enums (domain.ts): `OrderChannel` uses hyphens (`dine-in`); GraphQL SDL use
 | `/staff` | Merch orders (index) |
 | `/staff/merch-orders` | Merch orders |
 | `/staff/booth-bookings` | Booth bookings |
+| `/staff/event-registrations` | Event sign-up form submissions (read/review) |
 | `/staff/orders` | All orders |
 | `/staff/settings` | Account settings |
 
@@ -143,6 +144,8 @@ Dashboard, branches, pos, orders, menu, merch, loyalty, stamps, booth-bookings, 
 | `kk_claim_loyalty_reward` | account | authenticated |
 | `kk_submit_career_application` | careers | anon + authenticated |
 | `kk_notify_customers` | admin broadcast inbox | authenticated |
+
+Career applications: admin SELECT + UPDATE (`status`: new/reviewing/interview/hired/rejected).
 
 Internal helpers (not SPA-direct): `kk_compute_unit_price`, `kk_compute_promo_discount`, `kk_compute_loyalty_discount`, `kk_write_audit`, `kk_sync_merch_product_into_menu`, `kk_handle_new_auth_user` / `kk_handle_new_user`, `kk_orders_reject_guest_online_paymongo` (trigger).
 

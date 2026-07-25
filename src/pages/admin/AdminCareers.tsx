@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Copy,
   Eye,
@@ -35,6 +36,16 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 
 type AdminTab = 'jobs' | 'content' | 'form' | 'applications';
 type ApplicationRow = Awaited<ReturnType<typeof orderingRepo.fetchCareerApplications>>[number];
+type ApplicationStatus = ApplicationRow['status'];
+
+const CAREER_APP_STATUSES: ApplicationStatus[] = ['new', 'reviewing', 'interview', 'hired', 'rejected'];
+const CAREER_APP_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  new: 'New',
+  reviewing: 'Reviewing',
+  interview: 'Interview',
+  hired: 'Hired',
+  rejected: 'Rejected',
+};
 
 export default function AdminCareers() {
   const pageCopy = useCareersStore((s) => s.pageCopy);
@@ -56,7 +67,13 @@ export default function AdminCareers() {
   const branches = useBranchStore((s) => s.branches);
   const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
 
-  const [tab, setTab] = useState<AdminTab>('jobs');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab: AdminTab =
+    tabParam === 'jobs' || tabParam === 'content' || tabParam === 'form' || tabParam === 'applications'
+      ? tabParam
+      : 'jobs';
+  const [tab, setTab] = useState<AdminTab>(initialTab);
   const [savedMsg, setSavedMsg] = useState('');
   const [benefitsText, setBenefitsText] = useState(pageCopy.heroBenefits.join('\n'));
   const [showEditor, setShowEditor] = useState(false);
@@ -72,15 +89,41 @@ export default function AdminCareers() {
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const [appQuery, setAppQuery] = useState('');
   const [appListingFilter, setAppListingFilter] = useState('all');
+  const [appStatusFilter, setAppStatusFilter] = useState<ApplicationStatus | 'all'>('all');
+  const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     setBenefitsText(pageCopy.heroBenefits.join('\n'));
   }, [pageCopy.heroBenefits]);
 
   useEffect(() => {
+    if (
+      tabParam === 'jobs' ||
+      tabParam === 'content' ||
+      tabParam === 'form' ||
+      tabParam === 'applications'
+    ) {
+      setTab(tabParam);
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
     void hydrateFromRemote();
     void hydrateBranches();
   }, [hydrateFromRemote, hydrateBranches]);
+
+  const selectTab = (next: AdminTab) => {
+    setTab(next);
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next === 'jobs') p.delete('tab');
+        else p.set('tab', next);
+        return p;
+      },
+      { replace: true },
+    );
+  };
 
   const loadApplications = async () => {
     setAppsLoading(true);
@@ -141,13 +184,27 @@ export default function AdminCareers() {
     const q = appQuery.trim().toLowerCase();
     return applications.filter((app) => {
       if (appListingFilter !== 'all' && app.listingId !== appListingFilter) return false;
+      if (appStatusFilter !== 'all' && app.status !== appStatusFilter) return false;
       if (!q) return true;
       const hay = [app.contactName, app.contactEmail, app.contactPhone, app.listingTitle]
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [applications, appQuery, appListingFilter]);
+  }, [applications, appQuery, appListingFilter, appStatusFilter]);
+
+  const setApplicationStatus = async (id: string, status: ApplicationStatus) => {
+    setStatusSavingId(id);
+    setAppsError('');
+    try {
+      await orderingRepo.updateCareerApplicationStatus(id, status);
+      setApplications((rows) => rows.map((r) => (r.id === id ? { ...r, status } : r)));
+    } catch (err) {
+      setAppsError(err instanceof Error ? err.message : 'Could not update application status.');
+    } finally {
+      setStatusSavingId(null);
+    }
+  };
 
   const openBlankListing = () => {
     setEditingListingId(null);
@@ -247,7 +304,7 @@ export default function AdminCareers() {
       {saveError ? <p className="mb-4 text-sm font-medium text-red-600">{saveError}</p> : null}
       {savedMsg ? <p className="mb-4 text-sm font-medium text-emerald-700">{savedMsg}</p> : null}
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as AdminTab)} className="mb-6">
+      <Tabs value={tab} onValueChange={(v) => selectTab(v as AdminTab)} className="mb-6">
         <TabsList className="mb-6 flex w-full flex-wrap">
           <TabsTrigger value="jobs" className="flex-1 sm:flex-none">
             Jobs ({listings.length})
@@ -482,6 +539,18 @@ export default function AdminCareers() {
                 </option>
               ))}
             </select>
+            <select
+              value={appStatusFilter}
+              onChange={(e) => setAppStatusFilter(e.target.value as ApplicationStatus | 'all')}
+              className="rounded-xl border dash-input px-3 py-2 text-xs font-bold uppercase tracking-wider"
+            >
+              <option value="all">All statuses</option>
+              {CAREER_APP_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {CAREER_APP_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <p className="mb-3 text-xs dash-muted">{filteredApplications.length} application(s)</p>
@@ -505,7 +574,26 @@ export default function AdminCareers() {
                           {app.listingTitle} · {new Date(app.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      <p className="text-xs dash-muted">{app.contactEmail}</p>
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="text-xs dash-muted">{app.contactEmail}</p>
+                        <select
+                          value={app.status}
+                          disabled={statusSavingId === app.id}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            void setApplicationStatus(app.id, e.target.value as ApplicationStatus);
+                          }}
+                          className="rounded-lg border dash-input px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
+                          aria-label={`Status for ${app.contactName}`}
+                        >
+                          {CAREER_APP_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {CAREER_APP_STATUS_LABELS[s]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </button>
                   {expandedAppId === app.id ? (

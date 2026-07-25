@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   Settings,
+  Monitor,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
@@ -26,6 +27,7 @@ const nav = [
   { to: '/barista/pos', label: 'POS', icon: ShoppingCart },
   { to: '/barista/menu', label: 'Menu', icon: Coffee },
   { to: '/barista/stamps', label: 'Stamps', icon: Stamp },
+  { to: '/barista/kiosk', label: 'Kiosk', icon: Monitor },
   { to: '/barista/settings', label: 'Settings', icon: Settings },
 ];
 

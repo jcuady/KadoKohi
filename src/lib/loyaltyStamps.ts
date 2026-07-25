@@ -31,19 +31,24 @@ export function applyLoyaltyStampsForCompletedOrder(order: Order): Order {
   return { ...order, loyaltyStampsAwarded: delta };
 }
 
-/** Server-side idempotent stamp award (call after order.status = completed is persisted). */
-export async function persistLoyaltyStampsForCompletedOrder(order: Pick<Order, 'id' | 'customerId'>) {
-  if (!order.customerId) return;
+/**
+ * Server-side idempotent stamp award (call after order.status = completed is persisted).
+ * @returns error message for staff UI when award fails; null on success / no-op.
+ */
+export async function persistLoyaltyStampsForCompletedOrder(
+  order: Pick<Order, 'id' | 'customerId'>,
+): Promise<string | null> {
+  if (!order.customerId) return null;
   try {
     const result = await orderingRepo.awardLoyaltyStamps(order.id);
-    if (!result || result.already || result.awarded <= 0) return;
+    if (!result || result.already || result.awarded <= 0) return null;
 
     const customerId = order.customerId;
     let localCustomer = useUserStore.getState().getById(customerId);
     if (!localCustomer) {
       localCustomer = await orderingRepo.fetchUserById(customerId);
     }
-    if (!localCustomer) return;
+    if (!localCustomer) return null;
 
     const nextStamps = (localCustomer.loyaltyStamps ?? 0) + result.awarded;
     useUserStore.setState({
@@ -55,7 +60,12 @@ export async function persistLoyaltyStampsForCompletedOrder(order: Pick<Order, '
     if (session?.id === customerId && session.role === 'customer') {
       useAuthStore.setState({ user: { ...session, loyaltyStamps: nextStamps } });
     }
-  } catch {
-    // Completion already persisted; staff can retry by re-calling the RPC.
+    return null;
+  } catch (err) {
+    // Completion already persisted; surface so staff can retry via Stamps / re-save completed.
+    const detail = err instanceof Error && err.message.trim() ? err.message.trim() : null;
+    return detail
+      ? `Order completed, but loyalty stamps failed: ${detail}`
+      : 'Order completed, but loyalty stamps failed. Open Stamps or re-save completed to retry.';
   }
 }

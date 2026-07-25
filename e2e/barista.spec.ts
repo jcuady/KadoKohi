@@ -12,6 +12,7 @@ const BARISTA_ROUTES = [
   '/barista/pos',
   '/barista/menu',
   '/barista/stamps',
+  '/barista/kiosk',
   '/barista/settings',
 ];
 
@@ -37,8 +38,8 @@ test('barista can open account settings and change-password form', async ({ page
   const errors = trackPageErrors(page);
   await internalLogin(page, 'barista');
   await page.goto('/barista/settings');
-  await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
-  await expect(page.locator('#internal-new-password')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#dashboard-new-password')).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole('button', { name: /change password/i })).toBeVisible();
   expect(errors()).toEqual([]);
 });
