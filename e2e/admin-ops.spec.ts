@@ -44,15 +44,17 @@ test.describe('Admin branch and user controls', () => {
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/branches');
+    await page.getByRole('button', { name: /^add branch$/i }).click();
 
-    const form = page.locator('form').filter({ has: page.getByRole('heading', { name: /add branch/i }) });
-    await form.locator('input').first().fill(slug);
-    await form.locator('input').nth(1).fill('Duplicate Slug Test Branch');
-    await form.getByRole('button', { name: /^create$/i }).click();
+    const form = page.locator('form').filter({ has: page.getByRole('heading', { name: /add a location/i }) });
+    await expect(form).toBeVisible({ timeout: 10000 });
+    await form.getByPlaceholder(/kado kohi/i).fill('Duplicate Slug Test Branch');
+    await form.locator('input.font-mono').fill(slug);
+    await form.getByRole('button', { name: /create branch/i }).click();
 
-    await expect(
-      page.getByText(/slug is already used by another branch/i),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/slug is already used by another branch/i)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('new user form requires branch for barista', async ({ page }) => {
@@ -68,7 +70,7 @@ test.describe('Admin branch and user controls', () => {
     await modal.locator('select').first().selectOption('barista');
     await modal.locator('select').nth(1).selectOption('');
 
-    await modal.getByRole('button', { name: /^create$/i }).click();
+    await modal.getByRole('button', { name: /create user/i }).click();
     await expect(modal.getByText(/branch is required for barista \/ staff/i)).toBeVisible();
   });
 
@@ -84,7 +86,7 @@ test.describe('Admin branch and user controls', () => {
     await modal.locator('input[type="password"]').fill('short');
     await modal.locator('select').first().selectOption('admin');
 
-    await modal.getByRole('button', { name: /^create$/i }).click();
+    await modal.getByRole('button', { name: /create user/i }).click();
     await expect(modal.getByText(/password must be at least 8 characters/i)).toBeVisible();
   });
 });

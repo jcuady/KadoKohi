@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { customerLogin, trackPageErrors, expectNoHorizontalOverflow } from './helpers';
+import {
+  CREDS,
+  customerLogin,
+  trackPageErrors,
+  expectNoHorizontalOverflow,
+} from './helpers';
 
 /**
  * Authenticated customer flow. Read-only: navigates the account area and
@@ -29,9 +34,9 @@ test('profile password change validates mismatch client-side', async ({ page }) 
   await page.goto('/account/profile');
   await expect(page.getByRole('heading', { name: /^profile$/i })).toBeVisible({ timeout: 20000 });
 
-  const pwInputs = page.locator('input[type="password"]');
-  await pwInputs.nth(0).fill('newpassword123');
-  await pwInputs.nth(1).fill('newpassword456');
+  await page.locator('#customer-current-password').fill(CREDS.customer.password);
+  await page.locator('#customer-new-password').fill('newpassword123');
+  await page.locator('#customer-confirm-password').fill('newpassword456');
   await page.getByRole('button', { name: /change password/i }).click();
   await expect(page.getByText(/passwords do not match/i)).toBeVisible();
 });

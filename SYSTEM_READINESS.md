@@ -1,8 +1,9 @@
 # Kado Kohi — system readiness audit
 
-**Audit date:** 2026-07-24 (updated **2026-07-25** — CMS parity + remaining backlog)  
+**Audit date:** 2026-07-24 (updated **2026-07-27** — full flow checklist + payment P0s)  
 **Auditor mode:** Principal fullstack (roles · buttons · transactions · CMS · Postgres)  
 **Production:** https://www.kadokohi.com · Supabase `idwtlujcdfnnndxmlaco`  
+**Full checklist:** [`FLOW_VERIFICATION_CHECKLIST.md`](./FLOW_VERIFICATION_CHECKLIST.md)  
 **Companion docs:** [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) · [`schema/SYSTEM_INVENTORY.md`](./schema/SYSTEM_INVENTORY.md) · [`schema/kado-system.graphql`](./schema/kado-system.graphql) (documentation SDL only — **not** a live GraphQL API)
 
 ---

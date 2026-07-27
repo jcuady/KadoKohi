@@ -156,8 +156,16 @@ Deno.serve(async (req) => {
     return json({ ok: true, skipped: "not_paymongo" });
   }
 
+  if (order.status === "cancelled") {
+    console.warn("paymongo webhook ignored cancelled order", { orderId: order.id, sessionId, paymentId });
+    return json({ ok: true, skipped: "cancelled", orderId: order.id, paymentId });
+  }
+
   const result = await markPaymongoOrderPaid(admin, order, sessionId, paymentId);
   if (!result.ok) return json({ ok: false, message: "Failed to mark paid" }, 500);
+  if (result.skipped === "cancelled") {
+    return json({ ok: true, skipped: "cancelled", orderId: order.id, paymentId });
+  }
 
   if (!result.alreadyPaid) {
     const nextStatus = order.status === "pending" ? "accepted" : order.status;

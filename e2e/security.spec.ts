@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { placeOrderRpc, supabaseAnonConfig, supabaseGet } from './helpers';
+import {
+  customerAccessToken,
+  placeOrderRpc,
+  supabaseAnonConfig,
+  supabaseGet,
+  uniqueTestId,
+} from './helpers';
 
 test.describe('Supabase RLS security', () => {
   test('anon cannot enumerate guest orders via REST', async ({ request }) => {
@@ -99,5 +105,130 @@ test.describe('Supabase RLS security', () => {
     expect((body as Record<string, unknown>).payment_method).toBe('gcash-qr');
     expect((body as Record<string, unknown>).payment_status).toBe('unpaid');
     expect((body as Record<string, unknown>).status).toBe('pending');
+  });
+
+  test('customer cannot forge paid on online order via REST update', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const token = await customerAccessToken(request);
+    test.skip(!token, 'Customer credentials unavailable');
+
+    const branches = await supabaseGet<{ id: string }[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const products = await supabaseGet<{ id: string }[]>(
+      request,
+      'kk_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = products?.[0];
+    test.skip(!branch || !product, 'Need active branch and product seed data');
+
+    const orderId = uniqueTestId('e2e-forge-online');
+    const placed = await placeOrderRpc(
+      request,
+      {
+        id: orderId,
+        channel: 'online',
+        branch_id: branch.id,
+        payment_method: 'gcash-qr',
+        payment_status: 'unpaid',
+        status: 'pending',
+        items: [{ id: `${orderId}-line`, product_id: product.id, qty: 1, item_type: 'coffee' }],
+      },
+      token,
+    );
+    expect(placed.status).toBe(200);
+    expect((placed.body as Record<string, unknown>).payment_status).toBe('unpaid');
+
+    const forge = await request.patch(`${cfg!.url}/rest/v1/kk_orders?id=eq.${orderId}`, {
+      headers: {
+        apikey: cfg!.anonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      data: {
+        payment_method: 'pay-at-store',
+        payment_status: 'paid',
+      },
+    });
+
+    expect(forge.ok(), `forge must fail, got ${forge.status()} ${await forge.text()}`).toBeFalsy();
+
+    const tracked = await request.post(`${cfg!.url}/rest/v1/rpc/kk_track_order`, {
+      headers: {
+        apikey: cfg!.anonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: { order_id: orderId },
+    });
+    expect(tracked.status()).toBe(200);
+    const rows = (await tracked.json()) as Array<{ payment_status: string; payment_method: string }>;
+    expect(rows[0]?.payment_status).toBe('unpaid');
+    expect(rows[0]?.payment_method).toBe('gcash-qr');
+  });
+
+  test('merch GCash orders accept guest payment proof RPC', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured for API tests');
+
+    const token = await customerAccessToken(request);
+    test.skip(!token, 'Customer credentials unavailable');
+
+    const branches = await supabaseGet<{ id: string }[]>(
+      request,
+      'kk_branches?select=id&status=eq.active&limit=1',
+    );
+    const merch = await supabaseGet<{ id: string }[]>(
+      request,
+      'kk_merch_products?select=id&visible=eq.true&limit=1',
+    );
+    const branch = branches?.[0];
+    const product = merch?.[0];
+    test.skip(!branch || !product, 'Need active branch and merch product');
+
+    const orderId = uniqueTestId('e2e-merch-proof');
+    const placed = await placeOrderRpc(
+      request,
+      {
+        id: orderId,
+        channel: 'merch',
+        branch_id: branch.id,
+        payment_method: 'gcash-qr',
+        payment_status: 'unpaid',
+        status: 'pending',
+        items: [
+          {
+            id: `${orderId}-line`,
+            product_id: product.id,
+            qty: 1,
+            item_type: 'merch',
+            merch_variants: [{ groupName: 'Size', optionLabel: 'M', priceDelta: 0 }],
+          },
+        ],
+      },
+      token,
+    );
+    expect(placed.status).toBe(200);
+    expect((placed.body as Record<string, unknown>).channel).toBe('merch');
+
+    const tinyPng =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const proof = await request.post(`${cfg!.url}/rest/v1/rpc/kk_submit_guest_payment_proof`, {
+      headers: {
+        apikey: cfg!.anonKey,
+        Authorization: `Bearer ${cfg!.anonKey}`,
+        'Content-Type': 'application/json',
+      },
+      data: { p_order_id: orderId, p_proof_data_url: tinyPng },
+    });
+
+    expect(proof.status(), await proof.text()).toBe(200);
+    const body = (await proof.json()) as { payment_status?: string };
+    expect(body.payment_status).toBe('proof_submitted');
   });
 });

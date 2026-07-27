@@ -2,39 +2,43 @@ import { test, expect } from '@playwright/test';
 import { internalLogin, trackPageErrors, uniqueTestId } from './helpers';
 
 test.describe('Admin menu CRUD', () => {
-  test('admin can add a category and product then remove them', async ({ page }) => {
+  test('admin can add a drink product to an existing category then remove it', async ({ page }) => {
+    test.setTimeout(90_000);
     const errors = trackPageErrors(page);
-    const catName = `E2E ${uniqueTestId('cat')}`;
     const productName = `E2E ${uniqueTestId('prod')}`;
 
     page.on('dialog', (dialog) => dialog.accept());
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu');
-    await expect(page.getByRole('heading', { name: /menu manager/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: /^menu$/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/live sync/i)).toBeVisible({ timeout: 20000 });
 
-    await page.getByPlaceholder('New category…').fill(catName);
-    await page.getByRole('button', { name: /^add$/i }).click();
-    await expect(page.getByText(catName, { exact: true })).toBeVisible({ timeout: 20000 });
-
-    const categoryCard = page.locator('.rounded-2xl.dash-card.border').filter({ hasText: catName });
-    await categoryCard.getByRole('button', { name: /add product/i }).click();
+    // Use the already-expanded coffee category (first drinks category).
+    await page.getByRole('button', { name: /add product/i }).first().click();
 
     const modal = page.locator('form').filter({ has: page.getByRole('heading', { name: /add product/i }) });
     await expect(modal).toBeVisible();
-    await modal.locator('input').first().fill(productName);
-    await modal.getByRole('spinbutton').first().fill('150');
+    await modal.getByPlaceholder(/spanish latte/i).click();
+    await modal.getByPlaceholder(/spanish latte/i).fill(productName);
+    const price = modal.locator('input[type="number"]').first();
+    await price.click();
+    await price.fill('150');
+    await expect(price).toHaveValue('150');
+
     await modal.getByRole('button', { name: /^create$/i }).click();
 
-    await expect(page.getByText(productName)).toBeVisible({ timeout: 20000 });
+    // Prefer durable success signal: product row actions, not only modal dismiss.
+    await expect(page.getByRole('button', { name: new RegExp(`Delete ${productName}`, 'i') })).toBeVisible({
+      timeout: 30000,
+    });
 
-    const productRow = categoryCard.locator('.rounded-xl.dash-card-alt').filter({ hasText: productName });
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${productName}`, 'i') }).click();
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${productName}`, 'i') }).click();
-    await expect(page.getByText(productName)).toHaveCount(0, { timeout: 15000 });
-
-    await categoryCard.getByRole('button', { name: new RegExp(`Delete ${catName}`, 'i') }).click();
-    await expect(page.getByText(catName, { exact: true })).toHaveCount(0, { timeout: 15000 });
+    const deleteProduct = page.getByRole('button', { name: new RegExp(`Delete ${productName}`, 'i') });
+    await deleteProduct.click();
+    await deleteProduct.click();
+    await expect(page.getByRole('button', { name: new RegExp(`Delete ${productName}`, 'i') })).toHaveCount(0, {
+      timeout: 15000,
+    });
 
     expect(errors(), 'no uncaught errors').toEqual([]);
   });

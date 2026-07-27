@@ -322,7 +322,7 @@ export default function QrStickyCart({
               <button
                 type="button"
                 onClick={onPlaceOrder}
-                disabled={placeDisabled}
+                disabled={placeDisabled || nameMissing}
                 aria-label={placeOrderAriaLabel}
                 className="min-h-[52px] w-full touch-manipulation rounded-2xl bg-kado-red text-xs font-bold uppercase tracking-wider text-kado-cream transition-colors hover:bg-kado-dark disabled:opacity-40"
               >

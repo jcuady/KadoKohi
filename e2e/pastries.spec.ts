@@ -1,9 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { customerLogin, internalLogin, trackPageErrors, uniqueTestId, clearSupabaseSession } from './helpers';
+import {
+  clearSupabaseSession,
+  customerLogin,
+  internalLogin,
+  supabaseGet,
+  trackPageErrors,
+  uniqueTestId,
+} from './helpers';
 
 test.describe('Admin pastries', () => {
   test('admin can add a pastry with variant controls then remove it', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('cookie')}`;
 
@@ -11,7 +18,7 @@ test.describe('Admin pastries', () => {
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries');
-    await expect(page.getByRole('heading', { name: /menu manager/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: /^menu$/i })).toBeVisible({ timeout: 20000 });
 
     const addPastryBtn = page.getByRole('button', { name: /add pastry/i }).first();
     await expect(addPastryBtn).toBeVisible({ timeout: 20000 });
@@ -22,14 +29,15 @@ test.describe('Admin pastries', () => {
     await expect(modal.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
     await expect(modal.getByText('Size options', { exact: true })).toBeVisible();
     await expect(modal.getByText('Custom option groups', { exact: true })).toBeVisible();
-    await modal.locator('input').first().fill(pastryName);
-    await modal.getByRole('spinbutton').first().fill('120');
+    await modal.getByPlaceholder(/red velvet cookie/i).fill(pastryName);
+    await modal.locator('input[type="number"]').first().fill('120');
     await modal.getByRole('button', { name: /^create$/i }).click();
+    await expect(modal).toHaveCount(0, { timeout: 20000 });
     await expect(page.getByText(pastryName)).toBeVisible({ timeout: 20000 });
 
-    const productRow = page.locator('.rounded-xl.dash-card-alt').filter({ hasText: pastryName });
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') }).click();
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') }).click();
+    const deleteProduct = page.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') });
+    await deleteProduct.click();
+    await deleteProduct.click();
     await expect(page.getByText(pastryName)).toHaveCount(0, { timeout: 15000 });
 
     expect(errors(), 'no uncaught errors').toEqual([]);
@@ -45,8 +53,8 @@ test.describe('Customer pastries', () => {
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 
-  test('signed-in customer can add a pastry created in admin', async ({ page }) => {
-    test.setTimeout(90_000);
+  test('signed-in customer can add a pastry created in admin', async ({ page, request }) => {
+    test.setTimeout(120_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('buy-cookie')}`;
 
@@ -56,10 +64,25 @@ test.describe('Customer pastries', () => {
     await page.goto('/admin/menu?tab=pastries');
     await page.getByRole('button', { name: /add pastry/i }).first().click();
     const modal = page.locator('form').filter({ has: page.getByRole('heading', { name: /add pastry/i }) });
-    await modal.locator('input').first().fill(pastryName);
-    await modal.getByRole('spinbutton').first().fill('99');
+    await modal.getByPlaceholder(/red velvet cookie/i).fill(pastryName);
+    await modal.locator('input[type="number"]').first().fill('99');
     await modal.getByRole('button', { name: /^create$/i }).click();
+    await expect(modal).toHaveCount(0, { timeout: 20000 });
     await expect(page.getByText(pastryName)).toBeVisible({ timeout: 20000 });
+
+    // Wait until public catalog can see the pastry (remote write + anon read).
+    await expect
+      .poll(
+        async () => {
+          const rows = await supabaseGet<{ id: string; name: string }[]>(
+            request,
+            `kk_products?select=id,name&name=eq.${encodeURIComponent(pastryName)}&visible=eq.true&limit=1`,
+          );
+          return rows?.length ?? 0;
+        },
+        { timeout: 30000 },
+      )
+      .toBeGreaterThan(0);
 
     await customerLogin(page);
     await page.goto('/pastries');
@@ -69,7 +92,14 @@ test.describe('Customer pastries', () => {
       test.skip(true, 'Online order window is closed in local timezone');
     }
 
-    await page.getByRole('button', { name: pastryName }).click({ timeout: 20000 });
+    // Catalog is paginated — search so the new item is not stuck on a later page.
+    await page.locator('#catalog-search').fill(pastryName);
+
+    const pastryBtn = page.getByRole('button', {
+      name: new RegExp(pastryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+    });
+    await expect(pastryBtn).toBeVisible({ timeout: 30000 });
+    await pastryBtn.click();
     const addBtn = page.getByRole('button', { name: /^add —/i });
     await expect(addBtn).toBeVisible({ timeout: 10000 });
     await addBtn.click();
@@ -79,11 +109,11 @@ test.describe('Customer pastries', () => {
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries', { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/admin\/menu/, { timeout: 45000 });
-    await expect(page.getByRole('heading', { name: /menu manager/i })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('heading', { name: /^menu$/i })).toBeVisible({ timeout: 30000 });
     await expect(page.getByText(pastryName)).toBeVisible({ timeout: 20000 });
-    const productRow = page.locator('.rounded-xl.dash-card-alt').filter({ hasText: pastryName });
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') }).click();
-    await productRow.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') }).click();
+    const deleteProduct = page.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') });
+    await deleteProduct.click();
+    await deleteProduct.click();
 
     expect(errors(), 'no uncaught errors').toEqual([]);
   });

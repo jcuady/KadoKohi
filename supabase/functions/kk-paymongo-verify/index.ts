@@ -119,6 +119,10 @@ Deno.serve(async (req) => {
     return json({ ok: true, paid: true, status: order.status, alreadyPaid: true });
   }
 
+  if (order.status === "cancelled") {
+    return json({ ok: true, paid: false, status: "cancelled", skipped: "cancelled" });
+  }
+
   const sessionId = order.paymongo_checkout_session_id as string | null;
   if (!sessionId) {
     return json({ ok: true, paid: false, message: "No PayMongo session on this order yet." });
@@ -195,6 +199,9 @@ Deno.serve(async (req) => {
     }
     const result = await markPaymongoOrderPaid(admin, order, sessionId, intentPaid.paymentId);
     if (!result.ok) return json({ ok: false, message: "Failed to update order payment." }, 500);
+    if (result.skipped === "cancelled") {
+      return json({ ok: true, paid: false, status: "cancelled", skipped: "cancelled" });
+    }
     const nextStatus = order.status === "pending" ? "accepted" : order.status;
     if (!result.alreadyPaid) {
       await notifyCustomerPaymongoPaid({
@@ -216,6 +223,9 @@ Deno.serve(async (req) => {
 
   const result = await markPaymongoOrderPaid(admin, order, sessionId, paidHit.paymentId);
   if (!result.ok) return json({ ok: false, message: "Failed to update order payment." }, 500);
+  if (result.skipped === "cancelled") {
+    return json({ ok: true, paid: false, status: "cancelled", skipped: "cancelled" });
+  }
 
   const nextStatus = order.status === "pending" ? "accepted" : order.status;
   if (!result.alreadyPaid) {

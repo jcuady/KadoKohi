@@ -46,7 +46,9 @@ test.describe('Customer login', () => {
   test('wrong credentials shows invalid-credentials error', async ({ page }) => {
     await gotoAuth(page, '/auth/login');
     await fillCustomerSignIn(page, 'nobody-qa@example.com', 'definitely-wrong-pass');
-    await expect(page.getByText(/invalid credentials/i)).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByText(/incorrect password|no account found|could not sign in/i).first(),
+    ).toBeVisible({ timeout: 20000 });
   });
 
   test('internal account is rejected on customer login', async ({ page }) => {
@@ -124,7 +126,8 @@ test.describe('Customer signup', () => {
     await gotoAuth(page, '/auth/signup');
     await fillSignupForm(page, { email: CREDS.customer.email });
     await page.getByRole('button', { name: /create account/i }).click();
-    await expect(page.getByText(/already registered/i)).toBeVisible({ timeout: 25000 });
+    await expect(page.locator('#signup-email-error')).toBeVisible({ timeout: 25000 });
+    await expect(page.locator('#signup-email-error')).toContainText(/already registered/i);
     await expect(page).toHaveURL(/\/auth\/signup/);
   });
 });
@@ -141,7 +144,7 @@ test.describe('Forgot password', () => {
     await gotoAuth(page, '/auth/forgot-password');
     await page.locator('#forgot-email').fill(CREDS.customer.email);
     await page.getByRole('button', { name: /send reset link/i }).click();
-    await expect(page.getByText(/if an account exists/i)).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/we sent a password reset link/i)).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/next steps/i)).toBeVisible();
   });
 
@@ -159,26 +162,14 @@ test.describe('Reset password', () => {
     await expect(page.getByRole('link', { name: /request a new one/i })).toBeVisible();
   });
 
-  test('password fields advertise minimum length when form is available', async ({ page }) => {
+  test('ordinary session cannot open recovery reset form', async ({ page }) => {
+    // Reset form is recovery-callback only — logged-in visits must not get a free password rewrite.
     await gotoAuth(page, '/auth/login');
     await fillCustomerSignIn(page, CREDS.customer.email, CREDS.customer.password);
     await page.waitForURL(/\/account/, { timeout: 45000 });
     await gotoAuth(page, '/auth/reset-password');
-    await expect(page.locator('#reset-password')).toHaveAttribute('minlength', '8', { timeout: 10000 });
-    await expect(page.locator('#reset-confirm')).toHaveAttribute('minlength', '8');
-  });
-
-  test('password mismatch shows error when recovery form is available', async ({ page }) => {
-    await gotoAuth(page, '/auth/login');
-    await fillCustomerSignIn(page, CREDS.customer.email, CREDS.customer.password);
-    await page.waitForURL(/\/account/, { timeout: 45000 });
-    await gotoAuth(page, '/auth/reset-password');
-    await page.locator('#reset-password').waitFor({ state: 'visible', timeout: 10000 });
-    await disableNativeFormValidation(page);
-    await page.locator('#reset-password').fill('newpassword123');
-    await page.locator('#reset-confirm').fill('newpassword456');
-    await page.getByRole('button', { name: /update password/i }).click();
-    await expect(page.getByText(/passwords do not match/i)).toBeVisible();
+    await expect(page.getByText(/invalid or expired/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#reset-password')).toHaveCount(0);
   });
 });
 
@@ -240,7 +231,9 @@ test.describe('Internal portal', () => {
   test('wrong password shows credential error', async ({ page }) => {
     await gotoAuth(page, '/management-portal');
     await fillInternalSignIn(page, CREDS.admin.email, 'definitely-wrong-pass');
-    await expect(page.getByText(/could not sign in|invalid email or password/i)).toBeVisible({
+    await expect(
+      page.getByText(/incorrect password|could not sign in|invalid email or password/i).first(),
+    ).toBeVisible({
       timeout: 20000,
     });
     await expect(page).toHaveURL(/management-portal/);
