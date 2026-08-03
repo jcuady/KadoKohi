@@ -6,6 +6,7 @@ import type { CmsText } from '../../lib/cmsTypography';
 import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
 import CmsReorderList from './CmsReorderList';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 type MediaForm = {
   title: string;
@@ -39,6 +40,7 @@ export default function BoothPageContentForm({
   removeMedia,
   reorderMedia,
 }: BoothPageContentFormProps) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [mediaForm, setMediaForm] = useState<MediaForm>(EMPTY_MEDIA_FORM);
@@ -159,7 +161,24 @@ export default function BoothPageContentForm({
                 <button type="button" onClick={() => openEditMedia(item.id)} className="p-1.5 dash-muted hover:text-kado-red">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button type="button" onClick={() => removeMedia(item.id)} className="p-1.5 text-red-400 hover:text-red-600">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void (async () => {
+                      if (
+                        !(await confirm({
+                          title: `Delete “${item.title}”?`,
+                          description: 'This removes the media from the booth showcase gallery.',
+                          confirmLabel: 'Delete',
+                        }))
+                      ) {
+                        return;
+                      }
+                      removeMedia(item.id);
+                    })();
+                  }}
+                  className="p-1.5 text-red-400 hover:text-red-600"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -224,6 +243,7 @@ export default function BoothPageContentForm({
           </form>
         </div>
       )}
+      {confirmDialog}
     </>
   );
 }

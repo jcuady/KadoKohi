@@ -9,6 +9,7 @@ import { formatVoucherScopeLabel } from '../../lib/branchScope';
 import type { PromoCode, PromoCodeType } from '../../types/domain';
 import { newId } from '../../lib/id';
 import { formatPhp } from '../../lib/money';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 const TYPE_LABELS: Record<PromoCodeType, string> = {
   percent: '% Discount',
@@ -68,6 +69,7 @@ const EMPTY_FORM = {
 type FormState = typeof EMPTY_FORM;
 
 export default function AdminVouchers() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const branches = useBranchStore((s) => s.branches);
   const branchName = (id: string) => branches.find((b) => b.id === id)?.name;
   const { codes, loading, hydrateError, fetchAll, createCode, updateCode, toggleCode, removeCode } = usePromoStore();
@@ -77,7 +79,6 @@ export default function AdminVouchers() {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchAll();
@@ -168,9 +169,17 @@ export default function AdminVouchers() {
   };
 
   const handleDelete = async (id: string) => {
-    if (deleteConfirm !== id) { setDeleteConfirm(id); return; }
+    const code = codes.find((c) => c.id === id);
+    if (
+      !(await confirm({
+        title: code ? `Delete “${code.code}”?` : 'Delete voucher?',
+        description: 'This promo code will be removed permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     await removeCode(id);
-    setDeleteConfirm(null);
   };
 
   const f = (k: keyof FormState, v: unknown) => setForm((prev) => ({ ...prev, [k]: v }));
@@ -313,8 +322,8 @@ export default function AdminVouchers() {
                     </button>
                     <button
                       onClick={() => void handleDelete(code.id)}
-                      className={`rounded-lg p-1.5 transition-colors ${deleteConfirm === code.id ? 'bg-red-100 text-red-600' : 'hover:bg-red-500/10'}`}
-                      title={deleteConfirm === code.id ? 'Click again to confirm delete' : 'Delete'}
+                      className="rounded-lg p-1.5 hover:bg-red-500/10 transition-colors"
+                      title="Delete"
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -529,6 +538,7 @@ export default function AdminVouchers() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

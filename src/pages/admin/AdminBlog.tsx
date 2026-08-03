@@ -5,6 +5,7 @@ import { blogRepo } from '../../lib/supabase/repositories/blog';
 import { newId } from '../../lib/id';
 import { slugify } from '../../lib/slugify';
 import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Loader2 } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type BlogFormData = {
   title: string;
@@ -62,6 +63,7 @@ function isInlineDataUrl(url: string): boolean {
 }
 
 export default function AdminBlog() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const posts = useBlogStore((s) => s.posts);
   const loading = useBlogStore((s) => s.loading);
   const hydrated = useBlogStore((s) => s.hydrated);
@@ -234,7 +236,15 @@ export default function AdminBlog() {
   };
 
   const handleDelete = async (post: BlogPost) => {
-    if (!window.confirm(`Delete “${post.title}”? This cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: `Delete “${post.title}”?`,
+        description: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     setSaveError('');
     try {
       await removePost(post.id);
@@ -505,6 +515,7 @@ export default function AdminBlog() {
           ))
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

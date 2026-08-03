@@ -143,8 +143,8 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               loading="eager"
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
-              width={1920}
-              height={1080}
+              width={1600}
+              height={900}
               sizes="100vw"
               onError={(e) => {
                 const el = e.currentTarget;
@@ -187,7 +187,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               value={c?.mainHeadline ?? 'Kado Coffee — Matcha & Specialty Coffee in Marikina'}
               as="h1"
               className="kado-h1 kado-h1-hero drop-shadow-lg"
-              defaultColorClass="text-kado-offwhite"
+              defaultColorClass="text-kado-cream"
               {...textProps(
                 'hero.chrome.mainHeadline',
                 'Main headline',
@@ -201,7 +201,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               value={current.title}
               as="h2"
               className="kado-h2 mt-2 drop-shadow-md sm:mt-3"
-              defaultColorClass="text-kado-cream/95"
+              defaultColorClass="text-kado-cream"
               {...textProps(`hero.slide.${slideIndex}.title`, 'Slide title', current.title, (v) =>
                 updateHeroSlide(slideIndex, { title: v }),
               )}
@@ -211,7 +211,7 @@ export default function HomeHeroSlider({ slides, chrome, cmsEditMode }: Props) {
               as="p"
               className="mt-2 max-w-xl text-sm leading-snug drop-shadow-md sm:mt-3 sm:text-base sm:leading-relaxed md:text-base"
               defaultSizeClass="kado-body"
-              defaultColorClass="text-kado-cream/90"
+              defaultColorClass="text-kado-cream"
               {...textProps(`hero.slide.${slideIndex}.subtitle`, 'Slide subtitle', current.subtitle, (v) =>
                 updateHeroSlide(slideIndex, { subtitle: v }),
               )}

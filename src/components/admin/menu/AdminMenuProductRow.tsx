@@ -14,7 +14,6 @@ type Props = {
   category: MenuCategory;
   pastriesCategoryId?: string;
   pIndex: number;
-  deleteConfirmProductId: string | null;
   deletingProductId: string | null;
   onDragStart: (e: DragEvent, pIndex: number) => void;
   onDragEnd: () => void;
@@ -29,7 +28,6 @@ export default function AdminMenuProductRow({
   category,
   pastriesCategoryId,
   pIndex,
-  deleteConfirmProductId,
   deletingProductId,
   onDragStart,
   onDragEnd,
@@ -119,12 +117,8 @@ export default function AdminMenuProductRow({
           type="button"
           onClick={onDelete}
           disabled={deletingProductId === product.id}
-          className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${
-            deleteConfirmProductId === product.id
-              ? 'bg-red-50 text-red-600'
-              : 'text-red-400 hover:bg-red-50 hover:text-red-600'
-          }`}
-          title={deleteConfirmProductId === product.id ? 'Click again to confirm' : 'Delete'}
+          className="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+          title="Delete"
           aria-label={`Delete ${product.name}`}
         >
           <Trash2 className="h-4 w-4" />

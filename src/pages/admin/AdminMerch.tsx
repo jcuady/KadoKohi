@@ -4,6 +4,7 @@ import { useMerchStore } from '../../store/merchStore';
 import { formatPhp } from '../../lib/money';
 import { newId } from '../../lib/id';
 import { Plus, Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type ProductFormData = {
   name: string;
@@ -30,6 +31,7 @@ const emptyProductForm: ProductFormData = {
 };
 
 export default function AdminMerch() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const categories = useMerchStore((s) => s.categories);
   const products = useMerchStore((s) => s.products);
   const remoteLoaded = useMerchStore((s) => s.remoteLoaded);
@@ -52,6 +54,32 @@ export default function AdminMerch() {
   const [drag, setDrag] = useState<DragState>(null);
 
   const onDragEnd = () => setDrag(null);
+
+  const handleDeleteCategory = async (cat: MerchCategory) => {
+    if (
+      !(await confirm({
+        title: `Delete “${cat.name}”?`,
+        description: 'This removes the category and all its products permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
+    removeCategory(cat.id);
+  };
+
+  const handleDeleteProduct = async (product: MerchProduct) => {
+    if (
+      !(await confirm({
+        title: `Delete “${product.name}”?`,
+        description: 'This removes the product from the merch catalog permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
+    removeProduct(product.id);
+  };
 
   const [expandedCat, setExpandedCat] = useState<string | null>(sortedCategories[0]?.id ?? null);
   const [newCatName, setNewCatName] = useState('');
@@ -126,10 +154,23 @@ export default function AdminMerch() {
   };
 
   const removeVariantGroup = (idx: number) => {
-    setForm((f) => ({
-      ...f,
-      variants: f.variants.filter((_, i) => i !== idx),
-    }));
+    void (async () => {
+      const group = form.variants[idx];
+      const label = group?.name?.trim() || `group ${idx + 1}`;
+      if (
+        !(await confirm({
+          title: `Remove variant group “${label}”?`,
+          description: 'All options in this group are removed from the draft until you save.',
+          confirmLabel: 'Remove',
+        }))
+      ) {
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        variants: f.variants.filter((_, i) => i !== idx),
+      }));
+    })();
   };
 
   const addVariantOption = (groupIdx: number) => {
@@ -155,14 +196,27 @@ export default function AdminMerch() {
   };
 
   const removeVariantOption = (groupIdx: number, optIdx: number) => {
-    setForm((f) => ({
-      ...f,
-      variants: f.variants.map((g, gi) =>
-        gi === groupIdx
-          ? { ...g, options: g.options.filter((_, oi) => oi !== optIdx) }
-          : g,
-      ),
-    }));
+    void (async () => {
+      const opt = form.variants[groupIdx]?.options[optIdx];
+      const label = opt?.label?.trim() || `option ${optIdx + 1}`;
+      if (
+        !(await confirm({
+          title: `Remove “${label}”?`,
+          description: 'This option is removed from the draft until you save.',
+          confirmLabel: 'Remove',
+        }))
+      ) {
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        variants: f.variants.map((g, gi) =>
+          gi === groupIdx
+            ? { ...g, options: g.options.filter((_, oi) => oi !== optIdx) }
+            : g,
+        ),
+      }));
+    })();
   };
 
   const submitProduct = async (e: FormEvent) => {
@@ -325,9 +379,7 @@ export default function AdminMerch() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm(`Delete "${cat.name}" and all its products?`)) removeCategory(cat.id);
-                  }}
+                  onClick={() => void handleDeleteCategory(cat)}
                   className="text-red-500 hover:text-red-700 p-1"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -392,7 +444,7 @@ export default function AdminMerch() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeProduct(p.id)}
+                        onClick={() => void handleDeleteProduct(p)}
                         className="text-red-400 hover:text-red-600 p-1"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -638,6 +690,7 @@ export default function AdminMerch() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { CheckCircle2, Minus, Pencil, Plus, Search, ShoppingBag, Trash2 } from '
 import PosVariantModal from './PosVariantModal';
 import { resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { discountedBasePrice, productDiscountAmount, productPromoTag } from '../../lib/productPricing';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 type CartLine = {
   key: string;
@@ -43,6 +44,7 @@ type PlacedOrder = {
 };
 
 export default function PosWorkspace({ variant, lockedBranchId = null }: PosWorkspaceProps) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const user = useAuthStore((s) => s.user);
   const branches = useBranchStore((s) => s.branches);
   const adminPosBranchId = useBranchStore((s) => s.adminPosBranchId);
@@ -181,9 +183,21 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
   };
 
   const clearCart = () => {
-    setCart([]);
-    setLastPlaced(null);
-    setPosError(null);
+    void (async () => {
+      if (cart.length === 0) return;
+      if (
+        !(await confirm({
+          title: 'Clear cart?',
+          description: `Remove all ${cart.length} item${cart.length === 1 ? '' : 's'} from this POS cart.`,
+          confirmLabel: 'Clear cart',
+        }))
+      ) {
+        return;
+      }
+      setCart([]);
+      setLastPlaced(null);
+      setPosError(null);
+    })();
   };
 
   const placeOrder = async () => {
@@ -561,6 +575,7 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
         }}
         onConfirm={handleConfirmVariant}
       />
+      {confirmDialog}
     </>
   );
 }

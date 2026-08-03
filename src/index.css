@@ -1383,6 +1383,17 @@ html {
   }
 }
 
+@keyframes cookie-consent-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-marquee {
   animation: marquee var(--duration, 40s) linear infinite;
   will-change: transform;
@@ -1395,9 +1406,14 @@ html {
   transform: translateZ(0);
 }
 
+.cookie-consent-enter {
+  animation: cookie-consent-enter 0.28s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
-  .animate-marquee-vertical {
+  .animate-marquee-vertical,
+  .cookie-consent-enter {
     animation: none;
     transform: none;
     will-change: auto;

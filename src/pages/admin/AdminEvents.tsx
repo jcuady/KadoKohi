@@ -17,6 +17,7 @@ import EventFormBuilder from '../../components/admin/EventFormBuilder';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
 import { Plus, Pencil, Trash2, Star, ImageIcon, X, Users, FileText, CalendarDays } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type EventsTab = 'events' | 'forms' | 'submissions';
 
@@ -65,6 +66,7 @@ function toLocalDatetime(iso?: string): string {
 }
 
 export default function AdminEvents() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const events = useEventStore((s) => s.events);
   const hydrated = useEventStore((s) => s.hydrated);
   const hydrateEvents = useEventStore((s) => s.hydrateFromRemote);
@@ -235,7 +237,15 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (evt: Event) => {
-    if (!window.confirm(`Delete “${evt.title}”? This cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: `Delete “${evt.title}”?`,
+        description: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     setSaveError('');
     try {
       await removeEvent(evt.id);
@@ -837,6 +847,7 @@ export default function AdminEvents() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

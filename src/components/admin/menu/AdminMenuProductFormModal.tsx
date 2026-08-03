@@ -8,6 +8,7 @@ import {
 } from '../../../lib/menuProductImage';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { Button } from '../../ui/button';
+import { useConfirmDialog } from '../../ui/ConfirmDialog';
 import MenuImagePreview from './MenuImagePreview';
 
 export type ProductFormData = {
@@ -110,6 +111,8 @@ export default function AdminMenuProductFormModal({
   updateCustomField,
   removeCustomField,
 }: Props) {
+  const { confirm, confirmDialog } = useConfirmDialog();
+
   if (!open) return null;
 
   const title = isPastryForm
@@ -120,8 +123,22 @@ export default function AdminMenuProductFormModal({
       ? 'Edit product'
       : 'Add product';
 
+  const confirmRemove = async (titleText: string, description: string, then: () => void) => {
+    if (
+      !(await confirm({
+        title: titleText,
+        description,
+        confirmLabel: 'Remove',
+      }))
+    ) {
+      return;
+    }
+    then();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-kado-dark/55 backdrop-blur-[3px] p-0 sm:items-center sm:p-4">
+      {confirmDialog}
       <form
         onSubmit={onSubmit}
         className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[2.5rem] border dash-border bg-[var(--color-dash-surface)] shadow-[0_30px_60px_rgba(158,24,29,0.12)] sm:rounded-[2rem]"
@@ -437,7 +454,17 @@ export default function AdminMenuProductFormModal({
                         className="w-20 rounded-lg border dash-border dash-input px-3 py-2 text-xs"
                         placeholder="+₱"
                       />
-                      <button type="button" onClick={() => removeMilk(i)} className="text-red-400 hover:text-red-600">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void confirmRemove(
+                            `Remove milk “${m.label.trim() || `option ${i + 1}`}”?`,
+                            'Removed from this draft until you save the product.',
+                            () => removeMilk(i),
+                          )
+                        }
+                        className="text-red-400 hover:text-red-600"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -475,7 +502,17 @@ export default function AdminMenuProductFormModal({
                         className="w-20 rounded-lg border dash-border dash-input px-3 py-2 text-xs"
                         placeholder="+₱"
                       />
-                      <button type="button" onClick={() => removeSize(index)} className="text-red-400 hover:text-red-600">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void confirmRemove(
+                            `Remove size “${size.label.trim() || `option ${index + 1}`}”?`,
+                            'Removed from this draft until you save the product.',
+                            () => removeSize(index),
+                          )
+                        }
+                        className="text-red-400 hover:text-red-600"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -523,7 +560,13 @@ export default function AdminMenuProductFormModal({
                         />
                         <button
                           type="button"
-                          onClick={() => removeCustomField(index)}
+                          onClick={() =>
+                            void confirmRemove(
+                              `Remove group “${field.label.trim() || field.key.trim() || `option ${index + 1}`}”?`,
+                              'Removed from this draft until you save the product.',
+                              () => removeCustomField(index),
+                            )
+                          }
                           className="text-red-400 hover:text-red-600"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

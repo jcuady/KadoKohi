@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTableStore } from '../../store/tableStore';
 import { useBranchStore } from '../../store/branchStore';
 import { Plus, Trash2, QrCode, ToggleLeft, ToggleRight, Pencil, Check, X, Download, Loader2 } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { tableQrUrl, takeoutQrUrl } from '../../lib/qr';
 import type { QrCardLayout } from '../../lib/brandedQrCard';
 import { getQrScanOrigin } from '../../lib/siteUrl';
@@ -19,6 +20,7 @@ type QrModalState = {
 };
 
 export default function AdminTables() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const tables = useTableStore((s) => s.tables);
   const tablesHydrated = useTableStore((s) => s.hydrated);
   const hydrateTables = useTableStore((s) => s.hydrateFromRemote);
@@ -119,7 +121,15 @@ export default function AdminTables() {
   };
 
   const handleRemove = async (id: string, label: string) => {
-    if (!window.confirm(`Delete “${label}”? Its QR will stop working immediately.`)) return;
+    if (
+      !(await confirm({
+        title: `Delete “${label}”?`,
+        description: 'Its QR will stop working immediately.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     setBusyId(id);
     setActionError('');
     try {
@@ -403,6 +413,7 @@ export default function AdminTables() {
         tagline={qrModal?.tagline}
         layout={qrModal?.layout ?? 'table'}
       />
+      {confirmDialog}
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
 } from '../../lib/careerCatalogFilters';
 import { newId } from '../../lib/id';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type AdminTab = 'jobs' | 'content' | 'form' | 'applications';
 type ApplicationRow = Awaited<ReturnType<typeof orderingRepo.fetchCareerApplications>>[number];
@@ -48,6 +49,7 @@ const CAREER_APP_STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 export default function AdminCareers() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const pageCopy = useCareersStore((s) => s.pageCopy);
   const listings = useCareersStore((s) => s.listings);
   const applicationForm = useCareersStore((s) => s.applicationForm);
@@ -66,6 +68,19 @@ export default function AdminCareers() {
   const hydrateFromRemote = useCareersStore((s) => s.hydrateFromRemote);
   const branches = useBranchStore((s) => s.branches);
   const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
+
+  const handleRemoveListing = async (listing: CareerListing) => {
+    if (
+      !(await confirm({
+        title: `Delete “${listing.title}”?`,
+        description: 'This job listing will be removed from the careers page.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
+    removeListing(listing.id);
+  };
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -450,7 +465,11 @@ export default function AdminCareers() {
                   >
                     {listing.visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                  <button type="button" onClick={() => removeListing(listing.id)} className="p-1.5 text-red-400 hover:text-red-600">
+                  <button
+                    type="button"
+                    onClick={() => void handleRemoveListing(listing)}
+                    className="p-1.5 text-red-400 hover:text-red-600"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -617,6 +636,7 @@ export default function AdminCareers() {
           )}
         </section>
       ) : null}
+      {confirmDialog}
     </div>
   );
 }

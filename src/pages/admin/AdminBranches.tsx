@@ -19,6 +19,7 @@ import {
   Search,
   CheckCircle2,
 } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type BranchForm = {
   slug: string;
@@ -51,6 +52,7 @@ function normalizeSlug(raw: string): string {
  * Store contracts unchanged: addBranch / updateBranch / removeBranch / hydrateFromRemote.
  */
 export default function AdminBranches() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const branches = useBranchStore((s) => s.branches);
   const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
   const addBranch = useBranchStore((s) => s.addBranch);
@@ -152,9 +154,13 @@ export default function AdminBranches() {
     if (
       editingId &&
       branches.find((b) => b.id === editingId)?.slug !== normalizedSlug &&
-      !confirm(
-        'Changing the slug updates takeout QR links immediately. Printed dine-in table codes keep their old prefix — reprint table QRs from Tables & QR if needed. Continue?',
-      )
+      !(await confirm({
+        title: 'Change branch slug?',
+        description:
+          'Changing the slug updates takeout QR links immediately. Printed dine-in table codes keep their old prefix — reprint table QRs from Tables & QR if needed.',
+        confirmLabel: 'Change slug',
+        tone: 'default',
+      }))
     ) {
       return;
     }
@@ -202,11 +208,14 @@ export default function AdminBranches() {
     }
   };
 
-  const handleDelete = (b: Branch) => {
+  const handleDelete = async (b: Branch) => {
     if (
-      !confirm(
-        `Remove branch "${b.name}"? Its tables will be removed. This may fail if orders still reference this branch.`,
-      )
+      !(await confirm({
+        title: `Remove “${b.name}”?`,
+        description:
+          'Its tables will be removed. This may fail if orders still reference this branch.',
+        confirmLabel: 'Delete',
+      }))
     ) {
       return;
     }
@@ -419,7 +428,7 @@ export default function AdminBranches() {
                     <button
                       type="button"
                       disabled={deletingId === b.id || saving}
-                      onClick={() => handleDelete(b)}
+                      onClick={() => void handleDelete(b)}
                       className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-kado-red/25 px-3 text-kado-red hover:bg-kado-red/10 disabled:opacity-50"
                       aria-label={`Delete ${b.name}`}
                     >
@@ -670,6 +679,7 @@ export default function AdminBranches() {
           </form>
         </div>
       ) : null}
+      {confirmDialog}
     </div>
   );
 }

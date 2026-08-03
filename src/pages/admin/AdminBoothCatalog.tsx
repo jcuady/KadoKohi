@@ -4,6 +4,7 @@ import { useBoothCatalogStore } from '../../store/boothCatalogStore';
 import { useBranchStore } from '../../store/branchStore';
 import { formatPhp } from '../../lib/money';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 import CmsReorderList from '../../components/admin/CmsReorderList';
 
 type PackageForm = {
@@ -51,6 +52,7 @@ const EMPTY_ADDON_FORM: AddonForm = {
 };
 
 export default function AdminBoothCatalog() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const packages = useBoothCatalogStore((s) => s.packages);
   const addons = useBoothCatalogStore((s) => s.addons);
   const addPackage = useBoothCatalogStore((s) => s.addPackage);
@@ -91,7 +93,16 @@ export default function AdminBoothCatalog() {
   };
 
   const handleDeletePackage = async (id: string) => {
-    if (!window.confirm('Delete this package permanently?')) return;
+    const pkg = packages.find((p) => p.id === id);
+    if (
+      !(await confirm({
+        title: pkg ? `Delete “${pkg.name}”?` : 'Delete package?',
+        description: 'This removes the package permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     removePackage(id);
     setActionBusy(true);
     await persistCatalog('Package removed.');
@@ -99,7 +110,16 @@ export default function AdminBoothCatalog() {
   };
 
   const handleDeleteAddon = async (id: string) => {
-    if (!window.confirm('Delete this add-on permanently?')) return;
+    const addon = addons.find((a) => a.id === id);
+    if (
+      !(await confirm({
+        title: addon ? `Delete “${addon.name}”?` : 'Delete add-on?',
+        description: 'This removes the add-on permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
+      return;
+    }
     removeAddon(id);
     setActionBusy(true);
     await persistCatalog('Add-on removed.');
@@ -426,6 +446,7 @@ export default function AdminBoothCatalog() {
           </form>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

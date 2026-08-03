@@ -5,6 +5,7 @@ import { formatPhp } from '../../lib/money';
 import { resolvePosUnitPrice } from '../../lib/posPricing';
 import QrPaymentSelector from './QrPaymentSelector';
 import MenuProductImage from '../catalog/MenuProductImage';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 import {
   ShoppingBag,
   ChevronUp,
@@ -134,6 +135,7 @@ export default function QrStickyCart({
   beforePlaceButton,
   guestName,
 }: Props) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const hasItems = cart.length > 0;
   const nameMissing = Boolean(guestName?.required && !guestName.value.trim());
   const showCollapsedName = Boolean(hasItems && guestName && !cartExpanded);
@@ -223,7 +225,20 @@ export default function QrStickyCart({
                         <div className="flex shrink-0 flex-col items-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => onRemoveLine(line.key)}
+                            onClick={() => {
+                              void (async () => {
+                                if (
+                                  !(await confirm({
+                                    title: `Remove “${p.name}”?`,
+                                    description: 'This item will be removed from your cart.',
+                                    confirmLabel: 'Remove',
+                                  }))
+                                ) {
+                                  return;
+                                }
+                                onRemoveLine(line.key);
+                              })();
+                            }}
                             className="-m-1 p-2 touch-manipulation qr-text-subtle hover:text-red-500"
                             aria-label="Remove"
                           >
@@ -332,6 +347,7 @@ export default function QrStickyCart({
           </div>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 }

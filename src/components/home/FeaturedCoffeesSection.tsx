@@ -127,8 +127,8 @@ function DrinkCard({
               alt={name}
               className={imageClassName}
               loading="lazy"
-              width={528}
-              height={704}
+              width={560}
+              height={560}
               sizes="(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 280px"
               displayWidth={560}
             />
@@ -148,7 +148,7 @@ function DrinkCard({
           <h3 className="font-display text-[1.05rem] font-bold leading-tight tracking-tight text-white sm:text-[1.2rem]">
             {name}
           </h3>
-          <p className="mt-1 line-clamp-2 font-sans text-[0.78rem] leading-snug text-white/88 sm:text-[0.85rem]">
+          <p className="mt-1 line-clamp-2 font-sans text-[0.78rem] leading-snug text-white/95 sm:text-[0.85rem]">
             {drinkBlurb(drink)}
           </p>
         </div>
@@ -158,7 +158,7 @@ function DrinkCard({
       <div className="flex items-center justify-between gap-2.5 bg-kado-red px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
         <span className="flex flex-col leading-none">
           {promo ? (
-            <span className="mb-1 text-[10px] font-semibold text-kado-cream/55 line-through">
+            <span className="mb-1 text-[10px] font-semibold text-kado-cream/80 line-through">
               {formatPhp(drink.basePrice).replace('₱', '₱ ')}
             </span>
           ) : null}

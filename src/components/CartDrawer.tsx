@@ -38,8 +38,10 @@ import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
 import { usePromoStore } from '../store/promoStore';
 import { Tag, X as XIcon } from 'lucide-react';
 import { OVERLAY_CTA, OVERLAY_SCRIM } from '../lib/overlayTheme';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 export default function CartDrawer() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const navigate = useNavigate();
   const { items, isOpen, closeCart, removeItem, updateQty, clear } = useCartStore();
   const user = useAuthStore((s) => s.user);
@@ -403,7 +405,21 @@ export default function CartDrawer() {
 
                         <div className="flex flex-col items-end justify-between gap-2 shrink-0">
                           <button
-                            onClick={() => removeItem(line.key)}
+                            type="button"
+                            onClick={() => {
+                              void (async () => {
+                                if (
+                                  !(await confirm({
+                                    title: `Remove “${line.productNameSnapshot}”?`,
+                                    description: 'This item will be removed from your cart.',
+                                    confirmLabel: 'Remove',
+                                  }))
+                                ) {
+                                  return;
+                                }
+                                removeItem(line.key);
+                              })();
+                            }}
                             className="text-kado-dark/35 hover:text-kado-red transition-colors p-0.5"
                             aria-label="Remove item"
                           >
@@ -727,6 +743,7 @@ export default function CartDrawer() {
           </motion.aside>
         </>
       )}
+      {confirmDialog}
     </AnimatePresence>
   );
 }

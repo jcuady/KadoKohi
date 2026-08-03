@@ -10,6 +10,7 @@ import { useOnlineOrderHours } from '../../hooks/useOnlineOrderHours';
 import { AlertTriangle, Check, Download, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { clampTaxRate } from '../../lib/validation';
 import { downloadAdminDataBackup } from '../../lib/adminDataBackup';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type ResetCardDef = {
   scope: ResetScope;
@@ -106,6 +107,7 @@ const RESET_CARDS: ResetCardDef[] = [
 ];
 
 export default function AdminSettings() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const hydrateFromRemote = useSettingsStore((s) => s.hydrateFromRemote);
@@ -391,7 +393,25 @@ export default function AdminSettings() {
                 <button
                   type="button"
                   disabled={gcashSaving}
-                  onClick={() => void updateSettings({ gcashQrImage: '' }).then(() => flashSaved()).catch((err) => setUploadError(err instanceof Error ? err.message : 'Could not remove GCash QR.'))}
+                  onClick={() => {
+                    void (async () => {
+                      if (
+                        !(await confirm({
+                          title: 'Remove GCash QR?',
+                          description: 'Customers will no longer see this QR for online GCash payments until you upload a new one.',
+                          confirmLabel: 'Remove',
+                        }))
+                      ) {
+                        return;
+                      }
+                      try {
+                        await updateSettings({ gcashQrImage: '' });
+                        flashSaved();
+                      } catch (err) {
+                        setUploadError(err instanceof Error ? err.message : 'Could not remove GCash QR.');
+                      }
+                    })();
+                  }}
                   className="w-full sm:w-auto min-h-[44px] rounded-xl border border-red-200 text-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-red-50 touch-manipulation disabled:opacity-50"
                 >
                   Remove
@@ -791,6 +811,7 @@ export default function AdminSettings() {
           storage bucket (public read). Contact and hours live in the settings row alongside tax rate.
         </p>
       </div>
+      {confirmDialog}
     </div>
   );
 }

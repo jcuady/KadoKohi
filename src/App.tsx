@@ -17,7 +17,7 @@ import HelpInstall from './pages/HelpInstall';
 import RouteSeo from './components/RouteSeo';
 import ScrollToTop from './components/ScrollToTop';
 import PublicDocumentTheme from './components/PublicDocumentTheme';
-import SiteCookieConsent from './components/SiteCookieConsent';
+import SiteCookieConsent from './components/DeferredSiteCookieConsent';
 
 // Public marketing routes — lazy so homepage PSI doesn't pay for Menu/About/etc. chunks.
 const Menu = lazy(() => import('./pages/Menu'));

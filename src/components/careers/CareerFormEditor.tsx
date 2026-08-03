@@ -6,6 +6,7 @@ import {
   type EventFormFieldType,
 } from '../../lib/eventForms';
 import EventSignupFields from '../events/EventSignupFields';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 const FIELD_TYPES: { value: EventFormFieldType; label: string }[] = [
   { value: 'text', label: 'Short text' },
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export default function CareerFormEditor({ fields, onChange }: Props) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const move = (index: number, dir: -1 | 1) => {
     const next = [...fields];
     const target = index + dir;
@@ -36,7 +38,19 @@ export default function CareerFormEditor({ fields, onChange }: Props) {
   };
 
   const removeField = (index: number) => {
-    onChange(fields.filter((_, i) => i !== index));
+    void (async () => {
+      const label = fields[index]?.label?.trim() || `field ${index + 1}`;
+      if (
+        !(await confirm({
+          title: `Remove “${label}”?`,
+          description: 'This field is removed from the draft until you save the listing.',
+          confirmLabel: 'Remove',
+        }))
+      ) {
+        return;
+      }
+      onChange(fields.filter((_, i) => i !== index));
+    })();
   };
 
   return (
@@ -159,6 +173,7 @@ export default function CareerFormEditor({ fields, onChange }: Props) {
           <EventSignupFields fields={fields} answers={{}} onChange={() => undefined} />
         </div>
       ) : null}
+      {confirmDialog}
     </div>
   );
 }

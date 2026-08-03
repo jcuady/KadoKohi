@@ -15,7 +15,9 @@ import { discountedBasePrice } from '../../lib/productPricing';
 import { LANDING_CMS_TABS, type LandingTabId } from '../../lib/landingCmsTabs';
 import CmsTextField from '../../components/admin/CmsTextField';
 import type { CmsText } from '../../lib/cmsTypography';
+import { cmsTextPlain } from '../../lib/cmsTypography';
 import { writeLandingPreviewDraft } from '../../lib/landingPreviewSession';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 const HERO_SLIDE_LABELS = ['Slide 1 — Matcha', 'Slide 2 — Coffee culture', 'Slide 3 — Campaign'];
 const TRUSTED_BRAND_SLOTS = 5;
@@ -28,6 +30,7 @@ function cmsTab(id: LandingTabId) {
 }
 
 export default function AdminLandingContent() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const content = useLandingDraftContent();
   const initDraft = useLandingContentStore((s) => s.initDraft);
   const hydrateFromRemote = useLandingContentStore((s) => s.hydrateFromRemote);
@@ -92,6 +95,21 @@ export default function AdminLandingContent() {
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Could not upload image.');
     }
+  };
+
+  const handleRemoveSponsor = async (index: number) => {
+    const sponsor = content.kadoCircle.sponsors[index];
+    const name = cmsTextPlain(sponsor?.label).trim();
+    if (
+      !(await confirm({
+        title: name ? `Remove “${name}”?` : 'Remove friend?',
+        description: 'This sponsor will be removed from the homepage.',
+        confirmLabel: 'Remove',
+      }))
+    ) {
+      return;
+    }
+    removeKadoCircleSponsor(index);
   };
 
   return (
@@ -950,7 +968,7 @@ export default function AdminLandingContent() {
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] dash-muted">Friend {i + 1}</p>
                   <button
                     type="button"
-                    onClick={() => removeKadoCircleSponsor(i)}
+                    onClick={() => void handleRemoveSponsor(i)}
                     className="inline-flex min-h-[36px] min-w-[36px] cursor-pointer items-center justify-center rounded-md text-kado-dark/55 transition-colors hover:bg-kado-red/10 hover:text-kado-red"
                     aria-label={`Remove friend ${i + 1}`}
                   >
@@ -1009,6 +1027,7 @@ export default function AdminLandingContent() {
           </div>
         </LandingCmsSectionCard>
       </div>
+      {confirmDialog}
     </div>
   );
 }

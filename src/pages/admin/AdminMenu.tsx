@@ -42,6 +42,7 @@ import AdminMenuCategoryCard from '../../components/admin/menu/AdminMenuCategory
 import AdminMenuProductFormModal, {
   type ProductFormData,
 } from '../../components/admin/menu/AdminMenuProductFormModal';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 type MenuManagerTab = 'coffee' | 'pastries';
 
@@ -78,6 +79,7 @@ const pastryProductForm: ProductFormData = {
 };
 
 export default function AdminMenu() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [searchParams, setSearchParams] = useSearchParams();
   const menuTab: MenuManagerTab = searchParams.get('tab') === 'pastries' ? 'pastries' : 'coffee';
   const categories = useMenuStore((s) => s.categories);
@@ -156,7 +158,6 @@ export default function AdminMenu() {
   const [preparingImage, setPreparingImage] = useState(false);
   const [initializingCatalog, setInitializingCatalog] = useState(false);
   const [initCatalogError, setInitCatalogError] = useState<string | null>(null);
-  const [deleteConfirmProductId, setDeleteConfirmProductId] = useState<string | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const handleInitializeCatalog = async () => {
@@ -364,14 +365,19 @@ export default function AdminMenu() {
   const outOfStockCount = useMemo(() => products.filter((p) => !isProductInStock(p)).length, [products]);
 
   const handleDeleteProduct = async (id: string) => {
-    if (deleteConfirmProductId !== id) {
-      setDeleteConfirmProductId(id);
+    const product = products.find((p) => p.id === id);
+    if (
+      !(await confirm({
+        title: `Delete “${product?.name ?? 'product'}”?`,
+        description: 'This removes the product from the menu permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
       return;
     }
     setDeletingProductId(id);
     try {
       await removeProduct(id);
-      setDeleteConfirmProductId(null);
       if (editingProduct === id) cancelForm();
     } catch (err) {
       useMenuStore.setState({
@@ -739,7 +745,6 @@ export default function AdminMenu() {
                   editingCategoryId={editingCategoryId}
                   editingCategoryName={editingCategoryName}
                   drag={drag}
-                  deleteConfirmProductId={deleteConfirmProductId}
                   deletingProductId={deletingProductId}
                   onToggleExpand={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)}
                   onDragStartCat={() => setDrag({ kind: 'cat', from: catIndex })}
@@ -757,8 +762,17 @@ export default function AdminMenu() {
                       }}
                   onBeginCategoryRename={() => beginCategoryRename(cat)}
                   onToggleCategoryVisible={() => updateCategory(cat.id, { visible: !cat.visible })}
-                  onDeleteCategory={() => {
-                    if (confirm(`Delete "${cat.name}" and all its products?`)) removeCategory(cat.id);
+                  onDeleteCategory={async () => {
+                    if (
+                      !(await confirm({
+                        title: `Delete “${cat.name}”?`,
+                        description: 'This removes the category and all its products permanently.',
+                        confirmLabel: 'Delete',
+                      }))
+                    ) {
+                      return;
+                    }
+                    removeCategory(cat.id);
                   }}
                   onReorderProducts={(from, to) => reorderProductsInCategory(cat.id, from, to)}
                   onSetDrag={setDrag}
@@ -805,6 +819,7 @@ export default function AdminMenu() {
         updateCustomField={updateCustomField}
         removeCustomField={removeCustomField}
       />
+      {confirmDialog}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 import { authRepo } from '../../lib/supabase/repositories/auth';
 import { useAuthStore } from '../../store/authStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { useConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 const CREATABLE_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
 const ALL_DISPLAY_ROLES: Role[] = ['admin', 'barista', 'staff', 'customer'];
@@ -45,6 +46,7 @@ function roleRank(r: Role): number {
  * Create/update/delete still go through authRepo / userStore (edge for internal accounts).
  */
 export default function AdminUsers() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const users = useUserStore((s) => s.users);
   const addUser = useUserStore((s) => s.addUser);
@@ -74,7 +76,6 @@ export default function AdminUsers() {
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState('');
@@ -131,19 +132,23 @@ export default function AdminUsers() {
       setDeleteError('You cannot delete your own account while signed in.');
       return;
     }
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id);
+    const user = users.find((u) => u.id === id);
+    if (
+      !(await confirm({
+        title: user ? `Delete “${user.name}”?` : 'Delete user?',
+        description: 'This removes the account permanently.',
+        confirmLabel: 'Delete',
+      }))
+    ) {
       return;
     }
     setDeletingId(id);
     try {
       await removeUser(id);
-      setConfirmDeleteId(null);
       setSaveOk('User removed.');
       await hydrateUsers();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Unable to delete user.');
-      setConfirmDeleteId(null);
     } finally {
       setDeletingId(null);
     }
@@ -440,30 +445,18 @@ export default function AdminUsers() {
                           <button
                             type="button"
                             onClick={() => void handleDelete(u.id)}
-                            onBlur={() => setConfirmDeleteId((id) => (id === u.id ? null : id))}
                             disabled={u.id === currentUserId || deletingId === u.id}
-                            className={`inline-flex min-h-[40px] items-center justify-center gap-1 rounded-lg border px-2 text-[10px] font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-30 ${
-                              confirmDeleteId === u.id
-                                ? 'border-red-300 bg-red-50 text-red-700'
-                                : 'border-transparent text-red-500 hover:bg-red-50'
-                            }`}
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-transparent px-2 text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30"
                             title={
-                              u.id === currentUserId
-                                ? 'Cannot delete your own account'
-                                : confirmDeleteId === u.id
-                                  ? 'Click again to confirm'
-                                  : 'Delete user'
+                              u.id === currentUserId ? 'Cannot delete your own account' : 'Delete user'
                             }
-                            aria-label={
-                              confirmDeleteId === u.id ? `Confirm delete ${u.name}` : `Delete ${u.name}`
-                            }
+                            aria-label={`Delete ${u.name}`}
                           >
                             {deletingId === u.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <Trash2 className="h-4 w-4" />
                             )}
-                            {confirmDeleteId === u.id ? 'Confirm' : null}
                           </button>
                         </div>
                       </TableCell>
@@ -756,6 +749,7 @@ export default function AdminUsers() {
           </div>
         </div>
       ) : null}
+      {confirmDialog}
     </div>
   );
 }

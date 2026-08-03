@@ -13,6 +13,7 @@ import {
 import type { EventFormField, EventFormFieldType, EventFormTemplate } from '../../lib/eventForms';
 import { DEFAULT_EVENT_SIGNUP_FIELDS, newFormField } from '../../lib/eventForms';
 import { useEventFormStore } from '../../store/eventFormStore';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 const FIELD_TYPES: { value: EventFormFieldType; label: string }[] = [
   { value: 'text', label: 'Short text' },
@@ -38,6 +39,7 @@ export default function EventFormBuilder({
   compact,
   variant = 'default',
 }: Props) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const forms = useEventFormStore((s) => s.forms);
   const hydrated = useEventFormStore((s) => s.hydrated);
   const hydrate = useEventFormStore((s) => s.hydrateFromRemote);
@@ -239,13 +241,27 @@ export default function EventFormBuilder({
                   <button type="button" onClick={() => moveField(index, 1)} className="p-1 dash-muted hover:text-kado-red">
                     <ChevronDown className="w-4 h-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDraftFields((rows) => rows.filter((_, i) => i !== index))}
-                    className="p-1 text-red-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void (async () => {
+                      const label = draftFields[index]?.label?.trim() || `field ${index + 1}`;
+                      if (
+                        !(await confirm({
+                          title: `Remove “${label}”?`,
+                          description: 'This field is removed from the draft until you save.',
+                          confirmLabel: 'Remove',
+                        }))
+                      ) {
+                        return;
+                      }
+                      setDraftFields((rows) => rows.filter((_, i) => i !== index));
+                    })();
+                  }}
+                  className="p-1 text-red-400 hover:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
                 </div>
                 <div className="grid sm:grid-cols-3 gap-2">
                   <select
@@ -381,9 +397,18 @@ export default function EventFormBuilder({
               <button
                 type="button"
                 onClick={() => {
-                  if (!window.confirm(`Delete form “${draftName}”? Events using it will fall back to standard fields.`)) return;
-                  void removeForm(editingId)
-                    .then(() => {
+                  void (async () => {
+                    if (
+                      !(await confirm({
+                        title: `Delete form “${draftName}”?`,
+                        description: 'Events using it will fall back to standard fields.',
+                        confirmLabel: 'Delete template',
+                      }))
+                    ) {
+                      return;
+                    }
+                    try {
+                      await removeForm(editingId);
                       setEditingId(forms.find((f) => f.id !== editingId)?.id ?? null);
                       const next = forms.find((f) => f.id !== editingId);
                       if (next) loadDraft(next);
@@ -391,10 +416,10 @@ export default function EventFormBuilder({
                         setDraftFields([]);
                         setDraftName('');
                       }
-                    })
-                    .catch((err) => {
+                    } catch (err) {
                       setError(err instanceof Error ? err.message : 'Could not delete form.');
-                    });
+                    }
+                  })();
                 }}
                 className="rounded-lg text-red-500 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
               >
@@ -426,6 +451,7 @@ export default function EventFormBuilder({
 
   return (
     <div className={compact ? 'space-y-3' : variant === 'page' ? 'space-y-4' : 'rounded-2xl dash-card border p-5 space-y-4'}>
+      {confirmDialog}
       {!compact && variant !== 'page' && (
         <div className="flex items-start justify-between gap-3">
           <div>

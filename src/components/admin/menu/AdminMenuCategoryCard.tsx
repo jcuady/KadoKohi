@@ -31,7 +31,6 @@ type Props = {
   editingCategoryId: string | null;
   editingCategoryName: string;
   drag: DragState;
-  deleteConfirmProductId: string | null;
   deletingProductId: string | null;
   onToggleExpand: () => void;
   onDragStartCat: () => void;
@@ -60,7 +59,6 @@ export default function AdminMenuCategoryCard({
   editingCategoryId,
   editingCategoryName,
   drag,
-  deleteConfirmProductId,
   deletingProductId,
   onToggleExpand,
   onDragStartCat,
@@ -197,7 +195,6 @@ export default function AdminMenuCategoryCard({
               category={cat}
               pastriesCategoryId={pastriesCategoryId}
               pIndex={pIndex}
-              deleteConfirmProductId={deleteConfirmProductId}
               deletingProductId={deletingProductId}
               onDragStart={(e, idx) => {
                 e.stopPropagation();
