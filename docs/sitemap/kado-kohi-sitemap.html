@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kado Kohi — Website Sitemap (Business Owners)</title>
+  <style>
+    :root {
+      --cream: #f1dfba;
+      --red: #9e181d;
+      --dark: #191919;
+      --off: #faf9f6;
+      --blue: #1b4fcc;
+      --gold: #c4a035;
+      --magenta: #b83280;
+      --teal: #0d9488;
+      --line: #94a3b8;
+      --muted: #5c5348;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--dark);
+      background: linear-gradient(180deg, #fff 0%, var(--off) 40%, #fff 100%);
+      line-height: 1.5;
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+    header.hero {
+      background: var(--red);
+      color: var(--cream);
+      padding: 2rem 1.25rem 2.25rem;
+      margin: 0 0 1.5rem;
+    }
+    header.hero .inner { max-width: 1100px; margin: 0 auto; }
+    header.hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.6rem, 4vw, 2.35rem);
+      letter-spacing: -0.02em;
+    }
+    header.hero p { margin: 0; max-width: 42rem; opacity: 0.92; font-size: 1.05rem; }
+    header.hero .meta {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      font-size: 0.85rem;
+      opacity: 0.88;
+    }
+
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc a {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #e5e0d5;
+      color: var(--dark);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .toc a:hover { border-color: var(--red); color: var(--red); }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #e8e2d6;
+      border-radius: 1rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+    .swatch {
+      width: 1.1rem; height: 1.1rem; border-radius: 0.3rem; flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    section { margin-bottom: 2.75rem; break-inside: avoid; }
+    section > h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.45rem;
+      color: var(--red);
+    }
+    section > .lead {
+      margin: 0 0 1.1rem;
+      color: var(--muted);
+      max-width: 48rem;
+    }
+
+    /* Mindmap tree */
+    .tree { display: flex; flex-direction: column; gap: 1rem; }
+    .node {
+      display: inline-block;
+      padding: 0.55rem 0.9rem;
+      border-radius: 0.55rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 8px rgba(25,25,25,0.06);
+      border: 1px solid transparent;
+      max-width: 100%;
+    }
+    .node small {
+      display: block;
+      font-weight: 500;
+      font-size: 0.7rem;
+      opacity: 0.85;
+      margin-top: 0.15rem;
+    }
+    .node.root { background: var(--blue); color: #fff; }
+    .node.l1 { background: var(--gold); color: #1a1408; }
+    .node.l2 { background: var(--magenta); color: #fff; }
+    .node.l3 { background: var(--teal); color: #fff; }
+    .node.note { background: #fff; border-color: #ddd; color: var(--muted); font-weight: 600; }
+
+    .branch-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 0.75rem;
+      padding-left: 0.5rem;
+      border-left: 3px solid #e5e0d5;
+    }
+    .branch {
+      background: #fff;
+      border: 1px solid #ebe6db;
+      border-radius: 1rem;
+      padding: 0.85rem;
+    }
+    .branch > .node { margin-bottom: 0.65rem; }
+    .kids {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin: 0.35rem 0 0 0.65rem;
+      padding-left: 0.65rem;
+      border-left: 2px solid #f0c0d8;
+    }
+    .grandkids {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin: 0.35rem 0 0 0.5rem;
+      padding-left: 0.55rem;
+      border-left: 2px solid #99f6e4;
+    }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .role-card {
+      background: #fff;
+      border-radius: 0.85rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid #e8e2d6;
+    }
+    .role-card h3 { margin: 0 0 0.35rem; font-size: 1rem; color: var(--red); }
+    .role-card p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid #e8e2d6;
+      font-size: 0.88rem;
+    }
+    th, td { padding: 0.65rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--dark); color: var(--cream); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    tr:nth-child(even) td { background: #faf7f1; }
+    td path, .path {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.75rem;
+      color: var(--blue);
+    }
+    .why { color: var(--muted); }
+
+    .callout {
+      background: #fff8eb;
+      border-left: 4px solid var(--gold);
+      padding: 0.85rem 1rem;
+      border-radius: 0 0.75rem 0.75rem 0;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    footer.doc-foot {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #e5e0d5;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .print-hint {
+      display: none;
+    }
+
+    @media print {
+      body { background: #fff; }
+      header.hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .toc, .print-hint { display: none !important; }
+      .node, th, .swatch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      section { page-break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+      .print-hint.show-print {
+        display: block !important;
+        margin-bottom: 1rem;
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .branch-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="inner">
+      <h1>Kado Kohi — Website Sitemap</h1>
+      <p>
+        A simple map of every important page on kadokohi.com — for business owners, partners, and the team.
+        No coding knowledge needed.
+      </p>
+      <div class="meta">
+        <span>Live site: www.kadokohi.com</span>
+        <span>·</span>
+        <span>Updated: August 2026</span>
+        <span>·</span>
+        <span>Tip: File → Print → Save as PDF</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="toc" aria-label="Jump to section">
+      <a href="#how-to-read">How to read this</a>
+      <a href="#who">Who uses the site</a>
+      <a href="#public">Public website</a>
+      <a href="#ordering">Ordering journeys</a>
+      <a href="#customer">Customer account</a>
+      <a href="#admin">Admin</a>
+      <a href="#barista">Barista</a>
+      <a href="#staff">Staff</a>
+      <a href="#directory">Full page list</a>
+    </nav>
+
+    <section id="how-to-read">
+      <h2>How to read this map</h2>
+      <p class="lead">
+        Think of the website like a store with rooms. The homepage is the entrance.
+        Each colored box is a room (page). Boxes under it are what you can do inside that room.
+      </p>
+      <div class="legend" aria-label="Color legend">
+        <div class="legend-item"><span class="swatch" style="background:#1b4fcc"></span> Start / home / portal</div>
+        <div class="legend-item"><span class="swatch" style="background:#c4a035"></span> Main section</div>
+        <div class="legend-item"><span class="swatch" style="background:#b83280"></span> Page or screen</div>
+        <div class="legend-item"><span class="swatch" style="background:#0d9488"></span> Step or detail</div>
+      </div>
+      <div class="callout">
+        <strong>URLs in small text</strong> (like <span class="path">/menu</span>) are the web addresses.
+        Guests usually click buttons and menus — they do not need to type these.
+      </div>
+    </section>
+
+    <section id="who">
+      <h2>Who uses the website</h2>
+      <p class="lead">Five kinds of people. Each sees different doors.</p>
+      <div class="roles">
+        <div class="role-card">
+          <h3>Guest</h3>
+          <p>Anyone browsing. Can order via QR or website cart without a full account for some flows; can browse everything public.</p>
+        </div>
+        <div class="role-card">
+          <h3>Customer</h3>
+          <p>Logged-in guest. Sees <strong>My Account</strong>: orders, loyalty stamps, vouchers, booth bookings, profile.</p>
+        </div>
+        <div class="role-card">
+          <h3>Barista</h3>
+          <p>In-store coffee team. Runs the order board, POS, stock toggles, loyalty stamps, customer kiosk screen.</p>
+        </div>
+        <div class="role-card">
+          <h3>Staff</h3>
+          <p>Fulfillment team. Handles merch orders, booth/event bookings, and an all-orders view.</p>
+        </div>
+        <div class="role-card">
+          <h3>Admin</h3>
+          <p>Owner / manager. Full control: menu, branches, users, payments settings, homepage content, events, and more.</p>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Important for owners:</strong> Customers sign in at the normal website login.
+        Admin, barista, and staff use a <em>separate, hidden</em> login page (Management Portal) that is not listed in the public menu.
+      </div>
+    </section>
+
+    <!-- ========== PUBLIC ========== -->
+    <section id="public">
+      <h2>1. Public website (what customers see)</h2>
+      <p class="lead">
+        Everything under the main navigation and footer. This is the “storefront.”
+      </p>
+
+      <div class="tree">
+        <div>
+          <span class="node root">Homepage <small>/ · Brand story, featured drinks, events, Kukidō cookies, reviews</small></span>
+        </div>
+
+        <div class="branch-row">
+          <div class="branch">
+            <span class="node l1">Menu &amp; shop</span>
+            <div class="kids">
+              <div>
+                <span class="node l2">Coffee &amp; Matcha menu <small>/menu</small></span>
+                <div class="grandkids">
+                  <span class="node l3">Add to cart · choose size / milk</span>
+                  <span class="node l3">Checkout (GCash or PayMongo QR)</span>
+                </div>
+              </div>
+              <div>
+                <span class="node l2">Pastries &amp; Kukidō cookies <small>/pastries</small></span>
+                <div class="grandkids">
+                  <span class="node l3">Single cookies</span>
+                  <span class="node l3">Build a Kuki Box</span>
+                </div>
+              </div>
+              <span class="node l2">Merch shop <small>/merch</small></span>
+            </div>
+          </div>
+
+          <div class="branch">
+            <span class="node l1">Events &amp; bookings</span>
+            <div class="kids">
+              <div>
+                <span class="node l2">Kado Events calendar <small>/events</small></span>
+                <div class="grandkids">
+                  <span class="node l3">View event details</span>
+                  <span class="node l3">Sign up / register</span>
+                </div>
+              </div>
+              <div>
+                <span class="node l2">Coffee cart booking <small>/book/coffee-cart</small></span>
+                <div class="grandkids">
+                  <span class="node l3">Describe event · get estimate</span>
+                  <span class="node l3">Team sends a quote</span>
+                </div>
+              </div>
+              <span class="node l2">Matcha bar booking <small>/book/matcha-bar</small></span>
+            </div>
+          </div>
+
+          <div class="branch">
+            <span class="node l1">About the brand</span>
+            <div class="kids">
+              <span class="node l2">Branches &amp; hours <small>/branches</small></span>
+              <span class="node l2">Our story <small>/about</small></span>
+              <span class="node l2">Contact us <small>/contact</small></span>
+              <span class="node l2">Features / stories <small>/features</small></span>
+              <span class="node l2">Careers <small>/careers</small></span>
+            </div>
+          </div>
+
+          <div class="branch">
+            <span class="node l1">Account &amp; legal</span>
+            <div class="kids">
+              <span class="node l2">Customer login <small>/auth/login</small></span>
+              <span class="node l2">Create account <small>/auth/signup</small></span>
+              <span class="node l2">Forgot / reset password</span>
+              <span class="node l2">Terms of Service <small>/legal/terms</small></span>
+              <span class="node l2">Privacy Policy <small>/legal/privacy</small></span>
+              <span class="node l2">Install app help <small>/help/install</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ORDERING ========== -->
+    <section id="ordering">
+      <h2>2. How people place orders (journeys)</h2>
+      <p class="lead">
+        Orders can start in different ways. All paid online drinks/merch go through the same kitchen and payment rules.
+      </p>
+
+      <div class="branch-row">
+        <div class="branch">
+          <span class="node l1">Table QR (dine-in)</span>
+          <div class="kids">
+            <span class="node l2">Scan QR on the table <small>/order/qr/…</small></span>
+            <div class="grandkids">
+              <span class="node l3">Pick drinks / pastries / cookies</span>
+              <span class="node l3">Pay (GCash or PayMongo)</span>
+              <span class="node l3">Kitchen prepares · bring to table</span>
+            </div>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="node l1">Takeout QR</span>
+          <div class="kids">
+            <span class="node l2">Scan takeout QR <small>/order/takeout</small></span>
+            <div class="grandkids">
+              <span class="node l3">Choose branch if needed</span>
+              <span class="node l3">Order · pay · pick up</span>
+            </div>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="node l1">Website cart</span>
+          <div class="kids">
+            <span class="node l2">Add items from Menu / Merch / Pastries</span>
+            <div class="grandkids">
+              <span class="node l3">Open cart drawer</span>
+              <span class="node l3">Place order · pay on checkout page</span>
+              <span class="node l3">Track status (guest page or My Account)</span>
+            </div>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="node l1">Walk-in POS</span>
+          <div class="kids">
+            <span class="node l2">Barista or Admin POS screen</span>
+            <div class="grandkids">
+              <span class="node l3">Cash or GCash at counter</span>
+              <span class="node l3">Order appears on barista board</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CUSTOMER ========== -->
+    <section id="customer">
+      <h2>3. Customer account (“My Account”)</h2>
+      <p class="lead">
+        After a guest creates an account and logs in, they get a private area for their orders and loyalty.
+      </p>
+      <div class="tree">
+        <span class="node root">My Account <small>/account · Customer login required</small></span>
+        <div class="branch-row">
+          <div class="branch">
+            <span class="node l1">Home of my account</span>
+            <div class="kids">
+              <span class="node l2">Dashboard <small>/account</small></span>
+              <div class="grandkids">
+                <span class="node l3">Active order snapshot</span>
+                <span class="node l3">Loyalty stamps preview</span>
+                <span class="node l3">Recent activity</span>
+              </div>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Orders &amp; rewards</span>
+            <div class="kids">
+              <span class="node l2">My orders <small>/account/orders</small></span>
+              <div class="grandkids">
+                <span class="node l3">Pay / upload GCash proof if needed</span>
+                <span class="node l3">See PayMongo paid confirmation</span>
+              </div>
+              <span class="node l2">Vouchers <small>/account/vouchers</small></span>
+              <span class="node l2">Booth bookings <small>/account/booth</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Profile</span>
+            <div class="kids">
+              <span class="node l2">Profile &amp; phone <small>/account/profile</small></span>
+              <div class="grandkids">
+                <span class="node l3">Update contact details</span>
+                <span class="node l3">Password / security (via auth flows)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ADMIN ========== -->
+    <section id="admin">
+      <h2>4. Admin portal (owners &amp; managers)</h2>
+      <p class="lead">
+        Full back-office. Enter via Management Portal → Admin. Controls what the public website shows and how the café runs.
+      </p>
+      <div class="tree">
+        <span class="node root">Admin portal <small>/admin · Management Portal login</small></span>
+        <div class="branch-row">
+          <div class="branch">
+            <span class="node l1">Day-to-day ops</span>
+            <div class="kids">
+              <span class="node l2">Dashboard <small>/admin</small></span>
+              <span class="node l2">All orders <small>/admin/orders</small></span>
+              <span class="node l2">POS (all branches) <small>/admin/pos</small></span>
+              <span class="node l2">Branches &amp; hours <small>/admin/branches</small></span>
+              <span class="node l2">Tables &amp; QR codes <small>/admin/tables</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Catalog</span>
+            <div class="kids">
+              <span class="node l2">Menu (coffee + pastries) <small>/admin/menu</small></span>
+              <div class="grandkids">
+                <span class="node l3">Prices · photos · stock · Kukidō boxes</span>
+              </div>
+              <span class="node l2">Merch catalog <small>/admin/merch</small></span>
+              <span class="node l2">Booth packages <small>/admin/booth-catalog</small></span>
+              <span class="node l2">Booth page media <small>/admin/booth-content</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Loyalty &amp; marketing</span>
+            <div class="kids">
+              <span class="node l2">Kado Circle config <small>/admin/loyalty</small></span>
+              <span class="node l2">Stamps tools <small>/admin/stamps</small></span>
+              <span class="node l2">Vouchers <small>/admin/vouchers</small></span>
+              <span class="node l2">Events CMS <small>/admin/events</small></span>
+              <span class="node l2">Homepage content <small>/admin/landing</small></span>
+              <span class="node l2">Features / blog posts <small>/admin/blog</small></span>
+              <span class="node l2">Careers listings <small>/admin/careers</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">People &amp; settings</span>
+            <div class="kids">
+              <span class="node l2">Users &amp; roles <small>/admin/users</small></span>
+              <span class="node l2">Booth bookings admin <small>/admin/booth-bookings</small></span>
+              <span class="node l2">Audit log <small>/admin/audit</small></span>
+              <span class="node l2">Settings <small>/admin/settings</small></span>
+              <div class="grandkids">
+                <span class="node l3">GCash QR · tax · contact · hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BARISTA ========== -->
+    <section id="barista">
+      <h2>5. Barista portal (in-store)</h2>
+      <p class="lead">Tied to one branch. Focused on making drinks and serving walk-ins.</p>
+      <div class="tree">
+        <span class="node root">Barista portal <small>/barista · Management Portal → Barista</small></span>
+        <div class="branch-row">
+          <div class="branch">
+            <span class="node l1">Orders</span>
+            <div class="kids">
+              <span class="node l2">Order board (kanban) <small>/barista</small></span>
+              <div class="grandkids">
+                <span class="node l3">Confirm payment · advance kitchen stages</span>
+              </div>
+              <span class="node l2">Full queue list <small>/barista/queue</small></span>
+              <span class="node l2">In-store POS <small>/barista/pos</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Menu &amp; loyalty</span>
+            <div class="kids">
+              <span class="node l2">Menu + mark out of stock <small>/barista/menu</small></span>
+              <span class="node l2">Stamp earn / redeem <small>/barista/stamps</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Guest-facing</span>
+            <div class="kids">
+              <span class="node l2">Kiosk display <small>/barista/kiosk</small></span>
+              <span class="node l2">Account settings <small>/barista/settings</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STAFF ========== -->
+    <section id="staff">
+      <h2>6. Staff portal (fulfillment)</h2>
+      <p class="lead">Supports merch shipping/pickup and event / booth coordination.</p>
+      <div class="tree">
+        <span class="node root">Staff portal <small>/staff · Management Portal → Staff</small></span>
+        <div class="branch-row">
+          <div class="branch">
+            <span class="node l1">Fulfillment</span>
+            <div class="kids">
+              <span class="node l2">Merch orders <small>/staff/merch-orders</small></span>
+              <span class="node l2">All orders view <small>/staff/orders</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Bookings &amp; events</span>
+            <div class="kids">
+              <span class="node l2">Booth bookings <small>/staff/booth-bookings</small></span>
+              <span class="node l2">Event registrations <small>/staff/event-registrations</small></span>
+            </div>
+          </div>
+          <div class="branch">
+            <span class="node l1">Account</span>
+            <div class="kids">
+              <span class="node l2">Settings / password <small>/staff/settings</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== DIRECTORY ========== -->
+    <section id="directory">
+      <h2>7. Full page directory (quick reference)</h2>
+      <p class="lead">One table per audience. Use this when someone asks “where is X?”</p>
+
+      <h3 style="margin:1.25rem 0 0.5rem;font-size:1.05rem;">Public storefront</h3>
+      <table>
+        <thead><tr><th>Page name</th><th>Address</th><th>What it’s for</th></tr></thead>
+        <tbody>
+          <tr><td>Home</td><td class="path">/</td><td class="why">First impression — brand, featured items, events, collabs</td></tr>
+          <tr><td>Coffee &amp; Matcha</td><td class="path">/menu</td><td class="why">Full drink menu · add to cart</td></tr>
+          <tr><td>Pastries</td><td class="path">/pastries</td><td class="why">Pastries + Kukidō cookie collab / boxes</td></tr>
+          <tr><td>Merch</td><td class="path">/merch</td><td class="why">Apparel and goods</td></tr>
+          <tr><td>Events</td><td class="path">/events</td><td class="why">Upcoming café events · sign-ups</td></tr>
+          <tr><td>Coffee cart booking</td><td class="path">/book/coffee-cart</td><td class="why">Mobile coffee booth for events</td></tr>
+          <tr><td>Matcha bar booking</td><td class="path">/book/matcha-bar</td><td class="why">Matcha bar for events</td></tr>
+          <tr><td>Branches</td><td class="path">/branches</td><td class="why">Marikina &amp; Greenhills · hours · directions</td></tr>
+          <tr><td>Our story</td><td class="path">/about</td><td class="why">Brand story</td></tr>
+          <tr><td>Contact</td><td class="path">/contact</td><td class="why">Message the team</td></tr>
+          <tr><td>Features</td><td class="path">/features</td><td class="why">Stories / articles (blog)</td></tr>
+          <tr><td>Careers</td><td class="path">/careers</td><td class="why">Job openings</td></tr>
+          <tr><td>Checkout / order status</td><td class="path">/checkout/…</td><td class="why">Pay and track a placed order</td></tr>
+          <tr><td>Table QR order</td><td class="path">/order/qr/…</td><td class="why">Order from your table</td></tr>
+          <tr><td>Takeout QR order</td><td class="path">/order/takeout</td><td class="why">Order for pickup</td></tr>
+          <tr><td>Customer login / signup</td><td class="path">/auth/…</td><td class="why">Create or open a customer account</td></tr>
+          <tr><td>Terms / Privacy</td><td class="path">/legal/…</td><td class="why">Legal pages linked from signup</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin:1.5rem 0 0.5rem;font-size:1.05rem;">Customer account</h3>
+      <table>
+        <thead><tr><th>Page name</th><th>Address</th><th>What it’s for</th></tr></thead>
+        <tbody>
+          <tr><td>Account home</td><td class="path">/account</td><td class="why">Overview of orders and loyalty</td></tr>
+          <tr><td>My orders</td><td class="path">/account/orders</td><td class="why">History · pay · proof upload</td></tr>
+          <tr><td>Booth bookings</td><td class="path">/account/booth</td><td class="why">Your coffee cart / matcha bookings</td></tr>
+          <tr><td>Vouchers</td><td class="path">/account/vouchers</td><td class="why">Loyalty rewards</td></tr>
+          <tr><td>Profile</td><td class="path">/account/profile</td><td class="why">Name, phone, account details</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin:1.5rem 0 0.5rem;font-size:1.05rem;">Team portals</h3>
+      <table>
+        <thead><tr><th>Role</th><th>Entry</th><th>Main pages</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Admin</td>
+            <td class="path">/management-portal → Admin</td>
+            <td class="why">Dashboard, branches, POS, orders, menu, merch, loyalty, stamps, vouchers, booth, events, tables, landing CMS, blog, careers, users, audit, settings</td>
+          </tr>
+          <tr>
+            <td>Barista</td>
+            <td class="path">/management-portal → Barista</td>
+            <td class="why">Board, queue, POS, menu stock, stamps, kiosk, settings</td>
+          </tr>
+          <tr>
+            <td>Staff</td>
+            <td class="path">/management-portal → Staff</td>
+            <td class="why">Merch orders, booth bookings, event registrations, all orders, settings</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-foot">
+      <p>
+        <strong>Kado Kohi Website Sitemap</strong> · Prepared for business owners ·
+        Source of truth for engineers: <span class="path">src/App.tsx</span> and <span class="path">PROJECT_CONTEXT.md</span> §4.
+      </p>
+      <p>
+        Folder: <span class="path">docs/sitemap/</span> ·
+        Open this file anytime; Print → Save as PDF to share a fixed snapshot.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
