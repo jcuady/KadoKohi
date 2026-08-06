@@ -32,6 +32,7 @@ import { formatOrderError } from '../lib/validation';
 import { ensureOrderReadiness } from '../lib/orderReadiness';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { checkoutPath } from '../lib/pendingPayments';
+import { isKukiBuilderOnlyProduct } from '../lib/kukido';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
@@ -206,6 +207,8 @@ export default function CartDrawer() {
         groupName: v.groupName,
         optionLabel: v.optionLabel,
         priceDelta: v.priceDelta,
+        optionId: v.optionId,
+        qty: v.qty,
       })),
       unitPrice: line.unitPrice,
       qty: line.qty,
@@ -377,8 +380,9 @@ export default function CartDrawer() {
                             {line.productNameSnapshot}
                           </p>
                           <div className="flex flex-wrap gap-x-2 mt-0.5">
-                            {line.itemType === 'merch' && line.selectedVariants?.map((v) => (
-                              <span key={v.optionId} className="text-[10px] text-kado-dark/48">
+                            {(line.itemType === 'merch' || isKukiBuilderOnlyProduct(line.productId)) &&
+                              line.selectedVariants?.map((v) => (
+                              <span key={`${v.optionId}-${v.optionLabel}`} className="text-[10px] text-kado-dark/48">
                                 {v.groupName}: {v.optionLabel}
                               </span>
                             ))}

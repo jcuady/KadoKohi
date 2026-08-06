@@ -99,6 +99,10 @@ export interface OrderItemVariantSnapshot {
   groupName: string;
   optionLabel: string;
   priceDelta: number;
+  /** Catalog option / cookie product id when known (Kuki Boxes). */
+  optionId?: string;
+  /** Units for this option (Kuki Box cookie counts). */
+  qty?: number;
 }
 
 export interface OrderItem {

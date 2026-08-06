@@ -1,6 +1,7 @@
 import type { MenuCategory, Product } from '../types/domain';
 import { normalizeExternalMenuImageUrl } from './menuProductImage';
 import { displaySizedImage } from './supabaseSizedImage';
+import { isKukidoCookieId, KUKIDO_COOKIE_IMAGE } from './kukido';
 
 /** Bundled fallbacks — avoid external URLs that 404 in production. */
 const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
@@ -10,9 +11,14 @@ const FALLBACK_IMAGE_BY_CATEGORY: Record<string, string> = {
   cat_yuzu: '/social/matcha-latte.webp',
 };
 
-const PASTRY_FALLBACK_IMAGE = '/social/cafe-latte.webp';
+const PASTRY_FALLBACK_IMAGE = '/kukido/collab-plate.webp';
 
 export const DEFAULT_MENU_PRODUCT_IMAGE = '/social/cafe-latte.webp';
+
+function kukidoLocalImage(product: { id?: string }): string | null {
+  if (!product.id || !isKukidoCookieId(product.id)) return null;
+  return KUKIDO_COOKIE_IMAGE[product.id];
+}
 
 export function isMerchCategoryName(name: string | undefined): boolean {
   return Boolean(name?.toLowerCase().includes('merch'));
@@ -20,7 +26,7 @@ export function isMerchCategoryName(name: string | undefined): boolean {
 
 /** Same image resolution as /menu — product.image from Supabase, then category fallback. */
 export function getMenuProductImageUrl(
-  product: Pick<Product, 'image' | 'categoryId'>,
+  product: Pick<Product, 'image' | 'categoryId'> & { id?: string },
   options?: { pastriesCategoryId?: string; displayWidth?: number },
 ): string {
   const fromProduct = product.image?.trim();
@@ -28,6 +34,8 @@ export function getMenuProductImageUrl(
     const normalized = normalizeExternalMenuImageUrl(fromProduct);
     return displaySizedImage(normalized, options?.displayWidth ?? 560);
   }
+  const localCookie = kukidoLocalImage(product);
+  if (localCookie) return localCookie;
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     return FALLBACK_IMAGE_BY_CATEGORY[product.categoryId];
   }
@@ -37,9 +45,9 @@ export function getMenuProductImageUrl(
   return DEFAULT_MENU_PRODUCT_IMAGE;
 }
 
-/** Ordered URLs to try when a product image fails to load (product → category → default). */
+/** Ordered URLs to try when a product image fails to load (product → local cookie → category → default). */
 export function getMenuProductImageFallbackChain(
-  product: Pick<Product, 'image' | 'categoryId'>,
+  product: Pick<Product, 'image' | 'categoryId'> & { id?: string },
   options?: { pastriesCategoryId?: string },
 ): string[] {
   const urls: string[] = [];
@@ -49,6 +57,9 @@ export function getMenuProductImageFallbackChain(
 
   const fromProduct = product.image?.trim();
   if (fromProduct) push(normalizeExternalMenuImageUrl(fromProduct));
+
+  const localCookie = kukidoLocalImage(product);
+  if (localCookie) push(localCookie);
 
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     push(FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]);

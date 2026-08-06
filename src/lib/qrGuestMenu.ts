@@ -2,6 +2,7 @@ import type { MenuCategory, Product } from '../types/domain';
 import { findPastriesCategory, isPastriesCategory, isPastriesCategoryId, pastryHasPrice, pastriesProducts } from './pastriesCategory';
 import { hasProductDiscount } from './productPricing';
 import { isPromoFilterId, MENU_PROMO_FILTER_ID } from './menuCatalogFilters';
+import { isKukiBuilderOnlyProduct } from './kukido';
 
 export type QrGuestCategoryTab = { id: string; name: string };
 
@@ -59,15 +60,15 @@ export function qrGuestProductsInCategory(
       allProducts ??
       categories.flatMap((c) => productsByCategory(c.id));
     return source
-      .filter((p) => p.visible && hasProductDiscount(p))
+      .filter((p) => p.visible && hasProductDiscount(p) && !isKukiBuilderOnlyProduct(p.id))
       .filter((p) => !isPastriesCategoryId(categories, p.categoryId) || pastryHasPrice(p))
       .sort((a, b) => a.order - b.order);
   }
   const list = productsByCategory(categoryId);
   if (isPastriesCategoryId(categories, categoryId)) {
-    return list.filter((p) => pastryHasPrice(p));
+    return list.filter((p) => pastryHasPrice(p) && !isKukiBuilderOnlyProduct(p.id));
   }
-  return list;
+  return list.filter((p) => !isKukiBuilderOnlyProduct(p.id));
 }
 
 /** Scroll sections for full-menu browse — excludes the On promo rail (shown as a filtered grid). */

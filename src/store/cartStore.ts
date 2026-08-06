@@ -7,6 +7,8 @@ export interface CartLineVariant {
   optionId: string;
   optionLabel: string;
   priceDelta: number;
+  /** Cookie count inside a Kuki Box flavor row. */
+  qty?: number;
 }
 
 export interface CartLine {

@@ -1,4 +1,5 @@
 import type { MenuCategory, Product } from '../types/domain';
+import { isKukiBuilderOnlyProduct } from './kukido';
 
 export const PASTRIES_CATEGORY_NAME = 'Pastries';
 
@@ -13,9 +14,10 @@ export function findPastriesCategories(categories: MenuCategory[]): MenuCategory
     .sort((a, b) => a.order - b.order);
 }
 
-/** Match the admin-created "Pastries" menu category (case-insensitive). */
+/** Match the admin-created "Pastries" menu category (prefer stable seed id). */
 export function findPastriesCategory(categories: MenuCategory[]): MenuCategory | undefined {
-  return findPastriesCategories(categories)[0];
+  const all = findPastriesCategories(categories);
+  return all.find((c) => c.id === 'cat_pastries') ?? all[0];
 }
 
 export function isPastriesCategoryId(categories: MenuCategory[], categoryId: string | null | undefined): boolean {
@@ -46,7 +48,12 @@ export function pastriesProducts(categories: MenuCategory[], products: Product[]
   const ids = pastryCategoryIds(categories);
   if (ids.size === 0) return [];
   return products
-    .filter((p) => ids.has(p.categoryId) && p.visible)
+    .filter(
+      (p) =>
+        ids.has(p.categoryId) &&
+        p.visible &&
+        !isKukiBuilderOnlyProduct(p.id),
+    )
     .sort((a, b) => a.order - b.order);
 }
 

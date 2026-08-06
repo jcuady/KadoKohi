@@ -7,7 +7,7 @@ import {
 import { toWebpSrc } from '../../lib/toWebpSrc';
 
 type Props = {
-  product: Pick<Product, 'image' | 'categoryId'>;
+  product: Pick<Product, 'image' | 'categoryId'> & { id?: string };
   alt: string;
   className?: string;
   loading?: 'lazy' | 'eager';
@@ -30,12 +30,12 @@ export default function MenuProductImage({
       expanded.push(url);
     }
     return [...new Set(expanded)];
-  }, [product.image, product.categoryId, pastriesCategoryId]);
+  }, [product.id, product.image, product.categoryId, pastriesCategoryId]);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     setIndex(0);
-  }, [product.image, product.categoryId, pastriesCategoryId]);
+  }, [product.id, product.image, product.categoryId, pastriesCategoryId]);
 
   const src = chain[Math.min(index, chain.length - 1)] ?? DEFAULT_MENU_PRODUCT_IMAGE;
 

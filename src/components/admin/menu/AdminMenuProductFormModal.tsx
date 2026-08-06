@@ -6,6 +6,7 @@ import {
   MENU_PRODUCT_IMAGE_MAX_LABEL,
   type MenuImageSource,
 } from '../../../lib/menuProductImage';
+import { kukidoAdminBadge } from '../../../lib/kukido';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { Button } from '../../ui/button';
 import { useConfirmDialog } from '../../ui/ConfirmDialog';
@@ -123,6 +124,8 @@ export default function AdminMenuProductFormModal({
       ? 'Edit product'
       : 'Add product';
 
+  const kukidoKind = editingProduct ? kukidoAdminBadge(editingProduct) : null;
+
   const confirmRemove = async (titleText: string, description: string, then: () => void) => {
     if (
       !(await confirm({
@@ -172,6 +175,26 @@ export default function AdminMenuProductFormModal({
               Only the <strong className="dash-heading">name</strong> is required. Set a price when customers can order
               online. Use sizes for packs or flavors (e.g.{' '}
               <span className="font-mono text-[10px]">Single|0, Box of 6|250</span>).
+            </p>
+          ) : null}
+
+          {kukidoKind === 'cookie' ? (
+            <p className="rounded-xl border border-[#1B4FCC]/25 bg-[#1B4FCC]/[0.06] px-3.5 py-2.5 text-xs leading-relaxed text-[#143A9E]">
+              <strong className="font-semibold">Kukidō cookie</strong> — price, photo, visibility, and stock drive the
+              public cookie list and Kuki Box builder. Keep Visible + In stock for flavors customers can pick.
+            </p>
+          ) : null}
+          {kukidoKind === 'box' ? (
+            <p className="rounded-xl border border-[#1B4FCC]/25 bg-[#1B4FCC]/[0.06] px-3.5 py-2.5 text-xs leading-relaxed text-[#143A9E]">
+              <strong className="font-semibold">Kuki Box SKU</strong> — base price is what customers pay for this box
+              size (home + builder + checkout). Sold only via the box builder (not the pastry grid). Keep Visible so
+              orders validate; use Out of stock to pause a size.
+            </p>
+          ) : null}
+          {kukidoKind === 'pack' ? (
+            <p className="rounded-xl border border-[#1B4FCC]/25 bg-[#1B4FCC]/[0.06] px-3.5 py-2.5 text-xs leading-relaxed text-[#143A9E]">
+              <strong className="font-semibold">Kuki packaging add-on</strong> — base price is the optional packaging
+              surcharge in the box builder. Keep Visible for checkout validation.
             </p>
           ) : null}
 

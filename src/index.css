@@ -1071,6 +1071,26 @@ html.dash-dark {
   background-color: #faf9f6;
 }
 
+/* Kukidō pastries page — blue chips instead of brand red */
+[data-catalog-accent='kukido'] .catalog-category-chip[aria-selected='true'] {
+  background-color: var(--catalog-accent, #1b4fcc);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(27 79 204 / 0.25);
+}
+
+[data-catalog-accent='kukido'] .catalog-category-chip:not([aria-selected='true']) {
+  border-color: rgb(27 79 204 / 0.22);
+}
+
+[data-catalog-accent='kukido'] .catalog-category-chip:not([aria-selected='true']):hover {
+  border-color: rgb(27 79 204 / 0.45);
+  color: var(--catalog-accent-deep, #143a9e);
+}
+
+[data-catalog-accent='kukido'] .catalog-category-chip:focus-visible {
+  --tw-ring-color: var(--catalog-accent, #1b4fcc);
+}
+
 /*
  * Vertical catalog ribbon label (MENU / MERCH).
  * After -rotate-90 the glyph run becomes height — size from available

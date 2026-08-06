@@ -3,6 +3,7 @@ import type { DragEvent } from 'react';
 import type { MenuCategory, Product } from '../../../types/domain';
 import { formatPhp } from '../../../lib/money';
 import { getProductImageUrl } from '../../../lib/productImage';
+import { kukidoAdminBadge } from '../../../lib/kukido';
 import { isPastriesCategory, pastryHasPrice } from '../../../lib/pastriesCategory';
 import { isProductInStock } from '../../../lib/productStock';
 import MenuProductStockButton from '../../menu/MenuProductStockButton';
@@ -38,6 +39,7 @@ export default function AdminMenuProductRow({
 }: Props) {
   const catIsPastry = isPastriesCategory(category);
   const thumb = getProductImageUrl(product, { pastriesCategoryId });
+  const kukidoKind = catIsPastry ? kukidoAdminBadge(product.id) : null;
 
   return (
     <div
@@ -65,6 +67,15 @@ export default function AdminMenuProductRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-sm font-semibold dash-heading">{product.name}</span>
+            {kukidoKind === 'cookie' ? (
+              <Badge className="border-transparent bg-[#1B4FCC]/10 text-[9px] text-[#143A9E]">Cookie</Badge>
+            ) : null}
+            {kukidoKind === 'box' ? (
+              <Badge className="border-transparent bg-[#1B4FCC]/10 text-[9px] text-[#143A9E]">Kuki Box</Badge>
+            ) : null}
+            {kukidoKind === 'pack' ? (
+              <Badge className="border-transparent bg-[#1B4FCC]/10 text-[9px] text-[#143A9E]">Packaging</Badge>
+            ) : null}
             {!product.visible ? <Badge variant="muted">Hidden</Badge> : null}
             {!isProductInStock(product) ? (
               <Badge variant="warning" className="text-[9px]">

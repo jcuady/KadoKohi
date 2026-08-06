@@ -45,11 +45,32 @@ test.describe('Admin pastries', () => {
 });
 
 test.describe('Customer pastries', () => {
-  test('pastries page loads without Mix & Match branding', async ({ page }) => {
+  test('pastries page shows kukidō cookie menu chrome', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/pastries');
-    await expect(page.getByRole('heading', { name: /pastries/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: /cookie\s+menu/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: /kuki boxes/i }).first()).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
+    expect(errors(), 'no uncaught errors').toEqual([]);
+  });
+
+  test('customer can build a 4-pc kuki box with per-cookie quantities', async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = trackPageErrors(page);
+    await page.goto('/pastries');
+    await expect(page.getByRole('button', { name: /kuki boxes/i }).first()).toBeVisible({ timeout: 20000 });
+    await page.getByRole('button', { name: /kuki boxes/i }).first().click();
+    const dialog = page.getByRole('dialog', { name: /kuki boxes/i });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: /4 pcs/i }).click();
+    // Fill 4 slots via first cookie + buttons
+    const firstPlus = dialog.getByRole('button', { name: /add one/i }).first();
+    for (let i = 0; i < 4; i++) {
+      await firstPlus.click();
+    }
+    await expect(dialog.getByText(/box full/i)).toBeVisible();
+    await dialog.getByRole('button', { name: /add 4-pc box/i }).click();
+    await expect(dialog).toHaveCount(0, { timeout: 5000 });
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 

@@ -9,7 +9,9 @@ export type QrCartLine = QrCartPayload & { key: string };
 
 function customizationKey(customizations: QrCartPayload['customizations']): string {
   return JSON.stringify(
-    (customizations ?? []).map((c) => `${c.groupName}:${c.optionLabel}:${c.priceDelta}`).sort(),
+    (customizations ?? [])
+      .map((c) => `${c.groupName}:${c.optionId ?? ''}:${c.optionLabel}:${c.qty ?? ''}:${c.priceDelta}`)
+      .sort(),
   );
 }
 

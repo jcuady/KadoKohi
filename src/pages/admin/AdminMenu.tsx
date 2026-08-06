@@ -717,9 +717,17 @@ export default function AdminMenu() {
         {addCategoryError ? <p className="text-xs font-semibold text-red-600">{addCategoryError}</p> : null}
 
         {menuTab === 'pastries' && pastriesCategory ? (
-          <p className="text-xs dash-muted">
-            Only the name is required. Price, photo, sizes, and tags are optional — same controls as drinks.
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs dash-muted">
+              Only the name is required. Price, photo, sizes, and tags are optional — same controls as drinks.
+            </p>
+            <p className="rounded-xl border border-[#1B4FCC]/20 bg-[#1B4FCC]/[0.05] px-3.5 py-2.5 text-xs leading-relaxed text-[#143A9E]">
+              <strong className="font-semibold">Kukidō collab</strong> — edit rows tagged Cookie / Kuki Box / Packaging
+              to change public prices, photos, and availability. Box &amp; pack SKUs stay off the pastry grid but must
+              stay <strong className="font-semibold">Visible</strong> (use stock to pause). Cookie visibility controls
+              which flavors appear in the box builder.
+            </p>
+          </div>
         ) : null}
 
         {visibleCategories.length === 0 ? (

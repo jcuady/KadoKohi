@@ -25,11 +25,19 @@ import OrderTrackingPanel from '../components/order/OrderTrackingPanel';
 import QrCatalogToolbar from '../components/catalog/QrCatalogToolbar';
 import QrMenuSkeleton from '../components/catalog/QrMenuSkeleton';
 import { startGuestPageRealtime, stopGuestPageRealtime } from '../lib/supabase/guestPageRealtime';
-import { Store } from 'lucide-react';
+import { Store, Package } from 'lucide-react';
 import BrandHybridMark from '../components/BrandHybridMark';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import { checkoutPath } from '../lib/pendingPayments';
 import { qrGuestCategoryTabs, qrGuestDefaultCategoryId, qrGuestMenuSections } from '../lib/qrGuestMenu';
+import {
+  isPastriesCategoryId,
+  pastryHasPrice,
+  pastriesProducts,
+} from '../lib/pastriesCategory';
+import KukiBoxBuilder from '../components/pastries/KukiBoxBuilder';
+import type { KukiBoxCommitLine } from '../lib/kukiBoxOrder';
+import { KUKIDO_BLUE } from '../lib/kukido';
 import {
   baseProductsForFilters,
   DEFAULT_MENU_CATALOG_FILTERS,
@@ -76,6 +84,7 @@ export default function OrderTakeout() {
   const [pickupName, setPickupName] = useState(user?.name ?? '');
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [boxOpen, setBoxOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -168,6 +177,30 @@ export default function OrderTakeout() {
       return [...prev, { ...payload, key: newId() }];
     });
   };
+
+  const commitKukiBox = (lines: KukiBoxCommitLine[]) => {
+    for (const line of lines) {
+      addLine({
+        productId: line.productId,
+        qty: line.qty,
+        productNameSnapshot: line.productNameSnapshot,
+        customizations: line.selectedVariants?.map((v) => ({
+          groupName: v.groupName,
+          optionLabel: v.optionLabel,
+          priceDelta: v.priceDelta,
+          optionId: v.optionId,
+          qty: v.qty,
+        })),
+      });
+    }
+    setCartExpanded(true);
+  };
+
+  const pastryCookies = useMemo(
+    () => pastriesProducts(categories, products).filter((p) => pastryHasPrice(p)),
+    [categories, products],
+  );
+  const showKukiBoxCta = isPastriesCategoryId(categories, activeCat) && pastryCookies.length > 0;
 
   const updateLineQty = (key: string, qty: number) => {
     if (qty <= 0) {
@@ -380,6 +413,19 @@ export default function OrderTakeout() {
       </header>
 
       <main className={`flex-1 max-w-3xl mx-auto w-full min-w-0 px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-2 sm:py-4 [@media(orientation:landscape)_and_(max-height:30rem)]:py-1.5 ${mainPaddingBottom}`}>
+        {showKukiBoxCta ? (
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={() => setBoxOpen(true)}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white touch-manipulation"
+              style={{ backgroundColor: KUKIDO_BLUE }}
+            >
+              <Package className="h-4 w-4" aria-hidden />
+              Build a Kuki Box
+            </button>
+          </div>
+        ) : null}
         {!menuReady ? (
           <QrMenuSkeleton />
         ) : showPromoCatalog ? (
@@ -456,6 +502,13 @@ export default function OrderTakeout() {
         onClose={() => setSelectedProduct(null)}
         onAdd={addLine}
         ctaLabel="Add to order"
+      />
+
+      <KukiBoxBuilder
+        open={boxOpen}
+        cookies={pastryCookies}
+        onClose={() => setBoxOpen(false)}
+        onCommit={commitKukiBox}
       />
     </div>
   );

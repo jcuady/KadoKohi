@@ -6,6 +6,7 @@ import HomeHeroSlider from '../ui/home-hero-slider';
 import HomeSeoIntro from './HomeSeoIntro';
 import HomePageSeoSection from '../seo/HomePageSeoSection';
 import FeaturedCoffeesSection from './FeaturedCoffeesSection';
+import KukidoCollabSection from './KukidoCollabSection';
 import EventsSection from './EventsSection';
 import BranchesStrip from './BranchesStrip';
 import { KADO_GOOGLE_LISTING } from '../../content/kadoGoogleReviews';
@@ -49,6 +50,9 @@ export default function HomePageContent({ landing, previewBanner, sectionOnly, c
           <FeaturedCoffeesSection copy={landing.featured} cmsEditMode={cmsEditMode} />
         </div>
       ) : null}
+
+      {/* Collab board — not CMS-tabbed; always on full homepage */}
+      {!sectionOnly ? <KukidoCollabSection /> : null}
 
       {showSection('ordering', sectionOnly) ? (
         <div id="landing-ordering">
