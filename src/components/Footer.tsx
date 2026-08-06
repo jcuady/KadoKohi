@@ -1,15 +1,32 @@
+import { useEffect, useMemo } from 'react';
 import { MapPin, Clock, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BrandHybridMark from './BrandHybridMark';
 import { useSettingsStore } from '../store/settingsStore';
+import { useBranchStore } from '../store/branchStore';
 import { FooterSocialLinks } from './ContactSocialLinks';
 import { requestCookiePreferences } from '../lib/cookieConsent';
-import { kadoMapsSearchUrl } from '../content/kadoLocation';
+import { branchDirectionsUrl } from '../lib/branchMaps';
+import { formatBranchHoursSummary } from '../lib/branchHours';
 
 export default function Footer() {
   const contact = useSettingsStore((s) => s.settings);
+  const branches = useBranchStore((s) => s.branches);
+  const hydrateBranches = useBranchStore((s) => s.hydrateFromRemote);
   const mailHref = `mailto:${contact.contactEmail}`;
   const phoneHref = `tel:${contact.contactPhone.replace(/\s/g, '')}`;
+
+  useEffect(() => {
+    void hydrateBranches();
+  }, [hydrateBranches]);
+
+  const visitBranches = useMemo(
+    () =>
+      [...branches]
+        .filter((b) => b.status === 'active')
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [branches],
+  );
 
   return (
     <footer className="w-full mt-auto">
@@ -67,23 +84,51 @@ export default function Footer() {
 
           <div className="flex flex-col gap-4">
             <h3 className="font-display font-bold text-lg">Visit Us</h3>
-            <div className="flex flex-col gap-3 text-sm text-kado-cream/70">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
-                <a
-                  href={kadoMapsSearchUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-kado-red transition-colors underline-offset-2 hover:underline"
-                >
-                  {contact.contactAddress}
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 shrink-0 text-kado-red" />
-                <span>{contact.contactHours}</span>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-4 text-sm text-kado-cream/70">
+              {visitBranches.length > 0 ? (
+                visitBranches.map((b) => {
+                  const hoursLabel = formatBranchHoursSummary(b.hours);
+                  const place = [b.address, b.city].filter(Boolean).join(', ');
+                  return (
+                    <div key={b.id} className="flex flex-col gap-1.5">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-kado-cream">
+                        {b.name}
+                      </p>
+                      {place ? (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
+                          <a
+                            href={branchDirectionsUrl(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-kado-red transition-colors underline-offset-2 hover:underline"
+                          >
+                            {place}
+                          </a>
+                        </div>
+                      ) : null}
+                      {hoursLabel ? (
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
+                          <span>{hoursLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
+                    <span>{contact.contactAddress}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 shrink-0 text-kado-red" />
+                    <span>{contact.contactHours}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center gap-2 border-t border-kado-cream/10 pt-3">
                 <Phone className="w-4 h-4 shrink-0 text-kado-red" />
                 <a href={phoneHref} className="hover:text-kado-red transition-colors">
                   {contact.contactPhone}
@@ -91,7 +136,10 @@ export default function Footer() {
               </div>
               <div className="flex items-start gap-2">
                 <Mail className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
-                <a href={mailHref} className="hover:text-kado-red transition-colors break-words [overflow-wrap:anywhere] font-medium">
+                <a
+                  href={mailHref}
+                  className="hover:text-kado-red transition-colors break-words [overflow-wrap:anywhere] font-medium"
+                >
                   {contact.contactEmail}
                 </a>
               </div>
@@ -118,7 +166,7 @@ export default function Footer() {
               Cookie preferences
             </button>
             <span className="hidden sm:inline text-kado-cream/60">·</span>
-            <span>Specialty Coffee · Marikina City</span>
+            <span>Specialty Coffee · Metro Manila</span>
           </div>
         </div>
       </div>

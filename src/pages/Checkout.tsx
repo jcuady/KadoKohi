@@ -256,7 +256,7 @@ function CheckoutConfirmed({
       <div className="flex flex-col gap-2.5 sm:flex-row">
         {isCustomer ? (
           <Link
-            to={`/account/orders?placed=${encodeURIComponent(orderId)}`}
+            to={`/account/orders?highlight=${encodeURIComponent(orderId)}`}
             replace
             className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-kado-red px-5 text-[11px] font-black uppercase tracking-wider text-kado-cream transition-colors hover:bg-kado-dark"
           >
@@ -504,7 +504,7 @@ export default function Checkout() {
       setRedirectSeconds(left);
       if (left <= 0) {
         window.clearInterval(tick);
-        navigate(`/account/orders?placed=${encodeURIComponent(orderId)}`, { replace: true });
+        navigate(`/account/orders?highlight=${encodeURIComponent(orderId)}`, { replace: true });
       }
     }, 1000);
     return () => window.clearInterval(tick);

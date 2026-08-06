@@ -727,7 +727,7 @@ export default function AdminMenu() {
               stay <strong className="font-semibold">Visible</strong> (use stock to pause). Cookie visibility controls
               which flavors appear in the box builder.
             </p>
-          </div>
+        </div>
         ) : null}
 
         {visibleCategories.length === 0 ? (

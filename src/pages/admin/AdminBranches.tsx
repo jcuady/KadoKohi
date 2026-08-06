@@ -4,6 +4,11 @@ import { useBranchStore } from '../../store/branchStore';
 import { formatBranchCrudError } from '../../lib/supabase/repositories/ordering';
 import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
 import { branchGoogleMapsUrl, branchHeroImageUrl } from '../../lib/branchMaps';
+import {
+  branchHoursFromWindows,
+  formatBranchHoursSummary,
+  windowsFromBranchHours,
+} from '../../lib/branchHours';
 import BranchLocationPicker, {
   geocodeBranchStreetAddress,
 } from '../../components/admin/BranchLocationPicker';
@@ -28,6 +33,10 @@ type BranchForm = {
   city: string;
   status: BranchStatus;
   heroImage: string;
+  weekdayOpen: string;
+  weekdayClose: string;
+  weekendOpen: string;
+  weekendClose: string;
   lat?: number;
   lng?: number;
 };
@@ -39,6 +48,10 @@ const emptyForm: BranchForm = {
   city: '',
   status: 'active',
   heroImage: '',
+  weekdayOpen: '10:00',
+  weekdayClose: '21:00',
+  weekendOpen: '10:00',
+  weekendClose: '22:00',
   lat: undefined,
   lng: undefined,
 };
@@ -123,6 +136,7 @@ export default function AdminBranches() {
   };
 
   const startEdit = (b: Branch) => {
+    const windows = windowsFromBranchHours(b.hours);
     setEditingId(b.id);
     setForm({
       slug: b.slug,
@@ -131,6 +145,10 @@ export default function AdminBranches() {
       city: b.city,
       status: b.status,
       heroImage: b.heroImage ?? '',
+      weekdayOpen: windows.weekdayOpen,
+      weekdayClose: windows.weekdayClose,
+      weekendOpen: windows.weekendOpen,
+      weekendClose: windows.weekendClose,
       lat: b.lat,
       lng: b.lng,
     });
@@ -170,6 +188,12 @@ export default function AdminBranches() {
     setSaveOk('');
 
     try {
+      const hours = branchHoursFromWindows({
+        weekdayOpen: form.weekdayOpen,
+        weekdayClose: form.weekdayClose,
+        weekendOpen: form.weekendOpen,
+        weekendClose: form.weekendClose,
+      });
       if (editingId) {
         await updateBranch(editingId, {
           slug: normalizedSlug,
@@ -177,6 +201,7 @@ export default function AdminBranches() {
           address: form.address.trim(),
           city: form.city.trim(),
           status: form.status,
+          hours,
           heroImage: form.heroImage.trim() || undefined,
           lat: form.lat,
           lng: form.lng,
@@ -189,7 +214,7 @@ export default function AdminBranches() {
           address: form.address.trim(),
           city: form.city.trim(),
           status: form.status,
-          hours: [],
+          hours,
           heroImage: form.heroImage.trim() || undefined,
           lat: form.lat,
           lng: form.lng,
@@ -403,6 +428,11 @@ export default function AdminBranches() {
                         {[b.address, b.city].filter(Boolean).join(', ')}
                       </p>
                     )}
+                    {formatBranchHoursSummary(b.hours) ? (
+                      <p className="mt-1 line-clamp-2 text-[11px] font-medium dash-muted">
+                        {formatBranchHoursSummary(b.hours)}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -654,6 +684,57 @@ export default function AdminBranches() {
                     className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     placeholder="Filled from map search"
                   />
+                </div>
+
+                <div className="rounded-xl border dash-border bg-[var(--color-dash-surface-alt)]/40 p-3.5">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wider dash-muted">
+                    Operating hours
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1.5 text-[11px] font-semibold dash-heading">Mon – Thu</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={form.weekdayOpen}
+                          onChange={(e) => setForm((f) => ({ ...f, weekdayOpen: e.target.value }))}
+                          className="w-full rounded-lg border dash-input px-2.5 py-2 text-sm"
+                          aria-label="Weekday open time"
+                        />
+                        <span className="text-xs dash-muted">to</span>
+                        <input
+                          type="time"
+                          value={form.weekdayClose}
+                          onChange={(e) => setForm((f) => ({ ...f, weekdayClose: e.target.value }))}
+                          className="w-full rounded-lg border dash-input px-2.5 py-2 text-sm"
+                          aria-label="Weekday close time"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-[11px] font-semibold dash-heading">Fri – Sun</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={form.weekendOpen}
+                          onChange={(e) => setForm((f) => ({ ...f, weekendOpen: e.target.value }))}
+                          className="w-full rounded-lg border dash-input px-2.5 py-2 text-sm"
+                          aria-label="Weekend open time"
+                        />
+                        <span className="text-xs dash-muted">to</span>
+                        <input
+                          type="time"
+                          value={form.weekendClose}
+                          onChange={(e) => setForm((f) => ({ ...f, weekendClose: e.target.value }))}
+                          className="w-full rounded-lg border dash-input px-2.5 py-2 text-sm"
+                          aria-label="Weekend close time"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[10px] dash-muted">
+                    Shown on /branches and the site footer for this branch.
+                  </p>
                 </div>
               </div>
             </div>

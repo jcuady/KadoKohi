@@ -9,15 +9,21 @@ export function branchOsmEmbedUrl(lat: number, lng: number): string {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
 }
 
+/** Google Maps directions to the branch street address (preferred over coarse pins). */
 export function branchDirectionsUrl(
   branch: Pick<Branch, 'lat' | 'lng' | 'name' | 'address' | 'city'>,
 ): string {
-  if (branch.lat != null && branch.lng != null) {
-    return branchGoogleMapsUrl(branch.lat, branch.lng);
+  const destination = [branch.address, branch.city, 'Philippines']
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(', ');
+  if (destination) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
   }
-  const q = encodeURIComponent(
-    [branch.name, branch.address, branch.city, 'Philippines'].filter(Boolean).join(', '),
-  );
+  if (branch.lat != null && branch.lng != null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`;
+  }
+  const q = encodeURIComponent([branch.name, 'Philippines'].filter(Boolean).join(', '));
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 

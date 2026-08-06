@@ -12,6 +12,7 @@ import {
   PAYMENT_STATUS_BADGE,
   orderNeedsCustomerPayment,
 } from '../../lib/orderStatus';
+import { shouldOpenGcashQrModal } from '../../lib/shouldOpenGcashQrModal';
 import { checkoutPath } from '../../lib/pendingPayments';
 import { verifyPaymongoCheckout } from '../../lib/supabase/repositories/paymongo';
 import GcashQrModal from '../../components/GcashQrModal';
@@ -66,18 +67,33 @@ export default function AccountOrders() {
   const [paymongoSync, setPaymongoSync] = useState<'idle' | 'syncing' | 'paid' | 'pending'>('idle');
 
   const placedId = searchParams.get('placed');
+  const highlightId = searchParams.get('highlight');
   const paymongoStatus = searchParams.get('paymongo');
   const paymongoOrderId = searchParams.get('order');
 
   useEffect(() => {
+    const focusId = highlightId || placedId;
+    if (!focusId) return;
+
+    setExpandedId(focusId);
+
     if (placedId) {
-      setQrModalOrderId(placedId);
-      setExpandedId(placedId);
-      const next = new URLSearchParams(searchParams);
-      next.delete('placed');
-      setSearchParams(next, { replace: true });
+      const order = orders.find((o) => o.id === placedId);
+      // Wait for customer hydrate so paid PayMongo is not treated as unpaid GCash.
+      if (!order && user?.id && !orders.some((o) => o.customerId === user.id)) {
+        return;
+      }
+      if (shouldOpenGcashQrModal(order)) {
+        setQrModalOrderId(placedId);
+      }
     }
-  }, [placedId, searchParams, setSearchParams]);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('placed');
+    next.delete('highlight');
+    if (next.toString() === searchParams.toString()) return;
+    setSearchParams(next, { replace: true });
+  }, [placedId, highlightId, searchParams, setSearchParams, orders, user?.id]);
 
   useEffect(() => {
     if (!paymongoStatus) return;
@@ -380,7 +396,7 @@ export default function AccountOrders() {
       )}
 
       <GcashQrModal
-        open={qrModalOrderId !== null}
+        open={shouldOpenGcashQrModal(qrModalOrder)}
         onClose={() => setQrModalOrderId(null)}
         shortCode={qrModalOrder?.shortCode ?? '—'}
         total={qrModalOrder?.total ?? 0}
