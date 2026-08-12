@@ -4,6 +4,8 @@ export const KUKIDO_BLUE = '#1B4FCC';
 export const KUKIDO_BLUE_DEEP = '#143A9E';
 export const KUKIDO_BLUE_SOFT = '#E8EEFF';
 export const KUKIDO_PAPER = '#FFFEFA';
+/** Bright cream for Kuki Singles / light product surfaces (never charcoal). */
+export const KUKIDO_CREAM = '#FFF9E5';
 
 export const KUKIDO_COOKIE_IDS = [
   'cookie_klassic',
@@ -50,6 +52,14 @@ export const KUKI_BOX_OPTIONS: ReadonlyArray<{
   { size: 6, productId: 'kuki_box_6', price: 540, perCookie: 90 },
   { size: 10, productId: 'kuki_box_10', price: 900, perCookie: 90 },
 ];
+
+/** Local box product art (generated collab packaging on cream). */
+export const KUKI_BOX_IMAGE: Record<string, string> = {
+  kuki_box_4: '/kukido/kuki-box-4.webp',
+  kuki_box_5: '/kukido/kuki-box-5.webp',
+  kuki_box_6: '/kukido/kuki-box-6.webp',
+  kuki_box_10: '/kukido/kuki-box-10.webp',
+};
 
 export const KUKI_PACK_SINGLE_ID = 'kuki_pack_single';
 export const KUKI_PACK_BIG_ID = 'kuki_pack_big';

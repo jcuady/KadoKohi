@@ -1,5 +1,12 @@
 import type { MenuCategory, Product } from '../types/domain';
-import { findPastriesCategory, isPastriesCategory, isPastriesCategoryId, pastryHasPrice, pastriesProducts } from './pastriesCategory';
+import {
+  findPastriesCategory,
+  isPastriesCategory,
+  isPastriesCategoryId,
+  pastryHasPrice,
+  pastriesProducts,
+  uniqueVisibleMenuCategories,
+} from './pastriesCategory';
 import { hasProductDiscount } from './productPricing';
 import { isPromoFilterId, MENU_PROMO_FILTER_ID } from './menuCatalogFilters';
 import { isKukiBuilderOnlyProduct } from './kukido';
@@ -12,7 +19,7 @@ export type QrGuestMenuSection = {
   products: Product[];
 };
 
-/** Real menu category pills (no special rails). */
+/** Real menu category pills (no special rails). Dedupes duplicate display names. */
 function qrGuestRealCategoryTabs(
   categories: MenuCategory[],
   products: Product[],
@@ -22,13 +29,11 @@ function qrGuestRealCategoryTabs(
     Boolean(pastries?.visible) &&
     pastriesProducts(categories, products).some((p) => pastryHasPrice(p));
 
-  return categories
+  return uniqueVisibleMenuCategories(categories)
     .filter((c) => {
-      if (!c.visible) return false;
       if (isPastriesCategory(c)) return showPastriesTab;
       return true;
     })
-    .sort((a, b) => a.order - b.order)
     .map((c) => ({ id: c.id, name: c.name }));
 }
 

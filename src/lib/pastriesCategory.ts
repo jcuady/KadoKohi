@@ -30,18 +30,28 @@ export function pastryCategoryIds(categories: MenuCategory[]): Set<string> {
   return new Set(findPastriesCategories(categories).map((c) => c.id));
 }
 
-/** Visible categories for public tabs — one chip per display name (first by order wins). */
+/** Visible categories for public tabs — one chip per display name (first by order wins).
+ * Prefer the seeded `cat_pastries` id when duplicate "Pastries" categories exist. */
 export function uniqueVisibleMenuCategories(categories: MenuCategory[]): MenuCategory[] {
-  const seen = new Set<string>();
-  return [...categories]
+  const ranked = [...categories]
     .filter((c) => c.visible)
-    .sort((a, b) => a.order - b.order)
-    .filter((c) => {
-      const key = c.name.trim().toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+    .sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      // Stable preference: seeded pastries category before accidental duplicates.
+      if (isPastriesCategory(a) && isPastriesCategory(b)) {
+        if (a.id === 'cat_pastries') return -1;
+        if (b.id === 'cat_pastries') return 1;
+      }
+      return a.id.localeCompare(b.id);
     });
+
+  const seen = new Set<string>();
+  return ranked.filter((c) => {
+    const key = c.name.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function pastriesProducts(categories: MenuCategory[], products: Product[]): Product[] {

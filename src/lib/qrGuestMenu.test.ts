@@ -71,4 +71,19 @@ describe('qrGuestMenu promo rail', () => {
     expect(sections.map((s) => s.id)).toEqual(['cat_a', 'cat_b']);
     expect(sections.every((s) => s.id !== MENU_PROMO_FILTER_ID)).toBe(true);
   });
+
+  it('dedupes duplicate Pastries category names to seeded cat_pastries', () => {
+    const cats: MenuCategory[] = [
+      { id: 'cat_a', name: 'Signatures', order: 0, visible: true },
+      { id: 'dup-pastries', name: 'Pastries', order: 4, visible: true },
+      { id: 'cat_pastries', name: 'Pastries', order: 4, visible: true },
+    ];
+    const pastryProducts: Product[] = [
+      product({ id: 'cookie_klassic', categoryId: 'cat_pastries', name: 'Klassic Cookie', basePrice: 100 }),
+    ];
+    const tabs = qrGuestCategoryTabs(cats, pastryProducts);
+    const pastryTabs = tabs.filter((t) => t.name === 'Pastries');
+    expect(pastryTabs).toHaveLength(1);
+    expect(pastryTabs[0]?.id).toBe('cat_pastries');
+  });
 });

@@ -6,7 +6,9 @@ import {
   KUKIDO_BLUE_DEEP,
   KUKIDO_COOKIE_IMAGE,
   KUKIDO_COOKIE_LABEL,
+  KUKIDO_CREAM,
   KUKIDO_PAPER,
+  KUKI_BOX_IMAGE,
   KUKI_SINGLE_PRICE,
   isKukidoCookieId,
   resolveKukiBoxOptions,
@@ -18,7 +20,7 @@ import { LOGO } from '../../lib/brandTokens';
 import { formatPhp } from '../../lib/money';
 import { useMenuStore } from '../../store/menuStore';
 
-/** Flyer grid order (3×2): top row then bottom row. */
+/** Flyer grid order (2×3): top row then bottom row — matches cookie menu flyer. */
 const FLYER_COOKIE_ORDER: readonly KukidoCookieId[] = [
   'cookie_klassic',
   'cookie_double_dark',
@@ -28,10 +30,11 @@ const FLYER_COOKIE_ORDER: readonly KukidoCookieId[] = [
   'cookie_blondie',
 ] as const;
 
+const EASE = [0.32, 0.72, 0, 1] as const;
+
 /**
- * Homepage collab board — taped paper cookie menu on kukidō royal blue,
- * with the hero cookie peaking behind the card (flyer-faithful).
- * Prices follow Admin → Menu → Pastries when hydrated.
+ * Homepage kukidō collab — bright royal blue field + taped white cookie menu
+ * (no charcoal / dark vignettes). Prices follow Admin → Menu → Pastries.
  */
 export default function KukidoCollabSection() {
   const reduce = useReducedMotion();
@@ -45,70 +48,54 @@ export default function KukidoCollabSection() {
     );
     return cookie ? Number(cookie.basePrice) : KUKI_SINGLE_PRICE;
   }, [products]);
-  const minPerCookie = Math.min(...boxOptions.map((o) => o.perCookie));
+  const featuredBoxes = useMemo(
+    () => boxOptions.filter((o) => o.size === 4 || o.size === 5 || o.size === 6),
+    [boxOptions],
+  );
 
   return (
     <section
       id="landing-kukido"
       aria-labelledby="kukido-collab-heading"
-      className="relative isolate overflow-hidden px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-16 md:px-8 md:pb-28 md:pt-20 lg:px-16 lg:pb-32 lg:pt-24"
+      className="relative isolate overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-14 md:px-8 md:pb-24 md:pt-16 lg:px-16 lg:pb-28 lg:pt-20"
       style={{ backgroundColor: KUKIDO_BLUE }}
     >
+      {/* Soft light bloom only — never a dark vignette */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(0,0,0,0.22), transparent 55%), radial-gradient(ellipse 50% 40% at 18% 12%, rgba(255,255,255,0.16), transparent 50%)',
+            'radial-gradient(ellipse 55% 45% at 50% 0%, rgba(255,255,255,0.22), transparent 58%), radial-gradient(ellipse 40% 35% at 85% 80%, rgba(255,255,255,0.12), transparent 55%)',
         }}
       />
-
-      {/* Flyer cookie: sits behind the paper board, peeks bottom + sides on all orientations */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[42%] z-0 w-[min(135vw,46rem)] -translate-x-1/2 -translate-y-1/2 sm:top-[46%] sm:w-[min(105vw,50rem)] md:top-[48%] md:w-[min(88vw,54rem)] lg:w-[min(72vw,56rem)] landscape:top-[52%] landscape:w-[min(78vw,50rem)]"
-      >
-        <picture>
-          <source srcSet="/kukido/backdrop-cookie.webp" type="image/webp" />
-          <img
-            src="/kukido/backdrop-cookie.png"
-            alt=""
-            width={682}
-            height={673}
-            decoding="async"
-            loading="lazy"
-            fetchPriority="low"
-            className={[
-              'mx-auto h-auto w-full object-contain opacity-[0.97]',
-              'drop-shadow-[0_32px_56px_rgba(8,24,80,0.5)]',
-              reduce ? '' : 'origin-center -rotate-[3deg]',
-            ].join(' ')}
-          />
-        </picture>
-      </div>
 
       <div className="relative z-10 mx-auto w-full max-w-xl sm:max-w-2xl lg:max-w-3xl">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
+          transition={{ duration: 0.7, ease: EASE }}
           className="relative mx-auto"
         >
           <div
             aria-hidden
-            className="absolute -top-3 left-1/2 z-20 h-7 w-24 -translate-x-1/2 -rotate-2 rounded-[2px] opacity-95 shadow-[0_2px_6px_rgba(10,30,90,0.25)] sm:h-8 sm:w-32 md:w-36"
+            className="absolute -top-3 left-1/2 z-20 h-7 w-24 -translate-x-1/2 -rotate-2 rounded-[2px] opacity-95 sm:h-8 sm:w-32 md:w-36"
             style={{
               background:
-                'linear-gradient(180deg, rgba(255,255,255,0.35), transparent 40%), #5B8DEF',
+                'linear-gradient(180deg, rgba(255,255,255,0.4), transparent 42%), #5B8DEF',
+              boxShadow: '0 2px 8px rgba(10,40,120,0.18)',
             }}
           />
 
           <div
-            className="relative overflow-hidden rounded-[1.15rem] px-4 py-7 shadow-[0_28px_64px_rgba(10,30,90,0.38)] sm:rounded-[1.35rem] sm:px-7 sm:py-9 md:px-9 md:py-10"
-            style={{ backgroundColor: KUKIDO_PAPER }}
+            className="relative overflow-hidden rounded-[1.15rem] px-4 py-7 sm:rounded-[1.35rem] sm:px-7 sm:py-9 md:px-9 md:py-10"
+            style={{
+              backgroundColor: KUKIDO_PAPER,
+              boxShadow: '0 24px 48px rgba(20,58,158,0.28)',
+            }}
           >
-            <div className="mb-5 flex items-center justify-center gap-3 border-b border-kado-dark/10 pb-4 sm:mb-6 sm:gap-5 sm:pb-5">
+            <div className="mb-5 flex items-center justify-center gap-3 border-b border-black/10 pb-4 sm:mb-6 sm:gap-5 sm:pb-5">
               <div className="flex min-w-0 flex-col items-center text-center">
                 <p
                   className="font-display text-[clamp(1.15rem,3.6vw,1.65rem)] font-black leading-none tracking-tight"
@@ -124,9 +111,8 @@ export default function KukidoCollabSection() {
                 </p>
               </div>
 
-              <span className="h-9 w-px shrink-0 self-center bg-kado-dark/20 sm:h-11" aria-hidden />
+              <span className="h-9 w-px shrink-0 self-center bg-black/15 sm:h-11" aria-hidden />
 
-              {/* Official stacked KADO / KŌHĪ wordmark in brand red */}
               <div
                 className="h-9 w-[4.85rem] shrink-0 bg-kado-red sm:h-11 sm:w-[5.85rem]"
                 style={{
@@ -164,15 +150,16 @@ export default function KukidoCollabSection() {
                     transition={{
                       duration: 0.5,
                       delay: reduce ? 0 : 0.04 * i,
-                      ease: [0.32, 0.72, 0, 1],
+                      ease: EASE,
                     }}
                     className="flex flex-col items-center text-center"
                   >
-                    <span className="mb-2 block aspect-square w-[min(100%,6.75rem)] overflow-hidden rounded-full bg-[#F0EEE8] shadow-[inset_0_0_0_1px_rgba(25,25,25,0.06)] sm:mb-2.5 sm:w-[min(100%,8rem)]">
+                    {/* Flyer: cookie on solid black circle */}
+                    <span className="mb-2 flex aspect-square w-[min(100%,6.75rem)] items-center justify-center overflow-hidden rounded-full bg-black sm:mb-2.5 sm:w-[min(100%,8rem)]">
                       <img
                         src={resolveKukidoCookieImage(id, remote) || KUKIDO_COOKIE_IMAGE[id]}
                         alt=""
-                        className="h-full w-full object-cover object-center"
+                        className="h-[88%] w-[88%] object-contain object-center"
                         loading="lazy"
                         decoding="async"
                         width={200}
@@ -211,19 +198,18 @@ export default function KukidoCollabSection() {
                     Kuki boxes
                   </p>
                   <ul className="mt-2 space-y-0.5 text-sm font-semibold tabular-nums">
-                    {boxOptions.map((o) => (
-                      <li
-                        key={o.size}
-                        className="flex justify-between gap-3 border-b border-white/15 py-1 last:border-0"
-                      >
-                        <span>{o.size} pcs</span>
-                        <span>{formatPhp(o.price)}</span>
-                      </li>
-                    ))}
+                    {boxOptions
+                      .filter((o) => o.size !== 10)
+                      .map((o) => (
+                        <li
+                          key={o.size}
+                          className="flex justify-between gap-3 border-b border-white/15 py-1 last:border-0"
+                        >
+                          <span>{o.size} pcs</span>
+                          <span>{formatPhp(o.price)}</span>
+                        </li>
+                      ))}
                   </ul>
-                  <p className="mt-2 text-[11px] text-white/70">
-                    Cookies {formatPhp(minPerCookie)} for 6 pcs and up
-                  </p>
                 </div>
               </div>
 
@@ -236,10 +222,69 @@ export default function KukidoCollabSection() {
                   className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-[10px] font-black uppercase tracking-[0.14em] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] sm:min-w-[8.5rem]"
                   style={{ color: KUKIDO_BLUE_DEEP }}
                 >
-                  Add a box
+                  Build a box
                 </Link>
               </div>
             </div>
+          </div>
+        </motion.div>
+
+        {/* Cream Kuki Singles / box gallery — light surface, punchy blue type */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.65, delay: reduce ? 0 : 0.08, ease: EASE }}
+          className="relative z-10 mt-10 overflow-hidden rounded-[1.35rem] px-4 py-8 sm:mt-12 sm:rounded-[1.5rem] sm:px-7 sm:py-10 md:px-9"
+          style={{ backgroundColor: KUKIDO_CREAM }}
+        >
+          <h3
+            className="mb-6 text-center font-display text-[clamp(1.35rem,4vw,1.85rem)] font-black tracking-tight sm:mb-8"
+            style={{ color: KUKIDO_BLUE }}
+          >
+            Kuki Boxes
+          </h3>
+          <ul className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-5">
+            {featuredBoxes.map((box, i) => (
+              <motion.li
+                key={box.productId}
+                initial={reduce ? false : { opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: reduce ? 0 : 0.06 * i, ease: EASE }}
+                className="flex flex-col items-center text-center"
+              >
+                <div className="mb-3 aspect-square w-full max-w-[14rem] overflow-hidden rounded-[1.25rem] bg-white/50 sm:max-w-none">
+                  <img
+                    src={KUKI_BOX_IMAGE[box.productId] ?? KUKI_BOX_IMAGE.kuki_box_4}
+                    alt=""
+                    className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
+                    width={400}
+                    height={400}
+                  />
+                </div>
+                <p
+                  className="font-display text-[clamp(0.85rem,2.4vw,1rem)] font-black uppercase tracking-[0.06em]"
+                  style={{ color: KUKIDO_BLUE }}
+                >
+                  {box.size}-pc box
+                </p>
+                <p className="mt-1 text-sm font-semibold tabular-nums" style={{ color: KUKIDO_BLUE }}>
+                  {formatPhp(box.price)}
+                </p>
+              </motion.li>
+            ))}
+          </ul>
+          <div className="mt-8 flex justify-center">
+            <Link
+              to="/pastries"
+              className="inline-flex min-h-11 items-center justify-center rounded-full px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
+              style={{ backgroundColor: KUKIDO_BLUE }}
+            >
+              Order cookies
+            </Link>
           </div>
         </motion.div>
       </div>

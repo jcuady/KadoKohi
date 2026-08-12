@@ -1,20 +1,29 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   clearSupabaseSession,
   customerLogin,
+  dismissCookieConsent,
+  fetchActiveBranchSlug,
+  fetchActiveTableCode,
   internalLogin,
   supabaseGet,
   trackPageErrors,
   uniqueTestId,
 } from './helpers';
 
+/** Admin destructive confirm uses in-app ConfirmDialog (not window.confirm). */
+async function confirmAdminDelete(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog').filter({ hasText: /delete/i });
+  await expect(dialog).toBeVisible({ timeout: 10000 });
+  await dialog.getByRole('button', { name: /^delete$/i }).click();
+  await expect(dialog).toHaveCount(0, { timeout: 15000 });
+}
+
 test.describe('Admin pastries', () => {
   test('admin can add a pastry with variant controls then remove it', async ({ page }) => {
     test.setTimeout(90_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('cookie')}`;
-
-    page.on('dialog', (dialog) => dialog.accept());
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries');
@@ -37,7 +46,7 @@ test.describe('Admin pastries', () => {
 
     const deleteProduct = page.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') });
     await deleteProduct.click();
-    await deleteProduct.click();
+    await confirmAdminDelete(page);
     await expect(page.getByText(pastryName)).toHaveCount(0, { timeout: 15000 });
 
     expect(errors(), 'no uncaught errors').toEqual([]);
@@ -78,8 +87,6 @@ test.describe('Customer pastries', () => {
     test.setTimeout(120_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('buy-cookie')}`;
-
-    page.on('dialog', (dialog) => dialog.accept());
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries');
@@ -134,8 +141,70 @@ test.describe('Customer pastries', () => {
     await expect(page.getByText(pastryName)).toBeVisible({ timeout: 20000 });
     const deleteProduct = page.getByRole('button', { name: new RegExp(`Delete ${pastryName}`, 'i') });
     await deleteProduct.click();
-    await deleteProduct.click();
+    await confirmAdminDelete(page);
+    await expect(page.getByText(pastryName)).toHaveCount(0, { timeout: 15000 });
 
     expect(errors(), 'no uncaught errors').toEqual([]);
+  });
+
+  test('takeout guest can place a pastry pay-at-store order', async ({ page, request }) => {
+    test.setTimeout(120_000);
+    const errors = trackPageErrors(page);
+    const slug = await fetchActiveBranchSlug(request);
+    test.skip(!slug, 'No active branch');
+
+    await page.goto(`/order/takeout?b=${encodeURIComponent(slug!)}`);
+    await dismissCookieConsent(page);
+    await expect(page.getByText(/grab & go/i)).toBeVisible({ timeout: 25000 });
+
+    const pastriesTab = page.getByRole('button', { name: /^pastries$/i }).first();
+    await expect(pastriesTab).toBeVisible({ timeout: 15000 });
+    await pastriesTab.click();
+
+    // Only one Pastries pill after duplicate-category fix.
+    await expect(page.getByRole('button', { name: /^pastries$/i })).toHaveCount(1);
+
+    const grid = page.locator('#qr-cat-cat_pastries .guest-order-product-grid');
+    await expect(grid).toBeVisible({ timeout: 20000 });
+    const cookieBtn = grid.getByRole('button').filter({ hasText: /Klassic|Campfire|Blondie|Birthday|Walnut|Dark/i }).first();
+    await expect(cookieBtn).toBeVisible({ timeout: 20000 });
+    await cookieBtn.click();
+
+    const sheet = page.locator('div.fixed.inset-x-0.bottom-0').filter({ hasText: 'Customize' }).last();
+    await expect(sheet.getByText('Customize')).toBeVisible({ timeout: 8000 });
+    await sheet.getByRole('button', { name: /add to (order|table order)/i }).click();
+    await expect(page.getByText('Customize')).toHaveCount(0, { timeout: 8000 });
+
+    await page.getByRole('button', { name: /review cart/i }).click();
+    await page.getByPlaceholder(/e\.g\. juan/i).fill('E2E Pastry Guest');
+    // Payment tiles: "Cash" + hint "Pay at the counter"
+    await page.getByRole('button', { name: /pay at the counter/i }).click();
+
+    const placeBtn = page.getByRole('button', { name: /place takeout order/i });
+    await expect(placeBtn).toBeEnabled({ timeout: 10000 });
+    await placeBtn.click();
+
+    await page.waitForURL(/\/checkout\//, { timeout: 30000 });
+    await expect(page.getByText(/cash|pay at|order|total/i).first()).toBeVisible({ timeout: 15000 });
+    expect(errors(), 'no uncaught errors').toEqual([]);
+  });
+
+  test('dine-in QR pastries tab exposes kuki boxes CTA', async ({ page, request }) => {
+    const cfgErrors = trackPageErrors(page);
+    const code = await fetchActiveTableCode(request);
+    test.skip(!code, 'No active table');
+
+    await page.goto(`/order/qr/${encodeURIComponent(code!)}`);
+    await dismissCookieConsent(page);
+    await expect(page.getByText(/dine-in ·/i)).toBeVisible({ timeout: 25000 });
+
+    const pastriesTab = page.getByRole('button', { name: /^pastries$/i }).first();
+    await expect(pastriesTab).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /^pastries$/i })).toHaveCount(1);
+    await pastriesTab.click();
+    await expect(page.getByRole('button', { name: /kuki box/i }).first()).toBeVisible({
+      timeout: 15000,
+    });
+    expect(cfgErrors(), 'no uncaught errors').toEqual([]);
   });
 });

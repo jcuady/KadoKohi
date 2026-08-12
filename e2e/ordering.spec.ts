@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   addFirstGuestMenuItem,
+  clearSupabaseSession,
   dismissCookieConsent,
   fetchActiveBranchSlug,
   fetchActiveTableCode,
@@ -44,54 +45,62 @@ test.describe('Guest ordering surfaces', () => {
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 
-  test('online order page renders menu and pickup branch selector', async ({ page }, testInfo) => {
+  test('legacy /order redirects to /menu (cart is the online surface)', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/order');
+    await page.waitForURL(/\/menu/, { timeout: 15000 });
     await dismissCookieConsent(page);
-    await expect(page.getByRole('heading', { name: /place an order/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /menu|our drinks|order/i }).first()).toBeVisible({
       timeout: 25000,
     });
-    await expect(page.locator('.guest-order-product-grid').first()).toBeVisible();
-    // Guest name + branch live in the desktop cart sidebar (mobile cart is collapsed until items are added).
-    if (testInfo.project.name === 'desktop-chrome') {
-      await expect(page.getByLabel(/pickup branch/i)).toBeVisible();
-      await expect(page.getByLabel(/your name \(guest\)/i)).toBeVisible();
-    }
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 
-  test('online guest must enter a name before placing', async ({ page }) => {
+  test('online guest cannot place from cart without a name', async ({ page }) => {
     const errors = trackPageErrors(page);
-    await page.goto('/order');
+    await page.goto('/menu');
+    await clearSupabaseSession(page);
+    await page.reload();
     await dismissCookieConsent(page);
-    await expect(page.locator('.guest-order-product-grid').first()).toBeVisible({ timeout: 25000 });
 
-    const grid = page.locator('.guest-order-product-grid button:not([disabled])').first();
-    await grid.click();
+    const closedMsg = page.getByText(/online ordering is closed/i);
+    if (await closedMsg.isVisible({ timeout: 3000 }).catch(() => false)) {
+      test.skip(true, 'Online order window is closed in local timezone');
+    }
 
-    const placeBtn = page.getByRole('button', { name: /place order/i }).locator('visible=true').first();
-    await expect(placeBtn).toBeEnabled();
-    await placeBtn.click();
+    const card = page.getByRole('button', { name: /latte|matcha|americano|kado/i }).first();
+    await expect(card).toBeVisible({ timeout: 25000 });
+    await card.click();
+    const addBtn = page.getByRole('button', { name: /^add —/i });
+    await expect(addBtn).toBeVisible({ timeout: 10000 });
+    await addBtn.click();
 
-    await expect(
-      page.getByText(/please enter your name for pickup/i).locator('visible=true').first(),
-    ).toBeVisible();
+    const cartToggle = page.getByRole('button', { name: /^Cart — \d+ items$/i });
+    const cartOpen = await page.getByRole('button', { name: /close cart/i }).isVisible().catch(() => false);
+    if (!cartOpen) await cartToggle.click();
+
+    // Guest GCash path requires a pickup name before Place Order enables.
+    await page.getByRole('button', { name: /gcash qr/i }).click();
+    await expect(page.getByPlaceholder(/your name/i)).toBeVisible();
+    const placeBtn = page.getByRole('button', { name: /^place order$/i });
+    await expect(placeBtn).toBeVisible({ timeout: 10000 });
+    await expect(placeBtn).toBeDisabled();
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 
-  test('takeout enables place after name and cart item', async ({ page }) => {
+  test('takeout enables place after cart item then name', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/order/takeout');
+    await dismissCookieConsent(page);
     await expect(page.getByText(/grab & go/i)).toBeVisible({ timeout: 25000 });
 
     const placeBtn = page.getByRole('button', { name: /place takeout order/i });
     await expect(placeBtn).toBeDisabled();
 
-    await page.getByPlaceholder(/e\.g\. juan/i).fill('E2E Guest');
+    // Name field is gated until the bag has items.
     await addFirstGuestMenuItem(page);
-
-    // Sticky cart collapses place CTA until guest reviews the bag.
     await page.getByRole('button', { name: /review cart/i }).click();
+    await page.getByPlaceholder(/e\.g\. juan/i).fill('E2E Guest');
     await expect(placeBtn).toBeEnabled();
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
