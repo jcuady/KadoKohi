@@ -59,6 +59,8 @@ test.describe('Customer pastries', () => {
     await page.goto('/pastries');
     await expect(page.getByRole('heading', { name: /cookie\s+menu/i })).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /kuki boxes/i }).first()).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: /^kuki boxes$/i })).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('#kuki-boxes img').first()).toBeVisible();
     await expect(page.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
@@ -67,8 +69,8 @@ test.describe('Customer pastries', () => {
     test.setTimeout(90_000);
     const errors = trackPageErrors(page);
     await page.goto('/pastries');
-    await expect(page.getByRole('button', { name: /kuki boxes/i }).first()).toBeVisible({ timeout: 20000 });
-    await page.getByRole('button', { name: /kuki boxes/i }).first().click();
+    await expect(page.getByRole('heading', { name: /^kuki boxes$/i })).toBeVisible({ timeout: 20000 });
+    await page.locator('#kuki-boxes').getByRole('button', { name: /build a kuki box/i }).click();
     const dialog = page.getByRole('dialog', { name: /kuki boxes/i });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: /4 pcs/i }).click();

@@ -15,6 +15,7 @@ import CatalogCategoryRail from '../components/catalog/CatalogCategoryRail';
 import CatalogPageFrame from '../components/catalog/CatalogPageFrame';
 import MenuProductCard from '../components/catalog/MenuProductCard';
 import KukiBoxBuilder from '../components/pastries/KukiBoxBuilder';
+import KukiBoxesShowcase from '../components/pastries/KukiBoxesShowcase';
 import type { Product } from '../types/domain';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import { PASTRIES_PAGE } from '../content/pastriesPage';
@@ -33,7 +34,7 @@ import {
   type MenuCatalogFilters,
 } from '../lib/menuCatalogFilters';
 import { hasProductDiscount } from '../lib/productPricing';
-import { KUKIDO_BLUE, KUKIDO_BLUE_DEEP, KUKI_SINGLE_PRICE } from '../lib/kukido';
+import { KUKIDO_BLUE, KUKIDO_BLUE_DEEP, KUKI_SINGLE_PRICE, type KukiBoxSize } from '../lib/kukido';
 import { formatPhp } from '../lib/money';
 
 export default function Pastries() {
@@ -46,6 +47,16 @@ export default function Pastries() {
   const pastriesHydrated = usePastriesContentStore((s) => s.hydrated);
   const [selected, setSelected] = useState<Product | null>(null);
   const [boxOpen, setBoxOpen] = useState(false);
+  const [boxInitialSize, setBoxInitialSize] = useState<KukiBoxSize>(4);
+
+  const openKukiBox = useCallback((size: KukiBoxSize = 4) => {
+    setBoxInitialSize(size);
+    setBoxOpen(true);
+  }, []);
+
+  const scrollToKukiBoxes = useCallback(() => {
+    document.getElementById('kuki-boxes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   useEffect(() => {
     void hydrateFromRemote();
@@ -203,7 +214,7 @@ export default function Pastries() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setBoxOpen(true)}
+                    onClick={scrollToKukiBoxes}
                     className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] touch-manipulation"
                     style={{ backgroundColor: KUKIDO_BLUE }}
                   >
@@ -235,6 +246,8 @@ export default function Pastries() {
                 />
               </div>
             </section>
+
+            <KukiBoxesShowcase onBuild={openKukiBox} />
 
             <section className="px-4 py-5 sm:px-6 sm:py-7 md:px-8 md:py-9 lg:px-16">
               <div className="mx-auto min-w-0 max-w-6xl">
@@ -333,7 +346,7 @@ export default function Pastries() {
                   <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
                     <button
                       type="button"
-                      onClick={() => setBoxOpen(true)}
+                      onClick={() => openKukiBox(4)}
                       className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-white px-6 kado-label touch-manipulation sm:w-auto"
                       style={{ color: KUKIDO_BLUE_DEEP }}
                     >
@@ -368,7 +381,12 @@ export default function Pastries() {
         onClose={() => setSelected(null)}
       />
 
-      <KukiBoxBuilder open={boxOpen} cookies={pastryBase} onClose={() => setBoxOpen(false)} />
+      <KukiBoxBuilder
+        open={boxOpen}
+        cookies={pastryBase}
+        initialSize={boxInitialSize}
+        onClose={() => setBoxOpen(false)}
+      />
 
       <PageSeoBlurb />
     </>

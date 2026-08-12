@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import type { Product } from '../../types/domain';
 import { useCartStore } from '../../store/cartStore';
@@ -30,6 +30,8 @@ type Props = {
   open: boolean;
   cookies: Product[];
   onClose: () => void;
+  /** Prefill box size when the dialog opens (e.g. from size rail on /pastries). */
+  initialSize?: KukiBoxSize;
   /**
    * QR / takeout: commit lines into guest cart instead of the online cart store.
    * Online checkout leaves this unset.
@@ -41,15 +43,23 @@ type Props = {
  * Build a kukidō Kuki Box: pick size, set per-flavor quantities, optional packaging.
  * Box/pack prices come from Admin → Menu → Pastries (live catalog).
  */
-export default function KukiBoxBuilder({ open, cookies, onClose, onCommit }: Props) {
+export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initialSize = 4 }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const catalog = useMenuStore((s) => s.products);
-  const [size, setSize] = useState<KukiBoxSize>(4);
+  const [size, setSize] = useState<KukiBoxSize>(initialSize);
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [pack, setPack] = useState<KukiPackChoice>('none');
   const [added, setAdded] = useState(false);
 
   useBodyScrollLock(open);
+
+  useEffect(() => {
+    if (!open) return;
+    setSize(initialSize);
+    setQtys({});
+    setPack('none');
+    setAdded(false);
+  }, [open, initialSize]);
 
   const cookieList = useMemo(
     () => cookies.filter((c) => isKukidoCookieId(c.id) && c.visible),
@@ -68,7 +78,7 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit }: Pro
   const canAdd = fill.ok && cookieList.length > 0 && box.orderable;
 
   const reset = () => {
-    setSize(4);
+    setSize(initialSize);
     setQtys({});
     setPack('none');
     setAdded(false);
