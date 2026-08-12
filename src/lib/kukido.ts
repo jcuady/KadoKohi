@@ -18,14 +18,14 @@ export const KUKIDO_COOKIE_IDS = [
 
 export type KukidoCookieId = (typeof KUKIDO_COOKIE_IDS)[number];
 
-/** Local cutouts — used before remote hydrate / as ResilientImage fallback. */
+/** Local transparent cutouts — no black backdrop (used before remote hydrate / as ResilientImage fallback). */
 export const KUKIDO_COOKIE_IMAGE: Record<KukidoCookieId, string> = {
-  cookie_klassic: '/kukido/klassic.webp',
-  cookie_campfire: '/kukido/campfire.webp',
-  cookie_double_dark: '/kukido/double-dark.webp',
-  cookie_birthday: '/kukido/birthday-bake.webp',
-  cookie_blondie: '/kukido/blondie.webp',
-  cookie_white_walnut: '/kukido/white-chocolate-walnut.webp',
+  cookie_klassic: '/kukido/klassic-cut.webp',
+  cookie_campfire: '/kukido/campfire-cut.webp',
+  cookie_double_dark: '/kukido/double-dark-cut.webp',
+  cookie_birthday: '/kukido/birthday-bake-cut.webp',
+  cookie_blondie: '/kukido/blondie-cut.webp',
+  cookie_white_walnut: '/kukido/white-chocolate-walnut-cut.webp',
 };
 
 export const KUKIDO_COOKIE_LABEL: Record<KukidoCookieId, string> = {
@@ -126,9 +126,10 @@ export function resolveKukiPackPrices(
   };
 }
 
-export function resolveKukidoCookieImage(productId: string, remote?: string | null): string {
-  if (remote?.trim()) return remote.trim();
+export function resolveKukidoCookieImage(productId: string, _remote?: string | null): string {
+  // Always prefer local transparent cutouts — remote CMS uploads often bake a black square.
   if (isKukidoCookieId(productId)) return KUKIDO_COOKIE_IMAGE[productId];
+  if (_remote?.trim()) return _remote.trim();
   return '/kukido/collab-plate.webp';
 }
 

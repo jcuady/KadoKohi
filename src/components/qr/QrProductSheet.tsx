@@ -14,6 +14,7 @@ import { useMenuStore } from '../../store/menuStore';
 import ProductVariantSections from '../menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { originalUnitPrice, productPromoTag } from '../../lib/productPricing';
+import { isKukidoCookieId, KUKIDO_CREAM } from '../../lib/kukido';
 
 export type QrCartPayload = {
   productId: string;
@@ -144,12 +145,23 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
             </div>
 
             <div className="flex-1 overflow-y-auto overscroll-contain">
-              <div className="aspect-[16/10] sm:aspect-[2/1] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] bg-[var(--qr-surface)] relative shrink-0">
+              <div
+                className={`relative shrink-0 ${
+                  isKukidoCookieId(product.id)
+                    ? 'aspect-square sm:aspect-[5/4]'
+                    : 'aspect-[16/10] bg-[var(--qr-surface)] sm:aspect-[2/1] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1]'
+                }`}
+                style={isKukidoCookieId(product.id) ? { backgroundColor: KUKIDO_CREAM } : undefined}
+              >
                 <MenuProductImage
                   product={product}
                   alt={product.name}
                   loading="eager"
-                  className="w-full h-full object-cover"
+                  className={
+                    isKukidoCookieId(product.id)
+                      ? 'h-full w-full object-contain p-5'
+                      : 'h-full w-full object-cover'
+                  }
                 />
               </div>
 

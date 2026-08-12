@@ -257,11 +257,14 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initi
                     key={cookie.id}
                     className="flex items-center gap-3 rounded-xl border border-kado-dark/10 bg-white p-2.5"
                   >
-                    <span className="block h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#F3F1EC]">
+                    <span
+                      className="block h-14 w-14 shrink-0 overflow-hidden rounded-full"
+                      style={{ backgroundColor: KUKIDO_PAPER }}
+                    >
                       <img
                         src={img}
                         alt=""
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain p-1"
                         loading="lazy"
                         width={112}
                         height={112}

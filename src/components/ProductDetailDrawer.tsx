@@ -23,6 +23,7 @@ import {
   DEFAULT_MENU_PRODUCT_IMAGE,
   getMenuProductImageUrl,
 } from '../lib/menuCatalog';
+import { isKukidoCookieId, KUKIDO_CREAM } from '../lib/kukido';
 
 function isMerchProduct(p: Product | MerchProduct): p is MerchProduct {
   return !('temperature' in p);
@@ -217,34 +218,55 @@ export default function ProductDetailDrawer({
           >
             <div className="pointer-events-auto w-full sm:max-w-lg bg-white sm:rounded-[2rem] rounded-t-[2.5rem] shadow-[0_30px_60px_rgba(158,24,29,0.15)] overflow-hidden max-h-[min(93dvh,640px)] sm:max-h-[88vh] [@media(orientation:landscape)_and_(max-height:30rem)]:max-h-[96dvh] flex flex-col border sm:border-kado-red/10">
               <div className="relative shrink-0">
-                <div className="aspect-[16/9] [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] overflow-hidden bg-kado-dark/5">
+                <div
+                  className={`overflow-hidden [@media(orientation:landscape)_and_(max-height:30rem)]:aspect-[3/1] ${
+                    coffeeProduct && isKukidoCookieId(coffeeProduct.id)
+                      ? 'aspect-square sm:aspect-[5/4]'
+                      : 'aspect-[16/9] bg-kado-dark/5'
+                  }`}
+                  style={
+                    coffeeProduct && isKukidoCookieId(coffeeProduct.id)
+                      ? { backgroundColor: KUKIDO_CREAM }
+                      : undefined
+                  }
+                >
                   {coffeeProduct ? (
                     <MenuProductImage
                       product={coffeeProduct}
                       alt={product.name}
                       loading="eager"
                       pastriesCategoryId={isPastryProduct ? pastriesCategoryId : undefined}
-                      className="w-full h-full object-cover"
+                      className={
+                        isKukidoCookieId(coffeeProduct.id)
+                          ? 'h-full w-full object-contain p-6 sm:p-8'
+                          : 'h-full w-full object-cover'
+                      }
                     />
                   ) : (
                     <img
                       src={productImageSrc}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       loading="eager"
                       decoding="async"
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  {!(coffeeProduct && isKukidoCookieId(coffeeProduct.id)) ? (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  ) : null}
                 </div>
 
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-kado-red transition-colors shadow-sm"
+                  className={`absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-colors ${
+                    coffeeProduct && isKukidoCookieId(coffeeProduct.id)
+                      ? 'bg-kado-dark/10 text-kado-dark hover:bg-kado-red hover:text-white'
+                      : 'bg-white/20 text-white backdrop-blur-md hover:bg-kado-red'
+                  }`}
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
 
                 {promoTag || product.tags?.length ? (

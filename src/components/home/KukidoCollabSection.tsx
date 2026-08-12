@@ -154,12 +154,15 @@ export default function KukidoCollabSection() {
                     }}
                     className="flex flex-col items-center text-center"
                   >
-                    {/* Flyer: cookie on solid black circle */}
-                    <span className="mb-2 flex aspect-square w-[min(100%,6.75rem)] items-center justify-center overflow-hidden rounded-full bg-black sm:mb-2.5 sm:w-[min(100%,8rem)]">
+                    {/* Flyer: transparent cookie on cream disc (no black plate) */}
+                    <span
+                      className="mb-2 flex aspect-square w-[min(100%,6.75rem)] items-center justify-center overflow-hidden rounded-full sm:mb-2.5 sm:w-[min(100%,8rem)]"
+                      style={{ backgroundColor: KUKIDO_CREAM }}
+                    >
                       <img
                         src={resolveKukidoCookieImage(id, remote) || KUKIDO_COOKIE_IMAGE[id]}
                         alt=""
-                        className="h-[88%] w-[88%] object-contain object-center"
+                        className="h-[90%] w-[90%] object-contain object-center"
                         loading="lazy"
                         decoding="async"
                         width={200}

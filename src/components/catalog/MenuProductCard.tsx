@@ -6,6 +6,7 @@ import { isProductInStock } from '../../lib/productStock';
 import { menuProductDomId } from '../../lib/menuDeepLink';
 import MenuProductImage from './MenuProductImage';
 import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
+import { isKukidoCookieId, KUKIDO_CREAM } from '../../lib/kukido';
 
 type Props = {
   product: Product;
@@ -19,6 +20,7 @@ function MenuProductCard({ product, highlight, imagePriority, onSelect, pastries
   const tag = productPromoTag(product) ?? (isIcedOnlyDrink(product) ? 'Iced only' : product.tags?.[0]);
   const inStock = isProductInStock(product);
   const desc = productFallbackDescription(product);
+  const isKukidoCookie = isKukidoCookieId(product.id);
 
   return (
     <button
@@ -36,15 +38,26 @@ function MenuProductCard({ product, highlight, imagePriority, onSelect, pastries
           : 'cursor-not-allowed border-kado-dark/5 opacity-60'
       }`}
     >
-      <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-kado-dark/5">
+      <div
+        className={`relative shrink-0 overflow-hidden ${
+          isKukidoCookie ? 'aspect-square' : 'aspect-[4/3] bg-kado-dark/5'
+        }`}
+        style={isKukidoCookie ? { backgroundColor: KUKIDO_CREAM } : undefined}
+      >
         <MenuProductImage
           product={product}
           alt={product.name}
           loading={imagePriority ? 'eager' : 'lazy'}
           pastriesCategoryId={pastriesCategoryId}
-          className="h-full w-full object-cover transition-transform duration-500 ease-out md:group-hover:scale-105"
+          className={
+            isKukidoCookie
+              ? 'h-full w-full object-contain p-3 transition-transform duration-500 ease-out sm:p-4 md:group-hover:scale-105'
+              : 'h-full w-full object-cover transition-transform duration-500 ease-out md:group-hover:scale-105'
+          }
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        {!isKukidoCookie ? (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        ) : null}
 
         {!inStock ? (
           <span className="absolute left-2 top-2 rounded-full bg-amber-600 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-white shadow">
@@ -58,11 +71,13 @@ function MenuProductCard({ product, highlight, imagePriority, onSelect, pastries
           )
         )}
 
-        <div className="absolute inset-0 hidden items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:flex">
-          <span className="rounded-full bg-kado-red/90 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg backdrop-blur-sm">
-            View details
-          </span>
-        </div>
+        {!isKukidoCookie ? (
+          <div className="absolute inset-0 hidden items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:flex">
+            <span className="rounded-full bg-kado-red/90 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg backdrop-blur-sm">
+              View details
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col p-2.5 sm:p-4">

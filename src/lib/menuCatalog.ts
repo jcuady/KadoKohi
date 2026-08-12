@@ -24,18 +24,19 @@ export function isMerchCategoryName(name: string | undefined): boolean {
   return Boolean(name?.toLowerCase().includes('merch'));
 }
 
-/** Same image resolution as /menu — product.image from Supabase, then category fallback. */
+/** Same image resolution as /menu — kukidō cutouts first, then product.image, then category fallback. */
 export function getMenuProductImageUrl(
   product: Pick<Product, 'image' | 'categoryId'> & { id?: string },
   options?: { pastriesCategoryId?: string; displayWidth?: number },
 ): string {
+  const localCookie = kukidoLocalImage(product);
+  if (localCookie) return localCookie;
+
   const fromProduct = product.image?.trim();
   if (fromProduct) {
     const normalized = normalizeExternalMenuImageUrl(fromProduct);
     return displaySizedImage(normalized, options?.displayWidth ?? 560);
   }
-  const localCookie = kukidoLocalImage(product);
-  if (localCookie) return localCookie;
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     return FALLBACK_IMAGE_BY_CATEGORY[product.categoryId];
   }
@@ -45,7 +46,7 @@ export function getMenuProductImageUrl(
   return DEFAULT_MENU_PRODUCT_IMAGE;
 }
 
-/** Ordered URLs to try when a product image fails to load (product → local cookie → category → default). */
+/** Ordered URLs to try when a product image fails to load (local cookie → product → category → default). */
 export function getMenuProductImageFallbackChain(
   product: Pick<Product, 'image' | 'categoryId'> & { id?: string },
   options?: { pastriesCategoryId?: string },
@@ -55,11 +56,11 @@ export function getMenuProductImageFallbackChain(
     if (url && !urls.includes(url)) urls.push(url);
   };
 
-  const fromProduct = product.image?.trim();
-  if (fromProduct) push(normalizeExternalMenuImageUrl(fromProduct));
-
   const localCookie = kukidoLocalImage(product);
   if (localCookie) push(localCookie);
+
+  const fromProduct = product.image?.trim();
+  if (fromProduct) push(normalizeExternalMenuImageUrl(fromProduct));
 
   if (product.categoryId && FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]) {
     push(FALLBACK_IMAGE_BY_CATEGORY[product.categoryId]);

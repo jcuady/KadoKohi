@@ -8,6 +8,7 @@ import { isIcedOnlyDrink } from '../../lib/menuProductModifiers';
 import MenuProductImage from '../catalog/MenuProductImage';
 import { isProductInStock } from '../../lib/productStock';
 import { discountedBasePrice, productPromoTag } from '../../lib/productPricing';
+import { isKukidoCookieId, KUKIDO_CREAM } from '../../lib/kukido';
 
 type Props = {
   sections: QrGuestMenuSection[];
@@ -116,12 +117,19 @@ export default function QrGuestMenuCatalog({
                       : 'opacity-55 cursor-not-allowed'
                   }`}
                 >
-                  <div className="relative aspect-square qr-image-placeholder shrink-0">
+                  <div
+                    className="relative aspect-square shrink-0 qr-image-placeholder"
+                    style={isKukidoCookieId(p.id) ? { backgroundColor: KUKIDO_CREAM } : undefined}
+                  >
                     <MenuProductImage
                       product={p}
                       alt={p.name}
                       loading={i < 9 ? 'eager' : 'lazy'}
-                      className="w-full h-full object-cover"
+                      className={
+                        isKukidoCookieId(p.id)
+                          ? 'h-full w-full object-contain p-2'
+                          : 'h-full w-full object-cover'
+                      }
                     />
                     {!inStock ? (
                       <span className="absolute top-1 left-1 text-[6px] font-black uppercase tracking-widest bg-amber-600 text-white px-1 py-0.5 rounded-full">

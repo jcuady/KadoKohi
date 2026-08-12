@@ -61,6 +61,8 @@ test.describe('Customer pastries', () => {
     await expect(page.getByRole('button', { name: /kuki boxes/i }).first()).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('heading', { name: /^kuki boxes$/i })).toBeVisible({ timeout: 20000 });
     await expect(page.locator('#kuki-boxes img').first()).toBeVisible();
+    // Transparent cutouts — cards must not sit on a black image plate
+    await expect(page.locator('img[src*="klassic-cut"]').first()).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/mix\s*&\s*match/i)).toHaveCount(0);
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
