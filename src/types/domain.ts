@@ -21,6 +21,10 @@ export interface Branch {
   status: BranchStatus;
   hours: BranchHours[];
   heroImage?: string;
+  /** Public Google Maps share link (preferred over lat/lng search). */
+  mapsUrl?: string;
+  /** Branch contact number shown on /branches, landing, and footer. */
+  phone?: string;
   lat?: number;
   lng?: number;
   createdAt: string;

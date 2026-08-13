@@ -6,7 +6,12 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useBranchStore } from '../store/branchStore';
 import { FooterSocialLinks } from './ContactSocialLinks';
 import { requestCookiePreferences } from '../lib/cookieConsent';
-import { branchDirectionsUrl } from '../lib/branchMaps';
+import {
+  branchDirectionsUrl,
+  branchTelHref,
+  formatBranchPhoneDisplay,
+  resolveBranchPhone,
+} from '../lib/branchMaps';
 import { formatBranchHoursSummary } from '../lib/branchHours';
 
 export default function Footer() {
@@ -89,6 +94,7 @@ export default function Footer() {
                 visitBranches.map((b) => {
                   const hoursLabel = formatBranchHoursSummary(b.hours);
                   const place = [b.address, b.city].filter(Boolean).join(', ');
+                  const phone = resolveBranchPhone(b);
                   return (
                     <div key={b.id} className="flex flex-col gap-1.5">
                       <p className="text-[11px] font-black uppercase tracking-wider text-kado-cream">
@@ -111,6 +117,17 @@ export default function Footer() {
                         <div className="flex items-start gap-2">
                           <Clock className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
                           <span>{hoursLabel}</span>
+                        </div>
+                      ) : null}
+                      {phone ? (
+                        <div className="flex items-start gap-2">
+                          <Phone className="w-4 h-4 mt-0.5 shrink-0 text-kado-red" />
+                          <a
+                            href={branchTelHref(phone)}
+                            className="hover:text-kado-red transition-colors"
+                          >
+                            {formatBranchPhoneDisplay(phone)}
+                          </a>
                         </div>
                       ) : null}
                     </div>

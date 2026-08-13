@@ -54,6 +54,8 @@ export const useBranchStore = create<BranchStore>()(
           status: input.status,
           hours: input.hours ?? [],
           heroImage: input.heroImage,
+          mapsUrl: input.mapsUrl,
+          phone: input.phone,
           lat: input.lat,
           lng: input.lng,
           createdAt: t,

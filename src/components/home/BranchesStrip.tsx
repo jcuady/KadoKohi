@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Clock, MapPin } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { BranchesStripCopy } from '../../store/landingContentStore';
 import CmsStyledText from '../cms/CmsStyledText';
@@ -7,6 +7,7 @@ import { cmsTextProps } from '../../lib/cmsFieldBind';
 import { useLandingContentStore } from '../../store/landingContentStore';
 import { useBranchStore } from '../../store/branchStore';
 import ResilientImage from '../ui/ResilientImage';
+import { formatBranchPhoneDisplay, resolveBranchPhone } from '../../lib/branchMaps';
 
 const BRANCH_FALLBACK_IMAGES: Record<string, string> = {
   branch_marikina: '/featuredmarikina/kadom1.webp',
@@ -84,6 +85,7 @@ export default function BranchesStrip({ copy, cmsEditMode }: Props) {
             const hours = fmt(branch.hours);
             const isActive = branch.status === 'active';
             const photo = branch.heroImage?.trim() || BRANCH_FALLBACK_IMAGES[branch.id] || '/images/hero-interior.png';
+            const phone = resolveBranchPhone(branch);
 
             return (
               <motion.div
@@ -148,6 +150,12 @@ export default function BranchesStrip({ copy, cmsEditMode }: Props) {
                           {hours} daily
                         </p>
                       )}
+                      {phone ? (
+                        <p className="kado-subtext mt-2 flex items-center gap-1.5 text-kado-cream/70">
+                          <Phone className="h-3 w-3 shrink-0" aria-hidden />
+                          {formatBranchPhoneDisplay(phone)}
+                        </p>
+                      ) : null}
                       <p className="kado-label mt-3 inline-flex items-center gap-2 text-kado-red transition-transform group-hover:translate-x-1 sm:mt-4">
                         View branch <ArrowRight className="h-3.5 w-3.5" />
                       </p>

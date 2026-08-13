@@ -34,6 +34,8 @@ export interface Database {
           status: string;
           hours: Json;
           hero_image: string | null;
+          maps_url: string | null;
+          phone: string | null;
           lat: number | null;
           lng: number | null;
           created_at: string;
@@ -48,6 +50,8 @@ export interface Database {
           status: string;
           hours?: Json;
           hero_image?: string | null;
+          maps_url?: string | null;
+          phone?: string | null;
           lat?: number | null;
           lng?: number | null;
         };

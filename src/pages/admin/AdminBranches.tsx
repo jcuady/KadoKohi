@@ -3,7 +3,7 @@ import type { Branch, BranchStatus } from '../../types/domain';
 import { useBranchStore } from '../../store/branchStore';
 import { formatBranchCrudError } from '../../lib/supabase/repositories/ordering';
 import { uploadCmsImageFile } from '../../lib/cmsImageUpload';
-import { branchGoogleMapsUrl, branchHeroImageUrl } from '../../lib/branchMaps';
+import { branchDirectionsUrl, branchHeroImageUrl } from '../../lib/branchMaps';
 import {
   branchHoursFromWindows,
   formatBranchHoursSummary,
@@ -37,6 +37,8 @@ type BranchForm = {
   weekdayClose: string;
   weekendOpen: string;
   weekendClose: string;
+  mapsUrl: string;
+  phone: string;
   lat?: number;
   lng?: number;
 };
@@ -52,6 +54,8 @@ const emptyForm: BranchForm = {
   weekdayClose: '21:00',
   weekendOpen: '10:00',
   weekendClose: '22:00',
+  mapsUrl: '',
+  phone: '',
   lat: undefined,
   lng: undefined,
 };
@@ -149,6 +153,8 @@ export default function AdminBranches() {
       weekdayClose: windows.weekdayClose,
       weekendOpen: windows.weekendOpen,
       weekendClose: windows.weekendClose,
+      mapsUrl: b.mapsUrl ?? '',
+      phone: b.phone ?? '',
       lat: b.lat,
       lng: b.lng,
     });
@@ -203,6 +209,8 @@ export default function AdminBranches() {
           status: form.status,
           hours,
           heroImage: form.heroImage.trim() || undefined,
+          mapsUrl: form.mapsUrl.trim() || undefined,
+          phone: form.phone.trim() || undefined,
           lat: form.lat,
           lng: form.lng,
         });
@@ -216,6 +224,8 @@ export default function AdminBranches() {
           status: form.status,
           hours,
           heroImage: form.heroImage.trim() || undefined,
+          mapsUrl: form.mapsUrl.trim() || undefined,
+          phone: form.phone.trim() || undefined,
           lat: form.lat,
           lng: form.lng,
         });
@@ -311,7 +321,7 @@ export default function AdminBranches() {
           <Plus className="h-4 w-4" />
           Add branch
         </button>
-      </div>
+          </div>
 
       {saveOk ? (
         <p className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
@@ -328,14 +338,14 @@ export default function AdminBranches() {
       <div className="rounded-2xl border dash-border dash-card p-4 space-y-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 dash-muted" />
-          <input
+            <input
             type="search"
             value={listQuery}
             onChange={(e) => setListQuery(e.target.value)}
             placeholder="Filter by name, slug, city…"
             className="w-full rounded-xl border dash-input py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
-          />
-        </div>
+            />
+          </div>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -360,8 +370,8 @@ export default function AdminBranches() {
           <span className="ml-auto self-center text-[11px] dash-muted">
             {filteredBranches.length} of {branches.length}
           </span>
-        </div>
-      </div>
+            </div>
+          </div>
 
       {filteredBranches.length === 0 ? (
         <div className="rounded-2xl border dash-border dash-card px-5 py-12 text-center">
@@ -384,7 +394,7 @@ export default function AdminBranches() {
               Add branch
             </button>
           ) : null}
-        </div>
+          </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {filteredBranches.map((b) => {
@@ -397,7 +407,7 @@ export default function AdminBranches() {
               >
                 <div className="relative h-36 bg-kado-cream">
                   <img src={hero} alt="" className="h-full w-full object-cover" />
-                  <span
+                      <span
                     className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
                       b.status === 'active'
                         ? 'bg-kado-dark text-kado-cream'
@@ -419,7 +429,7 @@ export default function AdminBranches() {
                       ) : (
                         <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
                           No pin
-                        </span>
+                      </span>
                       )}
                     </div>
                     <h3 className="truncate font-display text-lg font-bold dash-heading">{b.name}</h3>
@@ -436,9 +446,9 @@ export default function AdminBranches() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    {pinned ? (
+                    {b.mapsUrl?.trim() || pinned ? (
                       <a
-                        href={branchGoogleMapsUrl(b.lat!, b.lng!)}
+                        href={branchDirectionsUrl(b)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border dash-border px-3 text-xs font-semibold text-kado-red hover:bg-kado-cream"
@@ -683,6 +693,30 @@ export default function AdminBranches() {
                     onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                     className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
                     placeholder="Filled from map search"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                    placeholder="09605779641"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider dash-muted">
+                    Google Maps link
+                  </label>
+                  <input
+                    type="url"
+                    value={form.mapsUrl}
+                    onChange={(e) => setForm((f) => ({ ...f, mapsUrl: e.target.value }))}
+                    className="w-full rounded-xl border dash-input px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kado-red/30"
+                    placeholder="https://maps.app.goo.gl/…"
                   />
                 </div>
 

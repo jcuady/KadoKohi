@@ -41,6 +41,8 @@ export const SEED_BRANCHES: Branch[] = [
     name: 'Kado Kohi — Greenhills Mall',
     address: 'Promenade Greenhills Ortigas Ave, Connecticut',
     city: 'San Juan City, 1503 Metro Manila',
+    mapsUrl: 'https://maps.app.goo.gl/uxnZNSRxFmSg84Kz7',
+    phone: '09605779641',
     status: 'active',
     hours: [
       { day: 'mon', open: '10:00', close: '21:00' },

@@ -415,7 +415,7 @@ const PAGE_SEO_BLURBS: Record<string, PageSeoBlurbContent> = {
     ],
   },
   '/menu': {
-    heading: 'Kado Coffee menu — matcha, hojicha & oat lattes in Marikina',
+    heading: 'Kado Coffee menu — Matcha, Hojicha in Marikina',
     paragraphs: [
       'Browse the Kado Coffee (Kado Kohi) menu for Matcha Oat Latte, Hojicha Oat Latte, Dirty Matcha Oat Latte, KADO Latte, and classic oat lattes in Sta. Elena, Marikina. Ideal for marikina coffee, best matcha marikina, or coffee near me searches.',
     ],
@@ -612,7 +612,7 @@ export function buildWebSiteJsonLd(origin: string) {
 
 export function menuProductSeoDescription(name: string, category?: string): string {
   const cat = category ? `${category} — ` : '';
-  return `${cat}${name} at Kado Coffee (Kado Kohi), Sta. Elena, Marikina. Specialty coffee, matcha, hojicha & oat lattes. Order online or visit J.P. Laurel.`;
+  return `${cat}${name} at Kado Coffee (Kado Kohi), Sta. Elena, Marikina. Specialty coffee, Matcha, and Hojicha. Order online or visit J.P. Laurel.`;
 }
 
 const SEO_MENU_PRIORITY = [

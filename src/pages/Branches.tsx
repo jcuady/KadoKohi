@@ -1,7 +1,13 @@
 import { useEffect } from 'react';
-import { MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock, Phone } from 'lucide-react';
 import { useBranchStore } from '../store/branchStore';
-import { branchDirectionsUrl, branchHeroImageUrl } from '../lib/branchMaps';
+import {
+  branchDirectionsUrl,
+  branchHeroImageUrl,
+  branchTelHref,
+  formatBranchPhoneDisplay,
+  resolveBranchPhone,
+} from '../lib/branchMaps';
 import { formatBranchHoursSummary } from '../lib/branchHours';
 import PageSeoBlurb from '../components/seo/PageSeoBlurb';
 import CollagePageHero from '../components/seo/CollagePageHero';
@@ -35,6 +41,7 @@ export default function Branches() {
             const hero = branchHeroImageUrl(b);
             const directions = branchDirectionsUrl(b);
             const hoursLabel = formatBranchHoursSummary(b.hours);
+            const phone = resolveBranchPhone(b);
 
             return (
               <article
@@ -73,6 +80,16 @@ export default function Branches() {
                       <Clock className="mt-0.5 h-4 w-4 shrink-0 text-kado-red" />
                       <span>{hoursLabel}</span>
                     </div>
+                  ) : null}
+
+                  {phone ? (
+                    <a
+                      href={branchTelHref(phone)}
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-kado-dark/80 hover:text-kado-red"
+                    >
+                      <Phone className="h-4 w-4 shrink-0 text-kado-red" />
+                      {formatBranchPhoneDisplay(phone)}
+                    </a>
                   ) : null}
 
                   <div className="mt-auto flex justify-end border-t border-kado-dark/5 pt-6">

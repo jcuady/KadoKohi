@@ -153,6 +153,8 @@ function mapBranch(row: any): Branch {
     status: row.status,
     hours: row.hours ?? [],
     heroImage: row.hero_image ?? undefined,
+    mapsUrl: row.maps_url ?? undefined,
+    phone: row.phone ?? undefined,
     lat: row.lat ?? undefined,
     lng: row.lng ?? undefined,
     createdAt: row.created_at,
@@ -457,6 +459,8 @@ export const orderingRepo = {
       status: input.status,
       hours: input.hours,
       hero_image: input.heroImage ?? null,
+      maps_url: input.mapsUrl?.trim() || null,
+      phone: input.phone?.trim() || null,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
     });

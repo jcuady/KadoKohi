@@ -157,6 +157,8 @@ type Branch {
   status: BranchStatus!
   hours: [BranchHours!]!
   heroImage: String
+  mapsUrl: String
+  phone: String
   lat: Float
   lng: Float
 }

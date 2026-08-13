@@ -221,7 +221,7 @@ export default function RouteSeo() {
       upsertJsonLd('menu-products', {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
-        name: 'Kado Coffee menu — matcha, hojicha & oat lattes Marikina',
+        name: 'Kado Coffee menu — Matcha, Hojicha in Marikina',
         itemListElement: menuForSchema.map((product, idx) => ({
           '@type': 'ListItem',
           position: idx + 1,
