@@ -10,7 +10,7 @@ export const PASTRIES_PAGE = {
     eyebrow: 'kukidō × Kado Kohi',
     headlineTop: 'Cookie',
     headlineBottom: 'Menu',
-    subhead: 'Handcrafted kukidō cookies at ₱100. Build a Kuki Box from 4 pcs, or grab singles for pickup.',
+    subhead: 'Handcrafted kukidō cookies at ₱100. Build a 4, 5, 6, or 10-pc Kuki Box — tap + to pick flavors. Pickup in Marikina or Greenhills.',
     badge: 'Collab bake',
     badgeNote: 'Single ₱100 · boxes from 4',
   },
@@ -20,6 +20,6 @@ export const PASTRIES_PAGE = {
   },
   cta: {
     title: 'Daily bake',
-    body: 'Browse cookies below or build a Kuki Box. Add to cart for pickup in Marikina or Greenhills.',
+    body: 'Browse singles below, or tap a Kuki Box size and pick flavors with +. Pickup in Marikina or Greenhills.',
   },
 } as const;

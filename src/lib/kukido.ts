@@ -70,9 +70,14 @@ export function isKukidoCookieId(id: string): id is KukidoCookieId {
   return (KUKIDO_COOKIE_IDS as readonly string[]).includes(id);
 }
 
+/** Packaging add-ons — never sold as standalone catalog cards. */
+export function isKukiPackProduct(id: string): boolean {
+  return id.startsWith('kuki_pack_');
+}
+
 /** Box/pack SKUs — orderable, but sold via KukiBoxBuilder (not the pastry grid). */
 export function isKukiBuilderOnlyProduct(id: string): boolean {
-  return id.startsWith('kuki_box_') || id.startsWith('kuki_pack_');
+  return id.startsWith('kuki_box_') || isKukiPackProduct(id);
 }
 
 export function kukiBoxOption(size: KukiBoxSize) {

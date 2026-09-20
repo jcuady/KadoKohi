@@ -192,3 +192,53 @@ export function buildKukiBoxLines(input: {
   }
   return { box };
 }
+
+export function kukiBoxCustomerFillError(size: KukiBoxSize, filled: number): string {
+  if (filled <= 0) {
+    return `Choose ${size} cookie flavors for your ${size}-pc Kuki Box. Tap + on each flavor until the box is full.`;
+  }
+  return `Your ${size}-pc Kuki Box needs exactly ${size} cookies (you have ${filled}). Tap + on flavors until the box is full.`;
+}
+
+/** Client pre-check so checkout never hits kk_assert_kuki_box_line with an empty box. */
+export function kukiBoxItemsNeedFlavors(
+  items: Array<{
+    productId: string;
+    merchVariants?: Array<{ groupName?: string; optionId?: string; optionLabel?: string; qty?: number }>;
+    selectedVariants?: Array<{ groupName?: string; optionId?: string; optionLabel?: string; qty?: number }>;
+    customizations?: Array<{ groupName?: string; optionId?: string; optionLabel?: string; qty?: number }>;
+  }>,
+): string | null {
+  for (const item of items) {
+    const size = kukiBoxSizeFromProductId(item.productId);
+    if (!size) continue;
+    const variants = item.merchVariants ?? item.selectedVariants ?? item.customizations;
+    const qtys = parseKukiCookieQtysFromVariants(variants);
+    const check = validateKukiBoxFill(size, qtys);
+    if (!check.ok) return kukiBoxCustomerFillError(size, check.filled);
+  }
+  return null;
+}
+
+/** Map kk_assert_kuki_box_line / kk_place_order messages to flavor-first copy. */
+export function mapKukiBoxRpcError(msg: string): string | null {
+  if (!msg) return null;
+  if (/missing optionid|requires cookie selections/i.test(msg)) {
+    return 'Choose cookie flavors for your Kuki Box. Tap + on each flavor until the box is full.';
+  }
+  const fill = /kuki box \S+ requires exactly (\d+) cookies \(got (\d+)\)/i.exec(msg);
+  if (fill) {
+    const size = Number(fill[1]) as KukiBoxSize;
+    const got = Number(fill[2]);
+    if (size === 4 || size === 5 || size === 6 || size === 10) {
+      return kukiBoxCustomerFillError(size, got);
+    }
+  }
+  if (/is not a cookie for kuki box|cookie .+ is not available for kuki box/i.test(msg)) {
+    return 'One of the cookie flavors in your Kuki Box is unavailable. Open the box builder and pick flavors again.';
+  }
+  if (/invalid kuki box product/i.test(msg)) {
+    return 'That Kuki Box size is not on the menu. Pick 4, 5, 6, or 10 pcs and choose flavors.';
+  }
+  return null;
+}

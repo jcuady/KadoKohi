@@ -36,6 +36,7 @@ import {
 import { hasProductDiscount } from '../lib/productPricing';
 import { KUKIDO_BLUE, KUKIDO_BLUE_DEEP, KUKI_SINGLE_PRICE, type KukiBoxSize } from '../lib/kukido';
 import { formatPhp } from '../lib/money';
+import { kukiBoxSizeFromProductId } from '../lib/kukiBoxOrder';
 
 export default function Pastries() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -159,11 +160,25 @@ export default function Pastries() {
     setSearchParams(params, { replace: true });
   };
 
-  const openProduct = useCallback((product: Product) => setSelected(product), []);
+  const openProduct = useCallback((product: Product) => {
+    const size = kukiBoxSizeFromProductId(product.id);
+    if (size) {
+      openKukiBox(size);
+      return;
+    }
+    setSelected(product);
+  }, [openKukiBox]);
 
   const { hero, cta, poster } = pastriesHydrated ? cmsContent : PASTRIES_PAGE;
   const title = `${hero.headlineTop} ${hero.headlineBottom}`.replace(/\s+/g, ' ').trim() || 'Cookie Menu';
   const catalogLoading = !remoteLoaded;
+
+  useEffect(() => {
+    if (catalogLoading) return;
+    if (window.location.hash !== '#kuki-boxes') return;
+    const timer = window.setTimeout(() => scrollToKukiBoxes(), 80);
+    return () => window.clearTimeout(timer);
+  }, [catalogLoading, scrollToKukiBoxes]);
   const showPoster = Boolean(poster.primaryImage?.trim() || poster.secondaryImage?.trim());
 
   const pastryFiltersActive = hasActiveBrowseFilters(filters) || isPromoFilterId(filters.categoryId);

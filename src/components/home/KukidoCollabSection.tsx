@@ -48,10 +48,6 @@ export default function KukidoCollabSection() {
     );
     return cookie ? Number(cookie.basePrice) : KUKI_SINGLE_PRICE;
   }, [products]);
-  const featuredBoxes = useMemo(
-    () => boxOptions.filter((o) => o.size === 4 || o.size === 5 || o.size === 6),
-    [boxOptions],
-  );
 
   return (
     <section
@@ -247,8 +243,8 @@ export default function KukidoCollabSection() {
           >
             Kuki Boxes
           </h3>
-          <ul className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-5">
-            {featuredBoxes.map((box, i) => (
+          <ul className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-5">
+            {boxOptions.map((box, i) => (
               <motion.li
                 key={box.productId}
                 initial={reduce ? false : { opacity: 0, y: 16 }}
@@ -282,11 +278,11 @@ export default function KukidoCollabSection() {
           </ul>
           <div className="mt-8 flex justify-center">
             <Link
-              to="/pastries"
+              to="/pastries#kuki-boxes"
               className="inline-flex min-h-11 items-center justify-center rounded-full px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
               style={{ backgroundColor: KUKIDO_BLUE }}
             >
-              Order cookies
+              Build a Kuki Box
             </Link>
           </div>
         </motion.div>

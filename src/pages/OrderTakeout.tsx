@@ -36,8 +36,12 @@ import {
   pastriesProducts,
 } from '../lib/pastriesCategory';
 import KukiBoxBuilder from '../components/pastries/KukiBoxBuilder';
-import type { KukiBoxCommitLine } from '../lib/kukiBoxOrder';
-import { KUKIDO_BLUE } from '../lib/kukido';
+import {
+  kukiBoxItemsNeedFlavors,
+  kukiBoxSizeFromProductId,
+  type KukiBoxCommitLine,
+} from '../lib/kukiBoxOrder';
+import { KUKIDO_BLUE, type KukiBoxSize } from '../lib/kukido';
 import {
   baseProductsForFilters,
   DEFAULT_MENU_CATALOG_FILTERS,
@@ -85,6 +89,7 @@ export default function OrderTakeout() {
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [boxOpen, setBoxOpen] = useState(false);
+  const [boxInitialSize, setBoxInitialSize] = useState<KukiBoxSize>(4);
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -168,6 +173,23 @@ export default function OrderTakeout() {
   );
   const cartStale = cart.length > 0 && !cartLinesMatchMenu(cart, cartTotals.lines);
 
+  const openKukiBox = useCallback((size: KukiBoxSize = 4) => {
+    setBoxInitialSize(size);
+    setBoxOpen(true);
+  }, []);
+
+  const selectProduct = useCallback(
+    (product: Product) => {
+      const size = kukiBoxSizeFromProductId(product.id);
+      if (size) {
+        openKukiBox(size);
+        return;
+      }
+      setSelectedProduct(product);
+    },
+    [openKukiBox],
+  );
+
   const addLine = (payload: QrCartPayload) => {
     setCart((prev) => {
       const match = prev.find((l) => qrLinesMatch(l, payload));
@@ -227,6 +249,14 @@ export default function OrderTakeout() {
     }
     if (cartStale) {
       setOrderError('Some items are out of date. Remove them from your cart and add drinks again.');
+      return;
+    }
+    const flavorErr = kukiBoxItemsNeedFlavors(
+      cart.map((l) => ({ productId: l.productId, customizations: l.customizations })),
+    );
+    if (flavorErr) {
+      setOrderError(flavorErr);
+      setCartExpanded(true);
       return;
     }
     if (!catalogOrderable) {
@@ -417,12 +447,12 @@ export default function OrderTakeout() {
           <div className="mb-3">
             <button
               type="button"
-              onClick={() => setBoxOpen(true)}
+              onClick={() => openKukiBox(4)}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white touch-manipulation"
               style={{ backgroundColor: KUKIDO_BLUE }}
             >
               <Package className="h-4 w-4" aria-hidden />
-              Build a Kuki Box
+              Build a Kuki Box — pick flavors
             </button>
           </div>
         ) : null}
@@ -433,7 +463,7 @@ export default function OrderTakeout() {
             products={filteredProducts}
             page={filterPage}
             onPageChange={setFilterPage}
-            onSelectProduct={setSelectedProduct}
+            onSelectProduct={selectProduct}
             emptyMessage={
               promoBrowse && !qrFilteredMode
                 ? 'No discounted drinks right now. Pick another category or check back soon.'
@@ -445,7 +475,7 @@ export default function OrderTakeout() {
             sections={menuSections}
             activeCategoryId={activeCat}
             onActiveCategoryChange={setActiveCat}
-            onSelectProduct={setSelectedProduct}
+            onSelectProduct={selectProduct}
           />
         )}
       </main>
@@ -507,6 +537,7 @@ export default function OrderTakeout() {
       <KukiBoxBuilder
         open={boxOpen}
         cookies={pastryCookies}
+        initialSize={boxInitialSize}
         onClose={() => setBoxOpen(false)}
         onCommit={commitKukiBox}
       />

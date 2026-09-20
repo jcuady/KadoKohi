@@ -1,4 +1,5 @@
 import { isValidPhilippinePhone } from './phonePhilippines';
+import { mapKukiBoxRpcError } from './kukiBoxOrder';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -48,6 +49,8 @@ export function formatOrderError(err: unknown): string {
       ? String((err as { message: string }).message)
       : '';
   if (!msg) return 'Could not place your order. Please check your connection and try again.';
+  const kuki = mapKukiBoxRpcError(msg);
+  if (kuki) return kuki;
   if (/connection lost|failed to fetch|network|name_not_resolved|timed_out|load failed/i.test(msg)) {
     return 'Connection problem — check your internet and try again.';
   }

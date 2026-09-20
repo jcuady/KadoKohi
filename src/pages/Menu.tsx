@@ -30,8 +30,15 @@ import {
   menuProductDomId,
   pageForProductInList,
 } from '../lib/menuDeepLink';
-import { uniqueVisibleMenuCategories } from '../lib/pastriesCategory';
+import {
+  pastryHasPrice,
+  pastriesProducts,
+  uniqueVisibleMenuCategories,
+} from '../lib/pastriesCategory';
 import CatalogPageFrame from '../components/catalog/CatalogPageFrame';
+import KukiBoxBuilder from '../components/pastries/KukiBoxBuilder';
+import { kukiBoxSizeFromProductId } from '../lib/kukiBoxOrder';
+import type { KukiBoxSize } from '../lib/kukido';
 
 const ALL_CATEGORY_ID = 'all';
 
@@ -100,11 +107,32 @@ export default function Menu() {
   }, [allVisibleCategories, products]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [boxOpen, setBoxOpen] = useState(false);
+  const [boxInitialSize, setBoxInitialSize] = useState<KukiBoxSize>(4);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
   const deepLinkHandled = useRef('');
-  const openProduct = useCallback((product: Product) => {
-    setSelectedProduct(product);
+
+  const pastryCookies = useMemo(
+    () => pastriesProducts(categories, products).filter((p) => pastryHasPrice(p)),
+    [categories, products],
+  );
+
+  const openKukiBox = useCallback((size: KukiBoxSize) => {
+    setBoxInitialSize(size);
+    setBoxOpen(true);
   }, []);
+
+  const openProduct = useCallback(
+    (product: Product) => {
+      const size = kukiBoxSizeFromProductId(product.id);
+      if (size) {
+        openKukiBox(size);
+        return;
+      }
+      setSelectedProduct(product);
+    },
+    [openKukiBox],
+  );
 
   const updateFilters = (patch: Partial<MenuCatalogFilters>) => {
     const next = { ...filters, ...patch };
@@ -150,9 +178,14 @@ export default function Menu() {
       targetPage ?? 1,
     );
     setSearchParams(params, { replace: true });
-    setSelectedProduct(product);
+    const boxSize = kukiBoxSizeFromProductId(product.id);
+    if (boxSize) {
+      openKukiBox(boxSize);
+    } else {
+      setSelectedProduct(product);
+    }
     setHighlightProductId(product.id);
-  }, [remoteLoaded, deepLinkProductId, products, filters, filterCtx, searchParams, setSearchParams]);
+  }, [remoteLoaded, deepLinkProductId, products, filters, filterCtx, searchParams, setSearchParams, openKukiBox]);
 
   useEffect(() => {
     if (!deepLinkProductId) deepLinkHandled.current = '';
@@ -376,6 +409,13 @@ export default function Menu() {
           setSelectedProduct(null);
           clearMenuDeepLink();
         }}
+      />
+
+      <KukiBoxBuilder
+        open={boxOpen}
+        cookies={pastryCookies}
+        initialSize={boxInitialSize}
+        onClose={() => setBoxOpen(false)}
       />
     </div>
   );

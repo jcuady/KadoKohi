@@ -17,9 +17,18 @@ import {
 } from '../../lib/orderStatus';
 import { CheckCircle2, Minus, Pencil, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import PosVariantModal from './PosVariantModal';
+import KukiBoxBuilder from '../pastries/KukiBoxBuilder';
 import { resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { discountedBasePrice, productDiscountAmount, productPromoTag } from '../../lib/productPricing';
 import { useConfirmDialog } from '../ui/ConfirmDialog';
+import { pastryHasPrice, pastriesProducts } from '../../lib/pastriesCategory';
+import { isKukiPackProduct, type KukiBoxSize } from '../../lib/kukido';
+import {
+  kukiBoxItemsNeedFlavors,
+  kukiBoxSizeFromProductId,
+  type KukiBoxCommitLine,
+} from '../../lib/kukiBoxOrder';
+import { formatOrderError } from '../../lib/validation';
 
 type CartLine = {
   key: string;
@@ -62,6 +71,8 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
   const [productSearch, setProductSearch] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [configuring, setConfiguring] = useState<Product | null>(null);
+  const [boxOpen, setBoxOpen] = useState(false);
+  const [boxInitialSize, setBoxInitialSize] = useState<KukiBoxSize>(4);
   const [editingLineKey, setEditingLineKey] = useState<string | null>(null);
   const [paymentChoice, setPaymentChoice] = useState<PosPaymentChoice>('cash');
   const [posError, setPosError] = useState<string | null>(null);
@@ -77,11 +88,45 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
     const categoryId = activeCat || sortedCategories[0]?.id || '';
     const q = productSearch.trim().toLowerCase();
     return productsByCategory(categoryId)
-      .filter((p) => isProductInStock(p))
+      .filter((p) => isProductInStock(p) && !isKukiPackProduct(p.id))
       .filter((p) => !q || p.name.toLowerCase().includes(q));
   }, [activeCat, productSearch, productsByCategory, sortedCategories]);
 
   const branch = branches.find((b) => b.id === effectiveBranchId);
+
+  const pastryCookies = useMemo(
+    () => pastriesProducts(categories, products).filter((p) => pastryHasPrice(p)),
+    [categories, products],
+  );
+
+  const openKukiBox = (size: KukiBoxSize) => {
+    setBoxInitialSize(size);
+    setBoxOpen(true);
+  };
+
+  const addKukiLines = (lines: KukiBoxCommitLine[]) => {
+    const replaceKey = editingLineKey;
+    setLastPlaced(null);
+    setCart((current) => {
+      const next = replaceKey ? current.filter((x) => x.key !== replaceKey) : current;
+      return [
+        ...next,
+        ...lines.map((line) => ({
+          key: newId(),
+          productId: line.productId,
+          qty: line.qty,
+          customizations: (line.selectedVariants ?? []).map((v) => ({
+            groupName: v.groupName,
+            optionLabel: v.optionLabel,
+            priceDelta: v.priceDelta ?? 0,
+            optionId: v.optionId,
+            qty: v.qty,
+          })),
+        })),
+      ];
+    });
+    setEditingLineKey(null);
+  };
 
   const addToCart = (product: Product, config: PosLineConfig) => {
     setLastPlaced(null);
@@ -202,6 +247,11 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
 
   const placeOrder = async () => {
     if (!branch || !user || cartTotals.lines.length === 0 || placingOrder) return;
+    const flavorErr = kukiBoxItemsNeedFlavors(cart);
+    if (flavorErr) {
+      setPosError(flavorErr);
+      return;
+    }
     setPosError(null);
     setPlacingOrder(true);
     const paymentMethod = posPaymentToMethod(paymentChoice);
@@ -228,7 +278,7 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
         paymentMethod: placed.paymentMethod ?? paymentMethod,
       });
     } catch (err) {
-      setPosError(err instanceof Error ? err.message : 'Could not place POS order.');
+      setPosError(formatOrderError(err));
     } finally {
       setPlacingOrder(false);
     }
@@ -392,6 +442,12 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
                     key={p.id}
                     type="button"
                     onClick={() => {
+                      const size = kukiBoxSizeFromProductId(p.id);
+                      if (size) {
+                        setEditingLineKey(null);
+                        openKukiBox(size);
+                        return;
+                      }
                       setConfiguring(p);
                       setEditingLineKey(null);
                     }}
@@ -480,6 +536,12 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
                         <button
                           type="button"
                           onClick={() => {
+                            const size = kukiBoxSizeFromProductId(p.id);
+                            if (size) {
+                              setEditingLineKey(line.key);
+                              openKukiBox(size);
+                              return;
+                            }
                             setConfiguring(p);
                             setEditingLineKey(line.key);
                           }}
@@ -574,6 +636,16 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
           setEditingLineKey(null);
         }}
         onConfirm={handleConfirmVariant}
+      />
+      <KukiBoxBuilder
+        open={boxOpen}
+        cookies={pastryCookies}
+        initialSize={boxInitialSize}
+        onClose={() => {
+          setBoxOpen(false);
+          setEditingLineKey(null);
+        }}
+        onCommit={addKukiLines}
       />
       {confirmDialog}
     </>

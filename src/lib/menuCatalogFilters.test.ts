@@ -76,4 +76,36 @@ describe('MENU_PROMO_FILTER_ID', () => {
     expect(params.get('category')).toBe('promo');
     expect(parseMenuCatalogFilters(params).categoryId).toBe(MENU_PROMO_FILTER_ID);
   });
+
+  it('keeps Kuki Boxes in the public menu and hides packaging SKUs', () => {
+    const cats: MenuCategory[] = [
+      { id: 'cat_pastries', name: 'Pastries', order: 4, visible: true },
+    ];
+    const pastries: Product[] = [
+      product({
+        id: 'cookie_klassic',
+        categoryId: 'cat_pastries',
+        name: 'Klassic Cookie',
+        basePrice: 100,
+      }),
+      product({
+        id: 'kuki_box_10',
+        categoryId: 'cat_pastries',
+        name: 'Kuki Box - 10 pcs',
+        basePrice: 900,
+      }),
+      product({
+        id: 'kuki_pack_single',
+        categoryId: 'cat_pastries',
+        name: 'Single cookie box packaging',
+        basePrice: 10,
+      }),
+    ];
+    const ctx = {
+      categories: cats,
+      productsByCategory: (id: string) => pastries.filter((p) => p.categoryId === id),
+    };
+    const list = baseProductsForFilters({ ...DEFAULT_MENU_CATALOG_FILTERS, categoryId: 'all' }, ctx);
+    expect(list.map((p) => p.id)).toEqual(['cookie_klassic', 'kuki_box_10']);
+  });
 });

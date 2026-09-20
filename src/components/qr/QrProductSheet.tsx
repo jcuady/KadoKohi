@@ -15,6 +15,7 @@ import ProductVariantSections from '../menu/ProductVariantSections';
 import { defaultPosLineConfig, resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { originalUnitPrice, productPromoTag } from '../../lib/productPricing';
 import { isKukidoCookieId, KUKIDO_CREAM } from '../../lib/kukido';
+import { kukiBoxSizeFromProductId } from '../../lib/kukiBoxOrder';
 
 export type QrCartPayload = {
   productId: string;
@@ -93,6 +94,7 @@ export default function QrProductSheet({ product, onClose, onAdd, ctaLabel = 'Ad
 
   const handleAdd = () => {
     if (!inStock || !lineConfig || !resolved) return;
+    if (kukiBoxSizeFromProductId(product.id)) return;
     onAdd({
       productId: product.id,
       qty,

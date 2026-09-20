@@ -3,7 +3,9 @@ import {
   buildKukiBoxLines,
   buildKukiBoxMerchVariants,
   expectedKukiBoxPrice,
+  kukiBoxItemsNeedFlavors,
   kukiBoxSizeFromProductId,
+  mapKukiBoxRpcError,
   parseKukiCookieQtysFromVariants,
   sumCookieQtys,
   validateKukiBoxFill,
@@ -139,5 +141,40 @@ describe('kukiBoxOrder', () => {
       pack: 'none',
     });
     expect(packaging).toBeUndefined();
+  });
+
+  it('blocks checkout when a box has no cookie flavors', () => {
+    expect(kukiBoxItemsNeedFlavors([{ productId: 'cookie_klassic' }])).toBeNull();
+    expect(kukiBoxItemsNeedFlavors([{ productId: 'kuki_box_10', merchVariants: [] }])).toMatch(
+      /10 cookie flavors/i,
+    );
+    expect(
+      kukiBoxItemsNeedFlavors([
+        {
+          productId: 'kuki_box_10',
+          selectedVariants: [
+            { groupName: 'Cookies', optionId: 'cookie_klassic', optionLabel: 'Klassic ×10', qty: 10 },
+          ],
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      kukiBoxItemsNeedFlavors([
+        {
+          productId: 'kuki_box_5',
+          customizations: [
+            { groupName: 'Cookies', optionId: 'cookie_klassic', optionLabel: 'Klassic ×2', qty: 2 },
+          ],
+        },
+      ]),
+    ).toMatch(/exactly 5 cookies/i);
+  });
+
+  it('maps server fill errors to flavor-first copy', () => {
+    expect(mapKukiBoxRpcError('Kuki Box kuki_box_10 requires exactly 10 cookies (got 0)')).toMatch(
+      /tap \+/i,
+    );
+    expect(mapKukiBoxRpcError('Kuki Box cookie selection is missing optionId')).toMatch(/flavors/i);
+    expect(mapKukiBoxRpcError('Menu is still syncing')).toBeNull();
   });
 });

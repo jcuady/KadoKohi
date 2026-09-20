@@ -86,4 +86,33 @@ describe('qrGuestMenu promo rail', () => {
     expect(pastryTabs).toHaveLength(1);
     expect(pastryTabs[0]?.id).toBe('cat_pastries');
   });
+
+  it('lists Kuki Box SKUs on the pastry tab and hides packaging add-ons', () => {
+    const cats: MenuCategory[] = [
+      { id: 'cat_pastries', name: 'Pastries', order: 4, visible: true },
+    ];
+    const pastries: Product[] = [
+      product({
+        id: 'cookie_klassic',
+        categoryId: 'cat_pastries',
+        name: 'Klassic Cookie',
+        basePrice: 100,
+      }),
+      product({
+        id: 'kuki_box_10',
+        categoryId: 'cat_pastries',
+        name: 'Kuki Box - 10 pcs',
+        basePrice: 900,
+      }),
+      product({
+        id: 'kuki_pack_big',
+        categoryId: 'cat_pastries',
+        name: 'Big box packaging',
+        basePrice: 25,
+      }),
+    ];
+    const byCategory = (id: string) => pastries.filter((p) => p.categoryId === id);
+    const list = qrGuestProductsInCategory('cat_pastries', cats, byCategory, pastries);
+    expect(list.map((p) => p.id)).toEqual(['cookie_klassic', 'kuki_box_10']);
+  });
 });

@@ -9,7 +9,6 @@ import {
   KUKIDO_BLUE_DEEP,
   KUKIDO_COOKIE_LABEL,
   KUKIDO_PAPER,
-  KUKI_SINGLE_PRICE,
   isKukidoCookieId,
   resolveKukiBoxOptions,
   resolveKukiPackPrices,
@@ -62,16 +61,12 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initi
   }, [open, initialSize]);
 
   const cookieList = useMemo(
-    () => cookies.filter((c) => isKukidoCookieId(c.id) && c.visible),
+    () => cookies.filter((c) => isKukidoCookieId(c.id) && c.visible && c.inStock !== false),
     [cookies],
   );
   const allowedIds = useMemo(() => cookieList.map((c) => c.id), [cookieList]);
   const boxOptions = useMemo(() => resolveKukiBoxOptions(catalog), [catalog]);
   const packPrices = useMemo(() => resolveKukiPackPrices(catalog), [catalog]);
-  const singlePrice = useMemo(() => {
-    const priced = cookieList.find((c) => Number.isFinite(c.basePrice) && c.basePrice > 0);
-    return priced ? Number(priced.basePrice) : KUKI_SINGLE_PRICE;
-  }, [cookieList]);
 
   const box = boxOptions.find((o) => o.size === size) ?? boxOptions[0];
   const fill = validateKukiBoxFill(size, qtys, allowedIds.length ? allowedIds : undefined);
@@ -170,7 +165,7 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initi
               Kuki Boxes
             </h2>
             <p className="mt-1 text-sm text-white/85">
-              Singles {formatPhp(singlePrice)}. Free box from 4 pcs.
+              Marikina &amp; Greenhills. Step 1: pick a size. Step 2: tap + on flavors until the box is full.
             </p>
           </div>
           <button
@@ -233,7 +228,7 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initi
           <div>
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-kado-dark/50">
-                Choose cookies · {fill.filled}/{size}
+                Cookie flavors · {fill.filled}/{size}
               </p>
               {fill.remaining > 0 ? (
                 <span className="text-[11px] font-semibold" style={{ color: KUKIDO_BLUE }}>
@@ -365,7 +360,7 @@ export default function KukiBoxBuilder({ open, cookies, onClose, onCommit, initi
               className="min-h-12 rounded-full px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:opacity-40 active:scale-[0.98]"
               style={{ backgroundColor: KUKIDO_BLUE }}
             >
-              {added ? 'Added!' : `Add ${size}-pc box`}
+              {added ? 'Added!' : !fill.ok ? `Pick ${fill.remaining} more` : `Add ${size}-pc box`}
             </button>
           </div>
         </div>

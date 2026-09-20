@@ -8,6 +8,7 @@ import {
   pastryHasPrice,
 } from './pastriesCategory';
 import { isProductInStock } from './productStock';
+import { isKukiPackProduct } from './kukido';
 
 /** Special category-rail id — discounted drinks / pastries (not a real menu category). */
 export const MENU_PROMO_FILTER_ID = 'promo';
@@ -120,7 +121,9 @@ export function flattenMenuProducts(ctx: MenuCatalogFilterContext): Product[] {
       pastryEmitted = true;
       const pastryItems: Product[] = [];
       for (const id of pastryIds) {
-        pastryItems.push(...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p)));
+        pastryItems.push(
+          ...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p) && !isKukiPackProduct(p.id)),
+        );
       }
       pastryItems.sort((a, b) => a.order - b.order);
       out.push(...pastryItems);
@@ -142,7 +145,9 @@ export function baseProductsForFilters(
   if (isPastriesCategoryId(ctx.categories, filters.categoryId)) {
     const pastryItems: Product[] = [];
     for (const id of pastryCategoryIds(ctx.categories)) {
-      pastryItems.push(...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p)));
+      pastryItems.push(
+        ...ctx.productsByCategory(id).filter((p) => pastryHasPrice(p) && !isKukiPackProduct(p.id)),
+      );
     }
     return pastryItems.sort((a, b) => a.order - b.order);
   }
@@ -158,6 +163,7 @@ export function filterMenuProducts(
 
   let list = products.filter((p) => {
     if (!p.visible) return false;
+    if (isKukiPackProduct(p.id)) return false;
     if (filters.inStockOnly && !isProductInStock(p)) return false;
     if (!matchesTemperature(p, filters.temperature)) return false;
     if (!matchesMenuSearch(p, filters.query, categoryNameById.get(p.categoryId))) return false;

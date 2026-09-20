@@ -92,8 +92,8 @@ export default function KukiBoxesShowcase({ onBuild }: Props) {
               Kuki Boxes
             </h2>
             <p className="mt-2.5 max-w-none text-sm leading-relaxed text-kado-dark/65 sm:mt-3 sm:max-w-[28ch]">
-              Pick 4, 5, 6, or 10 cookies — fill each slot with your flavors. Packaging optional at
-              checkout.
+              Sold at Marikina and Greenhills. Tap a size, then pick flavors with + until every
+              slot is full.
             </p>
 
             <ul className="mt-4 grid grid-cols-1 gap-2 sm:mt-5">

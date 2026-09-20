@@ -24,11 +24,11 @@ function cookieLine(productId = 'cookie_klassic') {
   };
 }
 
-function kukiBoxLine(cookies: Record<string, number>) {
+function kukiBoxLine(size: 4 | 5 | 6 | 10, cookies: Record<string, number>) {
   return {
     id: uniqueTestId('line'),
-    product_id: 'kuki_box_4',
-    product_name_snapshot: 'Kuki Box - 4 pcs',
+    product_id: `kuki_box_${size}`,
+    product_name_snapshot: `Kuki Box - ${size} pcs`,
     item_type: 'coffee',
     qty: 1,
     merch_variants: Object.entries(cookies)
@@ -49,14 +49,14 @@ test.describe('Pastry transactional matrix (kk_place_order)', () => {
     test.skip(!cfg, 'Supabase env not configured');
 
     const res = await request.get(
-      `${cfg!.url}/rest/v1/kk_products?select=id,name,visible,in_stock&id=in.(cookie_klassic,kuki_box_4,kuki_pack_single)`,
+      `${cfg!.url}/rest/v1/kk_products?select=id,name,visible,in_stock&id=in.(cookie_klassic,kuki_box_4,kuki_box_5,kuki_box_6,kuki_box_10,kuki_pack_single)`,
       {
         headers: { apikey: cfg!.anonKey, Authorization: `Bearer ${cfg!.anonKey}` },
       },
     );
     expect(res.ok()).toBeTruthy();
     const rows = (await res.json()) as ProductRow[];
-    expect(rows.length).toBe(3);
+    expect(rows.length).toBe(6);
     for (const row of rows) {
       expect(row.visible, row.id).toBe(true);
       expect(row.in_stock, row.id).toBe(true);
@@ -171,7 +171,7 @@ test.describe('Pastry transactional matrix (kk_place_order)', () => {
       payment_method: 'gcash-qr',
       payment_status: 'unpaid',
       status: 'pending',
-      items: [kukiBoxLine({ cookie_klassic: 2, cookie_campfire: 2 })],
+      items: [kukiBoxLine(4, { cookie_klassic: 2, cookie_campfire: 2 })],
     });
     expect(ok.status).toBe(200);
 
@@ -184,10 +184,57 @@ test.describe('Pastry transactional matrix (kk_place_order)', () => {
       payment_method: 'pay-at-store',
       payment_status: 'paid',
       status: 'pending',
-      items: [kukiBoxLine({ cookie_klassic: 2 })],
+      items: [kukiBoxLine(4, { cookie_klassic: 2 })],
     });
     expect(bad.status).toBeGreaterThanOrEqual(400);
     expect(rpcErrorMessage(bad.body)).toMatch(/kuki|cookie|fill|exact|slot|4/i);
+  });
+
+  test('kuki box 5/6/10 exact fills place; empty 10-pc rejected', async ({ request }) => {
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured');
+
+    const headers = { apikey: cfg!.anonKey, Authorization: `Bearer ${cfg!.anonKey}` };
+    const branches = (await (
+      await request.get(`${cfg!.url}/rest/v1/kk_branches?select=id&status=eq.active&limit=1`, {
+        headers,
+      })
+    ).json()) as BranchRow[];
+    const branch = branches[0];
+    test.skip(!branch, 'Need branch');
+
+    const fills: Array<{ size: 5 | 6 | 10; cookies: Record<string, number> }> = [
+      { size: 5, cookies: { cookie_klassic: 3, cookie_campfire: 2 } },
+      { size: 6, cookies: { cookie_klassic: 2, cookie_double_dark: 2, cookie_blondie: 2 } },
+      { size: 10, cookies: { cookie_klassic: 4, cookie_campfire: 3, cookie_blondie: 3 } },
+    ];
+
+    for (const fill of fills) {
+      const ok = await placeOrderRpc(request, {
+        id: uniqueTestId(`kuki-${fill.size}`),
+        channel: 'takeout',
+        branch_id: branch.id,
+        guest_name: `E2E Kuki ${fill.size}`,
+        payment_method: 'gcash-qr',
+        payment_status: 'unpaid',
+        status: 'pending',
+        items: [kukiBoxLine(fill.size, fill.cookies)],
+      });
+      expect(ok.status, `${fill.size}-pc`).toBe(200);
+    }
+
+    const empty = await placeOrderRpc(request, {
+      id: uniqueTestId('kuki-10-empty'),
+      channel: 'online',
+      branch_id: branch.id,
+      guest_name: 'E2E Kuki 10 empty',
+      payment_method: 'gcash-qr',
+      payment_status: 'unpaid',
+      status: 'pending',
+      items: [kukiBoxLine(10, {})],
+    });
+    expect(empty.status).toBeGreaterThanOrEqual(400);
+    expect(rpcErrorMessage(empty.body)).toMatch(/kuki|cookie|fill|exact|10/i);
   });
 
   test('online unpaid cannot switch to pay-at-store; dine-in can', async ({ request }) => {
@@ -347,7 +394,7 @@ test.describe('Pastry transactional matrix (kk_place_order)', () => {
         payment_method: 'paymongo',
         payment_status: 'unpaid',
         status: 'pending',
-        items: [kukiBoxLine({ cookie_blondie: 4 })],
+        items: [kukiBoxLine(4, { cookie_blondie: 4 })],
       },
       token,
     );

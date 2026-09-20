@@ -24,6 +24,7 @@ import {
   getMenuProductImageUrl,
 } from '../lib/menuCatalog';
 import { isKukidoCookieId, KUKIDO_CREAM } from '../lib/kukido';
+import { kukiBoxSizeFromProductId } from '../lib/kukiBoxOrder';
 
 function isMerchProduct(p: Product | MerchProduct): p is MerchProduct {
   return !('temperature' in p);
@@ -125,6 +126,7 @@ export default function ProductDetailDrawer({
 
   const handleAdd = () => {
     if (!product || !canPlaceOrder) return;
+    if (kukiBoxSizeFromProductId(product.id)) return;
 
     if (isMerchProduct(product)) {
       const variants: CartLineVariant[] = [];

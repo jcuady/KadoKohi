@@ -33,6 +33,7 @@ import { ensureOrderReadiness } from '../lib/orderReadiness';
 import { orderingRepo } from '../lib/supabase/repositories/ordering';
 import { checkoutPath } from '../lib/pendingPayments';
 import { isKukiBuilderOnlyProduct } from '../lib/kukido';
+import { kukiBoxItemsNeedFlavors } from '../lib/kukiBoxOrder';
 import type { OrderItem, PaymentMethod } from '../types/domain';
 import { useVoucherStore } from '../store/voucherStore';
 import { useCheckoutStore, findSelectedVoucher } from '../store/checkoutStore';
@@ -191,6 +192,13 @@ export default function CartDrawer() {
     }
     setLoading(true);
     setCheckoutError('');
+
+    const flavorErr = kukiBoxItemsNeedFlavors(items);
+    if (flavorErr) {
+      setCheckoutError(flavorErr);
+      setLoading(false);
+      return;
+    }
 
     const orderItems: OrderItem[] = items.map((line) => ({
       id: newId(),

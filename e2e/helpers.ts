@@ -34,9 +34,10 @@ export async function fillCustomerSignIn(page: Page, email: string, password: st
 export async function dismissCookieConsent(page: Page): Promise<void> {
   const accept = page.getByRole('button', { name: /I accept cookies/i });
   try {
-    // Banner is idle-deferred up to ~2s after first paint.
-    if (await accept.isVisible({ timeout: 3500 })) {
-      await accept.click({ timeout: 5000, noWaitAfter: true });
+    // Banner is idle-deferred after first paint — wait long enough to catch it.
+    if (await accept.isVisible({ timeout: 6000 })) {
+      await accept.click({ timeout: 5000, force: true });
+      await accept.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => undefined);
     }
   } catch {
     // Banner may animate away or already be dismissed.
