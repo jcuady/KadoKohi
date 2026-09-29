@@ -25,23 +25,23 @@ type ResetCardDef = {
 const RESET_CARDS: ResetCardDef[] = [
   {
     scope: 'transactional',
-    label: 'Reset transactional data',
+    label: 'Clear test data (go-live)',
     phrase: 'RESET TRANSACTIONAL DATA',
     severity: 'amber',
-    description: 'Clears all orders, bookings, activity, and non-admin accounts. Keeps Marikina branch, full menu, merch, CMS, and settings.',
+    description:
+      'Erases testing activity and every login except the superadmin, so the cafe can open on a clean slate. Download the backup above first.',
     willDelete: [
-      'All orders, line items, and payment records',
-      'All booth bookings and event registrations',
-      'All customer, barista, and staff accounts',
-      'Non-Marikina branches (Greenhills, etc.)',
-      'Loyalty vouchers, promo claims, audit logs',
-      'Career applications, push subscriptions',
+      'All orders, line items, payment records, and payment-proof screenshots',
+      'All booth bookings, event signups, and test date blocks',
+      'Customer, barista, and staff accounts — recreate them under Admin → Users',
+      'Loyalty vouchers, stamp balances, and promo usage counts',
+      'Career applications, audit logs, push subscriptions, and notifications',
     ],
     willKeep: [
-      'Admin login (email + password)',
-      'Marikina branch and all its tables/QR codes',
+      'Superadmin login (you stay signed in)',
+      'Marikina and Greenhills branches, hours, and QR tables',
       'Full menu, merch catalog, and promo code definitions',
-      'Events, blog, CMS content, and shop settings',
+      'Events, blog, CMS content, loyalty rewards, and shop settings',
     ],
   },
   {
@@ -76,7 +76,7 @@ const RESET_CARDS: ResetCardDef[] = [
     label: 'Reset customer accounts',
     phrase: 'RESET CUSTOMERS',
     severity: 'red',
-    description: 'Deletes all customer accounts plus their orders, bookings, vouchers, and activity. Internal accounts survive.',
+    description: 'Deletes customer accounts plus their orders, bookings, vouchers, and activity. Superadmin, barista, and staff logins stay.',
     willDelete: [
       'All customer accounts and profiles',
       'All orders, bookings, and vouchers',

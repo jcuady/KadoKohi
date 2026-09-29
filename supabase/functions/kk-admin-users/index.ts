@@ -26,6 +26,33 @@ function json(body: Record<string, unknown>, status = 200) {
   });
 }
 
+/** Test GCash screenshots live in a private bucket the SQL wipe cannot reach. */
+async function emptyPaymentProofs(
+  adminClient: ReturnType<typeof createClient>,
+): Promise<number> {
+  const bucket = "kado-payment-proofs";
+  let removed = 0;
+
+  async function walk(prefix: string): Promise<void> {
+    const { data, error } = await adminClient.storage.from(bucket).list(prefix, { limit: 1000 });
+    if (error || !data?.length) return;
+    const files = data
+      .filter((entry) => entry.id)
+      .map((entry) => (prefix ? `${prefix}/${entry.name}` : entry.name));
+    const folders = data.filter((entry) => !entry.id);
+    if (files.length) {
+      const { error: removeErr } = await adminClient.storage.from(bucket).remove(files);
+      if (!removeErr) removed += files.length;
+    }
+    for (const folder of folders) {
+      await walk(prefix ? `${prefix}/${folder.name}` : folder.name);
+    }
+  }
+
+  await walk("");
+  return removed;
+}
+
 async function detachUserReferences(
   adminClient: ReturnType<typeof createClient>,
   userId: string,
@@ -297,37 +324,45 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-      // Scopes that delete non-admin users need auth.users cleanup beforehand.
-      // Collect non-admin user IDs so we can delete them from auth after the RPC.
-      let usersRemoved = 0;
+      // Collect targets first, wipe tables, then drop auth users.
+      // Deleting auth before the RPC left accounts gone when the wipe failed.
       const deletesUsers = ["all", "transactional", "customers"].includes(scope);
-
+      let targetIds: string[] = [];
       if (deletesUsers) {
-        const { data: nonAdminProfiles } = await adminClient
-          .from("kk_profiles")
-          .select("id")
-          .neq("role", "admin");
-
-        for (const row of nonAdminProfiles ?? []) {
-          if (row.id === user.id) continue;
-          await adminClient.auth.admin.deleteUser(row.id).catch((err: Error) => {
-            console.warn(`auth delete failed for ${row.id}:`, err.message);
-          });
-          usersRemoved++;
-        }
+        let profileQuery = adminClient.from("kk_profiles").select("id");
+        profileQuery = scope === "customers"
+          ? profileQuery.eq("role", "customer")
+          : profileQuery.neq("role", "admin");
+        const { data: targets } = await profileQuery;
+        targetIds = (targets ?? [])
+          .map((row) => row.id as string)
+          .filter((id) => id && id !== user.id);
       }
 
-      // Call the atomic RPC — handles all table deletes in one transaction
       const { data: rpcResult, error: rpcErr } = await adminClient.rpc(
         "kk_admin_reset_data",
         { p_scope: scope, p_confirm_phrase: confirmPhrase },
       );
       if (rpcErr) throw rpcErr;
 
-      const result = (rpcResult as Record<string, unknown>) ?? {};
-      if (deletesUsers) {
-        result.usersRemoved = usersRemoved;
+      let usersRemoved = 0;
+      for (const id of targetIds) {
+        const { error: deleteErr } = await adminClient.auth.admin.deleteUser(id);
+        if (deleteErr) {
+          console.warn(`auth delete failed for ${id}:`, deleteErr.message);
+          continue;
+        }
+        usersRemoved++;
       }
+
+      let proofsRemoved = 0;
+      if (["all", "transactional", "orders", "customers"].includes(scope)) {
+        proofsRemoved = await emptyPaymentProofs(adminClient);
+      }
+
+      const result = (rpcResult as Record<string, unknown>) ?? {};
+      if (deletesUsers) result.usersRemoved = usersRemoved;
+      if (proofsRemoved > 0) result.paymentProofsRemoved = proofsRemoved;
 
       return json(result);
     } catch (err) {

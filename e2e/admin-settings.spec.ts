@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { internalLogin, trackPageErrors } from './helpers';
 
 const RESET_CARD_LABELS = [
-  'Reset transactional data',
+  'Clear test data (go-live)',
   'Reset orders only',
   'Reset booth bookings',
   'Reset loyalty activity',
@@ -30,6 +30,13 @@ test.describe('Admin settings operational writes', () => {
     for (const label of RESET_CARD_LABELS) {
       await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
     }
+
+    const goLive = page.locator('div.rounded-2xl').filter({
+      has: page.getByRole('heading', { name: 'Clear test data (go-live)', exact: true }),
+    });
+    await expect(goLive.getByText(/Marikina and Greenhills/i)).toBeVisible();
+    await expect(goLive.getByText(/Full menu/i)).toBeVisible();
+    await expect(goLive.getByText(/Non-Marikina branches/i)).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Reset orders only' }).click();
     const phraseInput = page.getByPlaceholder('RESET ORDERS');
