@@ -62,3 +62,14 @@ export const OPTION_CHIP_IDLE =
 export function optionChipClass(active: boolean): string {
   return active ? OPTION_CHIP_ACTIVE : OPTION_CHIP_IDLE;
 }
+
+/** Ops (dash-token) segmented chip / filter tab — ≥44px touch target. */
+export function dashChipClass(active: boolean): string {
+  return [
+    'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-3.5 text-xs font-bold transition-colors duration-150 touch-manipulation',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kado-red/40',
+    active
+      ? 'border-kado-red bg-kado-red text-white shadow-sm shadow-kado-red/20'
+      : 'dash-card-alt dash-border text-[var(--color-dash-text-muted)] hover:border-kado-red/40 hover:text-[var(--color-dash-text)]',
+  ].join(' ');
+}

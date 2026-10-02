@@ -130,6 +130,14 @@
 .dash-table-scroll > table {
   min-width: 44rem;
 }
+/* iOS Safari zooms into any focused field under 16px (phones and iPads). */
+@media (max-width: 47.99rem), (pointer: coarse) {
+  .dash-shell input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+  .dash-shell select,
+  .dash-shell textarea {
+    font-size: 16px;
+  }
+}
 .dash-toast-bottom {
   bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   left: 50%;
@@ -210,8 +218,9 @@
   --qr-surface: #ffffff;
   --qr-surface-muted: #faf7f2;
   --qr-text: #191919;
-  --qr-text-muted: rgba(25, 25, 25, 0.55);
-  --qr-text-subtle: rgba(25, 25, 25, 0.42);
+  --qr-text-muted: rgba(25, 25, 25, 0.68);
+  --qr-text-subtle: rgba(25, 25, 25, 0.64);
+  --qr-accent-text: #9e181d;
   --qr-border: rgba(25, 25, 25, 0.12);
   --qr-focus-ring: #9e181d;
   --qr-card-bg: #ffffff;
@@ -237,8 +246,8 @@
   --qr-chip-iced-border: #9e181d;
   --qr-chip-active-shadow: 0 0 0 2px rgba(158, 24, 29, 0.35);
   --qr-pill-idle-bg: #ffffff;
-  --qr-pill-idle-text: rgba(25, 25, 25, 0.62);
-  --qr-pill-idle-border: rgba(25, 25, 25, 0.12);
+  --qr-pill-idle-text: rgba(25, 25, 25, 0.72);
+  --qr-pill-idle-border: rgba(25, 25, 25, 0.16);
   --qr-pill-active-bg: #191919;
   --qr-pill-active-text: #faf9f6;
   --qr-pill-active-border: #191919;
@@ -262,8 +271,10 @@
     --qr-surface: #242424;
     --qr-surface-muted: #1f1f1f;
     --qr-text: #faf9f6;
-    --qr-text-muted: rgba(250, 249, 246, 0.68);
-    --qr-text-subtle: rgba(250, 249, 246, 0.46);
+    --qr-text-muted: rgba(250, 249, 246, 0.72);
+    --qr-text-subtle: rgba(250, 249, 246, 0.6);
+    --qr-accent-text: #f07a7e;
+    --qr-logo-filter: brightness(0) invert(1);
     --qr-border: rgba(255, 255, 255, 0.12);
     --qr-focus-ring: #e04a50;
     --qr-card-bg: #242424;
@@ -281,8 +292,8 @@
     --qr-chip-iced-bg: #2a2a2a;
     --qr-chip-iced-text: #faf9f6;
     --qr-pill-idle-bg: #2a2a2a;
-    --qr-pill-idle-text: rgba(250, 249, 246, 0.62);
-    --qr-pill-idle-border: rgba(255, 255, 255, 0.12);
+    --qr-pill-idle-text: rgba(250, 249, 246, 0.78);
+    --qr-pill-idle-border: rgba(255, 255, 255, 0.16);
     --qr-pill-active-bg: #9e181d;
     --qr-pill-active-text: #faf9f6;
     --qr-pill-active-border: #9e181d;
@@ -301,6 +312,9 @@
 .qr-text { color: var(--qr-text); }
 .qr-text-muted { color: var(--qr-text-muted); }
 .qr-text-subtle { color: var(--qr-text-subtle); }
+/* Brand red fails on dark QR surfaces (1.9:1); text-only accent keeps red fills unchanged. */
+.qr-root .text-kado-red { color: var(--qr-accent-text); }
+.qr-root .qr-brand-mark { filter: var(--qr-logo-filter, none); }
 
 .qr-surface-card {
   background: var(--qr-card-bg);
@@ -1132,16 +1146,7 @@ html.dash-dark {
   }
 }
 
-/* QR dine-in / takeout — scroll anchor below sticky header + toolbar */
-.qr-menu-section-anchor {
-  scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 10.5rem);
-}
-
 @media (orientation: landscape) and (max-height: 30rem) {
-  .qr-menu-section-anchor {
-    scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 7.75rem);
-  }
-
   .guest-order-category-rail button {
     min-height: 2.25rem;
     padding-inline: 0.75rem;

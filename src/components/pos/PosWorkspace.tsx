@@ -21,7 +21,8 @@ import KukiBoxBuilder from '../pastries/KukiBoxBuilder';
 import { resolvePosUnitPrice, type PosLineConfig } from '../../lib/posPricing';
 import { discountedBasePrice, productDiscountAmount, productPromoTag } from '../../lib/productPricing';
 import { useConfirmDialog } from '../ui/ConfirmDialog';
-import { pastryHasPrice, pastriesProducts } from '../../lib/pastriesCategory';
+import { menuKindOf, pastryHasPrice, pastriesProducts, type MenuKind } from '../../lib/pastriesCategory';
+import { dashChipClass } from '../../lib/overlayTheme';
 import { isKukiPackProduct, type KukiBoxSize } from '../../lib/kukido';
 import {
   kukiBoxItemsNeedFlavors,
@@ -39,6 +40,14 @@ type CartLine = {
   temperature?: 'hot' | 'iced';
   customizations: OrderItemVariantSnapshot[];
 };
+
+type PosMenuFilter = 'all' | MenuKind;
+
+const POS_MENU_FILTERS: { id: PosMenuFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'drinks', label: 'Drinks' },
+  { id: 'pastries', label: 'Pastries' },
+];
 
 type PosWorkspaceProps = {
   variant: 'admin' | 'barista';
@@ -67,7 +76,7 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
 
   const effectiveBranchId = lockedBranchId ?? adminPosBranchId ?? branches[0]?.id ?? null;
 
-  const [activeCat, setActiveCat] = useState(() => categories[0]?.id ?? '');
+  const [menuFilter, setMenuFilter] = useState<PosMenuFilter>('all');
   const [productSearch, setProductSearch] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [configuring, setConfiguring] = useState<Product | null>(null);
@@ -84,13 +93,32 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
     [categories],
   );
 
-  const list = useMemo(() => {
-    const categoryId = activeCat || sortedCategories[0]?.id || '';
+  const menuSections = useMemo(
+    () =>
+      sortedCategories
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: menuKindOf(c),
+          products: productsByCategory(c.id).filter((p) => isProductInStock(p) && !isKukiPackProduct(p.id)),
+        }))
+        .filter((s) => s.products.length > 0),
+    [productsByCategory, sortedCategories],
+  );
+
+  const filterCounts = useMemo(() => {
+    const count = (kind?: MenuKind) =>
+      menuSections.filter((s) => !kind || s.kind === kind).reduce((n, s) => n + s.products.length, 0);
+    return { all: count(), drinks: count('drinks'), pastries: count('pastries') } satisfies Record<PosMenuFilter, number>;
+  }, [menuSections]);
+
+  const visibleSections = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
-    return productsByCategory(categoryId)
-      .filter((p) => isProductInStock(p) && !isKukiPackProduct(p.id))
-      .filter((p) => !q || p.name.toLowerCase().includes(q));
-  }, [activeCat, productSearch, productsByCategory, sortedCategories]);
+    return menuSections
+      .filter((s) => menuFilter === 'all' || s.kind === menuFilter)
+      .map((s) => ({ ...s, products: s.products.filter((p) => !q || p.name.toLowerCase().includes(q)) }))
+      .filter((s) => s.products.length > 0);
+  }, [menuFilter, menuSections, productSearch]);
 
   const branch = branches.find((b) => b.id === effectiveBranchId);
 
@@ -414,64 +442,77 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
               />
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {sortedCategories.map((c) => (
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Show">
+              {POS_MENU_FILTERS.map((f) => (
                 <button
-                  key={c.id}
+                  key={f.id}
                   type="button"
-                  onClick={() => setActiveCat(c.id)}
-                  className={`px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-colors ${
-                    (activeCat || sortedCategories[0]?.id) === c.id
-                      ? 'bg-kado-red text-kado-cream border-kado-red'
-                      : 'dash-card dash-muted dash-border hover:border-kado-red/40'
-                  }`}
+                  onClick={() => setMenuFilter(f.id)}
+                  aria-pressed={menuFilter === f.id}
+                  className={dashChipClass(menuFilter === f.id)}
                 >
-                  {c.name}
+                  {f.label}
+                  <span className="tabular-nums opacity-80">{filterCounts[f.id]}</span>
                 </button>
               ))}
             </div>
 
-            {list.length === 0 ? (
+            {visibleSections.length === 0 ? (
               <p className="text-sm dash-muted rounded-2xl dash-card border dash-border p-8 text-center">
-                {productSearch.trim() ? 'No in-stock items match your search.' : 'No in-stock items in this category.'}
+                {productSearch.trim() ? 'No in-stock items match your search.' : 'Nothing in stock here right now.'}
               </p>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-3">
-                {list.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      const size = kukiBoxSizeFromProductId(p.id);
-                      if (size) {
-                        setEditingLineKey(null);
-                        openKukiBox(size);
-                        return;
-                      }
-                      setConfiguring(p);
-                      setEditingLineKey(null);
-                    }}
-                    className="text-left rounded-2xl dash-card border p-4 hover:border-kado-red/40 hover:shadow-lg transition-all active:scale-[0.99]"
+              visibleSections.map((section) => (
+                <section key={section.id} aria-labelledby={`pos-cat-${section.id}`} className="space-y-2">
+                  <h2
+                    id={`pos-cat-${section.id}`}
+                    className="flex items-baseline justify-between gap-2 px-0.5 text-[11px] font-black uppercase tracking-[0.14em] dash-heading"
                   >
-                    <div className="flex justify-between gap-2">
-                      <span className="font-display font-bold text-kado-dark dash-heading">{p.name}</span>
-                      <span className="flex shrink-0 flex-col items-end leading-none">
-                        {productPromoTag(p) ? (
-                          <span className="text-[9px] font-semibold dash-muted line-through">
-                            {formatPhp(p.basePrice)}
+                    {section.name}
+                    <span className="dash-muted tabular-nums">{section.products.length}</span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3">
+                    {section.products.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          const size = kukiBoxSizeFromProductId(p.id);
+                          if (size) {
+                            setEditingLineKey(null);
+                            openKukiBox(size);
+                            return;
+                          }
+                          setConfiguring(p);
+                          setEditingLineKey(null);
+                        }}
+                        className="flex min-h-[88px] flex-col justify-between gap-2 text-left rounded-2xl dash-card border p-3 sm:p-4 hover:border-kado-red/40 hover:shadow-lg transition-all active:scale-[0.99] touch-manipulation"
+                      >
+                        <span className="font-display text-sm font-bold leading-snug dash-heading [overflow-wrap:anywhere]">
+                          {p.name}
+                        </span>
+                        <span className="flex flex-wrap items-end justify-between gap-1">
+                          {productPromoTag(p) || p.tags?.includes('iced-only') ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-kado-red bg-kado-red/10 px-1.5 py-0.5 rounded">
+                              {productPromoTag(p) ?? 'Iced only'}
+                            </span>
+                          ) : (
+                            <span />
+                          )}
+                          <span className="ml-auto flex flex-col items-end leading-none">
+                            {productPromoTag(p) ? (
+                              <span className="text-[10px] font-semibold dash-muted line-through">
+                                {formatPhp(p.basePrice)}
+                              </span>
+                            ) : null}
+                            <span className="text-kado-red font-bold">{formatPhp(discountedBasePrice(p))}</span>
                           </span>
-                        ) : null}
-                        <span className="text-kado-red font-bold">{formatPhp(discountedBasePrice(p))}</span>
-                      </span>
-                    </div>
-                    {(productPromoTag(p) || p.tags?.includes('iced-only')) && (
-                      <span className="mt-2 inline-block text-[9px] font-bold uppercase tracking-widest text-kado-red bg-kado-red/10 px-2 py-0.5 rounded">
-                        {productPromoTag(p) ?? 'Iced only'}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))
             )}
           </div>
 
@@ -597,7 +638,7 @@ export default function PosWorkspace({ variant, lockedBranchId = null }: PosWork
                     key={choice}
                     type="button"
                     onClick={() => setPaymentChoice(choice)}
-                    className={`rounded-xl border px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                    className={`min-h-[44px] rounded-xl border px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors touch-manipulation ${
                       paymentChoice === choice
                         ? 'bg-kado-red text-kado-cream border-kado-red'
                         : 'dash-card dash-border dash-muted hover:border-kado-red/40'

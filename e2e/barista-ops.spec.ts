@@ -8,7 +8,7 @@ test.describe('Barista operational writes', () => {
     await page.goto('/barista/pos');
     await expect(page.getByRole('heading', { name: /^POS$/i })).toBeVisible({ timeout: 20000 });
 
-    const productBtn = page.locator('.grid.sm\\:grid-cols-2.gap-3 button').first();
+    const productBtn = page.locator('section[aria-labelledby^="pos-cat-"] button').first();
     await expect(productBtn).toBeVisible({ timeout: 20000 });
     await productBtn.click();
 

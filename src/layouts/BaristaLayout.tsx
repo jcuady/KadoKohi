@@ -12,6 +12,7 @@ import {
   Moon,
   Settings,
   Monitor,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
@@ -28,12 +29,13 @@ const nav = [
   { to: '/barista/menu', label: 'Menu', icon: Coffee },
   { to: '/barista/stamps', label: 'Stamps', icon: Stamp },
   { to: '/barista/kiosk', label: 'Kiosk', icon: Monitor },
+  { to: '/barista/tickets', label: 'Tickets', icon: LifeBuoy },
   { to: '/barista/settings', label: 'Settings', icon: Settings },
 ];
 
 function sidebarFooterBtnClass() {
   return [
-    'flex w-full items-center justify-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium md:justify-start md:px-3',
+    'flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium md:justify-start md:px-3',
     'transition-colors duration-150',
     'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)]',
     'hover:text-[var(--color-dash-text)]',
@@ -66,8 +68,8 @@ export default function BaristaLayout() {
         className="dash-sidebar fixed left-0 top-0 z-40 flex h-[100dvh] w-[4.5rem] shrink-0 flex-col border-r shadow-[2px_0_24px_rgba(0,0,0,0.04)] md:w-52 lg:w-56"
         style={{ background: 'var(--color-dash-sidebar)', borderColor: 'var(--color-dash-border)' }}
       >
-        <div className="shrink-0 border-b px-2 pb-3 pt-3 md:px-4" style={{ borderColor: 'var(--color-dash-border)' }}>
-          <Link to="/barista" className="flex items-center justify-center md:justify-start">
+        <div className="shrink-0 border-b px-2 pb-1 pt-1 md:px-4 md:pb-3 md:pt-3" style={{ borderColor: 'var(--color-dash-border)' }}>
+          <Link to="/barista" className="flex min-h-[44px] items-center justify-center md:justify-start">
             <img
               src={LOGO.hybridMark}
               alt="Kado Kohi"
@@ -101,7 +103,7 @@ export default function BaristaLayout() {
               end={end}
               className={({ isActive }) =>
                 [
-                  'flex min-h-[2.75rem] items-center justify-center gap-2.5 rounded-lg px-2 py-2.5 text-xs font-bold uppercase tracking-wide transition-colors duration-150 md:min-h-0 md:justify-start md:px-3 md:text-[13px] md:normal-case md:tracking-normal',
+                  'flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 text-[10px] font-semibold leading-tight transition-colors duration-150 md:flex-row md:justify-start md:gap-2.5 md:px-3 md:py-2.5 md:text-[13px] md:font-bold',
                   isActive
                     ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
                     : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
@@ -110,13 +112,13 @@ export default function BaristaLayout() {
               title={label}
             >
               <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-              <span className="hidden truncate md:inline">{label}</span>
+              <span className="max-w-full truncate">{label}</span>
             </NavLink>
           ))}
         </nav>
 
         <div
-          className="shrink-0 space-y-1 border-t px-1.5 pb-2 pt-2 md:px-2 md:pb-3 md:pt-3"
+          className="shrink-0 space-y-0.5 border-t px-1.5 pb-1 pt-1 md:space-y-1 md:px-2 md:pb-3 md:pt-3"
           style={{ borderColor: 'var(--color-dash-border)' }}
         >
           <p

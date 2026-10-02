@@ -3,9 +3,11 @@ import {
   findPastriesCategory,
   isPastriesCategory,
   isPastriesCategoryId,
+  menuKindOf,
   pastryHasPrice,
   pastriesProducts,
   uniqueVisibleMenuCategories,
+  type MenuKind,
 } from './pastriesCategory';
 import { hasProductDiscount } from './productPricing';
 import { isPromoFilterId, MENU_PROMO_FILTER_ID } from './menuCatalogFilters';
@@ -13,9 +15,15 @@ import { isKukiPackProduct } from './kukido';
 
 export type QrGuestCategoryTab = { id: string; name: string };
 
+/** Guest menu filter: everything, one kind, or the promo rail. */
+export type QrGuestFilterId = 'all' | MenuKind | typeof MENU_PROMO_FILTER_ID;
+
+export const QR_GUEST_DEFAULT_FILTER: QrGuestFilterId = 'all';
+
 export type QrGuestMenuSection = {
   id: string;
   name: string;
+  kind: MenuKind;
   products: Product[];
 };
 
@@ -37,20 +45,22 @@ function qrGuestRealCategoryTabs(
     .map((c) => ({ id: c.id, name: c.name }));
 }
 
-/** Category pills for guest QR menus — On promo first, then real categories. */
-export function qrGuestCategoryTabs(
+/** Filter pills — All first, then Drinks / Pastries / On promo when each has items. */
+export function qrGuestFilterTabs(
   categories: MenuCategory[],
   products: Product[],
+  productsByCategory: (id: string) => Product[],
 ): QrGuestCategoryTab[] {
+  const sections = qrGuestMenuSections(categories, products, productsByCategory);
+  const hasKind = (kind: MenuKind) => sections.some((s) => s.kind === kind);
+  const hasPromo =
+    qrGuestProductsInCategory(MENU_PROMO_FILTER_ID, categories, productsByCategory, products).length > 0;
   return [
-    { id: MENU_PROMO_FILTER_ID, name: 'On promo' },
-    ...qrGuestRealCategoryTabs(categories, products),
+    { id: 'all', name: 'All' },
+    ...(hasKind('drinks') ? [{ id: 'drinks', name: 'Drinks' }] : []),
+    ...(hasKind('pastries') ? [{ id: 'pastries', name: 'Pastries' }] : []),
+    ...(hasPromo ? [{ id: MENU_PROMO_FILTER_ID, name: 'On promo' }] : []),
   ];
-}
-
-/** Default pill when tabs load — first real category, not On promo. */
-export function qrGuestDefaultCategoryId(tabs: QrGuestCategoryTab[]): string {
-  return tabs.find((t) => !isPromoFilterId(t.id))?.id ?? tabs[0]?.id ?? '';
 }
 
 /** Products for a category tab. */
@@ -76,17 +86,20 @@ export function qrGuestProductsInCategory(
   return list.filter((p) => !isKukiPackProduct(p.id));
 }
 
-/** Scroll sections for full-menu browse — excludes the On promo rail (shown as a filtered grid). */
+/** Category sections for menu browse, optionally narrowed to one kind (On promo is a separate grid). */
 export function qrGuestMenuSections(
   categories: MenuCategory[],
   products: Product[],
   productsByCategory: (id: string) => Product[],
+  filter: string = QR_GUEST_DEFAULT_FILTER,
 ): QrGuestMenuSection[] {
   return qrGuestRealCategoryTabs(categories, products)
     .map((tab) => ({
       id: tab.id,
       name: tab.name,
+      kind: menuKindOf(tab),
       products: qrGuestProductsInCategory(tab.id, categories, productsByCategory),
     }))
-    .filter((section) => section.products.length > 0);
+    .filter((section) => section.products.length > 0)
+    .filter((section) => filter === 'all' || section.kind === filter);
 }

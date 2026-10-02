@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import {
   clearSupabaseSession,
   customerLogin,
+  deleteProductByName,
   dismissCookieConsent,
   fetchActiveBranchSlug,
   fetchActiveTableCode,
@@ -19,11 +20,18 @@ async function confirmAdminDelete(page: Page): Promise<void> {
   await expect(dialog).toHaveCount(0, { timeout: 15000 });
 }
 
+/** Pastries created by a test — removed via API even when the test fails before its UI delete. */
+const createdPastries: string[] = [];
+test.afterEach(async ({ request }) => {
+  for (const name of createdPastries.splice(0)) await deleteProductByName(request, name);
+});
+
 test.describe('Admin pastries', () => {
   test('admin can add a pastry with variant controls then remove it', async ({ page }) => {
     test.setTimeout(90_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('cookie')}`;
+    createdPastries.push(pastryName);
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries');
@@ -114,6 +122,7 @@ test.describe('Customer pastries', () => {
     test.setTimeout(120_000);
     const errors = trackPageErrors(page);
     const pastryName = `E2E ${uniqueTestId('buy-cookie')}`;
+    createdPastries.push(pastryName);
 
     await internalLogin(page, 'admin');
     await page.goto('/admin/menu?tab=pastries');
@@ -217,6 +226,57 @@ test.describe('Customer pastries', () => {
 
     await page.waitForURL(/\/checkout\//, { timeout: 30000 });
     await expect(page.getByText(/cash|pay at|order|total/i).first()).toBeVisible({ timeout: 15000 });
+    expect(errors(), 'no uncaught errors').toEqual([]);
+  });
+
+  test('dine-in QR opens on All with drinks and pastries, then filters by kind', async ({ page, request }) => {
+    const errors = trackPageErrors(page);
+    const code = await fetchActiveTableCode(request);
+    test.skip(!code, 'No active table');
+
+    await page.goto(`/order/qr/${encodeURIComponent(code!)}`);
+    await dismissCookieConsent(page);
+    const show = page.getByRole('group', { name: 'Show' });
+    await expect(show.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true', {
+      timeout: 25000,
+    });
+    const sections = page.locator('main section');
+    const pastries = page.locator('#qr-cat-cat_pastries');
+    await expect(pastries).toBeVisible({ timeout: 20000 });
+    expect(await sections.count()).toBeGreaterThan(1);
+    await expect(page.locator('main').getByText(/^E2E /)).toHaveCount(0);
+
+    await show.getByRole('button', { name: 'Drinks', exact: true }).click();
+    await expect(pastries).toHaveCount(0);
+    await expect(sections.first()).toBeVisible();
+
+    await show.getByRole('button', { name: 'Pastries', exact: true }).click();
+    await expect(sections).toHaveCount(1);
+    await expect(pastries).toBeVisible();
+    await expect(page.getByRole('button', { name: /build a kuki box/i }).first()).toBeVisible();
+    expect(errors(), 'no uncaught errors').toEqual([]);
+  });
+
+  test('barista POS opens on All and filters drinks vs pastries', async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = trackPageErrors(page);
+    await internalLogin(page, 'barista');
+    await page.goto('/barista/pos');
+    const show = page.getByRole('group', { name: 'Show' });
+    await expect(show.getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true', { timeout: 25000 });
+    const cookie = page.getByRole('button', { name: /Klassic Cookie/ });
+    const drinkHeading = page.getByRole('heading', { name: /^Espresso/ }).first();
+    await expect(cookie).toBeVisible({ timeout: 20000 });
+    await expect(drinkHeading).toBeVisible();
+    await expect(page.getByText(/^E2E /)).toHaveCount(0);
+
+    await show.getByRole('button', { name: /^Drinks/ }).click();
+    await expect(cookie).toHaveCount(0);
+    await expect(drinkHeading).toBeVisible();
+
+    await show.getByRole('button', { name: /^Pastries/ }).click();
+    await expect(cookie).toBeVisible();
+    await expect(drinkHeading).toHaveCount(0);
     expect(errors(), 'no uncaught errors').toEqual([]);
   });
 

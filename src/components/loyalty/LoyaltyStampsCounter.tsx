@@ -112,7 +112,7 @@ export default function LoyaltyStampsCounter({ adjustReason, embedded = false }:
             aria-selected={period === p}
             onClick={() => setPeriod(p)}
             className={[
-              'flex-1 min-w-[4.5rem] rounded-lg px-2 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors',
+              'flex-1 min-w-[4.5rem] min-h-[44px] rounded-lg px-2 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors touch-manipulation',
               period === p
                 ? 'bg-kado-red text-white shadow-sm'
                 : 'opacity-70 hover:opacity-100 hover:bg-[var(--color-dash-hover)]',
@@ -145,7 +145,7 @@ export default function LoyaltyStampsCounter({ adjustReason, embedded = false }:
             type="button"
             onClick={() => setStampFilter(key)}
             className={[
-              'rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors',
+              'min-h-[44px] rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors touch-manipulation',
               stampFilter === key
                 ? 'border-kado-red bg-kado-red/10 text-kado-red'
                 : 'opacity-70 hover:opacity-100',

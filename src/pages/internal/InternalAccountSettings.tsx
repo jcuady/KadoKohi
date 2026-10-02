@@ -52,15 +52,15 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
   return (
     <div className="max-w-xl dash-page">
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kado-red mb-2">{portalLabel}</p>
-      <h1 className="font-display text-3xl md:text-4xl font-bold dash-heading mb-1">Account settings</h1>
+      <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold dash-heading mb-1">Account settings</h1>
       <p className="dash-muted text-sm mb-8">Update your display name and password for this portal.</p>
 
-      <div className="rounded-2xl dash-card border dash-border p-6 mb-6 space-y-4">
+      <div className="rounded-2xl dash-card border dash-border p-4 sm:p-6 mb-6 space-y-4">
         <h2 className="text-[11px] font-black uppercase tracking-widest dash-heading">Your account</h2>
         <div className="flex items-center gap-3 text-sm">
           <Mail className="w-4 h-4 dash-muted shrink-0" />
           <span className="dash-muted">Email</span>
-          <span className="font-semibold dash-heading ml-auto truncate">{user.email}</span>
+          <span className="font-semibold dash-heading ml-auto min-w-0 text-right [overflow-wrap:anywhere]">{user.email}</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <Shield className="w-4 h-4 dash-muted shrink-0" />
@@ -92,7 +92,7 @@ export default function InternalAccountSettings({ portalLabel }: Props) {
         <button
           type="submit"
           disabled={savingName}
-          className="inline-flex items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors disabled:opacity-60"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-kado-dark text-kado-cream px-5 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-kado-red transition-colors disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
           {savingName ? 'Saving…' : 'Save name'}

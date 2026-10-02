@@ -49,6 +49,7 @@ const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'));
 const AdminTables = lazy(() => import('./pages/admin/AdminTables'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminAuditLog = lazy(() => import('./pages/admin/AdminAuditLog'));
+const AdminTickets = lazy(() => import('./pages/admin/AdminTickets'));
 const AdminVouchers = lazy(() => import('./pages/admin/AdminVouchers'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 const AdminMerch = lazy(() => import('./pages/admin/AdminMerch'));
@@ -67,6 +68,7 @@ const StaffAllOrders = lazy(() => import('./pages/staff/StaffAllOrders'));
 const StaffBoothBookings = lazy(() => import('./pages/staff/StaffBoothBookings'));
 const StaffEventRegistrations = lazy(() => import('./pages/staff/StaffEventRegistrations'));
 const InternalAccountSettings = lazy(() => import('./pages/internal/InternalAccountSettings'));
+const SupportTickets = lazy(() => import('./pages/internal/SupportTickets'));
 
 const BaristaBoard = lazy(() => import('./pages/barista/BaristaBoard'));
 const BaristaQueue = lazy(() => import('./pages/barista/BaristaQueue'));
@@ -176,6 +178,7 @@ export default function App() {
             <Route path="pastries" element={<LazyRoutes><AdminPastries /></LazyRoutes>} />
             <Route path="users" element={<LazyRoutes><AdminUsers /></LazyRoutes>} />
             <Route path="audit" element={<LazyRoutes><AdminAuditLog /></LazyRoutes>} />
+            <Route path="tickets" element={<LazyRoutes><AdminTickets /></LazyRoutes>} />
             <Route path="vouchers" element={<LazyRoutes><AdminVouchers /></LazyRoutes>} />
             <Route path="settings" element={<LazyRoutes><AdminSettings /></LazyRoutes>} />
           </Route>
@@ -203,7 +206,8 @@ export default function App() {
             <Route path="pos" element={<LazyRoutes><BaristaPOS /></LazyRoutes>} />
             <Route path="menu" element={<LazyRoutes><BaristaMenu /></LazyRoutes>} />
             <Route path="stamps" element={<LazyRoutes><BaristaStamps /></LazyRoutes>} />
-            <Route path="settings" element={<LazyRoutes><InternalAccountSettings portalLabel="Barista" /></LazyRoutes>} />
+            <Route path="tickets" element={<LazyRoutes><div className="p-3 sm:p-4 md:p-6"><SupportTickets portalLabel="Barista" /></div></LazyRoutes>} />
+            <Route path="settings" element={<LazyRoutes><div className="p-3 sm:p-4 md:p-6"><InternalAccountSettings portalLabel="Barista" /></div></LazyRoutes>} />
           </Route>
         </Route>
 
@@ -221,6 +225,7 @@ export default function App() {
             <Route path="event-registrations" element={<LazyRoutes><StaffEventRegistrations /></LazyRoutes>} />
             <Route path="merch-orders" element={<LazyRoutes><StaffMerchOrders /></LazyRoutes>} />
             <Route path="orders" element={<LazyRoutes><StaffAllOrders /></LazyRoutes>} />
+            <Route path="tickets" element={<LazyRoutes><SupportTickets portalLabel="Staff" /></LazyRoutes>} />
             <Route path="settings" element={<LazyRoutes><InternalAccountSettings portalLabel="Staff" /></LazyRoutes>} />
           </Route>
         </Route>

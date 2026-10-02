@@ -7,6 +7,13 @@ export function isPastriesCategory(category: Pick<MenuCategory, 'name'> | undefi
   return category?.name.trim().toLowerCase() === PASTRIES_CATEGORY_NAME.toLowerCase();
 }
 
+/** Top-level menu split used by the guest QR and POS filters. */
+export type MenuKind = 'drinks' | 'pastries';
+
+export function menuKindOf(category: Pick<MenuCategory, 'name'> | undefined): MenuKind {
+  return isPastriesCategory(category) ? 'pastries' : 'drinks';
+}
+
 /** All categories named Pastries (handles accidental duplicates in admin). */
 export function findPastriesCategories(categories: MenuCategory[]): MenuCategory[] {
   return categories

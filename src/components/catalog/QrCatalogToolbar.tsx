@@ -39,7 +39,7 @@ export default function QrCatalogToolbar({
           type="search"
           value={filters.query}
           onChange={(e) => onFiltersChange({ query: e.target.value })}
-          placeholder="Search drinks, flavors, tags…"
+          placeholder="Search drinks, cookies, flavors…"
           aria-label="Search menu"
           className="qr-field w-full min-h-[44px] rounded-full py-2 pl-10 pr-10 text-sm font-medium outline-none focus:border-kado-red/40 focus:ring-2 focus:ring-kado-red/10 [@media(orientation:landscape)_and_(max-height:30rem)]:min-h-[40px]"
         />
@@ -120,13 +120,14 @@ export default function QrCatalogToolbar({
       ) : null}
 
       {!filteredMode ? (
-        <div className="guest-order-category-rail -mx-1 flex gap-2 overflow-x-auto pb-0.5">
+        <div className="guest-order-category-rail -mx-1 flex gap-2 overflow-x-auto pb-0.5" role="group" aria-label="Show">
           {categoryTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => onCategoryPillClick(tab.id)}
               className={qrPillClass(activeCategoryId === tab.id)}
+              aria-pressed={activeCategoryId === tab.id}
             >
               {tab.name}
             </button>

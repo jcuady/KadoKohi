@@ -27,7 +27,9 @@ import {
   Layers,
   PenLine,
   Cake,
+  LifeBuoy,
 } from 'lucide-react';
+import { ticketsRepo } from '../lib/supabase/repositories/tickets';
 import { LOGO } from '../lib/brandTokens';
 import BrandHybridMark from '../components/BrandHybridMark';
 import { useAuthStore } from '../store/authStore';
@@ -132,6 +134,7 @@ const NAV: NavEntry[] = [
     children: [
       { to: '/admin/branches', label: 'Branches', icon: MapPin },
       { to: '/admin/users', label: 'Users', icon: Users },
+      { to: '/admin/tickets', label: 'Tickets', icon: LifeBuoy },
       { to: '/admin/audit', label: 'Audit log', icon: ScrollText },
       { to: '/admin/settings', label: 'Settings', icon: Settings },
     ],
@@ -166,7 +169,7 @@ function groupIsActive(group: NavGroupItem, pathname: string) {
 
 function linkClass(isActive: boolean, nested = false) {
   return [
-    'flex items-center gap-2.5 rounded-lg font-semibold transition-colors duration-150',
+    'flex items-center gap-2.5 rounded-lg font-semibold transition-colors duration-150 pointer-coarse:min-h-11',
     nested ? 'px-3 py-1.5 text-[12px]' : 'px-3 py-2 text-[13px]',
     isActive
       ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
@@ -185,7 +188,7 @@ function compactLinkClass(isActive: boolean) {
 
 function groupHeaderClass(isActive: boolean, isOpen: boolean) {
   return [
-    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150 pointer-coarse:min-h-11',
     isActive
       ? 'bg-[var(--color-dash-hover)] text-[var(--color-dash-text)]'
       : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',
@@ -193,9 +196,27 @@ function groupHeaderClass(isActive: boolean, isOpen: boolean) {
   ].join(' ');
 }
 
+const TICKETS_PATH = '/admin/tickets';
+
+function NavBadge({ count, compact = false }: { count: number; compact?: boolean }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={
+        compact
+          ? 'absolute right-1 top-1 min-w-[1.1rem] rounded-full bg-kado-red px-1 text-center text-[9px] font-black leading-[1.1rem] text-white ring-2 ring-[var(--color-dash-sidebar)]'
+          : 'ml-auto min-w-[1.25rem] rounded-full bg-kado-red px-1.5 text-center text-[10px] font-black leading-5 text-white'
+      }
+      aria-label={`${count} open tickets`}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 function sidebarFooterBtnClass() {
   return [
-    'flex w-full items-center justify-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium md:justify-start md:px-3',
+    'flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium md:justify-start md:px-3',
     'transition-colors duration-150',
     'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)]',
     'hover:text-[var(--color-dash-text)]',
@@ -240,6 +261,14 @@ export default function AdminLayout() {
     void hydrateOpsPortal();
   }, [user?.id, user?.role]);
 
+  const [openTickets, setOpenTickets] = useState(0);
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    const refresh = () => void ticketsRepo.countOpen().then(setOpenTickets).catch(() => undefined);
+    refresh();
+    return ticketsRepo.subscribe(refresh);
+  }, [user?.id, user?.role]);
+
   const toggleGroup = (id: string) => {
     setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -256,7 +285,7 @@ export default function AdminLayout() {
         style={{ background: 'var(--color-dash-sidebar)', borderColor: 'var(--color-dash-border)' }}
       >
         <div className="shrink-0 border-b px-2 pb-3 pt-3 md:px-4 md:pt-4" style={{ borderColor: 'var(--color-dash-border)' }}>
-          <Link to="/admin" className="flex items-center justify-center md:justify-start">
+          <Link to="/admin" className="flex min-h-[44px] items-center justify-center md:justify-start">
             <img
               src={LOGO.hybridMark}
               alt="Kado Kohi"
@@ -296,9 +325,10 @@ export default function AdminLayout() {
                   to={entry.to}
                   end={entry.end}
                   title={entry.label}
-                  className={({ isActive }) => compactLinkClass(isActive)}
+                  className={({ isActive }) => `relative ${compactLinkClass(isActive)}`}
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+                  {entry.to === TICKETS_PATH && <NavBadge count={openTickets} compact />}
                 </NavLink>
               );
             })}
@@ -349,6 +379,7 @@ export default function AdminLayout() {
                   >
                     <GroupIcon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} />
                     <span className="flex-1 truncate text-left">{entry.label}</span>
+                    {!isOpen && entry.children.some((c) => c.to === TICKETS_PATH) && <NavBadge count={openTickets} />}
                     <ChevronDown
                       className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform duration-200 ${
                         isOpen ? 'rotate-180' : ''
@@ -371,6 +402,7 @@ export default function AdminLayout() {
                           >
                             <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} />
                             <span className="truncate">{child.label}</span>
+                            {child.to === TICKETS_PATH && <NavBadge count={openTickets} />}
                           </NavLink>
                         );
                       })}
@@ -391,7 +423,7 @@ export default function AdminLayout() {
                 type="button"
                 onClick={() => setKioskBranchOpen(true)}
                 className={[
-                  'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150',
+                  'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors duration-150 pointer-coarse:min-h-11',
                   location.pathname === '/barista/kiosk'
                     ? 'bg-kado-red text-white shadow-sm shadow-kado-red/20'
                     : 'text-[var(--color-dash-text-muted)] hover:bg-[var(--color-dash-hover)] hover:text-[var(--color-dash-text)]',

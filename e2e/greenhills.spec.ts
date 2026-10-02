@@ -1,5 +1,6 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import {
+  addFirstGuestMenuItem,
   CREDS,
   dismissCookieConsent,
   internalLogin,
@@ -16,6 +17,7 @@ import {
 const GH = 'branch_greenhills';
 const MK = 'branch_marikina';
 const GH_BARISTA = { email: 'barista-greenhills@kadokohi.com', password: CREDS.barista.password };
+const GH_STAFF = { email: 'staff-greenhills@kadokohi.com', password: CREDS.staff.password };
 
 type Cfg = { url: string; anonKey: string };
 
@@ -68,6 +70,31 @@ async function placeDineIn(request: APIRequestContext, cfg: Cfg, branchId: strin
   });
   expect(placed.status, JSON.stringify(placed.body)).toBe(200);
   return id;
+}
+
+async function placeFromGuestPage(
+  page: Page,
+  opts: { path: string; ready: RegExp; placeName: RegExp; guestName?: string },
+) {
+  await page.goto(opts.path);
+  await dismissCookieConsent(page);
+  await expect(page.getByText(opts.ready)).toBeVisible({ timeout: 25000 });
+  await addFirstGuestMenuItem(page);
+  const review = page.getByRole('button', { name: /review cart/i });
+  if (await review.isVisible().catch(() => false)) await review.click();
+  if (opts.guestName) await page.getByPlaceholder(/e\.g\. juan/i).fill(opts.guestName);
+  const cash = page.getByRole('button', { name: /^cash$/i });
+  if (await cash.isVisible().catch(() => false)) await cash.click();
+  const rpc = page.waitForResponse(
+    (res) => res.url().includes('/rpc/kk_place_order') && res.request().method() === 'POST',
+    { timeout: 30000 },
+  );
+  await page.getByRole('button', { name: opts.placeName }).click();
+  const res = await rpc;
+  const body = (await res.json()) as { id?: string; branch_id?: string; channel?: string; message?: string };
+  expect(res.ok(), JSON.stringify(body)).toBeTruthy();
+  expect(body.id).toBeTruthy();
+  return { id: body.id!, branch_id: body.branch_id, channel: body.channel };
 }
 
 async function adminDelete(request: APIRequestContext, cfg: Cfg, adminToken: string, ids: string[]) {
@@ -207,7 +234,7 @@ test.describe('Greenhills barista account', () => {
     await expect(page.getByRole('heading', { name: /^POS$/i })).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/greenhills/i).first()).toBeVisible();
 
-    await page.locator('.grid.sm\\:grid-cols-2.gap-3 button').first().click();
+    await page.locator('section[aria-labelledby^="pos-cat-"] button').first().click();
     const modal = page.locator('.fixed.inset-0').filter({ hasText: /select variants/i });
     await expect(modal).toBeVisible({ timeout: 10000 });
     await modal.getByRole('button', { name: /^Add/i }).click();
@@ -232,6 +259,144 @@ test.describe('Greenhills barista account', () => {
       expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
     } finally {
       if (order) await adminDelete(request, cfg!, adminToken, [order.id]);
+    }
+  });
+
+  test('takeout, online, and QR orders stay on Greenhills for barista and staff', async ({ page, request }) => {
+    test.setTimeout(180_000);
+    const cfg = supabaseAnonConfig();
+    test.skip(!cfg, 'Supabase env not configured');
+    const errors = trackPageErrors(page);
+    const stamp = uniqueTestId('iso').slice(-6);
+    const ghTakeout = `GHTO ${stamp}`;
+    const mkTakeout = `MKTO ${stamp}`;
+    const ghOnline = `GHON ${stamp}`;
+    const mkOnline = `MKON ${stamp}`;
+    const ids: string[] = [];
+
+    const ghBarista = await signIn(request, GH_BARISTA.email, GH_BARISTA.password);
+    const mkBarista = await signIn(request, CREDS.barista.email, CREDS.barista.password);
+    const ghStaff = await signIn(request, GH_STAFF.email, GH_STAFF.password);
+    const mkStaff = await signIn(request, CREDS.staff.email, CREDS.staff.password);
+    const adminToken = await signIn(request, CREDS.admin.email, CREDS.admin.password);
+
+    const place = async (
+      branchId: string,
+      channel: 'takeout' | 'online',
+      guestName: string,
+    ) => {
+      const id = crypto.randomUUID();
+      const placed = await placeOrderRpc(request, {
+        id,
+        channel,
+        branch_id: branchId,
+        guest_name: guestName,
+        payment_method: 'gcash-qr',
+        payment_status: 'unpaid',
+        status: 'pending',
+        items: [coffeeLine()],
+      });
+      expect(placed.status, JSON.stringify(placed.body)).toBe(200);
+      ids.push(id);
+      const [tracked] = await trackOrderRpc(request, id);
+      expect(tracked).toMatchObject({ branch_id: branchId, channel, guest_name: guestName });
+      return id;
+    };
+
+    try {
+      const ghTakeoutId = await place(GH, 'takeout', ghTakeout);
+      const mkTakeoutId = await place(MK, 'takeout', mkTakeout);
+      const ghOnlineId = await place(GH, 'online', ghOnline);
+      const mkOnlineId = await place(MK, 'online', mkOnline);
+
+      const visible = async (token: string, id: string) => {
+        const res = await request.get(`${cfg!.url}/rest/v1/kk_orders?select=id,branch_id&id=eq.${id}`, {
+          headers: authHeaders(cfg!, token),
+        });
+        return (await res.json()) as { id: string; branch_id: string }[];
+      };
+      const ownBranch = (id: string) => (id === ghTakeoutId || id === ghOnlineId ? GH : MK);
+      const seesOnly = async (token: string, own: string[], other: string[]) => {
+        for (const id of own) {
+          const rows = await visible(token, id);
+          expect(rows, `expected to see ${id}`).toHaveLength(1);
+          expect(rows[0].branch_id).toBe(ownBranch(id));
+        }
+        for (const id of other) {
+          expect(await visible(token, id), `must not see ${id}`).toHaveLength(0);
+        }
+      };
+
+      await seesOnly(ghBarista, [ghTakeoutId, ghOnlineId], [mkTakeoutId, mkOnlineId]);
+      await seesOnly(mkBarista, [mkTakeoutId, mkOnlineId], [ghTakeoutId, ghOnlineId]);
+      await seesOnly(ghStaff, [ghTakeoutId, ghOnlineId], [mkTakeoutId, mkOnlineId]);
+      await seesOnly(mkStaff, [mkTakeoutId, mkOnlineId], [ghTakeoutId, ghOnlineId]);
+
+      const wrongBranch = await placeOrderRpc(
+        request,
+        {
+          id: crypto.randomUUID(),
+          channel: 'pos',
+          branch_id: MK,
+          payment_method: 'pay-at-store',
+          payment_status: 'paid',
+          status: 'pending',
+          items: [coffeeLine()],
+        },
+        ghBarista,
+      );
+      expect(wrongBranch.status, 'Greenhills barista cannot file a Marikina POS order').toBeGreaterThanOrEqual(400);
+
+      const wrongTable = await placeOrderRpc(request, {
+        id: crypto.randomUUID(),
+        channel: 'dine-in',
+        branch_id: GH,
+        table_id: await firstTableId(request, cfg!, MK),
+        payment_method: 'pay-at-store',
+        payment_status: 'unpaid',
+        status: 'pending',
+        items: [coffeeLine()],
+      });
+      expect(wrongTable.status, 'a Marikina table cannot be filed as Greenhills').toBeGreaterThanOrEqual(400);
+
+      await internalLogin(page, 'barista', GH_BARISTA);
+      for (const route of ['/barista', '/barista/queue']) {
+        await page.goto(route);
+        await expect(page.getByText(ghTakeout)).toBeVisible({ timeout: 20000 });
+        await expect(page.getByText(ghOnline)).toBeVisible();
+        await expect(page.getByText(mkTakeout)).toHaveCount(0);
+        await expect(page.getByText(mkOnline)).toHaveCount(0);
+      }
+
+      await internalLogin(page, 'staff', GH_STAFF);
+      await page.goto('/staff/orders');
+      await expect(page.getByText(ghTakeout)).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText(ghOnline)).toBeVisible();
+      await expect(page.getByText(mkTakeout)).toHaveCount(0);
+      await expect(page.getByText(mkOnline)).toHaveCount(0);
+
+      const filed = await placeFromGuestPage(page, {
+        path: '/order/qr/gre-t01',
+        ready: /dine-in ·/i,
+        placeName: /place dine-in order/i,
+      });
+      ids.push(filed.id);
+      expect(filed.branch_id).toBe(GH);
+      expect(filed.channel).toBe('dine-in');
+
+      const takeout = await placeFromGuestPage(page, {
+        path: '/order/takeout?b=greenhills',
+        ready: /takeout ·/i,
+        placeName: /place takeout order/i,
+        guestName: `GHQR ${stamp}`,
+      });
+      ids.push(takeout.id);
+      expect(takeout.branch_id).toBe(GH);
+      expect(takeout.channel).toBe('takeout');
+
+      expect(errors(), `uncaught errors: ${errors().join(' | ')}`).toEqual([]);
+    } finally {
+      await adminDelete(request, cfg!, adminToken, ids);
     }
   });
 });

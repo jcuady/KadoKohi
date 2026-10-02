@@ -121,7 +121,7 @@ export default function ChangePasswordForm({
           disabled={busy}
           className={
             isDash
-              ? 'rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 hover:text-kado-red transition-colors disabled:opacity-60'
+              ? 'min-h-[44px] rounded-xl border dash-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider dash-heading hover:border-kado-red/40 hover:text-kado-red transition-colors disabled:opacity-60'
               : 'px-4 py-2 rounded-full border border-kado-dark/10 text-[10px] font-black uppercase tracking-widest text-kado-dark/70 hover:border-kado-red/30 hover:text-kado-red transition-all disabled:opacity-50'
           }
         >
@@ -131,7 +131,7 @@ export default function ChangePasswordForm({
           to={forgotHref}
           className={
             isDash
-              ? 'text-[10px] font-bold uppercase tracking-wider dash-muted hover:text-kado-red transition-colors'
+              ? 'inline-flex min-h-[44px] items-center text-[10px] font-bold uppercase tracking-wider dash-muted hover:text-kado-red transition-colors'
               : 'text-[10px] font-black uppercase tracking-widest text-kado-dark/40 hover:text-kado-red transition-colors'
           }
         >

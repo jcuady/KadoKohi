@@ -65,7 +65,7 @@ export default function OrderPaymentProofPreview({ order, className = '' }: Prop
             <button
               type="button"
               onClick={openLightbox}
-              className="text-kado-red hover:underline mt-0.5 inline-block text-left font-semibold"
+              className="-my-3.5 inline-flex min-h-[44px] items-center text-left font-semibold text-kado-red hover:underline"
             >
               View full image
             </button>

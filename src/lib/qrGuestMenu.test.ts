@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  qrGuestCategoryTabs,
-  qrGuestDefaultCategoryId,
+  QR_GUEST_DEFAULT_FILTER,
+  qrGuestFilterTabs,
   qrGuestMenuSections,
   qrGuestProductsInCategory,
 } from './qrGuestMenu';
@@ -47,17 +47,44 @@ const products: Product[] = [
   }),
 ];
 
-describe('qrGuestMenu promo rail', () => {
-  it('prepends On promo to category tabs', () => {
-    const tabs = qrGuestCategoryTabs(categories, products);
-    expect(tabs[0]).toEqual({ id: MENU_PROMO_FILTER_ID, name: 'On promo' });
-    expect(tabs.map((t) => t.id)).toEqual([MENU_PROMO_FILTER_ID, 'cat_a', 'cat_b']);
+const byCategoryOf = (list: Product[]) => (id: string) => list.filter((p) => p.categoryId === id);
+
+describe('qrGuestMenu filters', () => {
+  const mixedCats: MenuCategory[] = [
+    ...categories,
+    { id: 'cat_pastries', name: 'Pastries', order: 4, visible: true },
+  ];
+  const mixed: Product[] = [
+    ...products,
+    product({ id: 'cookie_klassic', categoryId: 'cat_pastries', name: 'Klassic Cookie', basePrice: 100 }),
+  ];
+
+  it('opens on All so every drink and pastry is listed', () => {
+    expect(QR_GUEST_DEFAULT_FILTER).toBe('all');
+    const sections = qrGuestMenuSections(mixedCats, mixed, byCategoryOf(mixed));
+    expect(sections.map((s) => s.id)).toEqual(['cat_a', 'cat_b', 'cat_pastries']);
   });
 
-  it('defaults to the first real category, not On promo', () => {
-    const tabs = qrGuestCategoryTabs(categories, products);
-    expect(qrGuestDefaultCategoryId(tabs)).toBe('cat_a');
+  it('offers All, Drinks, Pastries, then On promo', () => {
+    const tabs = qrGuestFilterTabs(mixedCats, mixed, byCategoryOf(mixed));
+    expect(tabs.map((t) => t.id)).toEqual(['all', 'drinks', 'pastries', MENU_PROMO_FILTER_ID]);
   });
+
+  it('narrows sections to drinks or pastries', () => {
+    const drinks = qrGuestMenuSections(mixedCats, mixed, byCategoryOf(mixed), 'drinks');
+    expect(drinks.map((s) => s.id)).toEqual(['cat_a', 'cat_b']);
+    const pastries = qrGuestMenuSections(mixedCats, mixed, byCategoryOf(mixed), 'pastries');
+    expect(pastries.map((s) => s.id)).toEqual(['cat_pastries']);
+  });
+
+  it('hides Pastries and On promo pills when they would be empty', () => {
+    const plain = products.filter((p) => !p.discountType);
+    const tabs = qrGuestFilterTabs(categories, plain, byCategoryOf(plain));
+    expect(tabs.map((t) => t.id)).toEqual(['all', 'drinks']);
+  });
+});
+
+describe('qrGuestMenu promo rail', () => {
 
   it('lists only discounted products for the promo tab', () => {
     const byCategory = (id: string) => products.filter((p) => p.categoryId === id);
@@ -81,10 +108,10 @@ describe('qrGuestMenu promo rail', () => {
     const pastryProducts: Product[] = [
       product({ id: 'cookie_klassic', categoryId: 'cat_pastries', name: 'Klassic Cookie', basePrice: 100 }),
     ];
-    const tabs = qrGuestCategoryTabs(cats, pastryProducts);
-    const pastryTabs = tabs.filter((t) => t.name === 'Pastries');
-    expect(pastryTabs).toHaveLength(1);
-    expect(pastryTabs[0]?.id).toBe('cat_pastries');
+    const sections = qrGuestMenuSections(cats, pastryProducts, byCategoryOf(pastryProducts));
+    const pastrySections = sections.filter((s) => s.name === 'Pastries');
+    expect(pastrySections).toHaveLength(1);
+    expect(pastrySections[0]?.id).toBe('cat_pastries');
   });
 
   it('lists Kuki Box SKUs on the pastry tab and hides packaging add-ons', () => {

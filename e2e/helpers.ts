@@ -235,6 +235,16 @@ export async function supabaseGet<T>(
   return (await res.json()) as T;
 }
 
+/** Admin API delete of a test product by exact name — safe to call when the UI cleanup already ran. */
+export async function deleteProductByName(request: APIRequestContext, name: string): Promise<void> {
+  const cfg = supabaseAnonConfig();
+  const token = await passwordAccessToken(request, CREDS.admin.email, CREDS.admin.password);
+  if (!cfg || !token) return;
+  await request.delete(`${cfg.url}/rest/v1/kk_products?name=eq.${encodeURIComponent(name)}`, {
+    headers: supabaseHeaders(cfg, token),
+  });
+}
+
 export async function placeOrderRpc(
   request: APIRequestContext,
   payload: Record<string, unknown>,
@@ -280,9 +290,8 @@ export async function fetchActiveBranchSlug(request: APIRequestContext): Promise
 /** Add the first in-stock item from a guest menu grid (QR / takeout product sheet). */
 export async function addFirstGuestMenuItem(page: Page): Promise<void> {
   await dismissCookieConsent(page);
-  const grid = page.locator('.guest-order-product-grid');
-  await grid.waitFor({ state: 'visible', timeout: 20000 });
-  const products = grid.locator('button:not([disabled])');
+  await page.locator('.guest-order-product-grid').first().waitFor({ state: 'visible', timeout: 20000 });
+  const products = page.locator('.guest-order-product-grid button:not([disabled])');
   const count = await products.count();
   expect(count, 'need at least one orderable menu item').toBeGreaterThan(0);
 

@@ -57,7 +57,7 @@ export default function BaristaMenu() {
             key={c.id}
             type="button"
             onClick={() => setActiveCat(c.id)}
-            className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all touch-manipulation ${
+            className={`min-h-[44px] px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all touch-manipulation ${
               activeCat === c.id
                 ? 'bg-kado-red text-kado-cream border-kado-red'
                 : 'dash-card-alt dash-border dash-muted hover:border-kado-red/40'

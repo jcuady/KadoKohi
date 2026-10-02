@@ -218,7 +218,7 @@ export default function OrderTrackingPanel({
     <div className="qr-root customer-surface guest-order-page min-h-[100svh] bg-[var(--qr-bg)] text-[var(--qr-text)] flex flex-col items-center px-[max(1rem,env(safe-area-inset-left))] py-6 sm:py-10 pb-safe [@media(orientation:landscape)_and_(max-height:30rem)]:py-4">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 mb-5">
-          <BrandHybridMark size="md" />
+          <BrandHybridMark size="md" className="qr-brand-mark" />
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
             {flowChannel === 'takeout' ? 'Takeout' : 'Dine-in'} · Order tracking
           </p>

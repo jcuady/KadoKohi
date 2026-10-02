@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import type { Product } from '../../types/domain';
 import type { QrGuestMenuSection } from '../../lib/qrGuestMenu';
@@ -12,58 +11,14 @@ import { isKukidoCookieId, KUKIDO_CREAM } from '../../lib/kukido';
 
 type Props = {
   sections: QrGuestMenuSection[];
-  activeCategoryId: string;
-  onActiveCategoryChange: (id: string) => void;
   onSelectProduct: (product: Product) => void;
 };
 
-export default function QrGuestMenuCatalog({
-  sections,
-  activeCategoryId,
-  onActiveCategoryChange,
-  onSelectProduct,
-}: Props) {
-  const sectionRefs = useRef(new Map<string, HTMLElement>());
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  useEffect(() => {
-    observerRef.current?.disconnect();
-    if (!sections.length) return;
-
-    const visible = new Map<string, number>();
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const id = entry.target.getAttribute('data-category-id');
-          if (!id) continue;
-          visible.set(id, entry.isIntersecting ? entry.intersectionRatio : 0);
-        }
-        let bestId = sections[0]?.id ?? '';
-        let bestRatio = 0;
-        for (const section of sections) {
-          const ratio = visible.get(section.id) ?? 0;
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestId = section.id;
-          }
-        }
-        if (bestId && bestRatio > 0) onActiveCategoryChange(bestId);
-      },
-      { root: null, rootMargin: '-28% 0px -58% 0px', threshold: [0, 0.15, 0.35, 0.55] },
-    );
-
-    for (const section of sections) {
-      const el = sectionRefs.current.get(section.id);
-      if (el) observerRef.current.observe(el);
-    }
-
-    return () => observerRef.current?.disconnect();
-  }, [sections, onActiveCategoryChange]);
-
+export default function QrGuestMenuCatalog({ sections, onSelectProduct }: Props) {
   if (!sections.length) {
     return (
       <p className="qr-text-muted text-center text-sm py-12">
-        No drinks available right now. Please ask staff.
+        Nothing available right now. Please ask staff.
       </p>
     );
   }
@@ -75,25 +30,17 @@ export default function QrGuestMenuCatalog({
       {sections.map((section) => (
         <section
           key={section.id}
-          ref={(el) => {
-            if (el) sectionRefs.current.set(section.id, el);
-            else sectionRefs.current.delete(section.id);
-          }}
-          data-category-id={section.id}
           id={`qr-cat-${section.id}`}
           aria-labelledby={`qr-cat-heading-${section.id}`}
-          className="scroll-mt-[var(--qr-menu-scroll-anchor,10.5rem)] sm:scroll-mt-[var(--qr-menu-scroll-anchor,11rem)] qr-menu-section-anchor"
         >
           <div className="mb-2 flex items-baseline justify-between gap-2 px-0.5">
             <h2
               id={`qr-cat-heading-${section.id}`}
-              className={`font-display text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] ${
-                activeCategoryId === section.id ? 'text-kado-red' : 'qr-text-subtle'
-              }`}
+              className="font-display text-xs font-black uppercase tracking-[0.14em] qr-text"
             >
               {section.name}
             </h2>
-            <span className="qr-text-subtle shrink-0 text-[9px] font-bold uppercase tracking-wider opacity-80">
+            <span className="qr-text-muted shrink-0 text-[11px] font-bold tabular-nums">
               {section.products.length}
             </span>
           </div>
@@ -132,12 +79,12 @@ export default function QrGuestMenuCatalog({
                       }
                     />
                     {!inStock ? (
-                      <span className="absolute top-1 left-1 text-[6px] font-black uppercase tracking-widest bg-amber-600 text-white px-1 py-0.5 rounded-full">
+                      <span className="absolute top-1 left-1 text-[8px] font-black uppercase tracking-wider bg-amber-800 text-white px-1.5 py-0.5 rounded-full">
                         Out
                       </span>
                     ) : (
                       tag && (
-                        <span className="absolute top-1 left-1 text-[6px] font-black uppercase tracking-widest qr-badge-tag px-1 py-0.5 rounded-full max-w-[calc(100%-0.5rem)] truncate">
+                        <span className="absolute top-1 left-1 text-[8px] font-black uppercase tracking-wider qr-badge-tag px-1.5 py-0.5 rounded-full max-w-[calc(100%-0.5rem)] truncate">
                           {tag}
                         </span>
                       )
@@ -145,16 +92,16 @@ export default function QrGuestMenuCatalog({
                   </div>
                   <div className="p-1.5 sm:p-2 flex flex-col flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-0.5">
-                      <h3 className="font-display font-bold text-[10px] sm:text-xs qr-text line-clamp-2 leading-tight">
+                      <h3 className="font-display font-bold text-[11px] sm:text-xs qr-text line-clamp-2 leading-tight">
                         {p.name}
                       </h3>
                       <span className="flex shrink-0 flex-col items-end leading-none">
                         {productPromoTag(p) ? (
-                          <span className="text-[7px] font-semibold qr-text-subtle line-through sm:text-[8px]">
+                          <span className="text-[9px] font-semibold qr-text-subtle line-through">
                             {formatPhp(p.basePrice)}
                           </span>
                         ) : null}
-                        <span className="text-[10px] font-black text-kado-red sm:text-xs">
+                        <span className="text-[11px] font-black text-kado-red sm:text-xs">
                           {formatPhp(discountedBasePrice(p))}
                         </span>
                       </span>

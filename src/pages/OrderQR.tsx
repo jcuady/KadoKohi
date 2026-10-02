@@ -31,12 +31,8 @@ import { QrCode, Package } from 'lucide-react';
 import BrandHybridMark from '../components/BrandHybridMark';
 import { guestOrderMainPadding } from '../lib/guestOrderLayout';
 import { checkoutPath } from '../lib/pendingPayments';
-import { qrGuestCategoryTabs, qrGuestDefaultCategoryId, qrGuestMenuSections } from '../lib/qrGuestMenu';
-import {
-  isPastriesCategoryId,
-  pastryHasPrice,
-  pastriesProducts,
-} from '../lib/pastriesCategory';
+import { QR_GUEST_DEFAULT_FILTER, qrGuestFilterTabs, qrGuestMenuSections } from '../lib/qrGuestMenu';
+import { pastryHasPrice, pastriesProducts } from '../lib/pastriesCategory';
 import KukiBoxBuilder from '../components/pastries/KukiBoxBuilder';
 import {
   kukiBoxItemsNeedFlavors,
@@ -79,13 +75,13 @@ export default function OrderQR() {
   );
 
   const categoryTabs = useMemo(
-    () => qrGuestCategoryTabs(categories, products),
-    [categories, products],
+    () => qrGuestFilterTabs(categories, products, productsByCategory),
+    [categories, products, productsByCategory],
   );
 
   const sessionKey = `qr.${code ?? 'unknown'}`;
 
-  const [activeCat, setActiveCat] = useState('');
+  const [activeCat, setActiveCat] = useState<string>(QR_GUEST_DEFAULT_FILTER);
   const [cart, setCart] = useState<QrCartLine[]>([]);
   const [cartExpanded, setCartExpanded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -129,15 +125,12 @@ export default function OrderQR() {
   }, [runSync]);
 
   useEffect(() => {
-    if (!categoryTabs.length) return;
-    if (!activeCat || !categoryTabs.some((c) => c.id === activeCat)) {
-      setActiveCat(qrGuestDefaultCategoryId(categoryTabs));
-    }
+    if (!categoryTabs.some((c) => c.id === activeCat)) setActiveCat(QR_GUEST_DEFAULT_FILTER);
   }, [categoryTabs, activeCat]);
 
   const menuSections = useMemo(
-    () => qrGuestMenuSections(categories, products, productsByCategory),
-    [categories, products, productsByCategory],
+    () => qrGuestMenuSections(categories, products, productsByCategory, activeCat),
+    [categories, products, productsByCategory, activeCat],
   );
 
   const filterCtx = useMemo(
@@ -221,7 +214,7 @@ export default function OrderQR() {
     () => pastriesProducts(categories, products).filter((p) => pastryHasPrice(p)),
     [categories, products],
   );
-  const showKukiBoxCta = isPastriesCategoryId(categories, activeCat) && pastryCookies.length > 0;
+  const showKukiBoxCta = activeCat === 'pastries' && pastryCookies.length > 0;
 
   const updateLineQty = (key: string, qty: number) => {
     if (qty <= 0) {
@@ -386,7 +379,7 @@ export default function OrderQR() {
       <header className="shrink-0 sticky top-0 z-30 bg-[var(--qr-bg-header)] backdrop-blur-md border-b border-[var(--qr-border)] pt-safe-nav">
         <div className="max-w-3xl mx-auto px-[max(1rem,env(safe-area-inset-left))] sm:px-4 py-3 sm:py-5 [@media(orientation:landscape)_and_(max-height:30rem)]:py-2.5">
           <div className="flex items-center gap-3">
-            <BrandHybridMark size="md" className="h-11 w-11" />
+            <BrandHybridMark size="md" className="qr-brand-mark h-11 w-11" />
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-kado-red">
                 Dine-in · {table.label}
@@ -440,13 +433,7 @@ export default function OrderQR() {
           onClearFilters={() => setCatalogFilters(DEFAULT_MENU_CATALOG_FILTERS)}
           onCategoryPillClick={(id) => {
             setActiveCat(id);
-            if (isPromoFilterId(id)) return;
-            window.setTimeout(() => {
-              document.getElementById(`qr-cat-${id}`)?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              });
-            }, 50);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
       </header>
@@ -480,12 +467,7 @@ export default function OrderQR() {
             }
           />
         ) : (
-          <QrGuestMenuCatalog
-            sections={menuSections}
-            activeCategoryId={activeCat}
-            onActiveCategoryChange={setActiveCat}
-            onSelectProduct={selectProduct}
-          />
+          <QrGuestMenuCatalog sections={menuSections} onSelectProduct={selectProduct} />
         )}
       </main>
 
